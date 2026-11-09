@@ -43,7 +43,7 @@ export function OrgMail({ orgName }: { orgName: string }) {
             <AtSign className="mx-auto size-6 text-faint" />
             <h3 className="mt-2 text-[14.5px] font-semibold">Un domaine, une adresse par niveau</h3>
             <p className="mx-auto mt-1 max-w-md text-[13px] text-muted">
-              Renseignez le domaine et le serveur SMTP de l'organisation. Cadence attribue alors une adresse de service
+              Renseignez le domaine et le serveur SMTP de l'organisation. L'application attribue alors une adresse de service
               à l'organisation (contact@), à chaque entité et à chaque équipe. Les notifications partent de l'adresse de
               l'équipe concernée.
             </p>

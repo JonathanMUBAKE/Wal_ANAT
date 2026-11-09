@@ -2,21 +2,24 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Cadence — système de design
-   Graphite froid, hairlines nettes, accent monochrome ; l'iris est réservé à l'IA. */
+/* ANAT Pilotage — charte relevée sur le modèle officiel de compte rendu :
+   Montserrat, bleu #007BC4, bleu secondaire #2E74B5, gris #E8E8E8. L'iris reste réservé à l'IA. */
 :root {
-  --bg: #FBFBFC;
+  --bg: #F7F8FA;
   --panel: #FFFFFF;
-  --sidebar: #F5F5F7;
+  --sidebar: #F1F3F6;
   --raised: #FFFFFF;
-  --hover: rgba(22, 22, 35, 0.045);
-  --active: rgba(22, 22, 35, 0.08);
-  --line: rgba(22, 22, 35, 0.085);
-  --line-strong: rgba(22, 22, 35, 0.14);
-  --fg: #16161D;
-  --muted: #62626F;
-  --faint: #9A9AA6;
-  --primary: #16161D;
+  --hover: rgba(0, 76, 122, 0.06);
+  --active: rgba(0, 123, 196, 0.12);
+  --line: rgba(22, 32, 48, 0.12);
+  --line-strong: rgba(22, 32, 48, 0.22);
+  --field: #8792A2;
+  --table-head: #E8E8E8;
+  --fg: #16202E;
+  --muted: #566274;
+  --faint: #7C8797;
+  --primary: #007BC4;
+  --primary-hover: #2E74B5;
   --on-primary: #FFFFFF;
   --ai: #6E56CF;
   --ai-soft: rgba(110, 86, 207, 0.09);
@@ -48,8 +51,11 @@
   --fg: #EDEDF2;
   --muted: #9B9BAA;
   --faint: #66667A;
-  --primary: #EDEDF2;
-  --on-primary: #0B0B0F;
+  --field: #6B7686;
+  --table-head: #1E2530;
+  --primary: #4FB0EC;
+  --primary-hover: #7CC6F3;
+  --on-primary: #06202F;
   --ai: #9E8CFC;
   --ai-soft: rgba(158, 140, 252, 0.11);
   --ai-line: rgba(158, 140, 252, 0.32);
@@ -80,6 +86,9 @@
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
+  --color-field: var(--field);
+  --color-table-head: var(--table-head);
+  --color-primary-hover: var(--primary-hover);
   --color-primary: var(--primary);
   --color-on-primary: var(--on-primary);
   --color-ai: var(--ai);
@@ -94,13 +103,18 @@
   --color-danger-soft: var(--danger-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
-  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-sans: "Montserrat Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-serif: "Montserrat Variable", ui-sans-serif, system-ui, sans-serif;
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
-  --radius-xl: 14px;
+  /* Angles nets : tous les arrondis existants se resserrent d'un seul endroit */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 5px;
+  --radius-2xl: 6px;
 }
 
 @layer base {
@@ -113,12 +127,11 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: "cv11", "ss01";
 }
-::selection { background: var(--ai-soft); }
-h1, h2, h3 { text-wrap: balance; letter-spacing: -0.015em; }
+::selection { background: var(--active); }
+h1, h2, h3 { text-wrap: balance; }
 input, textarea, select, button { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--ai); outline-offset: 2px; border-radius: 6px; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .tabular { font-variant-numeric: tabular-nums; }
 }
 
@@ -163,6 +176,35 @@ input, textarea, select, button { font: inherit; color: inherit; }
 .grain {
   background-image: radial-gradient(1200px 600px at 10% -10%, var(--ai-soft), transparent 60%), radial-gradient(900px 500px at 110% 10%, rgba(79, 179, 240, 0.08), transparent 60%);
 }
+
+/* Animations institutionnelles : brèves, sur l'opacité et la position, jamais en boucle hors chargement */
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes rise-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes dialog-in { from { opacity: 0; transform: translate(-50%, 6px) scale(0.985); } }
+@keyframes stamp-in { 0% { opacity: 0; transform: rotate(-4deg) scale(1.6); } 70% { opacity: 1; transform: rotate(-4deg) scale(0.96); } 100% { opacity: 1; transform: rotate(-4deg) scale(1); } }
+@keyframes pulse-once { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes skeleton { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes bar-fill { from { transform: scaleX(0); } }
+.overlay-in { animation: fade-in 180ms ease-out; }
+.dialog-in { animation: dialog-in 180ms cubic-bezier(.2, .8, .2, 1); }
+.stamp-in { animation: stamp-in 280ms cubic-bezier(.2, .8, .2, 1); }
+.pulse-once { animation: pulse-once 400ms ease-out; }
+.skeleton { animation: skeleton 1.4s ease-in-out infinite; background: var(--hover); }
+.bar-fill { transform-origin: left; animation: bar-fill 600ms cubic-bezier(.2, .8, .2, 1); }
+/* Cascade limitée aux 12 premières lignes, pour ne jamais retarder une longue liste */
+.stagger > * { animation: rise-in 200ms ease-out backwards; }
+.stagger > *:nth-child(2) { animation-delay: 20ms; }
+.stagger > *:nth-child(3) { animation-delay: 40ms; }
+.stagger > *:nth-child(4) { animation-delay: 60ms; }
+.stagger > *:nth-child(5) { animation-delay: 80ms; }
+.stagger > *:nth-child(6) { animation-delay: 100ms; }
+.stagger > *:nth-child(7) { animation-delay: 120ms; }
+.stagger > *:nth-child(8) { animation-delay: 140ms; }
+.stagger > *:nth-child(9) { animation-delay: 160ms; }
+.stagger > *:nth-child(10) { animation-delay: 180ms; }
+.stagger > *:nth-child(11) { animation-delay: 200ms; }
+.stagger > *:nth-child(12) { animation-delay: 220ms; }
+.stagger > *:nth-child(n+13) { animation: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }

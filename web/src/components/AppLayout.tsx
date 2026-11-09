@@ -89,12 +89,12 @@ function Shell() {
             <MenuIcon className="size-4" />
           </IconButton>
           <Logo size={22} />
-          <span className="text-[14px] font-semibold">Cadence</span>
+          <span className="text-[14px] font-semibold">ANAT Pilotage</span>
           <div className="ml-auto flex items-center gap-1">
             <IconButton label="Rechercher" onClick={() => shell.setPalette(true)}>
               <Search className="size-4" />
             </IconButton>
-            <IconButton label="Cadence AI" onClick={() => shell.openAssistant()} className="text-ai-fg">
+            <IconButton label="Assistant IA" onClick={() => shell.openAssistant()} className="text-ai-fg">
               <Sparkles className="size-4" />
             </IconButton>
           </div>
@@ -102,7 +102,16 @@ function Shell() {
         <MfaReminder />
         <PendingInvitations />
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <Outlet />
+          {/* Fondu de page : un changement d'onglet dans un même projet ne relance pas l'animation */}
+          <motion.div
+            key={loc.pathname.split("/").slice(0, 3).join("/")}
+            className="h-full"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+          >
+            <Outlet />
+          </motion.div>
         </div>
       </main>
 

@@ -2,7 +2,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Spinner } from "@/components/ui";
 import { Logo } from "@/components/Sidebar";
@@ -11,34 +11,30 @@ import type { User } from "@/lib/types";
 
 type Step = "login" | "mfa" | "forgot" | "request" | "sent";
 export const authField =
-  "mt-1 h-10 w-full rounded-lg border border-line bg-bg/60 px-3 text-[14px] text-fg outline-none focus:border-line-strong";
+  "mt-1 h-10 w-full rounded-lg border border-field bg-panel px-3 text-[14px] text-fg outline-none focus:border-primary";
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className="grain flex min-h-full flex-col bg-bg lg:flex-row">
       <section className="relative flex flex-1 flex-col justify-between overflow-hidden px-6 py-8 sm:px-12 lg:py-12">
-        <div className="flex items-center gap-2.5">
-          <Logo size={30} />
-          <span className="text-[16px] font-semibold tracking-[-0.01em]">Cadence</span>
+        <div className="flex items-center gap-3">
+          <Logo size={48} />
         </div>
         <div className="my-12 max-w-xl lg:my-0">
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-ai-line bg-ai-soft px-3 py-1 text-[12px] font-medium text-ai-fg"
+            className="mb-4 text-[13px] font-bold uppercase tracking-wider text-primary"
           >
-            <Sparkles className="size-3.5" />
-            Coéquipiers IA intégrés
+            Agence Nationale d'Aménagement du Territoire
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="font-serif text-[44px] leading-[1.02] tracking-[-0.02em] sm:text-[64px]"
+            className="text-[34px] font-bold leading-[1.12] sm:text-[46px]"
           >
-            Le travail de l'équipe,
-            <br />
-            <span className="ai-text shimmer italic">et ceux qui l'aident.</span>
+            Outil de pilotage stratégique
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 12 }}
@@ -46,8 +42,8 @@ export function AuthShell({ children }: { children: ReactNode }) {
             transition={{ delay: 0.1 }}
             className="mt-5 max-w-md text-[15px] leading-relaxed text-muted"
           >
-            Projets, tableaux, échéances et des coéquipiers IA à qui l'on confie une tâche comme à un collègue, avec
-            votre accord avant chaque modification.
+            Réunions, plans de travail, livrables, parapheur et décisions réunis dans un même espace, sous validation
+            humaine à chaque étape.
           </motion.p>
         </div>
         <span />

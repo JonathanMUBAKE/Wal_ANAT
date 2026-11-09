@@ -216,7 +216,7 @@ export function HomePage() {
             <div className="relative">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 text-ai-fg" />
-                <h2 className="text-[14px] font-semibold">Cadence AI</h2>
+                <h2 className="text-[14px] font-semibold">Assistant IA</h2>
               </div>
               <p className="mt-2 text-[13px] text-muted">
                 Posez une question sur vos projets ou transformez des notes en tâches.

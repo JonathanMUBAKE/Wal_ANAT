@@ -75,7 +75,7 @@ export function CommandPalette() {
             <Command.Item value={`ia ${q}`} onSelect={() => run(() => shell.openAssistant(q))} className={item}>
               <Sparkles className="size-4 text-ai-fg" />
               <span className="flex-1 truncate">« {q} »</span>
-              <span className="text-[12px] text-ai-fg">Cadence AI</span>
+              <span className="text-[12px] text-ai-fg">Assistant IA</span>
             </Command.Item>
           </Command.Group>
         )}
@@ -140,7 +140,7 @@ export function CommandPalette() {
         <Command.Group heading="Actions" className={group}>
           <Command.Item onSelect={() => run(() => shell.openAssistant())} className={item}>
             <Sparkles className="size-4 text-ai-fg" />
-            Ouvrir Cadence AI<span className="ml-auto text-[12px] text-faint">⌘J</span>
+            Ouvrir Assistant IA<span className="ml-auto text-[12px] text-faint">⌘J</span>
           </Command.Item>
           <Command.Item onSelect={() => run(() => shell.openQuickAdd(null))} className={item}>
             <Wand2 className="size-4 text-ai-fg" />

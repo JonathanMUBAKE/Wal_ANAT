@@ -1,9 +1,10 @@
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { NavLink, useNavigate } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
+  CalendarDays,
   Check,
   CheckCircle2,
   ChevronsUpDown,
@@ -35,7 +36,7 @@ import {
   ProjectIcon,
   cn,
 } from "./ui";
-import { useAiStatus, useApprovals, useMe, useNotifications, useProjects } from "@/lib/hooks";
+import { useAiStatus, useApprovals, useCan, useMe, useNotifications, useProjects } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { AvatarUpload } from "./AvatarUpload";
 import { api } from "@/lib/api";
@@ -48,25 +49,15 @@ export const ORG_ROLE: Record<string, string> = {
   guest: "Invité",
 };
 
+/** Logo officiel de l'agence, posé sur fond blanc pour rester lisible en thème sombre. */
 export function Logo({ size = 26 }: { size?: number }) {
-  const gid = useId().replace(/:/g, "");
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-      <rect width="32" height="32" rx="9" fill="var(--fg)" />
-      <path
-        d="M8.5 19.5c2.2-5 4.4-7.5 6.6-7.5 3.3 0 3.3 8 6.4 8 1 0 2-.7 3-2"
-        stroke={`url(#${gid})`}
-        strokeWidth="2.6"
-        fill="none"
-        strokeLinecap="round"
-      />
-      <defs>
-        <linearGradient id={gid} x1="8" x2="25" y1="16" y2="16">
-          <stop stopColor="#B9A7FF" />
-          <stop offset="1" stopColor="#6FD3FF" />
-        </linearGradient>
-      </defs>
-    </svg>
+    <img
+      src="/anat-logo.png"
+      alt="ANAT"
+      style={{ height: size + 8 }}
+      className="w-auto shrink-0 rounded-md bg-white p-0.5"
+    />
   );
 }
 
@@ -82,6 +73,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     staleTime: Infinity,
   });
   const shell = useShell();
+  const can = useCan();
   const nav = useNavigate();
   const qc = useQueryClient();
   const unread = notifs?.filter((n) => !n.read).length ?? 0;
@@ -151,7 +143,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               <Logo />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13.5px] font-semibold leading-tight">
-                  {currentOrg?.name ?? "Cadence"}
+                  {currentOrg?.name ?? "ANAT"}
                 </span>
                 <span className="block truncate text-[11.5px] text-faint">
                   {currentOrg ? ORG_ROLE[currentOrg.role] : ""}
@@ -236,6 +228,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         {link("/my-tasks", <CheckCircle2 className="size-4" />, "Mes tâches")}
         {link("/inbox", <Inbox className="size-4" />, "Boîte de réception", unread)}
         {link("/ai", <Sparkles className="size-4" />, "Coéquipiers IA", approvals?.length, true)}
+        {can("meetings.view") && link("/reunions", <CalendarDays className="size-4" />, "Réunions")}
         {link("/teams", <Users className="size-4" />, "Équipes")}
         {link("/org", <Network className="size-4" />, "Organisation")}
         {me?.platform_role && link("/admin", <ShieldCheck className="size-4" />, "Administration")}
@@ -348,7 +341,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <Sparkles className="size-3.5" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[13px] font-semibold text-ai-fg">Demander à Cadence AI</span>
+            <span className="block text-[13px] font-semibold text-ai-fg">Demander à l'assistant IA</span>
             <span className="block truncate text-[11.5px] text-muted">
               {aiStatus?.provider === "anthropic" ? "Propulsé par Claude" : "Mode démo · sans clé API"}
             </span>

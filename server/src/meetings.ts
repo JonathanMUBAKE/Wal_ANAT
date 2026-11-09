@@ -405,7 +405,7 @@ export class Meetings {
       for (const a of input.attendees)
         await q.query(
           "INSERT INTO meeting_attendees (id, org_id, meeting_id, user_id, name, function_label, presence) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-          [uid("att"), m.org_id, id, a.user_id ?? null, a.name.trim(), a.function_label ?? "", a.presence ?? "present"],
+          [uid("att"), m.org_id, id, a.user_id ?? null, a.user_id ? (people.get(a.user_id) ?? a.name.trim()) : a.name.trim(), a.function_label ?? "", a.presence ?? "present"],
         );
       const hasNotes = input.agenda.some((i) => i.notes?.trim());
       await q.query(

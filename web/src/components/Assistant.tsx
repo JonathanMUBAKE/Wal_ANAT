@@ -99,7 +99,7 @@ export function Assistant() {
               <Sparkles className="size-4" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-semibold leading-tight">Cadence AI</p>
+              <p className="text-[14px] font-semibold leading-tight">Assistant IA</p>
               <p className="truncate text-[11.5px] text-faint">
                 {ai?.provider === "anthropic" ? `Claude · ${ai.model}` : "Mode démo : réponses simulées, sans clé API"}
               </p>

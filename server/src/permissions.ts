@@ -34,6 +34,14 @@ export const PERMISSION_GROUPS = [
     ],
   },
   {
+    group: "Réunions",
+    items: [
+      { key: "meetings.view", label: "Consulter les réunions et comptes rendus" },
+      { key: "meetings.manage", label: "Créer et modifier les réunions" },
+      { key: "meetings.validate", label: "Valider les comptes rendus" },
+    ],
+  },
+  {
     group: "Équipes",
     items: [
       { key: "teams.create", label: "Créer des équipes" },
@@ -61,8 +69,9 @@ const LABELS = new Map<string, string>(PERMISSION_GROUPS.flatMap((g) => g.items.
 export const permissionLabel = (p: string) => LABELS.get(p) ?? p;
 export const isPermission = (p: string): p is Permission => LABELS.has(p);
 
-const ADMIN_ONLY = (p: Permission) => p.startsWith("org.");
+const ADMIN_ONLY = (p: Permission) => p.startsWith("org.") || p === "meetings.manage" || p === "meetings.validate";
 const NOT_FOR_GUESTS = new Set<Permission>([
+  "meetings.view",
   "projects.create",
   "projects.import",
   "teams.create",

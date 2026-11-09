@@ -147,6 +147,28 @@ async function boot(kind: Kind) {
       }
       return "aucune";
     },
+    meeting: async () =>
+      (
+        await inj(a, "POST", "/api/meetings", {
+          meeting_type: "Hebdomadaire",
+          meeting_date: "2026-07-13",
+          writer_id: "u_karim",
+        })
+      ).body,
+    filled: async () => {
+      const m = await X.meeting();
+      return (
+        await inj(a, "PUT", `/api/meetings/${m.id}/content`, {
+          agenda: [{ subject: "Point", actions: [{ text: "Faire", responsible_id: "u_karim" }] }],
+          attendees: [],
+        })
+      ).body;
+    },
+    validated: async () => {
+      const m = await X.filled();
+      await inj(a, "POST", `/api/meetings/${m.id}/validate`);
+      return m;
+    },
     request: async () => {
       const t = await X.team("request");
       await inj("u_karim", "POST", `/api/teams/${t.id}/join`);
@@ -323,6 +345,30 @@ const TABLE = [
   R_("DELETE", "/api/projects/:id/ai/rules/:ruleId", async (X) => ({
     url: `/api/projects/${X.app}/ai/rules/${(await X.rule()).id}`,
   })),
+  R_("GET", "/api/meetings"),
+  R_("POST", "/api/meetings", () => ({
+    body: { meeting_type: "Hebdomadaire", meeting_date: "2026-07-13", writer_id: "u_karim" },
+  })),
+  R_("GET", "/api/meetings/:id", async (X) => ({ url: `/api/meetings/${(await X.filled()).id}` })),
+  R_("PATCH", "/api/meetings/:id", async (X) => ({
+    url: `/api/meetings/${(await X.meeting()).id}`,
+    body: { location: "Salle" },
+  })),
+  R_("DELETE", "/api/meetings/:id", async (X) => ({ url: `/api/meetings/${(await X.meeting()).id}` })),
+  R_("PUT", "/api/meetings/:id/content", async (X) => ({
+    url: `/api/meetings/${(await X.meeting()).id}/content`,
+    body: { agenda: [], attendees: [] },
+  })),
+  R_("POST", "/api/meetings/:id/validate", async (X) => ({ url: `/api/meetings/${(await X.filled()).id}/validate` })),
+  R_("POST", "/api/meetings/:id/reopen", async (X) => ({ url: `/api/meetings/${(await X.validated()).id}/reopen` })),
+  R_("GET", "/api/meetings/:id/report.docx", async (X) => ({
+    url: `/api/meetings/${(await X.filled()).id}/report.docx`,
+  })),
+  R_("GET", "/api/meeting-actions"),
+  R_("PATCH", "/api/meeting-actions/:id", async (X) => ({
+    url: `/api/meeting-actions/${(await X.filled()).agenda[0].actions[0].id}`,
+    body: { status: "en_cours" },
+  })),
   R_("GET", "/api/auth/sessions"),
   R_("DELETE", "/api/auth/sessions/:id", () => ({ url: "/api/auth/sessions/inconnue" })),
   R_("POST", "/api/auth/password", () => ({ body: { current: "faux-mot-de-passe", password: GOOD } })),
@@ -407,10 +453,10 @@ describe("contrat d'accès de toute l'API", () => {
   });
 
   it("toute route privée déclarée figure dans le contrat", () => {
-    const declared = ["./app.ts", "./auth/routes.ts"].flatMap((f) =>
+    const declared = ["./app.ts", "./auth/routes.ts", "./meetings-routes.ts"].flatMap((f) =>
       [
         ...readFileSync(new URL(f, import.meta.url), "utf8").matchAll(
-          /\.(get|post|put|patch|delete)(?:<[^>]*>)?\("(\/api[^"]+)"/g,
+          /\.(get|post|put|patch|delete)(?:<[^>]*>)?\(\s*"(\/api[^"]+)"/g,
         ),
       ].map((m) => `${m[1].toUpperCase()} ${m[2]}`),
     );

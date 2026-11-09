@@ -22,6 +22,8 @@ import { Importer } from "./ai/importer.js";
 import { IMPORT_MAX_BYTES } from "./documents/extract.js";
 import { cookieSecret, trustProxySetting } from "./secrets.js";
 import { DEFAULT_LIMITS, HOUR, MINUTE, RateLimiter, type Limits } from "./limits.js";
+import { Meetings } from "./meetings.js";
+import { meetingRoutes } from "./meetings-routes.js";
 
 export interface AppOptions {
   databaseUrl?: string;
@@ -272,6 +274,7 @@ export async function buildApp(opts: AppOptions = {}) {
     const Role = z.enum(["viewer", "commenter", "editor", "admin"]);
 
     privateAuthRoutes(r, authDeps);
+    meetingRoutes(r, new Meetings(svc));
     r.get("/api/me", async (req) => {
       const security = await db.one<{ platform_role: string | null; totp_enabled: boolean }>(
         "SELECT platform_role, totp_enabled FROM users WHERE id = $1",

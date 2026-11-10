@@ -197,15 +197,15 @@ export const Stamp = ({ children }: { children: ReactNode }) => (
 /** Tableau institutionnel : en-tête grisé, défilement horizontal sur téléphone. */
 export function Table({ head, children }: { head: ReactNode[]; children: ReactNode }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto px-3 pt-2">
       <table className="w-full border-collapse text-[13px]">
         <thead>
-          <tr className="bg-table-head text-left">
+          <tr className="text-left">
             {head.map((h, i) => (
               <th
                 key={i}
                 scope="col"
-                className="whitespace-nowrap px-3 py-2.5 text-[11px] font-medium uppercase tracking-[0.06em] text-faint"
+                className="whitespace-nowrap bg-bg px-3 py-2.5 text-[12px] font-medium text-muted first:rounded-l-[10px] last:rounded-r-[10px]"
               >
                 {h}
               </th>

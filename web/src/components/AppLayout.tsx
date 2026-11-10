@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, Outlet, useLocation } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { Menu as MenuIcon, Search, Sparkles } from "lucide-react";
-import { Sidebar, Logo } from "./Sidebar";
+import { Sidebar, TopBar } from "./Sidebar";
 import { TaskDrawer } from "./TaskDrawer";
 import { Assistant } from "./Assistant";
 import { CommandPalette } from "./CommandPalette";
 import { NewProjectDialog, QuickAddDialog } from "./dialogs";
 import { PendingInvitations } from "./PendingInvitations";
-import { IconButton, Spinner } from "./ui";
+import { Spinner } from "./ui";
 import { useLiveUpdates, useMe } from "@/lib/hooks";
 import { ShellProvider, useShell } from "@/lib/shell";
 import { ApiError } from "@/lib/api";
@@ -84,21 +83,7 @@ function Shell() {
       </AnimatePresence>
 
       <main className="flex min-w-0 flex-1 flex-col">
-        <div className="flex h-14 shrink-0 items-center gap-2 border-b border-line bg-panel px-3 lg:hidden">
-          <IconButton label="Menu" onClick={() => setMobileNav(true)}>
-            <MenuIcon className="size-4" />
-          </IconButton>
-          <Logo size={22} />
-          <span className="text-[14px] font-semibold">ANAT Pilotage</span>
-          <div className="ml-auto flex items-center gap-1">
-            <IconButton label="Rechercher" onClick={() => shell.setPalette(true)}>
-              <Search className="size-4" />
-            </IconButton>
-            <IconButton label="Assistant IA" onClick={() => shell.openAssistant()} className="text-ai-fg">
-              <Sparkles className="size-4" />
-            </IconButton>
-          </div>
-        </div>
+        <TopBar onMenu={() => setMobileNav(true)} />
         <MfaReminder />
         <PendingInvitations />
         <div className="min-h-0 flex-1 overflow-y-auto">

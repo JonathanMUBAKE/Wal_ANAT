@@ -87,7 +87,7 @@ export function CollectionHeader({
       )}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-primary text-on-primary shadow-sm">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-brand-soft text-primary">
             <Icon className="size-[18px]" />
           </span>
           <div className="min-w-0">
@@ -256,7 +256,7 @@ export function GroupedTable<T>({
                     <thead>
                       <tr className="text-left">
                         {bulk && (
-                          <th className="py-2.5 pl-3">
+                          <th className="bg-bg py-2.5 pl-3 first:rounded-l-[10px]">
                             <Check
                               on={allOn}
                               label={`Tout sélectionner : ${g.label}`}
@@ -272,7 +272,11 @@ export function GroupedTable<T>({
                           </th>
                         )}
                         {columns.map((c) => (
-                          <th key={c.key} scope="col" className="px-3 py-2.5 text-[12px] font-normal text-muted">
+                          <th
+                            key={c.key}
+                            scope="col"
+                            className="bg-bg px-3 py-2.5 text-[12px] font-medium text-muted first:rounded-l-[10px] last:rounded-r-[10px]"
+                          >
                             <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                               {c.Icon && <c.Icon className="size-3.5 text-faint" />}
                               {c.label}
@@ -280,7 +284,7 @@ export function GroupedTable<T>({
                           </th>
                         ))}
                         {actions && (
-                          <th>
+                          <th className="bg-bg last:rounded-r-[10px]">
                             <span className="sr-only">Actions</span>
                           </th>
                         )}
@@ -620,12 +624,12 @@ export function DataTable<T>({
           </button>
         </div>
       )}
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto px-3 pt-3">
         <table className="w-full border-collapse text-[13px]">
           <thead>
             <tr className="text-left">
               {bulk && (
-                <th className="w-10 py-3 pl-5 pr-1">
+                <th className="w-10 rounded-l-[10px] bg-bg py-2.5 pl-4 pr-1">
                   <Check
                     on={allOn}
                     label="Tout sélectionner sur cette page"
@@ -647,7 +651,7 @@ export function DataTable<T>({
                     key={c.key}
                     scope="col"
                     aria-sort={on ? (sort!.dir === 1 ? "ascending" : "descending") : undefined}
-                    className="whitespace-nowrap px-3 py-3 text-[12px] font-medium text-faint first:pl-5"
+                    className="whitespace-nowrap bg-bg px-3 py-2.5 text-[12px] font-medium text-muted first:rounded-l-[10px] first:pl-4 last:rounded-r-[10px]"
                   >
                     {c.sort ? (
                       <button
@@ -671,7 +675,11 @@ export function DataTable<T>({
                   </th>
                 );
               })}
-              {actions && <th className="px-3 py-3 pr-5 text-right text-[12px] font-medium text-faint">Actions</th>}
+              {actions && (
+                <th className="rounded-r-[10px] bg-bg px-3 py-2.5 pr-4 text-right text-[12px] font-medium text-muted">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="stagger">

@@ -103,8 +103,10 @@ Une seule échelle : **32 px** (compacte : pagination, actions de ligne), **36 p
 
 **Liste groupée** (`GroupedTable`) : une section par étape, en-tête teinté de la couleur d'étape (8 %), chevron de repli, icône, libellé, compteur. Colonnes à largeur fixe identiques d'un groupe à l'autre, en-têtes avec icône. Le repli de chaque groupe et le choix de vue sont mémorisés sur le poste.
 
-### Navigation
-Barre latérale blanche, à fleur du bord, séparée par un filet. Haut : Accueil, Mes tâches, Boîte de réception, Coéquipiers IA. Puis des sections repliables : **Pilotage** (Tableau de bord DG, Activités, Réunions, Plans de travail, Livrables), **Secrétariat** (Parapheur, Courrier), **Organisation** (Attributions, Équipes, Organigramme), **Projets**. Lien actif : fond bleu très léger et trait vertical de 3 px.
+### Charpente de l'application (modèle Tracklio / Oripio)
+- **Barre du haut** (64 px, blanche, filet en bas) : recherche bordée à gauche (« Rechercher une réunion, un dossier, une personne… », ⌘K) ; à droite, carrés d'icône bordés de 40 px (Assistant IA, Boîte de réception, Notifications avec pastille rouge), puis la pastille du compte (photo, nom, rôle, chevron) qui ouvre profil, sécurité, organisations, thème et déconnexion.
+- **Barre latérale** (256 px, blanche) : en tête, sur 64 px alignés avec la barre du haut, le logo ANAT, « ANAT Pilotage » et l'organisation. Puis Accueil, Mes tâches, Coéquipiers IA ; des sections titrées en **petites capitales** avec chevron : PILOTAGE, SECRÉTARIAT, ORGANISATION, PROJETS. Liens de 36 px, rayon 10 px, icône 18 px ; actif : fond bleu très léger, texte et icône bleus. En pied : Assistant IA.
+- **Tableaux** : l'en-tête des colonnes est une **bande grise arrondie** (fond `--bg`, rayon 10 px) posée dans la carte blanche, libellés 12 px moyens.
 
 ### Calendrier
 Colonne gauche : mini-mois, carte de rappel, légende-filtre. Centre : en-tête de période (‹ date ›, Aujourd'hui, Jour/Semaine/Mois). Droite : détail de l'élément choisi.

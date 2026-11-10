@@ -3,29 +3,30 @@ import { toast } from "sonner";
 import { NavLink, useNavigate } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Bell,
   Building2,
   CalendarDays,
   CalendarRange,
-  ClipboardList,
-  FileCheck2,
-  FileSignature,
-  ListTree,
-  Mail,
-  Gauge,
   Check,
   CheckCircle2,
   ChevronDown,
-  ChevronsUpDown,
   CircleUser,
+  ClipboardList,
+  FileCheck2,
+  FileSignature,
+  Gauge,
   House,
-  KeyRound,
-  ShieldCheck,
   Inbox,
+  KeyRound,
+  ListTree,
   LogOut,
+  Mail,
+  Menu as MenuIcon,
   Moon,
   Network,
   Plus,
   Search,
+  ShieldCheck,
   Sparkles,
   Sun,
   Users,
@@ -50,39 +51,6 @@ import { AvatarUpload } from "./AvatarUpload";
 import { api } from "@/lib/api";
 import { STATUS } from "@/lib/format";
 
-/** Section repliable de la navigation, mémorisée sur le poste. */
-function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
-  const key = `anat.nav.${title}`;
-  const [open, setOpen] = useState(() => {
-    try {
-      return localStorage.getItem(key) !== "0";
-    } catch {
-      return true;
-    }
-  });
-  return (
-    <div className="mt-4">
-      <button
-        onClick={() => {
-          setOpen(!open);
-          try {
-            localStorage.setItem(key, open ? "0" : "1");
-          } catch {
-            /* préférence non retenue */
-          }
-        }}
-        aria-expanded={open}
-        className="group flex w-full items-center justify-between px-5 pb-1 text-[12px] font-medium text-faint hover:text-muted"
-      >
-        {title}
-        <ChevronDown className={cn("size-3.5 opacity-0 transition group-hover:opacity-100", !open && "-rotate-90 opacity-100")} />
-      </button>
-      {open && <nav className="space-y-0.5 px-3">{children}</nav>}
-    </div>
-  );
-}
-
-
 export const ORG_ROLE: Record<string, string> = {
   owner: "Propriétaire",
   admin: "Administrateur",
@@ -102,26 +70,57 @@ export function Logo({ size = 26 }: { size?: number }) {
   );
 }
 
+/** Section de navigation titrée en petites capitales, repliable et mémorisée sur le poste. */
+function NavSection({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  const key = `anat.nav.${title}`;
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem(key) !== "0";
+    } catch {
+      return true;
+    }
+  });
+  return (
+    <div className="mt-5">
+      <div className="flex items-center justify-between px-5 pb-1.5">
+        <button
+          onClick={() => {
+            setOpen(!open);
+            try {
+              localStorage.setItem(key, open ? "0" : "1");
+            } catch {
+              /* préférence non retenue */
+            }
+          }}
+          aria-expanded={open}
+          className="flex flex-1 items-center justify-between text-[11px] font-medium uppercase tracking-[0.07em] text-faint hover:text-muted"
+        >
+          {title}
+          <ChevronDown className={cn("size-3.5 transition-transform", !open && "-rotate-90")} />
+        </button>
+        {action}
+      </div>
+      {open && <nav className="space-y-0.5 px-3">{children}</nav>}
+    </div>
+  );
+}
+
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { data: me } = useMe();
   const { data: projects } = useProjects();
-  const { data: notifs } = useNotifications();
   const { data: approvals } = useApprovals();
   const { data: aiStatus } = useAiStatus();
-  const { data: config } = useQuery({
-    queryKey: ["auth-config"],
-    queryFn: () => api.get<{ demo: boolean }>("/api/auth/config"),
-    staleTime: Infinity,
-  });
   const shell = useShell();
   const can = useCan();
-  const nav = useNavigate();
-  const qc = useQueryClient();
-  const unread = notifs?.filter((n) => !n.read).length ?? 0;
   const currentOrg = me?.orgs.find((o) => o.id === me.org_id);
-  const [creating, setCreating] = useState(false);
-  const [orgName, setOrgName] = useState("");
-  const [profile, setProfile] = useState(false);
   const groups = useMemo(() => {
     const m = new Map<string, [string, string | null, NonNullable<typeof projects>]>();
     for (const p of projects ?? []) {
@@ -129,11 +128,203 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       if (!m.has(k)) m.set(k, [k, p.team_id, []]);
       m.get(k)![2].push(p);
     }
-    // Tri à la française (« Équipe » avant « Marketing »), les projets sans équipe en dernier
     return [...m.values()].sort(
       (a, b) => (a[1] ? 0 : 1) - (b[1] ? 0 : 1) || a[0].localeCompare(b[0], "fr", { sensitivity: "base" }),
     );
   }, [projects]);
+
+  const link = (to: string, Icon: typeof House, label: string, badge?: number, ai?: boolean) => (
+    <NavLink
+      to={to}
+      end={to === "/"}
+      onClick={onNavigate}
+      className={({ isActive }) =>
+        cn(
+          "group flex h-9 items-center gap-3 rounded-[10px] px-2.5 text-[13.5px] transition-colors",
+          isActive ? "bg-brand-soft font-medium text-primary" : "text-fg/75 hover:bg-hover hover:text-fg",
+        )
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <Icon
+            className={cn("size-[18px] shrink-0", ai && !isActive && "text-ai-fg", !isActive && !ai && "text-muted")}
+            strokeWidth={isActive ? 2.1 : 1.75}
+          />
+          <span className="flex-1 truncate">{label}</span>
+          {!!badge && (
+            <span
+              className={cn(
+                "min-w-[20px] rounded-md px-1.5 text-center text-[11px] font-semibold tabular",
+                ai ? "bg-ai-soft text-ai-fg" : "bg-brand-soft text-primary",
+              )}
+            >
+              {badge}
+            </span>
+          )}
+        </>
+      )}
+    </NavLink>
+  );
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Marque : logo officiel, nom du produit, organisation */}
+      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-line px-5">
+        <Logo size={28} />
+        <span className="min-w-0">
+          <span className="block text-[15px] font-semibold leading-tight tracking-[-0.01em]">ANAT Pilotage</span>
+          <span className="block truncate text-[11.5px] text-muted">{currentOrg?.name ?? "Agence"}</span>
+        </span>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto pb-4 pt-3">
+        <nav className="space-y-0.5 px-3">
+          {link("/", House, "Accueil")}
+          {link("/my-tasks", CheckCircle2, "Mes tâches")}
+          {link("/ai", Sparkles, "Coéquipiers IA", approvals?.length, true)}
+        </nav>
+
+        <NavSection title="Pilotage">
+          {can("pilotage.view") && link("/pilotage", Gauge, "Tableau de bord DG")}
+          {can("agenda.view") && link("/activites", CalendarRange, "Activités")}
+          {can("meetings.view") && link("/reunions", CalendarDays, "Réunions")}
+          {can("plans.view") && link("/plans", ClipboardList, "Plans de travail")}
+          {link("/livrables", FileCheck2, "Livrables")}
+        </NavSection>
+
+        {(can("signature.use") || can("correspondence.view")) && (
+          <NavSection title="Secrétariat">
+            {can("signature.use") && link("/parapheur", FileSignature, "Parapheur")}
+            {can("correspondence.view") && link("/courrier", Mail, "Courrier")}
+          </NavSection>
+        )}
+
+        <NavSection title="Organisation">
+          {can("attributions.view") && link("/attributions", ListTree, "Attributions")}
+          {link("/teams", Users, "Équipes")}
+          {link("/org", Network, "Organigramme")}
+          {me?.platform_role && link("/admin", ShieldCheck, "Administration")}
+        </NavSection>
+
+        <NavSection
+          title="Projets"
+          action={
+            <button
+              aria-label="Nouveau projet"
+              onClick={() => shell.setNewProject(true)}
+              className="ml-2 rounded-md p-0.5 text-faint hover:bg-hover hover:text-fg"
+            >
+              <Plus className="size-3.5" />
+            </button>
+          }
+        >
+          {groups.flatMap(([, , list]) =>
+            list.map((p) => (
+              <NavLink
+                key={p.id}
+                to={`/projects/${p.id}`}
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                  cn(
+                    "flex h-9 items-center gap-3 rounded-[10px] px-2.5 text-[13.5px]",
+                    isActive ? "bg-brand-soft font-medium text-primary" : "text-fg/75 hover:bg-hover hover:text-fg",
+                  )
+                }
+              >
+                <ProjectIcon icon={p.icon} color={p.color} size={18} />
+                <span className="flex-1 truncate">{p.name}</span>
+                <span
+                  className="size-1.5 rounded-full"
+                  style={{ background: STATUS[p.status].color }}
+                  title={STATUS[p.status].label}
+                />
+              </NavLink>
+            )),
+          )}
+        </NavSection>
+      </div>
+
+      <div className="border-t border-line p-3">
+        <button
+          onClick={() => shell.openAssistant()}
+          className="flex w-full items-center gap-3 rounded-[10px] px-2.5 py-2 text-left transition-colors hover:bg-ai-soft"
+        >
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-[conic-gradient(from_200deg,var(--ai),#4FB3F0,var(--ai))] text-white">
+            <Sparkles className="size-4" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[13px] font-medium">Assistant IA</span>
+            <span className="block truncate text-[11.5px] text-muted">
+              Il propose, vous décidez{aiStatus?.provider === "anthropic" ? "" : " · démo"}
+            </span>
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Barre du haut : recherche, accès rapides et compte, comme dans les modèles retenus. */
+export function TopBar({ onMenu }: { onMenu: () => void }) {
+  const shell = useShell();
+  const nav = useNavigate();
+  const { data: notifs } = useNotifications();
+  const unread = notifs?.filter((n) => !n.read).length ?? 0;
+  const box =
+    "relative flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-line-strong bg-panel text-muted transition-colors hover:bg-hover hover:text-fg";
+  return (
+    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-panel px-4 sm:px-6">
+      <button aria-label="Menu" onClick={onMenu} className={cn(box, "lg:hidden")}>
+        <MenuIcon className="size-[18px]" />
+      </button>
+      <button
+        onClick={() => shell.setPalette(true)}
+        className="flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-[10px] border border-line-strong bg-panel px-3.5 text-[13px] text-faint transition-colors hover:border-faint/60 sm:max-w-[380px]"
+      >
+        <Search className="size-4 shrink-0" />
+        <span className="flex-1 truncate text-left">Rechercher une réunion, un dossier, une personne…</span>
+        <span className="hidden gap-0.5 sm:flex">
+          <Kbd>⌘</Kbd>
+          <Kbd>K</Kbd>
+        </span>
+      </button>
+      <div className="ml-auto flex items-center gap-2">
+        <button aria-label="Assistant IA" title="Assistant IA" onClick={() => shell.openAssistant()} className={cn(box, "hidden sm:flex")}>
+          <Sparkles className="size-[18px] text-ai-fg" />
+        </button>
+        <button aria-label="Boîte de réception" title="Boîte de réception" onClick={() => nav("/inbox")} className={cn(box, "hidden sm:flex")}>
+          <Inbox className="size-[18px]" />
+        </button>
+        <button aria-label="Notifications" title="Notifications" onClick={() => nav("/inbox")} className={box}>
+          <Bell className="size-[18px]" />
+          {unread > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white ring-2 ring-panel">
+              {unread}
+            </span>
+          )}
+        </button>
+        <AccountMenu />
+      </div>
+    </header>
+  );
+}
+
+/** Pastille du compte : profil, sécurité, organisations, thème, déconnexion. */
+function AccountMenu() {
+  const { data: me } = useMe();
+  const shell = useShell();
+  const nav = useNavigate();
+  const qc = useQueryClient();
+  const { data: config } = useQuery({
+    queryKey: ["auth-config"],
+    queryFn: () => api.get<{ demo: boolean }>("/api/auth/config"),
+    staleTime: Infinity,
+  });
+  const [creating, setCreating] = useState(false);
+  const [orgName, setOrgName] = useState("");
+  const [profile, setProfile] = useState(false);
+  const currentOrg = me?.orgs.find((o) => o.id === me.org_id);
   // Rechargement complet : aucune donnée (cache, temps réel) de l'organisation précédente ne doit survivre
   const switchOrg = async (id: string) => {
     await api.post(`/api/orgs/${id}/switch`);
@@ -147,205 +338,72 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       toast.error((e as Error).message);
     }
   };
-
-  const link = (to: string, icon: React.ReactNode, label: string, badge?: number, ai?: boolean) => (
-    <NavLink
-      to={to}
-      end={to === "/"}
-      onClick={onNavigate}
-      className={({ isActive }) =>
-        cn(
-          "group relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] transition-colors",
-          isActive
-            ? "bg-brand-soft font-medium text-primary before:absolute before:-left-3 before:top-1.5 before:h-5 before:w-[3px] before:rounded-r-full before:bg-primary"
-            : "text-fg/80 hover:bg-hover hover:text-fg",
-        )
-      }
-    >
-      <span className={cn("flex w-4 justify-center", ai && "text-ai-fg")}>{icon}</span>
-      <span className="flex-1 truncate">{label}</span>
-      {!!badge && (
-        <span
-          className={cn(
-            "min-w-[18px] rounded-full px-1.5 text-center text-[11px] font-semibold tabular",
-            ai ? "bg-ai text-white" : "bg-primary text-on-primary",
-          )}
-        >
-          {badge}
-        </span>
-      )}
-    </NavLink>
-  );
-
   return (
-    <div className="relative flex h-full flex-col overflow-hidden">
-      <div className="flex items-center gap-2 px-3 pb-2 pt-4">
-        <Menu>
-          <MenuTrigger asChild>
-            <button className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1.5 text-left hover:bg-hover">
-              <Logo />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13.5px] font-semibold leading-tight">
-                  {currentOrg?.name ?? "ANAT"}
-                </span>
-                <span className="block truncate text-[11.5px] text-faint">
-                  {currentOrg ? ORG_ROLE[currentOrg.role] : ""}
-                </span>
+    <>
+      <Menu>
+        <MenuTrigger asChild>
+          <button className="flex h-10 items-center gap-2.5 rounded-[10px] border border-line-strong bg-panel py-1 pl-1.5 pr-2.5 text-left transition-colors hover:bg-hover">
+            <Avatar user={me} size={28} />
+            <span className="hidden min-w-0 md:block">
+              <span className="block max-w-[160px] truncate text-[13px] font-medium leading-tight">
+                {me?.name}
+                <span className="font-normal text-faint"> ({currentOrg ? ORG_ROLE[currentOrg.role] : ""})</span>
               </span>
-              <ChevronsUpDown className="size-3.5 text-faint" />
-            </button>
-          </MenuTrigger>
-          <MenuContent className="w-[240px]">
-            <MenuLabel>Connecté en tant que</MenuLabel>
-            <div className="flex items-center gap-2 px-2 pb-2">
-              <Avatar user={me} size={26} />
-              <div className="min-w-0">
-                <p className="truncate text-[13px] font-medium">{me?.name}</p>
-                <p className="truncate text-[11.5px] text-faint">{me?.title}</p>
-              </div>
-            </div>
-            <MenuItem icon={<CircleUser className="size-3.5" />} onSelect={() => setProfile(true)}>
-              Mon profil
-            </MenuItem>
-            <MenuItem
-              icon={<KeyRound className="size-3.5" />}
-              onSelect={() => {
-                nav("/account");
-                onNavigate?.();
-              }}
-            >
-              Sécurité du compte
-            </MenuItem>
-            <MenuSeparator />
-            <MenuLabel>Organisations</MenuLabel>
-            {me?.orgs.map((o) => (
-              <MenuItem
-                key={o.id}
-                icon={<Building2 className="size-3.5" />}
-                right={o.id === me.org_id ? <Check className="size-3.5" /> : undefined}
-                onSelect={() => o.id !== me.org_id && switchOrg(o.id)}
-              >
-                {o.name}
-              </MenuItem>
-            ))}
-            {(me?.platform_role || config?.demo) && (
-              <MenuItem icon={<Plus className="size-3.5" />} onSelect={() => setCreating(true)}>
-                Créer une organisation
-              </MenuItem>
-            )}
-            <MenuSeparator />
-            <MenuItem
-              icon={shell.theme === "dark" ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
-              onSelect={shell.toggleTheme}
-            >
-              {shell.theme === "dark" ? "Thème clair" : "Thème sombre"}
-            </MenuItem>
-            <MenuItem
-              icon={<LogOut className="size-3.5" />}
-              onSelect={async () => {
-                await api.post("/api/auth/logout");
-                qc.clear();
-                nav("/login");
-              }}
-            >
-              Se déconnecter
-            </MenuItem>
-          </MenuContent>
-        </Menu>
-      </div>
-
-      <div className="px-3 pb-2">
-        <button
-          onClick={() => shell.setPalette(true)}
-          className="flex h-9 w-full items-center gap-2 rounded-[10px] border border-line-strong bg-panel px-3 text-[13px] text-faint hover:text-muted"
-        >
-          <Search className="size-3.5" />
-          <span className="flex-1 text-left">Rechercher…</span>
-          <Kbd>⌘</Kbd>
-          <Kbd>K</Kbd>
-        </button>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <nav className="space-y-0.5 px-3">
-          {link("/", <House className="size-4" />, "Accueil")}
-          {link("/my-tasks", <CheckCircle2 className="size-4" />, "Mes tâches")}
-          {link("/inbox", <Inbox className="size-4" />, "Boîte de réception", unread)}
-          {link("/ai", <Sparkles className="size-4" />, "Coéquipiers IA", approvals?.length, true)}
-        </nav>
-
-        <NavSection title="Pilotage">
-          {can("pilotage.view") && link("/pilotage", <Gauge className="size-4" />, "Tableau de bord DG")}
-          {can("agenda.view") && link("/activites", <CalendarRange className="size-4" />, "Activités")}
-          {can("meetings.view") && link("/reunions", <CalendarDays className="size-4" />, "Réunions")}
-          {can("plans.view") && link("/plans", <ClipboardList className="size-4" />, "Plans de travail")}
-          {link("/livrables", <FileCheck2 className="size-4" />, "Livrables")}
-        </NavSection>
-
-        {(can("signature.use") || can("correspondence.view")) && (
-          <NavSection title="Secrétariat">
-            {can("signature.use") && link("/parapheur", <FileSignature className="size-4" />, "Parapheur")}
-            {can("correspondence.view") && link("/courrier", <Mail className="size-4" />, "Courrier")}
-          </NavSection>
-        )}
-
-        <NavSection title="Organisation">
-          {can("attributions.view") && link("/attributions", <ListTree className="size-4" />, "Attributions")}
-          {link("/teams", <Users className="size-4" />, "Équipes")}
-          {link("/org", <Network className="size-4" />, "Organigramme")}
-          {me?.platform_role && link("/admin", <ShieldCheck className="size-4" />, "Administration")}
-        </NavSection>
-
-        <div className="mt-4 flex items-center justify-between px-5 pb-1">
-          <span className="text-[12px] font-medium text-faint">Projets</span>
-          <button
-            aria-label="Nouveau projet"
-            onClick={() => shell.setNewProject(true)}
-            className="rounded-md p-0.5 text-faint hover:bg-hover hover:text-fg"
-          >
-            <Plus className="size-3.5" />
+            </span>
+            <ChevronDown className="size-4 text-faint" />
           </button>
-        </div>
-        <nav className="space-y-0.5 px-3 pb-3">
-          {groups.map(([teamName, teamId, list]) => (
-            <div key={teamName} className="pb-1.5">
-              {teamId ? (
-                <NavLink
-                  to={`/teams/${teamId}`}
-                  onClick={onNavigate}
-                  className="flex h-6 items-center gap-1.5 px-2 text-[11.5px] font-medium text-faint hover:text-fg"
-                >
-                  <Users className="size-3" />
-                  {teamName}
-                </NavLink>
-              ) : (
-                <span className="flex h-6 items-center px-2 text-[11.5px] font-medium text-faint">{teamName}</span>
-              )}
-              {list.map((p) => (
-                <NavLink
-                  key={p.id}
-                  to={`/projects/${p.id}`}
-                  onClick={onNavigate}
-                  className={({ isActive }) =>
-                    cn(
-                      "group flex h-8 items-center gap-2.5 rounded-lg px-2 text-[13.5px]",
-                      isActive ? "bg-active font-medium text-fg" : "text-muted hover:bg-hover hover:text-fg",
-                    )
-                  }
-                >
-                  <ProjectIcon icon={p.icon} color={p.color} size={18} />
-                  <span className="flex-1 truncate">{p.name}</span>
-                  <span
-                    className="size-1.5 rounded-full"
-                    style={{ background: STATUS[p.status].color }}
-                    title={STATUS[p.status].label}
-                  />
-                </NavLink>
-              ))}
+        </MenuTrigger>
+        <MenuContent align="end" className="w-[250px]">
+          <div className="flex items-center gap-2.5 px-2 pb-2 pt-1.5">
+            <Avatar user={me} size={32} />
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-semibold">{me?.name}</p>
+              <p className="truncate text-[11.5px] text-muted">{me?.title}</p>
             </div>
+          </div>
+          <MenuSeparator />
+          <MenuItem icon={<CircleUser className="size-3.5" />} onSelect={() => setProfile(true)}>
+            Mon profil
+          </MenuItem>
+          <MenuItem icon={<KeyRound className="size-3.5" />} onSelect={() => nav("/account")}>
+            Sécurité du compte
+          </MenuItem>
+          <MenuSeparator />
+          <MenuLabel>Organisations</MenuLabel>
+          {me?.orgs.map((o) => (
+            <MenuItem
+              key={o.id}
+              icon={<Building2 className="size-3.5" />}
+              right={o.id === me.org_id ? <Check className="size-3.5" /> : undefined}
+              onSelect={() => o.id !== me.org_id && switchOrg(o.id)}
+            >
+              {o.name}
+            </MenuItem>
           ))}
-        </nav>
-      </div>
+          {(me?.platform_role || config?.demo) && (
+            <MenuItem icon={<Plus className="size-3.5" />} onSelect={() => setCreating(true)}>
+              Créer une organisation
+            </MenuItem>
+          )}
+          <MenuSeparator />
+          <MenuItem
+            icon={shell.theme === "dark" ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+            onSelect={shell.toggleTheme}
+          >
+            {shell.theme === "dark" ? "Thème clair" : "Thème sombre"}
+          </MenuItem>
+          <MenuItem
+            icon={<LogOut className="size-3.5" />}
+            onSelect={async () => {
+              await api.post("/api/auth/logout");
+              qc.clear();
+              nav("/login");
+            }}
+          >
+            Se déconnecter
+          </MenuItem>
+        </MenuContent>
+      </Menu>
 
       <Dialog
         open={creating}
@@ -368,7 +426,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           onChange={(e) => setOrgName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && orgName.trim() && createOrg()}
           placeholder="Nom de l'organisation"
-          className="h-10 w-full rounded-lg border border-line bg-bg/60 px-3 text-[14px] outline-none focus:border-line-strong"
+          className="h-10 w-full rounded-[10px] border border-line-strong bg-panel px-3 text-[14px] outline-none focus:border-primary"
         />
       </Dialog>
 
@@ -394,24 +452,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         )}
       </Dialog>
-
-      <div className="border-t border-line p-3">
-        <button
-          onClick={() => shell.openAssistant()}
-          className="group flex w-full items-center gap-2.5 rounded-xl border border-line px-3 py-2.5 text-left transition-colors hover:border-ai-line hover:bg-ai-soft"
-        >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-[conic-gradient(from_200deg,var(--ai),#4FB3F0,var(--ai))] text-white">
-            <Sparkles className="size-4" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[13px] font-semibold">Assistant IA</span>
-            <span className="block truncate text-[11.5px] text-muted">
-              Il propose, vous décidez{aiStatus?.provider === "anthropic" ? "" : " · démo"}
-            </span>
-          </span>
-          <Kbd>⌘J</Kbd>
-        </button>
-      </div>
-    </div>
+    </>
   );
 }

@@ -39,21 +39,32 @@ Ce document fait foi pour tout nouvel écran. Le code de référence se trouve d
 ### Rayons (géométrie)
 | Jeton | Valeur | Pour |
 | --- | --- | --- |
-| `r-sm` | 8 px | Cases à cocher, petites étiquettes |
-| `r-md` | 12 px | Champs, cartes d'événement, cellules de calendrier |
-| `r-lg` | 18 px | Cartes internes (kanban, rappel) |
-| `r-xl` | 24 px | Cartes de page, panneaux |
-| `r-pill` | 999 px | Boutons, onglets, filtres, recherche, statuts |
+| `r-sm` | 6–8 px (`rounded-md`, `rounded-lg`) | Cases, compteurs, boutons-icônes, liens de navigation |
+| `r-md` | 10 px (`rounded-[10px]`) | **Toutes les commandes** : boutons, champs, recherche, filtres, sélecteurs |
+| `r-lg` | 14 px (`rounded-xl`) | Cartes internes : kanban, événements, détail |
+| `r-xl` | 16 px (`rounded-2xl`) | Cartes de page et sections |
+| `r-pill` | 999 px | **Seulement** les statuts (`Badge`) et les points de couleur |
+
+### Hauteurs de commande
+Une seule échelle : **32 px** (compacte : pagination, actions de ligne), **36 px** (par défaut : boutons, recherche, filtres, onglets segmentés), **40 px** (onglets soulignés). Deux commandes côte à côte ont toujours la même hauteur.
 
 ### Typographie (Geist)
 | Rôle | Taille / graisse |
 | --- | --- |
-| Titre de page | 32–38 px, demi-gras, interlettrage −3 % |
-| Chiffre clé | 40–44 px, demi-gras, chiffres tabulaires |
-| Titre de carte | 16–17 px, demi-gras |
-| Corps | 13,5–14 px, normal |
-| Libellé de champ / en-tête de colonne | 12–12,5 px, moyen, gris |
-| Sceau (numéro officiel) | Mono 11,5–12 px |
+| Titre de page | 24 px, demi-gras, interlettrage −2,5 % |
+| Chiffre clé | 30–32 px, demi-gras, chiffres tabulaires |
+| Titre de carte | 15 px, demi-gras |
+| Titre de groupe (liste) | 13,5 px, demi-gras |
+| Corps | 13–13,5 px, normal |
+| En-tête de colonne | 12 px, normal, gris, avec icône |
+| Sceau (numéro officiel) | Mono 11 px |
+
+### Retenue (la règle d'Asana)
+- Une seule action principale bleue par écran, en haut à droite.
+- Les actions de ligne restent discrètes (60 % d'opacité) et se révèlent au survol.
+- Pas d'ombre portée sur ce qui est posé : un filet suffit. L'ombre est réservée au survol, au menu, au dialogue.
+- Les couleurs vives ne servent qu'aux statuts et aux formes d'activité ; le reste est en encre et en gris.
+- Une page n'a qu'une rangée d'onglets. Pas de tuiles de chiffres sur une page de liste : les compteurs vivent dans les en-têtes de groupe.
 
 ### Espacement, élévation, mouvement
 - Grille de 4 px ; marges de carte 20 px ; écart entre cartes 16 px.
@@ -64,13 +75,14 @@ Ce document fait foi pour tout nouvel écran. Le code de référence se trouve d
 
 | Composant | Règle |
 | --- | --- |
-| **Bouton** | Pilule. Un seul bouton principal (bleu) par zone. Libellé = verbe + objet. |
-| **Bouton rond** | Icône seule dans un cercle bordé, toujours avec une étiquette accessible. |
+| **Bouton** | 36 px, rayon 10 px. Un seul bouton principal (bleu) par zone. Libellé = verbe + objet. |
+| **Bouton-icône** | 32 px, rayon 8 px, sans bordure, toujours avec une étiquette accessible. |
+| **Onglets soulignés** | Vues et sections d'une page ; trait bleu de 2 px sous l'actif, icône bleue. |
+| **Onglets segmentés** | Seulement pour une période (Jour · Semaine · Mois) : rail gris, actif blanc en relief. |
 | **Statut (`Badge`)** | Pilule douce bordée, point de couleur + mot. |
 | **Sceau** | Numéro officiel en mono, sur fond gris clair, jamais tronqué. |
 | **Champ** | Libellé permanent au-dessus, halo bleu au focus, erreur écrite sous le champ. |
-| **Sélecteur de vue** | Groupe segmenté d'icônes et de mots : Liste, Tableau, Calendrier. L'actif est en encre. |
-| **Recherche** | Pilule avec loupe et raccourci « / ». |
+| **Recherche** | Champ de 36 px, rayon 10 px, loupe et raccourci « / ». |
 | **Panneau de filtres** | Colonne repliable, groupes titrés en petites capitales, cases à cocher. Le bouton « Filtres » affiche le nombre de filtres actifs. |
 | **Tableau de données** | Case de sélection, en-têtes triables, cellules sur deux lignes (titre + précision), actions à droite, pagination « Page 1 sur 4 · 10 lignes ». Barre d'actions groupées dès qu'une ligne est cochée. |
 | **Colonne de tableau (kanban)** | En-tête : statut en pastille + nombre. Cartes de 18 px de rayon, paires libellé/valeur. |
@@ -80,14 +92,17 @@ Ce document fait foi pour tout nouvel écran. Le code de référence se trouve d
 
 ## 4. Gabarits
 
-### Collection (CRUD)
-1. En-tête : icône, titre, compteur (« 12 réunions »), phrase d'aide, bouton principal.
-2. Bande de chiffres (facultative) : 3 à 4 compteurs cliquables qui filtrent.
-3. Barre d'outils : Filtres · sélecteur de vue · recherche.
-4. Corps : panneau de filtres (repliable) + vue choisie.
-5. Pied : pagination ou total.
+### Collection (CRUD) — `CollectionHeader`
+1. Fil d'Ariane (« Pilotage › Réunions »).
+2. Ligne de titre : carré d'icône bleu 36 px, titre 24 px, compteur gris (« 5 réunions »), action principale à droite.
+3. Phrase d'aide, une seule ligne.
+4. Rangée d'onglets soulignés : les vues (Liste · Tableau · Calendrier), un séparateur, puis les sections voisines (Recommandations · Les miennes). À droite, sur la même ligne : recherche et Filtres.
+5. Corps : panneau de filtres (repliable) + vue choisie.
 
-Le choix de vue et le panneau de filtres sont mémorisés sur le poste.
+**Liste groupée** (`GroupedTable`) : une section par étape, en-tête teinté de la couleur d'étape (8 %), chevron de repli, icône, libellé, compteur. Colonnes à largeur fixe identiques d'un groupe à l'autre, en-têtes avec icône. Le repli de chaque groupe et le choix de vue sont mémorisés sur le poste.
+
+### Navigation
+Barre latérale blanche, à fleur du bord, séparée par un filet. Haut : Accueil, Mes tâches, Boîte de réception, Coéquipiers IA. Puis des sections repliables : **Pilotage** (Tableau de bord DG, Activités, Réunions, Plans de travail, Livrables), **Secrétariat** (Parapheur, Courrier), **Organisation** (Attributions, Équipes, Organigramme), **Projets**. Lien actif : fond bleu très léger et trait vertical de 3 px.
 
 ### Calendrier
 Colonne gauche : mini-mois, carte de rappel, légende-filtre. Centre : en-tête de période (‹ date ›, Aujourd'hui, Jour/Semaine/Mois). Droite : détail de l'élément choisi.

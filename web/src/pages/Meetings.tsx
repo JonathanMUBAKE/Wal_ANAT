@@ -12,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, ConfirmDialog, Dialog, Empty, IconButton, cn } from "@/components/ui";
+import { Button, ConfirmDialog, Dialog, Empty, IconButton } from "@/components/ui";
 import {
   DomainSelect,
   Field,
@@ -31,7 +31,6 @@ import {
   isLate,
   type Tone,
 } from "@/components/gov";
-import { CollectionHeader } from "@/components/collection";
 import { MeetingsBrowser } from "@/components/MeetingViews";
 import { api } from "@/lib/api";
 import { useCan, useMe, useUsers } from "@/lib/hooks";
@@ -116,55 +115,25 @@ const fail = (e: unknown) => toast.error((e as Error).message);
 
 export function MeetingsPage() {
   const can = useCan();
-  const [tab, setTab] = useState<"list" | "actions" | "mine">("list");
   const [creating, setCreating] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ["meetings"],
     queryFn: () => api.get<MeetingRow[]>("/api/meetings"),
   });
   return (
-    <div className="mx-auto min-h-full max-w-[1480px] space-y-5 p-4 sm:px-6 sm:py-7">
-      <CollectionHeader
-        Icon={CalendarDays}
-        title="Réunions"
-        count={data?.length}
-        unit={["réunion", "réunions"]}
-        subtitle="Chaque réunion produit un compte rendu officiel, et chaque recommandation reste suivie jusqu'à sa clôture."
-        actions={
+    <div className="mx-auto min-h-full max-w-[1480px] p-4 sm:px-8 sm:py-6">
+      <MeetingsBrowser
+        rows={data ?? []}
+        isLoading={isLoading}
+        primary={
           can("meetings.manage") && (
             <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
               Nouvelle réunion
             </Button>
           )
         }
+        renderActions={(mine) => <ActionsTracker mine={mine} />}
       />
-      <div role="tablist" className="flex gap-6 overflow-x-auto border-b border-line">
-        {(
-          [
-            ["list", "Réunions et comptes rendus"],
-            ["actions", "Toutes les recommandations"],
-            ["mine", "Mes recommandations"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            role="tab"
-            aria-selected={tab === id}
-            onClick={() => setTab(id)}
-            className={cn(
-              "-mb-px shrink-0 whitespace-nowrap border-b-2 pb-2.5 text-[13.5px] font-medium transition-colors",
-              tab === id ? "border-night text-fg dark:border-primary" : "border-transparent text-muted hover:text-fg",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {tab === "list" ? (
-        <MeetingsBrowser rows={data ?? []} isLoading={isLoading} />
-      ) : (
-        <ActionsTracker mine={tab === "mine"} />
-      )}
       {creating && <NewMeeting onClose={() => setCreating(false)} />}
     </div>
   );

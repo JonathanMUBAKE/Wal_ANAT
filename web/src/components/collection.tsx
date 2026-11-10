@@ -50,6 +50,8 @@ export function useLocalPref<T extends string>(key: string, initial: T): [T, (v:
 }
 
 // ------------------------------------------------------------------ en-tête
+/** En-tête d'espace de travail (gabarit Asana) : fil d'Ariane, titre, aide, action principale,
+ *  puis une seule rangée d'onglets soulignés avec les outils à droite. */
 export function CollectionHeader({
   Icon,
   title,
@@ -57,6 +59,9 @@ export function CollectionHeader({
   unit,
   subtitle,
   actions,
+  crumbs,
+  tabs,
+  tools,
 }: {
   Icon: LucideIcon;
   title: string;
@@ -64,27 +69,265 @@ export function CollectionHeader({
   unit?: [string, string];
   subtitle?: string;
   actions?: ReactNode;
+  crumbs?: string[];
+  tabs?: ReactNode;
+  tools?: ReactNode;
 }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-4">
-      <div className="flex min-w-0 items-start gap-4">
-        <span className="hidden size-12 shrink-0 items-center justify-center rounded-2xl border border-line bg-panel text-primary shadow-sm sm:flex">
-          <Icon className="size-5" />
-        </span>
-        <div className="min-w-0">
-          <h1 className="flex flex-wrap items-center gap-3 text-[30px] font-semibold leading-tight tracking-[-0.03em] sm:text-[34px]">
-            {title}
-            {count !== undefined && (
-              <span className="rounded-full border border-line-strong bg-panel px-2.5 py-0.5 text-[12.5px] font-medium tracking-normal text-muted">
-                {count} {unit ? (count > 1 ? unit[1] : unit[0]) : ""}
-              </span>
-            )}
-          </h1>
-          {subtitle && <p className="mt-1 max-w-2xl text-[13.5px] text-muted">{subtitle}</p>}
+    <header className="border-b border-line">
+      {crumbs && (
+        <p className="mb-3 flex items-center gap-1.5 text-[12.5px] text-muted">
+          {crumbs.map((c, i) => (
+            <span key={c} className="flex items-center gap-1.5">
+              {i > 0 && <ChevronRight className="size-3 text-faint" />}
+              <span className={i === crumbs.length - 1 ? "text-fg" : ""}>{c}</span>
+            </span>
+          ))}
+        </p>
+      )}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-primary text-on-primary shadow-sm">
+            <Icon className="size-[18px]" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="flex flex-wrap items-center gap-2.5 text-[24px] font-semibold leading-tight tracking-[-0.025em]">
+              {title}
+              {count !== undefined && (
+                <span className="rounded-md bg-hover px-1.5 py-0.5 text-[12px] font-medium tracking-normal text-muted">
+                  {count} {unit ? (count > 1 ? unit[1] : unit[0]) : ""}
+                </span>
+              )}
+            </h1>
+          </div>
         </div>
+        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      {subtitle && <p className="mt-1.5 max-w-2xl text-[13px] text-muted">{subtitle}</p>}
+      {(tabs || tools) && (
+        <div className="mt-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+          <div className="-mb-px flex min-w-0 max-w-full overflow-x-auto">{tabs}</div>
+          {tools && <div className="flex flex-wrap items-center gap-2 pb-2">{tools}</div>}
+        </div>
+      )}
     </header>
+  );
+}
+
+/** Onglet souligné : vue ou section d'une même page. */
+export function TabLink({
+  on,
+  onClick,
+  Icon,
+  children,
+  count,
+}: {
+  on: boolean;
+  onClick: () => void;
+  Icon?: LucideIcon;
+  children: ReactNode;
+  count?: number;
+}) {
+  return (
+    <button
+      role="tab"
+      aria-selected={on}
+      onClick={onClick}
+      className={cn(
+        "relative inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 text-[13px] font-medium transition-colors",
+        "after:absolute after:inset-x-2 after:bottom-0 after:h-[2px] after:rounded-full after:transition-colors",
+        on ? "text-fg after:bg-primary" : "text-muted after:bg-transparent hover:text-fg",
+      )}
+    >
+      {Icon && <Icon className={cn("size-4", on ? "text-primary" : "")} />}
+      {children}
+      {count !== undefined && count > 0 && (
+        <span className="rounded-md bg-hover px-1.5 text-[11px] font-semibold tabular text-muted">{count}</span>
+      )}
+    </button>
+  );
+}
+
+// ------------------------------------------------------------------ liste groupée (sections repliables)
+export interface Group<T> {
+  id: string;
+  label: string;
+  hue: string;
+  Icon?: LucideIcon;
+  hint?: string;
+  rows: T[];
+}
+
+export function GroupedTable<T>({
+  groups,
+  columns,
+  rowKey,
+  onOpen,
+  actions,
+  bulk,
+  empty,
+  storageKey,
+}: {
+  groups: Group<T>[];
+  columns: (Column<T> & { Icon?: LucideIcon; width?: string })[];
+  rowKey: (r: T) => string;
+  onOpen?: (r: T) => void;
+  actions?: (r: T) => ReactNode;
+  bulk?: (selected: T[], clear: () => void) => ReactNode;
+  empty: ReactNode;
+  storageKey: string;
+}) {
+  const [closed, setClosedRaw] = useLocalPref<string>(storageKey, "");
+  const shut = new Set(closed.split(",").filter(Boolean));
+  const toggleGroup = (id: string) => {
+    if (shut.has(id)) shut.delete(id);
+    else shut.add(id);
+    setClosedRaw([...shut].join(","));
+  };
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const all = groups.flatMap((g) => g.rows);
+  const chosen = all.filter((r) => selected.has(rowKey(r)));
+  const clear = () => setSelected(new Set());
+  const toggle = (id: string) => {
+    const s = new Set(selected);
+    if (s.has(id)) s.delete(id);
+    else s.add(id);
+    setSelected(s);
+  };
+  if (!all.length) return <div className="rounded-2xl border border-line bg-panel">{empty}</div>;
+  return (
+    <div className="space-y-3">
+      {bulk && chosen.length > 0 && (
+        <div className="rise-in sticky top-2 z-20 flex flex-wrap items-center gap-3 rounded-xl border border-primary/25 bg-panel px-4 py-2 text-[13px] shadow-md">
+          <span className="font-semibold text-primary">
+            {chosen.length} sélectionnée{chosen.length > 1 ? "s" : ""}
+          </span>
+          {bulk(chosen, clear)}
+          <button onClick={clear} className="ml-auto text-[12.5px] font-medium text-muted hover:text-fg">
+            Désélectionner
+          </button>
+        </div>
+      )}
+      {groups
+        .filter((g) => g.rows.length)
+        .map((g) => {
+          const open = !shut.has(g.id);
+          const ids = g.rows.map(rowKey);
+          const allOn = ids.every((i) => selected.has(i));
+          return (
+            <section key={g.id} className="rounded-2xl border border-line bg-panel p-1.5">
+              <div
+                className="flex items-center gap-2 rounded-[10px] px-2.5 py-2"
+                style={{ background: `color-mix(in oklab, ${g.hue} 8%, var(--panel))` }}
+              >
+                <button
+                  onClick={() => toggleGroup(g.id)}
+                  aria-expanded={open}
+                  aria-label={open ? `Replier ${g.label}` : `Déplier ${g.label}`}
+                  className="flex size-6 items-center justify-center rounded-md text-muted hover:bg-panel/70"
+                >
+                  <ChevronDown className={cn("size-4 transition-transform", !open && "-rotate-90")} />
+                </button>
+                {g.Icon ? (
+                  <g.Icon className="size-4" style={{ color: g.hue }} />
+                ) : (
+                  <span className="size-2.5 rounded-full" style={{ background: g.hue }} />
+                )}
+                <h3 className="text-[13.5px] font-semibold" title={g.hint}>
+                  {g.label}
+                </h3>
+                <span
+                  className="rounded-md px-1.5 text-[11.5px] font-semibold tabular"
+                  style={{ color: g.hue, background: `color-mix(in oklab, ${g.hue} 12%, transparent)` }}
+                >
+                  {g.rows.length}
+                </span>
+              </div>
+              {open && (
+                <div className="relative overflow-x-auto">
+                  <table className="w-full table-fixed border-collapse text-[13px]" style={{ minWidth: 760 }}>
+                    <colgroup>
+                      {bulk && <col style={{ width: 40 }} />}
+                      {columns.map((c) => (
+                        <col key={c.key} style={{ width: c.width }} />
+                      ))}
+                      {actions && <col style={{ width: 84 }} />}
+                    </colgroup>
+                    <thead>
+                      <tr className="text-left">
+                        {bulk && (
+                          <th className="py-2.5 pl-3">
+                            <Check
+                              on={allOn}
+                              label={`Tout sélectionner : ${g.label}`}
+                              onChange={() => {
+                                const s = new Set(selected);
+                                for (const i of ids) {
+                                  if (allOn) s.delete(i);
+                                  else s.add(i);
+                                }
+                                setSelected(s);
+                              }}
+                            />
+                          </th>
+                        )}
+                        {columns.map((c) => (
+                          <th key={c.key} scope="col" className="px-3 py-2.5 text-[12px] font-normal text-muted">
+                            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                              {c.Icon && <c.Icon className="size-3.5 text-faint" />}
+                              {c.label}
+                            </span>
+                          </th>
+                        ))}
+                        {actions && (
+                          <th>
+                            <span className="sr-only">Actions</span>
+                          </th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {g.rows.map((r) => {
+                        const id = rowKey(r);
+                        const on = selected.has(id);
+                        return (
+                          <tr
+                            key={id}
+                            onClick={() => onOpen?.(r)}
+                            className={cn(
+                              "group border-t border-line transition-colors",
+                              onOpen && "cursor-pointer",
+                              on ? "bg-brand-soft/60" : "hover:bg-hover/60",
+                            )}
+                          >
+                            {bulk && (
+                              <td className="py-2.5 pl-3" onClick={(e) => e.stopPropagation()}>
+                                <Check on={on} label="Sélectionner" onChange={() => toggle(id)} />
+                              </td>
+                            )}
+                            {columns.map((c) => (
+                              <td key={c.key} className={cn("truncate px-3 py-2.5 align-middle", c.className)}>
+                                {c.render(r)}
+                              </td>
+                            ))}
+                            {actions && (
+                              <td className="px-2 py-2.5" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center justify-end gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
+                                  {actions(r)}
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          );
+        })}
+    </div>
   );
 }
 
@@ -99,19 +342,14 @@ export function FilterToggle({ open, count, onClick }: { open: boolean; count: n
       onClick={onClick}
       aria-expanded={open}
       className={cn(
-        "inline-flex h-10 items-center gap-2 rounded-full border px-4 text-[13px] font-medium transition-colors",
-        open ? "border-night bg-night text-white dark:border-primary dark:bg-primary dark:text-on-primary" : "border-line-strong bg-panel hover:bg-hover",
+        "inline-flex h-9 items-center gap-2 rounded-[10px] border px-3 text-[13px] font-medium transition-colors",
+        open ? "border-primary/40 bg-brand-soft text-primary" : "border-line-strong bg-panel text-fg hover:bg-hover",
       )}
     >
       <SlidersHorizontal className="size-4" />
-      {open ? "Masquer les filtres" : "Filtres"}
+      Filtres
       {count > 0 && (
-        <span
-          className={cn(
-            "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-semibold",
-            open ? "bg-white/20" : "bg-primary text-on-primary",
-          )}
-        >
+        <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10.5px] font-semibold text-on-primary">
           {count}
         </span>
       )}
@@ -131,7 +369,7 @@ export function ViewSwitch<T extends string>({
   label?: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex h-10 items-center gap-0.5 rounded-full border border-line-strong bg-panel p-1">
+    <div role="radiogroup" aria-label={label} className="inline-flex h-9 items-center gap-0.5 rounded-[10px] bg-hover p-[3px]">
       {items.map(({ id, label: l, Icon }) => {
         const on = value === id;
         return (
@@ -141,10 +379,8 @@ export function ViewSwitch<T extends string>({
             aria-checked={on}
             onClick={() => onChange(id)}
             className={cn(
-              "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-medium transition-all duration-200",
-              on
-                ? "bg-night text-white shadow-sm dark:bg-primary dark:text-on-primary"
-                : "text-muted hover:text-fg",
+              "inline-flex h-full items-center gap-1.5 rounded-[8px] px-3 text-[12.5px] font-medium transition-all duration-200",
+              on ? "bg-panel text-fg shadow-sm ring-1 ring-line" : "text-muted hover:text-fg",
             )}
           >
             {Icon && <Icon className="size-3.5" />}
@@ -182,7 +418,7 @@ export function SearchField({
   return (
     <label
       className={cn(
-        "field-ring flex h-10 min-w-[200px] flex-1 items-center gap-2 rounded-full border border-line-strong bg-panel px-4 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--ring)]",
+        "field-ring flex h-9 min-w-[180px] items-center gap-2 rounded-[10px] border border-line-strong bg-panel px-3 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--ring)]",
         className,
       )}
     >
@@ -209,7 +445,7 @@ export function SearchField({
 // ------------------------------------------------------------------ filtres
 export function FilterPanel({ children, onClear, active }: { children: ReactNode; onClear: () => void; active: number }) {
   return (
-    <aside className="rise-in w-full shrink-0 self-start rounded-[24px] border border-line bg-panel p-3 shadow-sm lg:w-[236px]">
+    <aside className="rise-in w-full shrink-0 self-start rounded-2xl border border-line bg-panel p-3 shadow-sm lg:w-[236px]">
       <div className="flex items-center justify-between px-2 pb-2 pt-1">
         <p className="text-[15px] font-semibold">Filtres</p>
         {active > 0 && (
@@ -226,7 +462,7 @@ export function FilterPanel({ children, onClear, active }: { children: ReactNode
 export function FilterGroup({ title, children }: { title: string; children: ReactNode }) {
   const [open, setOpen] = useState(true);
   return (
-    <div className="rounded-[16px] bg-bg/70 p-1">
+    <div className="rounded-xl bg-bg/70 p-1">
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
@@ -295,7 +531,7 @@ const BADGE: Record<BadgeTone, string> = {
 export const Badge = ({ tone, label, count }: { tone: BadgeTone; label: string; count?: number }) => (
   <span
     className={cn(
-      "inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-[11.5px] font-medium",
+      "inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-full border px-2 text-[11.5px] font-medium",
       BADGE[tone],
     )}
   >
@@ -370,11 +606,11 @@ export function DataTable<T>({
     setSelected(s);
   };
 
-  if (!rows.length) return <div className="rounded-[24px] border border-line bg-panel shadow-sm">{empty}</div>;
+  if (!rows.length) return <div className="rounded-2xl border border-line bg-panel shadow-sm">{empty}</div>;
   return (
-    <div className="relative min-w-0 rounded-[24px] border border-line bg-panel shadow-sm">
+    <div className="relative min-w-0 rounded-2xl border border-line bg-panel shadow-sm">
       {bulk && chosen.length > 0 && (
-        <div className="rise-in flex flex-wrap items-center gap-3 border-b border-line bg-brand-soft px-4 py-2.5 text-[13px] first:rounded-t-[24px]">
+        <div className="rise-in flex flex-wrap items-center gap-3 border-b border-line bg-brand-soft px-4 py-2.5 text-[13px] first:rounded-t-2xl">
           <span className="font-semibold text-primary">
             {chosen.length} sélectionnée{chosen.length > 1 ? "s" : ""}
           </span>
@@ -529,7 +765,7 @@ export function RoundBtn({
   href?: string;
 }) {
   const cls =
-    "inline-flex size-8 items-center justify-center rounded-full border border-line-strong bg-panel text-muted transition-colors hover:border-transparent hover:bg-night hover:text-white disabled:pointer-events-none disabled:opacity-40";
+    "inline-flex size-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-hover hover:text-fg disabled:pointer-events-none disabled:opacity-40";
   return href ? (
     <a href={href} aria-label={label} title={label} className={cls}>
       {children}
@@ -556,7 +792,7 @@ export function BoardColumn({
   children: ReactNode;
 }) {
   return (
-    <section className="flex w-[290px] shrink-0 flex-col rounded-[24px] border border-line bg-panel/60 p-2 shadow-sm">
+    <section className="flex w-[290px] shrink-0 flex-col rounded-2xl border border-line bg-panel/60 p-2 shadow-sm">
       <header className="flex items-center justify-between px-2 pb-2 pt-1.5" title={hint}>
         <Badge tone={tone} label={title} />
         <span className="flex size-6 items-center justify-center rounded-full bg-hover text-[11.5px] font-semibold tabular text-muted">
@@ -615,7 +851,7 @@ export function MiniMonth({
   const today = dkey(new Date());
   const inRange = (d: Date) => range && d >= range[0] && d <= range[1];
   return (
-    <div className="rounded-[24px] border border-line bg-panel p-4 shadow-sm">
+    <div className="rounded-2xl border border-line bg-panel p-4 shadow-sm">
       <div className="mb-2 flex items-center justify-between">
         <p className="text-[16px] font-semibold capitalize tracking-[-0.02em]">{format(month, "MMMM yyyy", { locale: fr })}</p>
         <span className="flex">
@@ -699,7 +935,7 @@ export function TimeGrid({
               <div
                 key={dkey(d)}
                 className={cn(
-                  "rounded-[16px] px-2 py-2.5 text-center",
+                  "rounded-xl px-2 py-2.5 text-center",
                   isT ? "bg-night text-white shadow-md dark:bg-primary dark:text-on-primary" : "bg-bg",
                 )}
               >

@@ -8,9 +8,9 @@ import {
   ArrowUpRight,
   Briefcase,
   CalendarClock,
-  CalendarDays,
   ChevronRight,
   FileSignature,
+  Gauge,
   Handshake,
   Landmark,
   ListTree,
@@ -37,6 +37,9 @@ import {
   type Tone,
 } from "@/components/gov";
 import { HealthRing, Topo } from "@/components/territory";
+import { CollectionHeader } from "@/components/collection";
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 import { api } from "@/lib/api";
 import { useMe } from "@/lib/hooks";
 import { firstName, greeting } from "@/lib/format";
@@ -181,35 +184,31 @@ export function PilotagePage() {
   const lateItems = o.items.filter((i) => i.overdue > 0).length;
 
   return (
-    <div className="mx-auto max-w-[1380px] space-y-5 p-4 sm:px-6 sm:py-6">
-      {/* En-tête */}
-      <header className="flex flex-wrap items-end justify-between gap-4 px-1 pt-2">
-        <div className="min-w-0">
-          <p className="text-[14px] text-muted">Piloter et suivre toutes les activités de l'Agence</p>
-          <h1 className="mt-1 text-[34px] font-semibold leading-[1.08] tracking-[-0.035em] sm:text-[44px]">
-            {greeting()}, {firstName(me?.name ?? "")}
-          </h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex h-11 items-center gap-2 rounded-full border border-line-strong bg-panel px-4 text-[13px] font-medium capitalize">
-            <CalendarDays className="size-4 text-muted" />
-            {format(parseISO(o.today), "EEEE d MMMM", { locale: fr })}
-          </span>
-          <RoundLink to="/reunions" label="Réunions" Icon={Users} />
-          <RoundLink to="/parapheur" label="Parapheur" Icon={FileSignature} dot={o.to_sign > 0} />
-          <Link
-            to="/activites"
-            className="btn-brand inline-flex h-11 items-center gap-2 rounded-full px-5 text-[13.5px] font-semibold text-on-primary"
-          >
-            <Plus className="size-4" />
-            Nouvelle activité
-          </Link>
-        </div>
-      </header>
+    <div className="mx-auto max-w-[1380px] space-y-5 p-4 sm:px-8 sm:py-6">
+      <CollectionHeader
+        Icon={Gauge}
+        crumbs={["Pilotage", "Tableau de bord DG"]}
+        title={`${greeting()}, ${firstName(me?.name ?? "")}`}
+        subtitle={`${cap(format(parseISO(o.today), "EEEE d MMMM yyyy", { locale: fr }))} · toutes les activités de l'Agence en un coup d'œil.`}
+        actions={
+          <>
+            <RoundLink to="/reunions" label="Réunions" Icon={Users} />
+            <RoundLink to="/parapheur" label="Parapheur" Icon={FileSignature} dot={o.to_sign > 0} />
+            <Link
+              to="/activites"
+              className="btn-brand inline-flex h-9 items-center gap-1.5 rounded-[10px] px-3.5 text-[13px] font-medium text-on-primary"
+            >
+              <Plus className="size-4" />
+              Nouvelle activité
+            </Link>
+          </>
+        }
+      />
+      <div className="h-1" />
 
       {/* Chiffres clés : la première carte, mise en avant, résume le portefeuille */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
-        <div className="kpi-feature relative isolate col-span-2 overflow-hidden rounded-[24px] p-5 text-white shadow-md sm:col-span-1">
+        <div className="kpi-feature relative isolate col-span-2 overflow-hidden rounded-2xl p-5 text-white shadow-md sm:col-span-1">
           <Topo
             peaks={FEATURE_PEAKS}
             width={300}
@@ -218,11 +217,11 @@ export function PilotagePage() {
           />
           <div className="flex items-start justify-between">
             <p className="text-[14px] font-medium text-white/90">Activités suivies</p>
-            <span className="flex size-10 items-center justify-center rounded-full bg-white text-primary shadow-sm">
+            <span className="flex size-8 items-center justify-center rounded-[10px] bg-white text-primary shadow-sm">
               <Briefcase className="size-4.5" />
             </span>
           </div>
-          <p className="mt-2 text-[44px] font-semibold leading-none tracking-[-0.04em]">
+          <p className="mt-2 text-[30px] font-semibold leading-none tracking-[-0.03em]">
             <CountUp value={total} />
           </p>
           <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[12px] font-medium">
@@ -247,7 +246,7 @@ export function PilotagePage() {
         <Card title="Santé du portefeuille" action={<CircleAction to="/activites" label="Voir les activités" />}>
           <div className="flex flex-col items-center px-5 pb-5 pt-2">
             <HealthRing
-              size={176}
+              size={156}
               track="var(--hover)"
               caption={`${score} % des activités dans les temps ou terminées`}
               parts={(Object.keys(HEALTH) as Health[]).map((h) => ({
@@ -258,7 +257,7 @@ export function PilotagePage() {
               }))}
               center={
                 <>
-                  <span className="text-[36px] font-semibold leading-none tracking-[-0.04em]">
+                  <span className="text-[30px] font-semibold leading-none tracking-[-0.03em]">
                     <CountUp value={score} />%
                   </span>
                   <span className="mt-1 text-[12px] text-muted">en bonne voie</span>
@@ -283,7 +282,7 @@ export function PilotagePage() {
             form ? (
               <button
                 onClick={() => setForm(null)}
-                className="h-8 rounded-full border border-line-strong px-3 text-[12px] font-medium hover:bg-hover"
+                className="h-8 rounded-lg border border-line-strong px-3 text-[12px] font-medium hover:bg-hover"
               >
                 Tout afficher
               </button>
@@ -308,7 +307,7 @@ export function PilotagePage() {
                   <span className="text-[13px] font-semibold tabular">{n}</span>
                   <span
                     className={cn(
-                      "bar-rise w-full max-w-[46px] rounded-full transition-[filter,transform] group-hover:brightness-110",
+                      "bar-rise w-full max-w-[32px] rounded-[10px] transition-[filter,transform] group-hover:brightness-110",
                       n === 0 && "hatch",
                       form && !active && "opacity-35",
                     )}
@@ -342,7 +341,7 @@ export function PilotagePage() {
                   <Link
                     key={a.id}
                     to={a.href}
-                    className="group flex items-center gap-3 rounded-[18px] border border-line bg-bg/60 p-3 transition-colors hover:border-line-strong hover:bg-panel"
+                    className="group flex items-center gap-3 rounded-xl border border-line bg-bg/60 p-3 transition-colors hover:border-line-strong hover:bg-panel"
                   >
                     <span className="flex w-12 shrink-0 flex-col items-center rounded-2xl bg-panel py-1.5 shadow-sm">
                       <span className="text-[18px] font-semibold leading-none tracking-[-0.03em]">
@@ -533,7 +532,7 @@ export function PilotagePage() {
                 <Link
                   key={r.id}
                   to={`/reunions/${r.meeting_id}`}
-                  className="mx-4 mb-3 block rounded-[16px] bg-danger-soft/60 px-3.5 py-2.5 text-[12.5px] transition-colors hover:bg-danger-soft"
+                  className="mx-4 mb-3 block rounded-xl bg-danger-soft/60 px-3.5 py-2.5 text-[12.5px] transition-colors hover:bg-danger-soft"
                 >
                   <span className="line-clamp-2 font-medium">{r.text}</span>
                   <span className="mt-0.5 block text-[12px] text-muted">
@@ -547,7 +546,7 @@ export function PilotagePage() {
         </div>
 
         <div className="space-y-4">
-          <div className="hero-night relative isolate overflow-hidden rounded-[24px] p-5 shadow-md">
+          <div className="hero-night relative isolate overflow-hidden rounded-2xl p-5 shadow-md">
             <Topo
               peaks={BRIEF_PEAKS}
               width={340}
@@ -577,7 +576,7 @@ export function PilotagePage() {
                     <Link
                       key={d.id}
                       to={d.href}
-                      className="group block rounded-[18px] p-3.5 transition-transform hover:-translate-y-0.5"
+                      className="group block rounded-xl p-3.5 transition-transform hover:-translate-y-0.5"
                       style={{ background: `color-mix(in oklab, var(--form-${d.form}) 9%, var(--panel))` }}
                     >
                       <span className="flex items-start justify-between gap-2">
@@ -587,7 +586,7 @@ export function PilotagePage() {
                         >
                           <I className="size-4" />
                         </span>
-                        <span className="flex size-7 items-center justify-center rounded-full border border-line-strong text-muted transition-colors group-hover:border-transparent group-hover:bg-night group-hover:text-white">
+                        <span className="flex size-7 items-center justify-center rounded-lg border border-line text-muted transition-colors group-hover:border-transparent group-hover:bg-night group-hover:text-white">
                           <ArrowUpRight className="size-3.5" />
                         </span>
                       </span>
@@ -606,7 +605,7 @@ export function PilotagePage() {
             <Card title="Risques majeurs" action={<ShieldAlert className="size-4 text-faint" />}>
               <ul className="space-y-2.5 px-4 pb-4 pt-1">
                 {o.risks.map((r) => (
-                  <li key={r.id} className="flex items-start gap-3 rounded-[18px] border border-line p-3">
+                  <li key={r.id} className="flex items-start gap-3 rounded-xl border border-line p-3">
                     <span
                       className={cn(
                         "flex size-10 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold tabular",
@@ -666,9 +665,9 @@ const rate = (r: { open: number; done: number }) =>
 
 function Card({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="min-w-0 rounded-[24px] border border-line bg-panel shadow-sm">
+    <section className="min-w-0 rounded-2xl border border-line bg-panel shadow-sm">
       <div className="flex items-center justify-between gap-3 px-5 pb-2 pt-5">
-        <h2 className="text-[17px] font-semibold tracking-[-0.02em]">{title}</h2>
+        <h2 className="text-[15px] font-semibold tracking-[-0.01em]">{title}</h2>
         {action}
       </div>
       {children}
@@ -682,7 +681,7 @@ function CircleAction({ to, label }: { to: string; label: string }) {
       to={to}
       aria-label={label}
       title={label}
-      className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line-strong text-fg transition-colors hover:border-transparent hover:bg-night hover:text-white"
+      className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:bg-hover hover:text-fg"
     >
       <ArrowUpRight className="size-4" />
     </Link>
@@ -695,7 +694,7 @@ function RoundLink({ to, label, Icon, dot }: { to: string; label: string; Icon: 
       to={to}
       aria-label={label}
       title={label}
-      className="relative flex size-11 items-center justify-center rounded-full border border-line-strong bg-panel text-fg transition-colors hover:bg-hover"
+      className="relative flex size-9 items-center justify-center rounded-[10px] border border-line-strong bg-panel text-fg transition-colors hover:bg-hover"
     >
       <Icon className="size-4.5" />
       {dot && <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-danger ring-2 ring-panel" />}
@@ -724,7 +723,7 @@ function Kpi({
         <p className="text-[13px] font-medium leading-snug sm:text-[14px]">{label}</p>
         <span
           className={cn(
-            "flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors sm:size-10",
+            "flex size-8 shrink-0 items-center justify-center rounded-[10px] border transition-colors",
             alert ? "border-danger/30 bg-danger-soft text-danger" : "border-line-strong text-fg",
             to && "group-hover:border-transparent group-hover:bg-night group-hover:text-white",
           )}
@@ -732,7 +731,7 @@ function Kpi({
           <Icon className="size-4.5" />
         </span>
       </div>
-      <p className="mt-2 text-[44px] font-semibold leading-none tracking-[-0.04em]">
+      <p className="mt-2 text-[30px] font-semibold leading-none tracking-[-0.03em]">
         <CountUp value={value} />
       </p>
       <p
@@ -746,7 +745,7 @@ function Kpi({
       </p>
     </>
   );
-  const cls = "group min-w-0 rounded-[24px] border border-line bg-panel p-4 shadow-sm sm:p-5";
+  const cls = "group min-w-0 rounded-2xl border border-line bg-panel p-4 shadow-sm sm:p-5";
   return to ? (
     <Link to={to} className={cn(cls, "card-hover")}>
       {body}
@@ -762,9 +761,9 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-[12.5px] font-medium transition-colors",
+        "inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border px-3 text-[12.5px] font-medium transition-colors",
         active
-          ? "border-night bg-night text-white dark:border-primary dark:bg-primary dark:text-on-primary"
+          ? "border-primary/40 bg-brand-soft text-primary"
           : "border-line-strong text-fg hover:bg-hover",
       )}
     >

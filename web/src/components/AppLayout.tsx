@@ -55,7 +55,7 @@ function Shell() {
   useEffect(() => setMobileNav(false), [loc.pathname]);
   return (
     <div className="flex h-full">
-      <aside className="hidden w-[272px] shrink-0 py-3 pl-3 lg:block">
+      <aside className="hidden w-[256px] shrink-0 border-r border-line bg-panel lg:block">
         <Sidebar />
       </aside>
       <AnimatePresence>
@@ -71,7 +71,7 @@ function Shell() {
             />
             <motion.aside
               key="n"
-              className="fixed inset-y-0 left-0 z-50 w-[290px] bg-sidebar p-2 shadow-lg lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-[280px] border-r border-line bg-panel shadow-lg lg:hidden"
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}

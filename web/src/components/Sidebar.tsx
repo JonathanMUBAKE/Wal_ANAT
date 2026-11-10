@@ -14,6 +14,7 @@ import {
   Gauge,
   Check,
   CheckCircle2,
+  ChevronDown,
   ChevronsUpDown,
   CircleUser,
   House,
@@ -47,10 +48,40 @@ import { useAiStatus, useApprovals, useCan, useMe, useNotifications, useProjects
 import { useShell } from "@/lib/shell";
 import { AvatarUpload } from "./AvatarUpload";
 import { api } from "@/lib/api";
-import { Topo } from "./territory";
 import { STATUS } from "@/lib/format";
 
-const SIDE_PEAKS = [{ x: 210, y: 20, rings: 9, seed: 3.4, r0: 12, step: 17 }];
+/** Section repliable de la navigation, mémorisée sur le poste. */
+function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
+  const key = `anat.nav.${title}`;
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem(key) !== "0";
+    } catch {
+      return true;
+    }
+  });
+  return (
+    <div className="mt-4">
+      <button
+        onClick={() => {
+          setOpen(!open);
+          try {
+            localStorage.setItem(key, open ? "0" : "1");
+          } catch {
+            /* préférence non retenue */
+          }
+        }}
+        aria-expanded={open}
+        className="group flex w-full items-center justify-between px-5 pb-1 text-[12px] font-medium text-faint hover:text-muted"
+      >
+        {title}
+        <ChevronDown className={cn("size-3.5 opacity-0 transition group-hover:opacity-100", !open && "-rotate-90 opacity-100")} />
+      </button>
+      {open && <nav className="space-y-0.5 px-3">{children}</nav>}
+    </div>
+  );
+}
+
 
 export const ORG_ROLE: Record<string, string> = {
   owner: "Propriétaire",
@@ -124,8 +155,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          "group relative flex h-9 items-center gap-3 rounded-full px-3 text-[13.5px] transition-colors",
-          isActive ? "bg-brand-soft font-semibold text-primary" : "text-muted hover:bg-hover hover:text-fg",
+          "group relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] transition-colors",
+          isActive
+            ? "bg-brand-soft font-medium text-primary before:absolute before:-left-3 before:top-1.5 before:h-5 before:w-[3px] before:rounded-r-full before:bg-primary"
+            : "text-fg/80 hover:bg-hover hover:text-fg",
         )
       }
     >
@@ -145,7 +178,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   );
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-[24px] border border-line bg-panel shadow-sm">
+    <div className="relative flex h-full flex-col overflow-hidden">
       <div className="flex items-center gap-2 px-3 pb-2 pt-4">
         <Menu>
           <MenuTrigger asChild>
@@ -224,7 +257,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="px-3 pb-2">
         <button
           onClick={() => shell.setPalette(true)}
-          className="flex h-10 w-full items-center gap-2 rounded-full border border-line-strong bg-panel px-3.5 text-[13px] text-faint hover:text-muted"
+          className="flex h-9 w-full items-center gap-2 rounded-[10px] border border-line-strong bg-panel px-3 text-[13px] text-faint hover:text-muted"
         >
           <Search className="size-3.5" />
           <span className="flex-1 text-left">Rechercher…</span>
@@ -235,25 +268,36 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <nav className="space-y-0.5 px-3">
-          {can("pilotage.view") && link("/pilotage", <Gauge className="size-4" />, "Tableau de bord DG")}
           {link("/", <House className="size-4" />, "Accueil")}
           {link("/my-tasks", <CheckCircle2 className="size-4" />, "Mes tâches")}
           {link("/inbox", <Inbox className="size-4" />, "Boîte de réception", unread)}
           {link("/ai", <Sparkles className="size-4" />, "Coéquipiers IA", approvals?.length, true)}
+        </nav>
+
+        <NavSection title="Pilotage">
+          {can("pilotage.view") && link("/pilotage", <Gauge className="size-4" />, "Tableau de bord DG")}
           {can("agenda.view") && link("/activites", <CalendarRange className="size-4" />, "Activités")}
           {can("meetings.view") && link("/reunions", <CalendarDays className="size-4" />, "Réunions")}
           {can("plans.view") && link("/plans", <ClipboardList className="size-4" />, "Plans de travail")}
           {link("/livrables", <FileCheck2 className="size-4" />, "Livrables")}
-          {can("signature.use") && link("/parapheur", <FileSignature className="size-4" />, "Parapheur")}
-          {can("correspondence.view") && link("/courrier", <Mail className="size-4" />, "Courrier")}
+        </NavSection>
+
+        {(can("signature.use") || can("correspondence.view")) && (
+          <NavSection title="Secrétariat">
+            {can("signature.use") && link("/parapheur", <FileSignature className="size-4" />, "Parapheur")}
+            {can("correspondence.view") && link("/courrier", <Mail className="size-4" />, "Courrier")}
+          </NavSection>
+        )}
+
+        <NavSection title="Organisation">
           {can("attributions.view") && link("/attributions", <ListTree className="size-4" />, "Attributions")}
           {link("/teams", <Users className="size-4" />, "Équipes")}
-          {link("/org", <Network className="size-4" />, "Organisation")}
+          {link("/org", <Network className="size-4" />, "Organigramme")}
           {me?.platform_role && link("/admin", <ShieldCheck className="size-4" />, "Administration")}
-        </nav>
+        </NavSection>
 
-        <div className="mt-5 flex items-center justify-between px-5 pb-1">
-          <span className="text-[11.5px] font-medium uppercase tracking-wider text-faint">Projets</span>
+        <div className="mt-4 flex items-center justify-between px-5 pb-1">
+          <span className="text-[12px] font-medium text-faint">Projets</span>
           <button
             aria-label="Nouveau projet"
             onClick={() => shell.setNewProject(true)}
@@ -351,28 +395,21 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </Dialog>
 
-      <div className="p-3">
+      <div className="border-t border-line p-3">
         <button
           onClick={() => shell.openAssistant()}
-          className="hero-night group relative isolate flex w-full flex-col overflow-hidden rounded-[20px] p-4 text-left shadow-md"
+          className="group flex w-full items-center gap-2.5 rounded-xl border border-line px-3 py-2.5 text-left transition-colors hover:border-ai-line hover:bg-ai-soft"
         >
-          <Topo
-            peaks={SIDE_PEAKS}
-            width={240}
-            height={150}
-            draw={false}
-            className="absolute inset-0 -z-10 size-full text-[#8CCBF2] opacity-[0.22]"
-          />
-          <span className="flex items-center gap-2 text-[13.5px] font-semibold">
-            <Sparkles className="size-4 text-[#C4B8FF]" />
-            Assistant IA
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-[conic-gradient(from_200deg,var(--ai),#4FB3F0,var(--ai))] text-white">
+            <Sparkles className="size-4" />
           </span>
-          <span className="mt-1 text-[12px] leading-snug text-white/70">
-            Il propose, vous décidez. {aiStatus?.provider === "anthropic" ? "Propulsé par Claude." : "Mode démo."}
+          <span className="min-w-0 flex-1">
+            <span className="block text-[13px] font-semibold">Assistant IA</span>
+            <span className="block truncate text-[11.5px] text-muted">
+              Il propose, vous décidez{aiStatus?.provider === "anthropic" ? "" : " · démo"}
+            </span>
           </span>
-          <span className="mt-3 inline-flex h-9 items-center justify-center rounded-full bg-white text-[12.5px] font-semibold text-[#0B2A45] transition-transform group-hover:scale-[1.02]">
-            Poser une question
-          </span>
+          <Kbd>⌘J</Kbd>
         </button>
       </div>
     </div>

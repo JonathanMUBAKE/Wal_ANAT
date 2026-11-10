@@ -3,7 +3,15 @@ import { useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { addDays, addMonths, format, parseISO, startOfMonth } from "date-fns";
 import { fr } from "date-fns/locale";
+import type { ReactNode } from "react";
 import {
+  AlertCircle,
+  CheckCircle2,
+  CircleDashed,
+  CircleDot,
+  Hash,
+  ListChecks,
+  XCircle,
   ArrowUpRight,
   CalendarDays,
   ChevronLeft,
@@ -26,19 +34,20 @@ import {
   BoardColumn,
   type CalEvent,
   CheckOption,
+  CollectionHeader,
   type Column,
-  DataTable,
   FilterGroup,
   FilterPanel,
   FilterToggle,
+  GroupedTable,
   MiniMonth,
   MonthGrid,
   Prop,
   RoundBtn,
   SearchField,
   Seal,
+  TabLink,
   TimeGrid,
-  Toolbar,
   ViewSwitch,
   hhmm,
   useLocalPref,
@@ -69,6 +78,13 @@ export const STAGE: Record<Stage, { label: string; tone: BadgeTone; hue: string;
   valide: { label: "Validé", tone: "success", hue: "var(--success)", hint: "Compte rendu figé, exportable au modèle officiel" },
   annulee: { label: "Annulée", tone: "neutral", hue: "var(--faint)", hint: "Réunion qui n'a pas eu lieu" },
 };
+const STAGE_ICON: Record<Stage, typeof CircleDot> = {
+  a_venir: CircleDot,
+  a_etablir: AlertCircle,
+  a_valider: CircleDashed,
+  valide: CheckCircle2,
+  annulee: XCircle,
+};
 const today = () => format(new Date(), "yyyy-MM-dd");
 export const stageOf = (m: MeetingRow, t = today()): Stage =>
   m.status === "cancelled"
@@ -84,15 +100,25 @@ const when = (m: MeetingRow) => `${m.meeting_date}${m.start_time ?? ""}`;
 /** Majuscule au premier mot seulement, à la française : « Mer. 18 nov. 2026 ». */
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const fmt = (d: string | Date, p: string) => cap(format(typeof d === "string" ? parseISO(d) : d, p, { locale: fr }));
-const dayLabel = (d: string) => fmt(d, "EEE d MMM yyyy");
 const span = (m: { start_time?: string | null; end_time?: string | null }) =>
   m.start_time ? `${hhmm(m.start_time)}${m.end_time ? ` – ${hhmm(m.end_time)}` : ""}` : "Horaire à préciser";
 
-type View = "liste" | "tableau" | "calendrier";
+type View = "liste" | "tableau" | "calendrier" | "actions" | "mine";
 type Period = "toutes" | "mois" | "futur" | "passe";
 
-export function MeetingsBrowser({ rows, isLoading }: { rows: MeetingRow[]; isLoading: boolean }) {
+export function MeetingsBrowser({
+  rows,
+  isLoading,
+  primary,
+  renderActions,
+}: {
+  rows: MeetingRow[];
+  isLoading: boolean;
+  primary: ReactNode;
+  renderActions: (mine: boolean) => ReactNode;
+}) {
   const [view, setView] = useLocalPref<View>("anat.reunions.vue", "liste");
+  const meetingsView = view === "liste" || view === "tableau" || view === "calendrier";
   const [panel, setPanel] = useLocalPref<"1" | "0">("anat.reunions.filtres", "0");
   const [q, setQ] = useState("");
   const [stages, setStages] = useState<Set<Stage>>(new Set());
@@ -137,54 +163,48 @@ export function MeetingsBrowser({ rows, isLoading }: { rows: MeetingRow[]; isLoa
   };
 
   return (
-    <div className="space-y-4">
-      {/* Bande d'étapes : chaque compteur filtre la collection */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {(["a_venir", "a_etablir", "a_valider", "valide"] as Stage[]).map((s) => {
-          const on = stages.size === 1 && stages.has(s);
-          return (
-            <button
-              key={s}
-              aria-pressed={on}
-              title={STAGE[s].hint}
-              onClick={() => setStages(on ? new Set() : new Set([s]))}
-              className={cn(
-                "card-hover group relative overflow-hidden rounded-[20px] border bg-panel px-4 py-3.5 text-left shadow-sm",
-                on ? "border-transparent ring-2 ring-[var(--ring)]" : "border-line",
-              )}
-            >
-              <span className="absolute inset-y-3 left-0 w-[3px] rounded-r-full" style={{ background: STAGE[s].hue }} />
-              <span className="flex items-center justify-between">
-                <span className="text-[12.5px] font-medium text-muted">{STAGE[s].label}</span>
-                {s === "a_etablir" && counts[s] > 0 && <span className="pulse-dot size-1.5 rounded-full bg-danger" />}
-              </span>
-              <span
-                className={cn(
-                  "mt-1 block text-[30px] font-semibold leading-none tracking-[-0.04em] tabular",
-                  s === "a_etablir" && counts[s] > 0 && "text-danger",
-                )}
-              >
-                {counts[s]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+    <div className="space-y-5">
+      <CollectionHeader
+        Icon={CalendarDays}
+        crumbs={["Pilotage", "Réunions"]}
+        title="Réunions"
+        count={rows.length}
+        unit={["réunion", "réunions"]}
+        subtitle="Chaque réunion produit un compte rendu officiel, et chaque recommandation reste suivie jusqu'à sa clôture."
+        actions={primary}
+        tabs={
+          <>
+            <TabLink on={view === "liste"} onClick={() => setView("liste")} Icon={List}>
+              Liste
+            </TabLink>
+            <TabLink on={view === "tableau"} onClick={() => setView("tableau")} Icon={Columns3}>
+              Tableau
+            </TabLink>
+            <TabLink on={view === "calendrier"} onClick={() => setView("calendrier")} Icon={CalendarDays}>
+              Calendrier
+            </TabLink>
+            <span aria-hidden className="mx-2 my-3 w-px bg-line" />
+            <TabLink on={view === "actions"} onClick={() => setView("actions")} Icon={ListChecks}>
+              Recommandations
+            </TabLink>
+            <TabLink on={view === "mine"} onClick={() => setView("mine")} Icon={UserRound}>
+              Les miennes
+            </TabLink>
+          </>
+        }
+        tools={
+          meetingsView && (
+            <>
+              <SearchField value={q} onChange={setQ} placeholder="Rechercher…" className="w-56" />
+              <FilterToggle open={panel === "1"} count={active} onClick={() => setPanel(panel === "1" ? "0" : "1")} />
+            </>
+          )
+        }
+      />
 
-      <Toolbar>
-        <FilterToggle open={panel === "1"} count={active} onClick={() => setPanel(panel === "1" ? "0" : "1")} />
-        <ViewSwitch
-          value={view}
-          onChange={setView}
-          items={[
-            { id: "liste", label: "Liste", Icon: List },
-            { id: "tableau", label: "Tableau", Icon: Columns3 },
-            { id: "calendrier", label: "Calendrier", Icon: CalendarDays },
-          ]}
-        />
-        <SearchField value={q} onChange={setQ} placeholder="Rechercher une réunion, un lieu, un numéro…" />
-      </Toolbar>
-
+      {!meetingsView ? (
+        renderActions(view === "mine")
+      ) : (
       <div className="flex flex-col gap-4 lg:flex-row">
         {panel === "1" && (
           <FilterPanel active={active} onClear={clear}>
@@ -244,6 +264,7 @@ export function MeetingsBrowser({ rows, isLoading }: { rows: MeetingRow[]; isLoa
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
@@ -273,80 +294,92 @@ const Initials = ({ name }: { name: string }) => (
 
 function ListView({ rows, filtered, onClear }: { rows: MeetingRow[]; filtered: boolean; onClear: () => void }) {
   const nav = useNavigate();
-  const columns: Column<MeetingRow>[] = [
+  const columns: (Column<MeetingRow> & { Icon?: typeof Users; width?: string })[] = [
     {
       key: "titre",
       label: "Réunion",
-      sort: (m) => m.meeting_type,
-      className: "max-w-[240px]",
+      Icon: Users,
+      width: "24%",
       render: (m) => (
-        <span className="flex items-center gap-3">
-          <MeetingMark m={m} />
-          <span className="min-w-0">
-            <span className="flex items-center gap-1.5 font-semibold">
-              <span className="truncate">{m.meeting_type}</span>
-              {m.confidential && <Lock aria-label="Confidentielle" className="size-3 shrink-0 text-warning" />}
-            </span>
-            <Seal>{m.reference}</Seal>
-          </span>
+        <span className="flex min-w-0 items-center gap-1.5 font-medium">
+          <span className="truncate">{m.meeting_type}</span>
+          {m.confidential && <Lock aria-label="Confidentielle" className="size-3 shrink-0 text-warning" />}
         </span>
       ),
+    },
+    {
+      key: "numero",
+      label: "Numéro",
+      Icon: Hash,
+      width: "18%",
+      render: (m) => <Seal>{m.reference}</Seal>,
     },
     {
       key: "date",
       label: "Date",
-      sort: when,
-      render: (m) => (
-        <span className="block max-w-[180px]">
-          <span className="block whitespace-nowrap font-medium">{dayLabel(m.meeting_date)}</span>
-          <span className="flex items-center gap-1 truncate text-[12px] text-muted">
-            {span(m)}
-            {m.location && (
-              <>
-                <span className="text-faint">·</span>
-                <MapPin className="size-3 shrink-0" />
-                <span className="truncate">{m.location}</span>
-              </>
-            )}
-          </span>
-        </span>
-      ),
+      Icon: CalendarDays,
+      width: "11%",
+      render: (m) => <span className="whitespace-nowrap">{fmt(m.meeting_date, "d MMM yyyy")}</span>,
+    },
+    {
+      key: "heure",
+      label: "Horaire",
+      Icon: Clock,
+      width: "9%",
+      render: (m) => <span className="whitespace-nowrap text-muted">{m.start_time ? hhmm(m.start_time) : "—"}</span>,
+    },
+    {
+      key: "lieu",
+      label: "Lieu",
+      Icon: MapPin,
+      width: "12%",
+      render: (m) => <span className="text-muted">{m.location || "—"}</span>,
     },
     {
       key: "redacteur",
       label: "Rédacteur",
-      sort: (m) => m.writer_name,
+      Icon: UserRound,
+      width: "10%",
       render: (m) => (
-        <span className="flex items-center gap-2 whitespace-nowrap" title={m.writer_name}>
+        <span title={m.writer_name}>
           <Initials name={m.writer_name || "?"} />
-          <span className="hidden 2xl:inline">{m.writer_name}</span>
         </span>
       ),
     },
     {
-      key: "etape",
-      label: "Étape et recommandations",
-      sort: (m) => STAGES.indexOf(stageOf(m)),
-      render: (m) => (
-        <span className="block">
-          <Badge tone={STAGE[stageOf(m)].tone} label={STAGE[stageOf(m)].label} />
-          <span className="mt-1 block whitespace-nowrap text-[11.5px] text-muted">
-            {m.action_count ? (
-              <>
-                <b className="font-semibold text-fg">{m.open_actions}</b> ouverte{m.open_actions > 1 ? "s" : ""} sur{" "}
-                {m.action_count}
-              </>
-            ) : (
-              "Aucune recommandation"
+      key: "recos",
+      label: "Suivi",
+      Icon: ListChecks,
+      width: "8%",
+      render: (m) =>
+        m.action_count ? (
+          <span
+            title={`${m.open_actions} recommandation(s) ouverte(s) sur ${m.action_count}`}
+            className={cn(
+              "inline-flex h-[22px] items-center gap-1 rounded-md px-1.5 text-[11.5px] font-medium tabular",
+              m.open_actions ? "bg-warning-soft text-warning" : "bg-success-soft text-success",
             )}
+          >
+            <ListChecks className="size-3" />
+            {m.action_count - m.open_actions}/{m.action_count}
           </span>
-        </span>
-      ),
+        ) : (
+          <span className="text-faint">—</span>
+        ),
     },
   ];
+  const sorted = [...rows].sort((a, b) => when(b).localeCompare(when(a)));
   return (
-    <DataTable
-      rows={[...rows].sort((a, b) => when(b).localeCompare(when(a)))}
+    <GroupedTable
+      storageKey="anat.reunions.groupes"
+      groups={STAGES.map((s) => ({
+        id: s,
+        label: STAGE[s].label,
+        hue: STAGE[s].hue,
+        Icon: STAGE_ICON[s],
+        hint: STAGE[s].hint,
+        rows: s === "a_venir" ? [...sorted].reverse().filter((m) => stageOf(m) === s) : sorted.filter((m) => stageOf(m) === s),
+      }))}
       columns={columns}
       rowKey={(m) => m.id}
       onOpen={(m) => nav(`/reunions/${m.id}`)}
@@ -363,7 +396,7 @@ function ListView({ rows, filtered, onClear }: { rows: MeetingRow[]; filtered: b
       bulk={(sel) => (
         <button
           onClick={() => exportCsv(sel)}
-          className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3.5 text-[12.5px] font-semibold text-on-primary"
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-[12.5px] font-semibold text-on-primary"
         >
           <FileSpreadsheet className="size-3.5" />
           Exporter la sélection
@@ -428,7 +461,7 @@ function BoardView({ rows }: { rows: MeetingRow[] }) {
                 <button
                   key={m.id}
                   onClick={() => nav(`/reunions/${m.id}`)}
-                  className="card-hover rounded-[18px] border border-line bg-panel p-3.5 text-left shadow-sm"
+                  className="card-hover rounded-xl border border-line bg-panel p-3.5 text-left shadow-sm"
                 >
                   <span className="flex items-start gap-2.5">
                     <MeetingMark m={m} />
@@ -535,7 +568,7 @@ function CalendarView({
           marks={new Set(rows.map((m) => m.meeting_date))}
           range={mode === "semaine" ? [week[0], week[6]] : undefined}
         />
-        <div className="hero-night relative isolate overflow-hidden rounded-[24px] p-5 shadow-md">
+        <div className="hero-night relative isolate overflow-hidden rounded-2xl p-5 shadow-md">
           <Topo
             peaks={[{ x: 230, y: 10, rings: 9, seed: 2.7, r0: 10, step: 16 }]}
             width={260}
@@ -562,13 +595,13 @@ function CalendarView({
                     setCursor(parseISO(next.meeting_date));
                     setPicked(next.id);
                   }}
-                  className="h-9 flex-1 rounded-full border border-white/25 text-[12.5px] font-medium hover:bg-white/10"
+                  className="h-9 flex-1 rounded-[10px] border border-white/25 text-[12.5px] font-medium hover:bg-white/10"
                 >
                   Situer
                 </button>
                 <a
                   href={`/reunions/${next.id}`}
-                  className="flex h-9 flex-1 items-center justify-center rounded-full bg-white text-[12.5px] font-semibold text-[#0B2A45]"
+                  className="flex h-9 flex-1 items-center justify-center rounded-[10px] bg-white text-[12.5px] font-semibold text-[#0B2A45]"
                 >
                   Ouvrir
                 </a>
@@ -578,7 +611,7 @@ function CalendarView({
             <p className="mt-2 text-[13px] text-white/75">Aucune réunion planifiée. Créez-en une avec « Nouvelle réunion ».</p>
           )}
         </div>
-        <div className="rounded-[24px] border border-line bg-panel p-3 shadow-sm">
+        <div className="rounded-2xl border border-line bg-panel p-3 shadow-sm">
           <p className="px-2 pb-1 pt-1 text-[15px] font-semibold">Étapes affichées</p>
           {STAGES.map((s) => (
             <CheckOption
@@ -593,7 +626,7 @@ function CalendarView({
         </div>
       </div>
 
-      <section className="min-w-0 rounded-[24px] border border-line bg-panel p-4 shadow-sm sm:p-5">
+      <section className="min-w-0 rounded-2xl border border-line bg-panel p-4 shadow-sm sm:p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1">
             <RoundBtn label="Période précédente" onClick={() => step(-1)}>
@@ -605,7 +638,7 @@ function CalendarView({
             </RoundBtn>
             <button
               onClick={() => setCursor(new Date())}
-              className="ml-1 h-8 rounded-full border border-line-strong px-3 text-[12.5px] font-medium hover:bg-hover"
+              className="ml-1 h-8 rounded-lg border border-line-strong px-3 text-[12.5px] font-medium hover:bg-hover"
             >
               Aujourd'hui
             </button>
@@ -642,13 +675,13 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
   });
   if (!id)
     return (
-      <aside className="rounded-[24px] border border-line bg-panel p-5 text-[13px] text-muted shadow-sm">
+      <aside className="rounded-2xl border border-line bg-panel p-5 text-[13px] text-muted shadow-sm">
         Choisissez une réunion dans le calendrier pour voir son détail.
       </aside>
     );
   if (isLoading || !m)
     return (
-      <aside className="rounded-[24px] border border-line bg-panel shadow-sm">
+      <aside className="rounded-2xl border border-line bg-panel shadow-sm">
         <LoadingRows rows={6} />
       </aside>
     );
@@ -656,7 +689,7 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
   const open = m.agenda.reduce((n, i) => n + i.actions.filter((a) => !["realise", "annule"].includes(a.status)).length, 0);
   const total = m.agenda.reduce((n, i) => n + i.actions.length, 0);
   return (
-    <aside className="rise-in flex flex-col self-start rounded-[24px] border border-line bg-panel shadow-sm lg:sticky lg:top-4">
+    <aside className="rise-in flex flex-col self-start rounded-2xl border border-line bg-panel shadow-sm lg:sticky lg:top-4">
       <div className="space-y-3 border-b border-line p-5">
         <p className="text-[12px] font-medium text-faint">Réunion sélectionnée</p>
         <div className="flex items-start gap-3">
@@ -736,14 +769,14 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
       <div className="mt-auto flex gap-2 border-t border-line p-4">
         <a
           href={`/api/meetings/${m.id}/report.docx`}
-          className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full border border-line-strong text-[12.5px] font-medium hover:bg-hover"
+          className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-line-strong text-[12.5px] font-medium hover:bg-hover"
         >
           <Download className="size-3.5" />
           Export Word
         </a>
         <button
           onClick={() => nav(`/reunions/${m.id}`)}
-          className="flex h-10 flex-[1.4] items-center justify-center gap-1.5 rounded-full bg-night text-[12.5px] font-semibold text-white dark:bg-primary dark:text-on-primary"
+          className="flex h-9 flex-[1.4] items-center justify-center gap-1.5 rounded-[10px] bg-night text-[12.5px] font-semibold text-white dark:bg-primary dark:text-on-primary"
         >
           Ouvrir le compte rendu
         </button>

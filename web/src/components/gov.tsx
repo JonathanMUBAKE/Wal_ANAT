@@ -99,7 +99,7 @@ export const Section = ({
   children: ReactNode;
   className?: string;
 }) => (
-  <section className={cn("rounded-[24px] border border-line bg-panel shadow-sm", className)}>
+  <section className={cn("rounded-2xl border border-line bg-panel shadow-sm", className)}>
     {title && (
       <div className="flex items-center justify-between gap-2 px-5 pb-1 pt-5">
         <h2 className="text-[16px] font-semibold tracking-[-0.015em]">{title}</h2>

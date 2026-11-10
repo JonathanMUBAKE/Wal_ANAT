@@ -5,14 +5,14 @@
 /* ANAT Pilotage — graphite froid et filets nets, relevés du bleu de l'Agence (#007BC4) et d'un bleu nuit.
    L'iris reste réservé à l'IA. Les documents officiels gardent Montserrat. */
 :root {
-  --bg: #F1F4F8;
+  --bg: #F5F6F8;
   --panel: #FFFFFF;
-  --sidebar: #F1F4F8;
+  --sidebar: #F5F6F8;
   --raised: #FFFFFF;
-  --hover: rgba(15, 35, 60, 0.045);
-  --active: rgba(0, 123, 196, 0.1);
-  --line: rgba(15, 30, 50, 0.06);
-  --line-strong: rgba(15, 30, 50, 0.12);
+  --hover: rgba(17, 24, 39, 0.04);
+  --active: rgba(0, 123, 196, 0.08);
+  --line: rgba(17, 24, 39, 0.075);
+  --line-strong: rgba(17, 24, 39, 0.13);
   --field: rgba(15, 30, 50, 0.17);
   --table-head: transparent;
   --fg: #111A27;
@@ -36,8 +36,8 @@
   --danger-soft: rgba(209, 59, 59, 0.09);
   --info: #2F6FEB;
   --info-soft: rgba(47, 111, 235, 0.09);
-  --shadow-sm: 0 1px 2px rgba(16, 30, 54, 0.03), 0 8px 24px -12px rgba(16, 30, 54, 0.08);
-  --shadow-md: 0 2px 4px rgba(16, 30, 54, 0.03), 0 16px 40px -14px rgba(16, 30, 54, 0.16);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px -8px rgba(16, 24, 40, 0.12);
   --shadow-lg: 0 2px 4px rgba(16, 16, 30, 0.04), 0 24px 60px -16px rgba(16, 16, 30, 0.28);
   /* Une teinte par forme d'activité, toujours accompagnée de son icône et de son nom */
   --form-projet_interne: #007BC4;

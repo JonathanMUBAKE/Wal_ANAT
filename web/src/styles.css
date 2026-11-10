@@ -261,6 +261,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
 @keyframes skeleton { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 @keyframes bar-fill { from { transform: scaleX(0); } }
 .overlay-in { animation: fade-in 180ms ease-out; }
+.rise-in { animation: rise-in 220ms ease-out; }
 .dialog-in { animation: dialog-in 180ms cubic-bezier(.2, .8, .2, 1); }
 .stamp-in { animation: stamp-in 280ms cubic-bezier(.2, .8, .2, 1); }
 .pulse-once { animation: pulse-once 400ms ease-out; }

@@ -5,8 +5,6 @@ import {
   ArrowLeft,
   CalendarDays,
   Download,
-  FileText,
-  Lock,
   Plus,
   RotateCcw,
   Save,
@@ -14,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, ConfirmDialog, Dialog, Empty, IconButton } from "@/components/ui";
+import { Button, ConfirmDialog, Dialog, Empty, IconButton, cn } from "@/components/ui";
 import {
   DomainSelect,
   Field,
@@ -26,7 +24,6 @@ import {
   Stamp,
   Status,
   Table,
-  Tabs,
   Td,
   Textarea,
   Tr,
@@ -34,7 +31,8 @@ import {
   isLate,
   type Tone,
 } from "@/components/gov";
-import { MeetingsOverview } from "@/components/MeetingsOverview";
+import { CollectionHeader } from "@/components/collection";
+import { MeetingsBrowser } from "@/components/MeetingViews";
 import { api } from "@/lib/api";
 import { useCan, useMe, useUsers } from "@/lib/hooks";
 
@@ -65,7 +63,8 @@ interface Attendee {
   function_label: string;
   presence: string;
 }
-interface MeetingRow {
+export interface MeetingRow {
+  end_time?: string | null;
   id: string;
   reference: string;
   title: string;
@@ -79,7 +78,7 @@ interface MeetingRow {
   writer_name: string;
   start_time: string | null;
 }
-interface MeetingDetail extends MeetingRow {
+export interface MeetingDetail extends MeetingRow {
   end_time: string | null;
   convened_by: string;
   facilitator: string;
@@ -123,11 +122,13 @@ export function MeetingsPage() {
     queryKey: ["meetings"],
     queryFn: () => api.get<MeetingRow[]>("/api/meetings"),
   });
-  const nav = useNavigate();
   return (
-    <div className="min-h-full">
-      <PageHeader
-        title="Réunions et comptes rendus"
+    <div className="mx-auto min-h-full max-w-[1480px] space-y-5 p-4 sm:px-6 sm:py-7">
+      <CollectionHeader
+        Icon={CalendarDays}
+        title="Réunions"
+        count={data?.length}
+        unit={["réunion", "réunions"]}
         subtitle="Chaque réunion produit un compte rendu officiel, et chaque recommandation reste suivie jusqu'à sa clôture."
         actions={
           can("meetings.manage") && (
@@ -137,54 +138,33 @@ export function MeetingsPage() {
           )
         }
       />
-      {isLoading ? <LoadingRows /> : <MeetingsOverview rows={data ?? []} />}
-      <div className="h-3" />
-      <Tabs
-        value={tab}
-        onChange={setTab}
-        items={[
-          { id: "list", label: "Comptes rendus" },
-          { id: "actions", label: "Toutes les recommandations" },
-          { id: "mine", label: "Mes recommandations" },
-        ]}
-      />
-      <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
-        {tab === "list" ? (
-          <Section>
-            {isLoading ? (
-              <LoadingRows />
-            ) : !data?.length ? (
-              <Empty icon={<FileText className="size-6" />} title="Aucune réunion enregistrée">
-                Créez la première réunion pour établir son compte rendu.
-              </Empty>
-            ) : (
-              <Table head={["Référence", "Réunion", "Date", "Rédacteur", "Recommandations ouvertes", "Statut"]}>
-                {data.map((m) => (
-                  <Tr key={m.id} onClick={() => nav(`/reunions/${m.id}`)}>
-                    <Td className="font-mono text-[12px]">{m.reference}</Td>
-                    <Td className="font-medium">
-                      {m.meeting_type}
-                      {m.confidential && (
-                        <Lock aria-label="Confidentielle" className="ml-1.5 inline size-3 text-warning" />
-                      )}
-                    </Td>
-                    <Td className="tabular">{frDate(m.meeting_date)}</Td>
-                    <Td>{m.writer_name}</Td>
-                    <Td className="tabular">
-                      {m.open_actions} / {m.action_count}
-                    </Td>
-                    <Td>
-                      <Status {...MEETING[m.status]} />
-                    </Td>
-                  </Tr>
-                ))}
-              </Table>
+      <div role="tablist" className="flex gap-6 overflow-x-auto border-b border-line">
+        {(
+          [
+            ["list", "Réunions et comptes rendus"],
+            ["actions", "Toutes les recommandations"],
+            ["mine", "Mes recommandations"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => setTab(id)}
+            className={cn(
+              "-mb-px shrink-0 whitespace-nowrap border-b-2 pb-2.5 text-[13.5px] font-medium transition-colors",
+              tab === id ? "border-night text-fg dark:border-primary" : "border-transparent text-muted hover:text-fg",
             )}
-          </Section>
-        ) : (
-          <ActionsTracker mine={tab === "mine"} />
-        )}
+          >
+            {label}
+          </button>
+        ))}
       </div>
+      {tab === "list" ? (
+        <MeetingsBrowser rows={data ?? []} isLoading={isLoading} />
+      ) : (
+        <ActionsTracker mine={tab === "mine"} />
+      )}
       {creating && <NewMeeting onClose={() => setCreating(false)} />}
     </div>
   );

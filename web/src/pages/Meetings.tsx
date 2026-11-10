@@ -143,7 +143,7 @@ export function MeetingsPage() {
           { id: "mine", label: "Mes recommandations" },
         ]}
       />
-      <div className="p-4 sm:p-6">
+      <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
         {tab === "list" ? (
           <Section>
             {isLoading ? (
@@ -584,7 +584,7 @@ export function MeetingPage() {
           </>
         }
       />
-      <div className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6">
+      <div className="mx-auto max-w-[1040px] space-y-4 p-4 sm:px-8 sm:py-6">
         <Section title="Informations générales">
           <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Date">{(a) => <Input {...a} disabled value={frDate(draft.meeting_date)} />}</Field>
@@ -780,7 +780,7 @@ export function MeetingPage() {
 
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-[15px] font-bold">Ordre du jour et prise de note</h2>
+            <h2 className="text-[15px] font-semibold">Ordre du jour et prise de note</h2>
             {!ro && (
               <Button
                 size="sm"

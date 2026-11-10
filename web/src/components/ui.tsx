@@ -41,12 +41,12 @@ export const Button = forwardRef<HTMLButtonElement, BtnProps>(function Button(
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-semibold transition-[background,color,border-color] duration-150 disabled:pointer-events-none disabled:opacity-50 select-none",
-        size === "sm" && "h-8 rounded-lg px-3 text-[12.5px]",
-        size === "md" && "h-10 rounded-lg px-4 text-[13px]",
-        size === "lg" && "h-11 rounded-lg px-5 text-sm",
-        variant === "primary" && "bg-primary text-on-primary hover:bg-primary-hover",
-        variant === "secondary" && "border border-field bg-raised text-fg hover:bg-hover",
+        "inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-medium transition-[background,color,box-shadow,border-color,transform] duration-150 active:scale-[0.985] disabled:pointer-events-none disabled:opacity-50 select-none",
+        size === "sm" && "h-7.5 rounded-lg px-2.5 text-[12.5px]",
+        size === "md" && "h-9 rounded-lg px-3.5 text-[13px]",
+        size === "lg" && "h-10 rounded-[10px] px-4 text-sm",
+        variant === "primary" && "btn-brand text-on-primary",
+        variant === "secondary" && "border border-line-strong bg-raised text-fg shadow-sm hover:bg-hover",
         variant === "ghost" && "text-muted hover:bg-hover hover:text-fg",
         variant === "ai" &&
           "border border-ai-line bg-ai-soft text-ai-fg hover:bg-[color-mix(in_oklab,var(--ai)_16%,transparent)]",
@@ -336,7 +336,7 @@ export function Empty({
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
       {icon && <div className="mb-1 text-faint">{icon}</div>}
-      <p className="text-[16px] font-semibold leading-tight text-fg">{title}</p>
+      <p className="font-serif text-[22px] leading-tight text-fg">{title}</p>
       {children && <p className="max-w-sm text-[13px] text-muted">{children}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
@@ -471,7 +471,7 @@ export function Dialog({
   return (
     <DI.Root open={open} onOpenChange={onOpenChange}>
       <DI.Portal>
-        <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-black/40 dark:bg-black/60" />
+        <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-[#0B2A45]/35 backdrop-blur-[3px] dark:bg-black/60" />
         <DI.Content
           className="dialog-in fixed left-1/2 top-[8vh] z-50 flex max-h-[84vh] w-[calc(100vw-24px)] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-lg outline-none"
           style={{ maxWidth: width }}

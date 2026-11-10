@@ -2,24 +2,27 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ANAT Pilotage — charte relevée sur le modèle officiel de compte rendu :
-   Montserrat, bleu #007BC4, bleu secondaire #2E74B5, gris #E8E8E8. L'iris reste réservé à l'IA. */
+/* ANAT Pilotage — graphite froid et filets nets, relevés du bleu de l'Agence (#007BC4) et d'un bleu nuit.
+   L'iris reste réservé à l'IA. Les documents officiels gardent Montserrat. */
 :root {
-  --bg: #F7F8FA;
+  --bg: #FAFBFC;
   --panel: #FFFFFF;
-  --sidebar: #F1F3F6;
+  --sidebar: #F4F6F8;
   --raised: #FFFFFF;
-  --hover: rgba(0, 76, 122, 0.06);
-  --active: rgba(0, 123, 196, 0.12);
-  --line: rgba(22, 32, 48, 0.12);
-  --line-strong: rgba(22, 32, 48, 0.22);
-  --field: #8792A2;
-  --table-head: #E8E8E8;
-  --fg: #16202E;
-  --muted: #566274;
-  --faint: #7C8797;
+  --hover: rgba(15, 35, 60, 0.045);
+  --active: rgba(0, 123, 196, 0.1);
+  --line: rgba(15, 30, 50, 0.085);
+  --line-strong: rgba(15, 30, 50, 0.15);
+  --field: rgba(15, 30, 50, 0.17);
+  --table-head: transparent;
+  --fg: #111A27;
+  --muted: #5B6677;
+  --faint: #8D97A6;
   --primary: #007BC4;
-  --primary-hover: #2E74B5;
+  --primary-hover: #006BAB;
+  --night: #0B2A45;
+  --ring: rgba(0, 123, 196, 0.2);
+  --brand-soft: rgba(0, 123, 196, 0.08);
   --on-primary: #FFFFFF;
   --ai: #6E56CF;
   --ai-soft: rgba(110, 86, 207, 0.09);
@@ -40,10 +43,13 @@
 }
 
 .dark {
-  --bg: #0B0B0F;
-  --panel: #111116;
-  --sidebar: #0E0E13;
-  --raised: #17171D;
+  --night: #0E3556;
+  --ring: rgba(79, 176, 236, 0.28);
+  --brand-soft: rgba(79, 176, 236, 0.11);
+  --bg: #0A0D12;
+  --panel: #10141B;
+  --sidebar: #0D1117;
+  --raised: #171C25;
   --hover: rgba(255, 255, 255, 0.045);
   --active: rgba(255, 255, 255, 0.08);
   --line: rgba(255, 255, 255, 0.075);
@@ -51,8 +57,8 @@
   --fg: #EDEDF2;
   --muted: #9B9BAA;
   --faint: #66667A;
-  --field: #6B7686;
-  --table-head: #1E2530;
+  --field: rgba(255, 255, 255, 0.15);
+  --table-head: transparent;
   --primary: #4FB0EC;
   --primary-hover: #7CC6F3;
   --on-primary: #06202F;
@@ -89,6 +95,8 @@
   --color-field: var(--field);
   --color-table-head: var(--table-head);
   --color-primary-hover: var(--primary-hover);
+  --color-night: var(--night);
+  --color-brand-soft: var(--brand-soft);
   --color-primary: var(--primary);
   --color-on-primary: var(--on-primary);
   --color-ai: var(--ai);
@@ -103,18 +111,13 @@
   --color-danger-soft: var(--danger-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
-  --font-sans: "Montserrat Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --font-serif: "Montserrat Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
-  /* Angles nets : tous les arrondis existants se resserrent d'un seul endroit */
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: 4px;
-  --radius-xl: 5px;
-  --radius-2xl: 6px;
+  --radius-xl: 14px;
 }
 
 @layer base {
@@ -127,11 +130,13 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv11", "ss01";
 }
-::selection { background: var(--active); }
-h1, h2, h3 { text-wrap: balance; }
+::selection { background: var(--ring); }
+h1, h2, h3 { text-wrap: balance; letter-spacing: -0.015em; }
 input, textarea, select, button { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 6px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
 .tabular { font-variant-numeric: tabular-nums; }
 }
 
@@ -174,10 +179,27 @@ input, textarea, select, button { font: inherit; color: inherit; }
 @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.8); } }
 
 .grain {
-  background-image: radial-gradient(1200px 600px at 10% -10%, var(--ai-soft), transparent 60%), radial-gradient(900px 500px at 110% 10%, rgba(79, 179, 240, 0.08), transparent 60%);
+  background-image: radial-gradient(1200px 600px at 10% -10%, var(--brand-soft), transparent 60%), radial-gradient(900px 500px at 110% 10%, rgba(79, 179, 240, 0.08), transparent 60%);
 }
 
-/* Animations institutionnelles : brèves, sur l'opacité et la position, jamais en boucle hors chargement */
+/* Halo de saisie, relief du bouton principal, carte signature */
+.field-ring:focus { box-shadow: 0 0 0 3px var(--ring); border-color: var(--primary); }
+.btn-brand {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--primary) 92%, white), var(--primary));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 2px rgba(0, 60, 100, 0.25);
+}
+.btn-brand:hover { background: linear-gradient(180deg, var(--primary), var(--primary-hover)); }
+.hero-night {
+  background:
+    radial-gradient(700px 320px at 92% -40%, rgba(79, 176, 236, 0.42), transparent 60%),
+    radial-gradient(520px 260px at 8% 130%, rgba(0, 123, 196, 0.35), transparent 60%),
+    linear-gradient(135deg, #0B2A45, #0E3556 60%, #0A3E66);
+  color: #F2F7FB;
+}
+.card-hover { transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease; }
+.card-hover:hover { box-shadow: var(--shadow-md); border-color: var(--line-strong); transform: translateY(-1px); }
+
+/* Animations brèves, sur l'opacité et la position, jamais en boucle hors chargement */
 @keyframes fade-in { from { opacity: 0; } }
 @keyframes rise-in { from { opacity: 0; transform: translateY(6px); } }
 @keyframes dialog-in { from { opacity: 0; transform: translate(-50%, 6px) scale(0.985); } }

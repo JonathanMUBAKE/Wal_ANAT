@@ -10,9 +10,9 @@ import {
 import { AlertTriangle, Check, CircleDashed, Clock, type LucideIcon, X } from "lucide-react";
 import { cn } from "./ui";
 
-// Composants institutionnels : libellé permanent, bordure nette, erreur écrite sous le champ.
+// Composants de la version ANAT : libellé permanent, filet fin, halo à la saisie, erreur écrite sous le champ.
 const fieldBase =
-  "w-full rounded-lg border border-field bg-panel px-3 text-[14px] text-fg outline-none transition-colors placeholder:text-faint focus:border-primary disabled:bg-hover disabled:text-muted aria-[invalid=true]:border-danger";
+  "field-ring w-full rounded-lg border border-field bg-panel px-3 text-[13.5px] text-fg shadow-sm outline-none transition-[box-shadow,border-color] duration-150 placeholder:text-faint disabled:bg-hover disabled:text-muted disabled:shadow-none aria-[invalid=true]:border-danger";
 
 export function Field({
   label,
@@ -32,7 +32,7 @@ export function Field({
   const id = useId();
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1 block text-[12.5px] font-semibold text-fg">
+      <label htmlFor={id} className="mb-1.5 block text-[12.5px] font-medium text-muted">
         {label}
         {required && (
           <>
@@ -76,10 +76,10 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line bg-panel px-4 py-4 sm:px-6">
+    <header className="mx-auto flex w-full max-w-[1240px] flex-wrap items-end justify-between gap-3 px-4 pb-4 pt-7 sm:px-8">
       <div className="min-w-0">
-        <h1 className="text-[19px] font-bold leading-tight">{title}</h1>
-        {subtitle && <p className="mt-1 text-[13px] text-muted">{subtitle}</p>}
+        <h1 className="font-serif text-[34px] leading-[1.08] tracking-[-0.01em]">{title}</h1>
+        {subtitle && <p className="mt-1.5 max-w-2xl text-[13.5px] text-muted">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
@@ -97,10 +97,10 @@ export const Section = ({
   children: ReactNode;
   className?: string;
 }) => (
-  <section className={cn("rounded-lg border border-line bg-panel", className)}>
+  <section className={cn("rounded-xl border border-line bg-panel shadow-sm", className)}>
     {title && (
-      <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
-        <h2 className="text-[13.5px] font-bold">{title}</h2>
+      <div className="flex items-center justify-between gap-2 px-4 pb-1 pt-3.5">
+        <h2 className="text-[14px] font-semibold">{title}</h2>
         {aside}
       </div>
     )}
@@ -122,11 +122,11 @@ export function Status({ label, tone = "neutral" }: { label: string; tone?: Tone
   return (
     <span
       className={cn(
-        "inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md px-2 text-[12px] font-semibold",
+        "inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-full px-2 text-[11.5px] font-medium",
         cls,
       )}
     >
-      <Icon className="size-3" strokeWidth={2.5} />
+      <Icon className="size-3" strokeWidth={2.25} />
       {label}
     </span>
   );
@@ -200,7 +200,11 @@ export function Table({ head, children }: { head: ReactNode[]; children: ReactNo
         <thead>
           <tr className="bg-table-head text-left">
             {head.map((h, i) => (
-              <th key={i} scope="col" className="whitespace-nowrap px-3 py-2 text-[12px] font-bold">
+              <th
+                key={i}
+                scope="col"
+                className="whitespace-nowrap px-3 py-2.5 text-[11px] font-medium uppercase tracking-[0.06em] text-faint"
+              >
                 {h}
               </th>
             ))}
@@ -212,12 +216,15 @@ export function Table({ head, children }: { head: ReactNode[]; children: ReactNo
   );
 }
 export const Tr = ({ children, onClick }: { children: ReactNode; onClick?: () => void }) => (
-  <tr onClick={onClick} className={cn("border-t border-line", onClick && "cursor-pointer hover:bg-hover")}>
+  <tr
+    onClick={onClick}
+    className={cn("border-t border-line", onClick && "cursor-pointer transition-colors hover:bg-hover")}
+  >
     {children}
   </tr>
 );
 export const Td = ({ children, className }: { children?: ReactNode; className?: string }) => (
-  <td className={cn("px-3 py-2 align-top", className)}>{children}</td>
+  <td className={cn("px-3 py-2.5 align-top", className)}>{children}</td>
 );
 
 export function Tabs<T extends string>({
@@ -230,7 +237,10 @@ export function Tabs<T extends string>({
   items: { id: T; label: string; badge?: number }[];
 }) {
   return (
-    <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-line bg-panel px-4 sm:px-6">
+    <div
+      role="tablist"
+      className="mx-auto flex w-full max-w-[1240px] gap-1 overflow-x-auto border-b border-line px-4 sm:px-8"
+    >
       {items.map((t) => (
         <button
           key={t.id}
@@ -238,13 +248,15 @@ export function Tabs<T extends string>({
           aria-selected={value === t.id}
           onClick={() => onChange(t.id)}
           className={cn(
-            "h-10 whitespace-nowrap border-b-2 px-3 text-[13px] font-semibold transition-colors",
+            "-mb-px h-10 whitespace-nowrap border-b-2 px-3 text-[13px] font-medium transition-colors",
             value === t.id ? "border-primary text-primary" : "border-transparent text-muted hover:text-fg",
           )}
         >
           {t.label}
           {!!t.badge && (
-            <span className="ml-1.5 rounded-sm bg-primary px-1.5 text-[11px] text-on-primary">{t.badge}</span>
+            <span className="ml-1.5 rounded-full bg-brand-soft px-1.5 text-[11px] font-semibold text-primary">
+              {t.badge}
+            </span>
           )}
         </button>
       ))}

@@ -42,6 +42,48 @@ export const PERMISSION_GROUPS = [
     ],
   },
   {
+    group: "Attributions",
+    items: [
+      { key: "attributions.view", label: "Consulter les attributions des entités" },
+      { key: "attributions.manage", label: "Rédiger les fiches d'attributions" },
+      { key: "attributions.approve", label: "Approuver les fiches d'attributions" },
+    ],
+  },
+  {
+    group: "Plans de travail",
+    items: [
+      { key: "plans.view", label: "Consulter les plans de travail" },
+      { key: "plans.manage", label: "Préparer les plans de travail" },
+      { key: "plans.approve", label: "Approuver et réviser les plans de travail" },
+    ],
+  },
+  {
+    group: "Livrables et consultants",
+    items: [
+      { key: "deliverables.view", label: "Consulter tous les livrables" },
+      { key: "deliverables.manage", label: "Créer et modifier les livrables" },
+      { key: "deliverables.validate", label: "Valider les livrables" },
+      { key: "consultants.manage", label: "Gérer les missions des consultants" },
+    ],
+  },
+  {
+    group: "Parapheur et courrier",
+    items: [
+      { key: "signature.use", label: "Utiliser le parapheur" },
+      { key: "correspondence.view", label: "Consulter le courrier" },
+      { key: "correspondence.manage", label: "Enregistrer et imputer le courrier" },
+    ],
+  },
+  {
+    group: "Pilotage",
+    items: [
+      { key: "pilotage.view", label: "Accéder au poste de pilotage" },
+      { key: "risks.manage", label: "Gérer les risques et les indicateurs" },
+      { key: "agenda.view", label: "Consulter l'agenda de la direction" },
+      { key: "agenda.manage", label: "Gérer l'agenda de la direction" },
+    ],
+  },
+  {
     group: "Équipes",
     items: [
       { key: "teams.create", label: "Créer des équipes" },
@@ -69,9 +111,30 @@ const LABELS = new Map<string, string>(PERMISSION_GROUPS.flatMap((g) => g.items.
 export const permissionLabel = (p: string) => LABELS.get(p) ?? p;
 export const isPermission = (p: string): p is Permission => LABELS.has(p);
 
-const ADMIN_ONLY = (p: Permission) => p.startsWith("org.") || p === "meetings.manage" || p === "meetings.validate";
+const GOVERNANCE = new Set<Permission>([
+  "meetings.manage",
+  "meetings.validate",
+  "attributions.manage",
+  "attributions.approve",
+  "plans.manage",
+  "plans.approve",
+  "deliverables.manage",
+  "deliverables.validate",
+  "consultants.manage",
+  "correspondence.manage",
+  "pilotage.view",
+  "risks.manage",
+  "agenda.manage",
+]);
+const ADMIN_ONLY = (p: Permission) => p.startsWith("org.") || GOVERNANCE.has(p);
 const NOT_FOR_GUESTS = new Set<Permission>([
   "meetings.view",
+  "attributions.view",
+  "plans.view",
+  "deliverables.view",
+  "signature.use",
+  "correspondence.view",
+  "agenda.view",
   "projects.create",
   "projects.import",
   "teams.create",

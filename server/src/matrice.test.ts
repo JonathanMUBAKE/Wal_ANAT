@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "./app.js";
 
@@ -163,6 +163,34 @@ async function boot(kind: Kind) {
           attendees: [],
         })
       ).body;
+    },
+    domain: async () => (await inj(a, "POST", "/api/domains", { name: u("Domaine") })).body,
+    sheet: async () => {
+      const d = await X.domain();
+      return (
+        await inj(a, "POST", "/api/attributions", {
+          unit_id: (await X.unit()).id,
+          mission: "Mission",
+          domains: [{ domain_id: d.id, role: "responsable" }],
+          relations: [],
+        })
+      ).body;
+    },
+    karimSheet: async () => {
+      const d = await X.domain();
+      await ctx.db.query(
+        "UPDATE org_members SET profile_id = $1, role = 'admin' WHERE user_id = 'u_karim' AND org_id = $2",
+        [X.prof("Administrateur"), org],
+      );
+      const s = (
+        await inj("u_karim", "POST", "/api/attributions", {
+          unit_id: (await X.unit()).id,
+          mission: "Mission",
+          domains: [{ domain_id: d.id, role: "responsable" }],
+          relations: [],
+        })
+      ).body;
+      return s;
     },
     validated: async () => {
       const m = await X.filled();
@@ -345,6 +373,30 @@ const TABLE = [
   R_("DELETE", "/api/projects/:id/ai/rules/:ruleId", async (X) => ({
     url: `/api/projects/${X.app}/ai/rules/${(await X.rule()).id}`,
   })),
+  R_("GET", "/api/domains"),
+  R_("POST", "/api/domains", () => ({ body: { name: u("Domaine") } })),
+  R_("PATCH", "/api/domains/:id", async (X) => ({
+    url: `/api/domains/${(await X.domain()).id}`,
+    body: { description: "x" },
+  })),
+  R_("GET", "/api/attributions"),
+  R_("POST", "/api/attributions", async (X) => ({
+    body: {
+      unit_id: (await X.unit()).id,
+      mission: "Mission",
+      domains: [{ domain_id: (await X.domain()).id, role: "responsable" }],
+      relations: [],
+    },
+  })),
+  R_("GET", "/api/attributions/:id", async (X) => ({ url: `/api/attributions/${(await X.sheet()).id}` })),
+  R_("PUT", "/api/attributions/:id", async (X) => ({
+    url: `/api/attributions/${(await X.sheet()).id}`,
+    body: { mission: "Autre", domains: [], relations: [] },
+  })),
+  R_("DELETE", "/api/attributions/:id", async (X) => ({ url: `/api/attributions/${(await X.sheet()).id}` })),
+  R_("POST", "/api/attributions/:id/approve", async (X) => ({
+    url: `/api/attributions/${(await X.karimSheet()).id}/approve`,
+  })),
   R_("GET", "/api/meetings"),
   R_("POST", "/api/meetings", () => ({
     body: { meeting_type: "Hebdomadaire", meeting_date: "2026-07-13", writer_id: "u_karim" },
@@ -453,13 +505,17 @@ describe("contrat d'accès de toute l'API", () => {
   });
 
   it("toute route privée déclarée figure dans le contrat", () => {
-    const declared = ["./app.ts", "./auth/routes.ts", "./meetings-routes.ts"].flatMap((f) =>
-      [
-        ...readFileSync(new URL(f, import.meta.url), "utf8").matchAll(
-          /\.(get|post|put|patch|delete)(?:<[^>]*>)?\(\s*"(\/api[^"]+)"/g,
-        ),
-      ].map((m) => `${m[1].toUpperCase()} ${m[2]}`),
-    );
+    const declared = readdirSync(new URL(".", import.meta.url))
+      .filter((f) => f.endsWith("-routes.ts"))
+      .map((f) => `./${f}`)
+      .concat("./app.ts", "./auth/routes.ts")
+      .flatMap((f) =>
+        [
+          ...readFileSync(new URL(f, import.meta.url), "utf8").matchAll(
+            /\.(get|post|put|patch|delete)(?:<[^>]*>)?\(\s*"(\/api[^"]+)"/g,
+          ),
+        ].map((m) => `${m[1].toUpperCase()} ${m[2]}`),
+      );
     const known = new Set(TABLE.map(([m, p]) => `${m} ${p}`));
     expect(declared.filter((r) => !PUBLIC.test(r.split(" ")[1]) && r !== "GET /api/events" && !known.has(r))).toEqual(
       [],

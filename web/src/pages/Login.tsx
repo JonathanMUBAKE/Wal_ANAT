@@ -11,12 +11,12 @@ import type { User } from "@/lib/types";
 
 type Step = "login" | "mfa" | "forgot" | "request" | "sent";
 export const authField =
-  "mt-1 h-10 w-full rounded-lg border border-field bg-panel px-3 text-[14px] text-fg outline-none focus:border-primary";
+  "field-ring mt-1 h-10 w-full rounded-lg border border-field bg-panel px-3 text-[14px] text-fg shadow-sm outline-none";
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="grain flex min-h-full flex-col bg-bg lg:flex-row">
-      <section className="relative flex flex-1 flex-col justify-between overflow-hidden px-6 py-8 sm:px-12 lg:py-12">
+    <div className="flex min-h-full flex-col bg-bg lg:flex-row">
+      <section className="hero-night relative flex flex-1 flex-col justify-between overflow-hidden px-6 py-8 sm:px-12 lg:py-12">
         <div className="flex items-center gap-3">
           <Logo size={48} />
         </div>
@@ -24,7 +24,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 text-[13px] font-bold uppercase tracking-wider text-primary"
+            className="mb-5 text-[12px] font-medium uppercase tracking-[0.16em] text-[#8CCBF2]"
           >
             Agence Nationale d'Aménagement du Territoire
           </motion.p>
@@ -32,15 +32,17 @@ export function AuthShell({ children }: { children: ReactNode }) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="text-[34px] font-bold leading-[1.12] sm:text-[46px]"
+            className="font-serif text-[46px] leading-[1.04] tracking-[-0.015em] sm:text-[68px]"
           >
-            Outil de pilotage stratégique
+            Piloter l'Agence,
+            <br />
+            <span className="italic text-[#8CCBF2]">en toute clarté.</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mt-5 max-w-md text-[15px] leading-relaxed text-muted"
+            className="mt-6 max-w-md text-[15px] leading-relaxed text-white/70"
           >
             Réunions, plans de travail, livrables, parapheur et décisions réunis dans un même espace, sous validation
             humaine à chaque étape.

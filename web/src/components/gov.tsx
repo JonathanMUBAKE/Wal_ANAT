@@ -11,13 +11,10 @@ import { AlertTriangle, Check, CircleDashed, Clock, type LucideIcon, X } from "l
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { cn } from "./ui";
-import { Topo } from "./territory";
-
-const HEADER_PEAKS = [{ x: 420, y: 40, rings: 9, seed: 2.2, r0: 10, step: 17 }];
 
 // Composants de la version ANAT : libellé permanent, filet fin, halo à la saisie, erreur écrite sous le champ.
 const fieldBase =
-  "field-ring w-full rounded-lg border border-field bg-panel px-3 text-[13.5px] text-fg shadow-sm outline-none transition-[box-shadow,border-color] duration-150 placeholder:text-faint disabled:bg-hover disabled:text-muted disabled:shadow-none aria-[invalid=true]:border-danger";
+  "field-ring w-full rounded-xl border border-field bg-panel px-3.5 text-[13.5px] text-fg outline-none transition-[box-shadow,border-color] duration-150 placeholder:text-faint disabled:bg-hover disabled:text-muted disabled:shadow-none aria-[invalid=true]:border-danger";
 
 export function Field({
   label,
@@ -82,15 +79,9 @@ export function PageHeader({
 }) {
   return (
     <header className="relative isolate mx-auto flex w-full max-w-[1240px] flex-wrap items-end justify-between gap-3 px-4 pb-4 pt-7 sm:px-8">
-      <Topo
-        peaks={HEADER_PEAKS}
-        width={520}
-        height={150}
-        className="absolute right-0 top-0 -z-10 h-full w-[520px] max-w-full text-primary opacity-[0.16] [mask-image:linear-gradient(90deg,transparent,#000_45%)]"
-      />
       <div className="min-w-0">
-        <h1 className="font-serif text-[34px] leading-[1.08] tracking-[-0.01em]">{title}</h1>
-        {subtitle && <p className="mt-1.5 max-w-2xl text-[13.5px] text-muted">{subtitle}</p>}
+        {subtitle && <p className="mb-1 max-w-2xl text-[14px] text-muted">{subtitle}</p>}
+        <h1 className="text-[32px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[38px]">{title}</h1>
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
@@ -108,10 +99,10 @@ export const Section = ({
   children: ReactNode;
   className?: string;
 }) => (
-  <section className={cn("rounded-2xl border border-line bg-panel shadow-sm", className)}>
+  <section className={cn("rounded-[24px] border border-line bg-panel shadow-sm", className)}>
     {title && (
-      <div className="flex items-center justify-between gap-2 px-4 pb-1 pt-3.5">
-        <h2 className="text-[14px] font-semibold tracking-[-0.01em]">{title}</h2>
+      <div className="flex items-center justify-between gap-2 px-5 pb-1 pt-5">
+        <h2 className="text-[16px] font-semibold tracking-[-0.015em]">{title}</h2>
         {aside}
       </div>
     )}
@@ -250,7 +241,7 @@ export function Tabs<T extends string>({
   return (
     <div
       role="tablist"
-      className="mx-auto flex w-full max-w-[1240px] gap-1 overflow-x-auto border-b border-line px-4 sm:px-8"
+      className="mx-auto flex w-full max-w-[1240px] gap-2 overflow-x-auto px-4 pb-1 sm:px-8"
     >
       {items.map((t) => (
         <button
@@ -259,13 +250,20 @@ export function Tabs<T extends string>({
           aria-selected={value === t.id}
           onClick={() => onChange(t.id)}
           className={cn(
-            "-mb-px h-10 whitespace-nowrap border-b-2 px-3 text-[13px] font-medium transition-colors",
-            value === t.id ? "border-primary text-primary" : "border-transparent text-muted hover:text-fg",
+            "h-10 shrink-0 whitespace-nowrap rounded-full border px-4.5 text-[13px] font-medium transition-colors",
+            value === t.id
+              ? "border-night bg-night text-white shadow-sm dark:border-primary dark:bg-primary dark:text-on-primary"
+              : "border-line-strong bg-panel text-fg hover:bg-hover",
           )}
         >
           {t.label}
           {!!t.badge && (
-            <span className="ml-1.5 rounded-full bg-brand-soft px-1.5 text-[11px] font-semibold text-primary">
+            <span
+              className={cn(
+                "ml-1.5 rounded-full px-1.5 text-[11px] font-semibold",
+                value === t.id ? "bg-white/20 text-white" : "bg-brand-soft text-primary",
+              )}
+            >
               {t.badge}
             </span>
           )}

@@ -4,16 +4,23 @@ import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
+  AlarmClock,
   ArrowUpRight,
   Briefcase,
   CalendarClock,
+  CalendarDays,
+  ChevronRight,
   FileSignature,
   Handshake,
   Landmark,
+  ListTree,
   Mic2,
+  Plus,
   Scale,
   ShieldAlert,
+  Sparkles,
   Target,
+  Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Empty, cn } from "@/components/ui";
@@ -21,7 +28,6 @@ import {
   CountUp,
   LoadingRows,
   ProgressBar,
-  Section,
   Status,
   Table,
   Td,
@@ -30,7 +36,7 @@ import {
   isLate,
   type Tone,
 } from "@/components/gov";
-import { HERO_PEAKS, HealthRing, Topo } from "@/components/territory";
+import { HealthRing, Topo } from "@/components/territory";
 import { api } from "@/lib/api";
 import { useMe } from "@/lib/hooks";
 import { firstName, greeting } from "@/lib/format";
@@ -88,15 +94,31 @@ interface Overview {
   plans: { total: number; approved: number };
 }
 
-export const FORMS: Record<Form, { label: string; plural: string; Icon: LucideIcon; counter: string }> = {
-  projet_interne: { label: "Projet interne", plural: "Projets internes", Icon: Briefcase, counter: "projets_internes" },
-  projet_confie: { label: "Projet confié", plural: "Projets confiés", Icon: FileSignature, counter: "projets_confies" },
-  commission: { label: "Commission", plural: "Commissions", Icon: Landmark, counter: "commissions" },
-  conference: { label: "Conférence", plural: "Conférences", Icon: Mic2, counter: "conferences" },
-  rendez_vous: { label: "Rendez-vous", plural: "Rendez-vous", Icon: Handshake, counter: "rendez_vous" },
+export const FORMS: Record<
+  Form,
+  { label: string; plural: string; short: string; Icon: LucideIcon; counter: string }
+> = {
+  projet_interne: {
+    label: "Projet interne",
+    plural: "Projets internes",
+    short: "Internes",
+    Icon: Briefcase,
+    counter: "projets_internes",
+  },
+  projet_confie: {
+    label: "Projet confié",
+    plural: "Projets confiés",
+    short: "Confiés",
+    Icon: FileSignature,
+    counter: "projets_confies",
+  },
+  commission: { label: "Commission", plural: "Commissions", short: "Commiss.", Icon: Landmark, counter: "commissions" },
+  conference: { label: "Conférence", plural: "Conférences", short: "Confér.", Icon: Mic2, counter: "conferences" },
+  rendez_vous: { label: "Rendez-vous", plural: "Rendez-vous", short: "RDV", Icon: Handshake, counter: "rendez_vous" },
   interne: {
     label: "Activité interne",
     plural: "Activités internes",
+    short: "Activités",
     Icon: CalendarClock,
     counter: "activites_internes",
   },
@@ -114,6 +136,22 @@ const AGENDA_LABEL: Record<string, string> = {
   rendez_vous: "Rendez-vous",
   interne: "Activité",
 };
+const AGENDA_ICON: Record<string, LucideIcon> = {
+  reunion: Users,
+  commission: Landmark,
+  conference: Mic2,
+  rendez_vous: Handshake,
+  interne: CalendarClock,
+};
+const AGENDA_HUE: Record<string, string> = {
+  reunion: "var(--primary)",
+  commission: "var(--form-commission)",
+  conference: "var(--form-conference)",
+  rendez_vous: "var(--form-rendez_vous)",
+  interne: "var(--form-interne)",
+};
+const FEATURE_PEAKS = [{ x: 260, y: 10, rings: 9, seed: 1.9, r0: 10, step: 16 }];
+const BRIEF_PEAKS = [{ x: 300, y: 200, rings: 10, seed: 4.4, r0: 12, step: 18 }];
 
 export function PilotagePage() {
   const { data: me } = useMe();
@@ -136,339 +174,333 @@ export function PilotagePage() {
     .filter((i) => !form || i.form === form)
     .sort((a, b) => rank(a) - rank(b) || (a.next_due ?? "9").localeCompare(b.next_due ?? "9"));
   const total = Object.values(o.health).reduce((s, n) => s + n, 0);
-
   const healthy = (o.health.on_track ?? 0) + (o.health.done ?? 0);
   const score = total ? Math.round((healthy / total) * 100) : 0;
+  const forms = Object.keys(FORMS) as Form[];
+  const maxForm = Math.max(1, ...forms.map((f) => o.counters[FORMS[f].counter] ?? 0));
+  const lateItems = o.items.filter((i) => i.overdue > 0).length;
 
   return (
-    <div className="mx-auto max-w-[1320px] space-y-5 p-4 sm:px-8 sm:py-6">
-      <section className="hero-night relative isolate overflow-hidden rounded-3xl shadow-lg">
-        <Topo peaks={HERO_PEAKS} className="absolute inset-0 -z-10 size-full text-[#8CCBF2] opacity-[0.2]" />
-        <div className="grid items-center gap-8 p-6 sm:p-9 lg:grid-cols-[minmax(0,1fr)_auto]">
-          <div className="min-w-0">
-            <p className="eyebrow text-[11.5px] font-medium uppercase tracking-[0.18em]">
-              {format(parseISO(o.today), "EEEE d MMMM yyyy", { locale: fr })}
-              <span className="mx-2 opacity-50">·</span>Direction générale
-            </p>
-            <h1 className="mt-3 font-serif text-[44px] leading-[1.02] tracking-[-0.015em] sm:text-[60px]">
-              {greeting()}, <span className="italic text-[#BFE3F8]">{firstName(me?.name ?? "")}</span>
-            </h1>
-            <ul className="stagger mt-5 max-w-2xl space-y-2 border-l border-white/15 pl-4 text-[14px] leading-snug text-white/80">
-              {o.brief.map((b) => (
-                <li key={b}>{b}</li>
-              ))}
-            </ul>
+    <div className="mx-auto max-w-[1380px] space-y-5 p-4 sm:px-6 sm:py-6">
+      {/* En-tête */}
+      <header className="flex flex-wrap items-end justify-between gap-4 px-1 pt-2">
+        <div className="min-w-0">
+          <p className="text-[14px] text-muted">Piloter et suivre toutes les activités de l'Agence</p>
+          <h1 className="mt-1 text-[34px] font-semibold leading-[1.08] tracking-[-0.035em] sm:text-[44px]">
+            {greeting()}, {firstName(me?.name ?? "")}
+          </h1>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex h-11 items-center gap-2 rounded-full border border-line-strong bg-panel px-4 text-[13px] font-medium capitalize">
+            <CalendarDays className="size-4 text-muted" />
+            {format(parseISO(o.today), "EEEE d MMMM", { locale: fr })}
+          </span>
+          <RoundLink to="/reunions" label="Réunions" Icon={Users} />
+          <RoundLink to="/parapheur" label="Parapheur" Icon={FileSignature} dot={o.to_sign > 0} />
+          <Link
+            to="/activites"
+            className="btn-brand inline-flex h-11 items-center gap-2 rounded-full px-5 text-[13.5px] font-semibold text-on-primary"
+          >
+            <Plus className="size-4" />
+            Nouvelle activité
+          </Link>
+        </div>
+      </header>
+
+      {/* Chiffres clés : la première carte, mise en avant, résume le portefeuille */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="kpi-feature relative isolate col-span-2 overflow-hidden rounded-[24px] p-5 text-white shadow-md sm:col-span-1">
+          <Topo
+            peaks={FEATURE_PEAKS}
+            width={300}
+            height={170}
+            className="absolute inset-0 -z-10 size-full text-white opacity-[0.18]"
+          />
+          <div className="flex items-start justify-between">
+            <p className="text-[14px] font-medium text-white/90">Activités suivies</p>
+            <span className="flex size-10 items-center justify-center rounded-full bg-white text-primary shadow-sm">
+              <Briefcase className="size-4.5" />
+            </span>
           </div>
-          <div className="flex items-center gap-6 rounded-2xl border border-white/10 bg-white/[0.05] p-5 backdrop-blur-md">
+          <p className="mt-2 text-[44px] font-semibold leading-none tracking-[-0.04em]">
+            <CountUp value={total} />
+          </p>
+          <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[12px] font-medium">
+            <ArrowUpRight className="size-3.5" />
+            {score} % en bonne voie
+          </p>
+        </div>
+        <Kpi label="Décisions attendues" value={o.counters.decisions} Icon={Scale} foot="à arbitrer par la DG" />
+        <Kpi
+          label="Retards à résorber"
+          value={o.counters.retards}
+          Icon={AlarmClock}
+          foot={`${lateItems} activité${lateItems > 1 ? "s" : ""} concernée${lateItems > 1 ? "s" : ""}`}
+          alert={o.counters.retards > 0}
+        />
+        <Kpi label="À signer" value={o.to_sign} Icon={FileSignature} foot="au parapheur" to="/parapheur" />
+        <Kpi label="Écarts à examiner" value={o.open_gaps} Icon={ListTree} foot="attributions" to="/attributions" />
+      </div>
+
+      {/* Santé, formes d'activité, agenda */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,1fr)]">
+        <Card title="Santé du portefeuille" action={<CircleAction to="/activites" label="Voir les activités" />}>
+          <div className="flex flex-col items-center px-5 pb-5 pt-2">
             <HealthRing
-              size={150}
-              caption={`Santé du portefeuille : ${score} % dans les temps ou terminé`}
+              size={176}
+              track="var(--hover)"
+              caption={`${score} % des activités dans les temps ou terminées`}
               parts={(Object.keys(HEALTH) as Health[]).map((h) => ({
                 key: h,
                 value: o.health[h] ?? 0,
-                color: HERO_HEALTH[h],
+                color: HEALTH[h].color,
                 label: HEALTH[h].label,
               }))}
               center={
                 <>
-                  <span className="font-serif text-[38px] leading-none">
-                    <CountUp value={score} />
-                    <span className="text-[22px]"> %</span>
+                  <span className="text-[36px] font-semibold leading-none tracking-[-0.04em]">
+                    <CountUp value={score} />%
                   </span>
-                  <span className="mt-1.5 max-w-[78px] text-[9.5px] uppercase leading-tight tracking-[0.12em] text-white/55">
-                    en bonne voie
-                  </span>
+                  <span className="mt-1 text-[12px] text-muted">en bonne voie</span>
                 </>
               }
             />
-            <ul className="space-y-2 text-[12.5px]">
+            <ul className="mt-5 grid w-full grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
               {(Object.keys(HEALTH) as Health[]).map((h) => (
-                <li key={h} className="flex items-center gap-2.5 text-white/75">
-                  <span className="size-2 rounded-full" style={{ background: HERO_HEALTH[h] }} />
-                  <span className="flex-1">{HEALTH[h].label}</span>
-                  <span className="tabular pl-3 font-medium text-white">{o.health[h] ?? 0}</span>
+                <li key={h} className="flex items-center gap-2">
+                  <span className="size-2.5 rounded-full" style={{ background: HEALTH[h].color }} />
+                  <span className="text-muted">{HEALTH[h].label}</span>
+                  <span className="ml-auto font-semibold tabular">{o.health[h] ?? 0}</span>
                 </li>
               ))}
             </ul>
           </div>
-        </div>
-        <div className="grid grid-cols-2 border-t border-white/10 bg-[#061a2c]/40 sm:grid-cols-5">
-          <HeroStat label="Activités suivies" value={total} />
-          <HeroStat label="Décisions attendues" value={o.counters.decisions} />
-          <HeroStat label="Retards à résorber" value={o.counters.retards} alert={o.counters.retards > 0} />
-          <HeroStat label="À signer" value={o.to_sign} to="/parapheur" />
-          <HeroStat label="Écarts à examiner" value={o.open_gaps} to="/attributions" />
-        </div>
-      </section>
+        </Card>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        {(Object.keys(FORMS) as Form[]).map((f) => {
-          const { plural, Icon, counter } = FORMS[f];
-          const active = form === f;
-          const mine = o.items.filter((i) => i.form === f);
-          const late = mine.filter((i) => i.overdue > 0).length;
-          return (
-            <button
-              key={f}
-              aria-pressed={active}
-              onClick={() => setForm(active ? null : f)}
-              style={{ "--hue": `var(--form-${f})` } as React.CSSProperties}
-              className={cn(
-                "form-tile card-hover rounded-2xl border bg-panel p-4 text-left shadow-sm",
-                active ? "border-[var(--hue)] ring-2 ring-[color-mix(in_oklab,var(--hue)_22%,transparent)]" : "border-line",
-              )}
-            >
-              <span className="flex items-center justify-between gap-2">
-                <span className="form-chip flex size-8 items-center justify-center rounded-xl">
-                  <Icon className="size-4" />
-                </span>
-                {late > 0 && (
-                  <span className="rounded-full bg-danger-soft px-1.5 text-[10.5px] font-semibold text-danger">
-                    {late} en retard
-                  </span>
-                )}
-              </span>
-              <p className="mt-4 font-serif text-[40px] leading-none">
-                <CountUp value={o.counters[counter] ?? 0} />
-              </p>
-              <p className="mt-1 text-[12.5px] text-muted">{plural}</p>
-              <span
-                className="mt-3 flex min-h-2 flex-wrap gap-1"
-                aria-label={mine.map((i) => `${i.title} : ${HEALTH[i.health].label}`).join(", ") || "Aucune activité"}
+        <Card
+          title="Activités par forme"
+          action={
+            form ? (
+              <button
+                onClick={() => setForm(null)}
+                className="h-8 rounded-full border border-line-strong px-3 text-[12px] font-medium hover:bg-hover"
               >
-                {mine.slice(0, 14).map((i) => (
-                  <span
-                    key={i.id}
-                    title={`${i.title} · ${HEALTH[i.health].label}`}
-                    className="size-2 rounded-full"
-                    style={{ background: HEALTH[i.health].color }}
-                  />
-                ))}
-                {mine.length > 14 && <span className="text-[10.5px] leading-none text-faint">+{mine.length - 14}</span>}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <Section
-          title={form ? FORMS[form].plural : "Portefeuille des activités"}
-          aside={
-            form && (
-              <button onClick={() => setForm(null)} className="text-[12px] font-medium text-primary hover:underline">
                 Tout afficher
               </button>
+            ) : (
+              <span className="text-[12px] text-faint">Cliquez pour filtrer</span>
             )
           }
         >
-          {total > 0 && (
-            <div className="px-4 pb-1 pt-3">
-              <div className="flex h-2 gap-0.5" role="img" aria-label="Répartition des activités par état">
-                {(Object.keys(HEALTH) as Health[])
-                  .filter((h) => o.health[h])
-                  .map((h) => (
-                    <div
-                      key={h}
-                      title={`${HEALTH[h].label} : ${o.health[h]}`}
-                      className="bar-fill rounded-[3px]"
-                      style={{ flex: o.health[h], background: HEALTH[h].color }}
-                    />
-                  ))}
-              </div>
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
-                {(Object.keys(HEALTH) as Health[]).map((h) => (
-                  <span key={h} className="inline-flex items-center gap-1.5">
-                    <span className="size-1.5 rounded-full" style={{ background: HEALTH[h].color }} />
-                    {HEALTH[h].label} <span className="tabular font-medium text-fg">{o.health[h]}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {items.length ? (
-            <Table head={["Activité", "Responsable", "État", "Avancement", "Échéance", "Retards"]}>
-              {items.map((i) => (
-                <Tr key={i.id} onClick={() => nav(i.href)}>
-                  <Td className="max-w-[230px]">
-                    <span className="flex items-start gap-2.5">
-                      <span
-                        className="mt-[3px] h-8 w-[3px] shrink-0 rounded-full"
-                        style={{ background: `var(--form-${i.form})` }}
-                      />
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium">{i.title}</span>
-                        <span className="text-[12px] text-muted">
-                          {FORMS[i.form].label}
-                          {i.unit_name ? ` · ${i.unit_name}` : ""}
-                        </span>
-                      </span>
-                    </span>
-                  </Td>
-                  <Td className="whitespace-nowrap">
-                    {i.lead_name ? (
-                      <span className="flex items-center gap-2" title={i.lead_name}>
-                        <Initials name={i.lead_name} />
-                        <span className="hidden 2xl:inline">{i.lead_name}</span>
-                      </span>
-                    ) : (
-                      "—"
-                    )}
-                  </Td>
-                  <Td>
-                    <Status label={HEALTH[i.health].label} tone={HEALTH[i.health].tone} />
-                  </Td>
-                  <Td className="min-w-[110px]">
-                    {i.progress === null ? (
-                      <span className="text-faint">—</span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <ProgressBar value={i.progress} />
-                        <span className="tabular w-10 shrink-0 whitespace-nowrap text-right text-[12px] text-muted">
-                          {i.progress} %
-                        </span>
-                      </span>
-                    )}
-                  </Td>
-                  <Td
+          <div className="flex h-[250px] items-end justify-between gap-2 px-5 pb-5 pt-4">
+            {forms.map((f) => {
+              const n = o.counters[FORMS[f].counter] ?? 0;
+              const { Icon } = FORMS[f];
+              const active = form === f;
+              return (
+                <button
+                  key={f}
+                  onClick={() => setForm(active ? null : f)}
+                  aria-pressed={active}
+                  title={`${FORMS[f].plural} : ${n}`}
+                  className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2"
+                >
+                  <span className="text-[13px] font-semibold tabular">{n}</span>
+                  <span
                     className={cn(
-                      "whitespace-nowrap tabular",
-                      isLate(i.next_due, o.today) && i.health !== "done" && "text-danger",
+                      "bar-rise w-full max-w-[46px] rounded-full transition-[filter,transform] group-hover:brightness-110",
+                      n === 0 && "hatch",
+                      form && !active && "opacity-35",
                     )}
+                    style={{
+                      height: `${Math.max(12, (n / maxForm) * 100) * 1.45}px`,
+                      background: n ? `var(--form-${f})` : undefined,
+                    }}
+                  />
+                  <span
+                    className={cn(
+                      "flex size-8 items-center justify-center rounded-full border transition-colors",
+                      active ? "border-transparent text-white" : "border-line-strong text-muted",
+                    )}
+                    style={active ? { background: `var(--form-${f})` } : undefined}
                   >
-                    {frDate(i.next_due)}
-                  </Td>
-                  <Td className={cn("tabular", i.overdue > 0 && "font-semibold text-danger")}>{i.overdue || "—"}</Td>
-                </Tr>
-              ))}
-            </Table>
-          ) : (
-            <Empty title="Aucune activité ici">Créez une activité ou renseignez la nature de vos projets.</Empty>
-          )}
-        </Section>
+                    <Icon className="size-3.5" />
+                  </span>
+                  <span className="w-full truncate text-center text-[11px] text-muted">{FORMS[f].short}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
 
-        <div className="space-y-4">
-          <Section title="Décisions attendues" aside={<Scale className="size-4 text-faint" />}>
-            <div className="p-2">
-              {o.decisions.length ? (
-                o.decisions.map((d) => (
-                  <Link
-                    key={d.id}
-                    to={d.href}
-                    className="group block rounded-lg px-2 py-2 transition-colors hover:bg-hover"
-                  >
-                    <p className="flex items-center justify-between gap-2 text-[13.5px] font-medium">
-                      <span className="truncate">{d.title}</span>
-                      <ArrowUpRight className="size-3.5 shrink-0 text-faint opacity-0 transition-opacity group-hover:opacity-100" />
-                    </p>
-                    <p className="mt-0.5 text-[12.5px] text-muted">{d.decision_needed}</p>
-                  </Link>
-                ))
-              ) : (
-                <p className="px-2 py-3 text-[13px] text-muted">Aucun arbitrage en attente.</p>
-              )}
-            </div>
-          </Section>
-          <Section title="Sept prochains jours" aside={<CalendarClock className="size-4 text-faint" />}>
+        <Card title="Sept prochains jours" action={<CircleAction to="/activites" label="Tout l'agenda" />}>
+          <div className="space-y-2.5 px-4 pb-4 pt-1">
             {o.agenda.length ? (
-              <ol className="relative px-2 pb-2 pt-1">
-                <span aria-hidden className="absolute bottom-5 left-[60px] top-4 w-px bg-line" />
-                {o.agenda.slice(0, 7).map((a) => (
-                  <li key={a.id}>
-                    <Link
-                      to={a.href}
-                      className="group relative flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-hover"
-                    >
-                      <span className="w-9 shrink-0 text-right leading-none">
-                        <span className="block font-serif text-[20px]">{format(parseISO(a.date), "d")}</span>
-                        <span className="text-[9.5px] uppercase tracking-wide text-muted">
-                          {format(parseISO(a.date), "EEE", { locale: fr })}
+              o.agenda.slice(0, 3).map((a) => {
+                const Icon = AGENDA_ICON[a.form] ?? CalendarClock;
+                return (
+                  <Link
+                    key={a.id}
+                    to={a.href}
+                    className="group flex items-center gap-3 rounded-[18px] border border-line bg-bg/60 p-3 transition-colors hover:border-line-strong hover:bg-panel"
+                  >
+                    <span className="flex w-12 shrink-0 flex-col items-center rounded-2xl bg-panel py-1.5 shadow-sm">
+                      <span className="text-[18px] font-semibold leading-none tracking-[-0.03em]">
+                        {format(parseISO(a.date), "d")}
+                      </span>
+                      <span className="text-[10px] uppercase text-muted">
+                        {format(parseISO(a.date), "EEE", { locale: fr })}
+                      </span>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13.5px] font-semibold">{a.title}</span>
+                      <span className="mt-0.5 inline-flex items-center gap-1.5 text-[12px] text-muted">
+                        <Icon className="size-3.5" style={{ color: AGENDA_HUE[a.form] }} />
+                        {AGENDA_LABEL[a.form]}
+                      </span>
+                    </span>
+                    <ArrowUpRight className="size-4 shrink-0 text-faint transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-fg" />
+                  </Link>
+                );
+              })
+            ) : (
+              <p className="px-1 py-3 text-[13px] text-muted">Rien de prévu sur la semaine.</p>
+            )}
+            {o.agenda.length > 3 && (
+              <Link
+                to="/activites"
+                className="inline-flex items-center gap-1 px-1 pt-1 text-[13px] font-medium hover:text-primary"
+              >
+                Voir les {o.agenda.length} rendez-vous de la semaine
+                <ChevronRight className="size-4" />
+              </Link>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Portefeuille et colonne de décision */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0 space-y-4">
+          <Card title={form ? FORMS[form].plural : "Portefeuille des activités"}>
+            <div className="flex gap-2 overflow-x-auto px-5 pb-3 pt-2">
+              <Pill active={!form} onClick={() => setForm(null)}>
+                Toutes <span className="opacity-60">{o.items.length}</span>
+              </Pill>
+              {forms.map((f) => (
+                <Pill key={f} active={form === f} onClick={() => setForm(form === f ? null : f)}>
+                  <span className="size-2 rounded-full" style={{ background: `var(--form-${f})` }} />
+                  {FORMS[f].plural}
+                </Pill>
+              ))}
+            </div>
+            {items.length ? (
+              <Table head={["Activité", "Responsable", "État", "Avancement", "Échéance", "Retards"]}>
+                {items.map((i) => (
+                  <Tr key={i.id} onClick={() => nav(i.href)}>
+                    <Td className="max-w-[210px]">
+                      <span className="flex items-center gap-3">
+                        <span
+                          className="flex size-9 shrink-0 items-center justify-center rounded-full"
+                          style={{
+                            color: `var(--form-${i.form})`,
+                            background: `color-mix(in oklab, var(--form-${i.form}) 12%, transparent)`,
+                          }}
+                        >
+                          {(() => {
+                            const I = FORMS[i.form].Icon;
+                            return <I className="size-4" />;
+                          })()}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold">{i.title}</span>
+                          <span className="text-[12px] text-muted">
+                            {FORMS[i.form].label}
+                            {i.unit_name ? ` · ${i.unit_name}` : ""}
+                          </span>
                         </span>
                       </span>
-                      <span
-                        className="relative z-10 size-2.5 shrink-0 rounded-full ring-[3px] ring-panel transition-transform group-hover:scale-125"
-                        style={{ background: AGENDA_HUE[a.form] ?? "var(--primary)" }}
-                      />
-                      <span className="min-w-0">
-                        <span className="block truncate text-[13px] font-medium">{a.title}</span>
-                        <span className="text-[12px] text-muted">{AGENDA_LABEL[a.form]}</span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="px-4 py-3 text-[13px] text-muted">Rien de prévu sur la semaine.</p>
-            )}
-          </Section>
-          {!!o.risks.length && (
-            <Section title="Risques majeurs" aside={<ShieldAlert className="size-4 text-faint" />}>
-              <ul className="stagger p-2">
-                {o.risks.map((r) => (
-                  <li key={r.id} className="flex items-start gap-3 rounded-lg px-2 py-1.5">
-                    <span
-                      className={cn(
-                        "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg text-[12px] font-semibold tabular",
-                        r.score >= 15
-                          ? "bg-danger-soft text-danger"
-                          : r.score >= 8
-                            ? "bg-warning-soft text-warning"
-                            : "bg-hover text-muted",
+                    </Td>
+                    <Td className="whitespace-nowrap">
+                      {i.lead_name ? (
+                        <span className="flex items-center gap-2" title={i.lead_name}>
+                          <Initials name={i.lead_name} />
+                          <span className="hidden 2xl:inline">{i.lead_name}</span>
+                        </span>
+                      ) : (
+                        "—"
                       )}
-                      title="Probabilité × impact"
+                    </Td>
+                    <Td>
+                      <Status label={HEALTH[i.health].label} tone={HEALTH[i.health].tone} />
+                    </Td>
+                    <Td className="min-w-[96px]">
+                      {i.progress === null ? (
+                        <span className="text-faint">—</span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <ProgressBar value={i.progress} />
+                          <span className="tabular w-10 shrink-0 whitespace-nowrap text-right text-[12px] text-muted">
+                            {i.progress} %
+                          </span>
+                        </span>
+                      )}
+                    </Td>
+                    <Td
+                      className={cn(
+                        "whitespace-nowrap tabular",
+                        isLate(i.next_due, o.today) && i.health !== "done" && "font-medium text-danger",
+                      )}
                     >
-                      {r.score}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-[13px] font-medium leading-snug">{r.title}</span>
-                      <span className="text-[12px] text-muted">{r.owner_name ?? "Sans responsable"}</span>
-                    </span>
-                  </li>
+                      {frDate(i.next_due)}
+                    </Td>
+                    <Td className={cn("tabular", i.overdue > 0 && "font-semibold text-danger")}>{i.overdue || "—"}</Td>
+                  </Tr>
                 ))}
-              </ul>
-            </Section>
-          )}
-          {!!o.indicators.length && (
-            <Section title="Indicateurs stratégiques" aside={<Target className="size-4 text-faint" />}>
-              <ul className="stagger space-y-3 p-4 pt-3">
-                {o.indicators.map((i) => (
-                  <li key={i.id} title={`Source : ${i.source || "non renseignée"}`}>
-                    <p className="flex items-baseline justify-between gap-2 text-[13px]">
-                      <span className="font-medium">{i.name}</span>
-                      <span className="whitespace-nowrap tabular text-[12px] text-muted">
-                        {i.result} / {i.target} {i.unit_label}
-                      </span>
-                    </p>
-                    <div className="mt-1.5">
-                      <ProgressBar
-                        value={i.target > i.baseline ? ((i.result - i.baseline) / (i.target - i.baseline)) * 100 : 0}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </Section>
-          )}
-          {!!o.ending_contracts.length && (
-            <Section title="Fins de mission proches">
-              <ul className="p-2">
-                {o.ending_contracts.map((c) => (
-                  <li key={c.id} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-[13px]">
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">{c.consultant_name}</span>
-                      <span className="block truncate text-[12px] text-muted">{c.title}</span>
-                    </span>
-                    <span className="whitespace-nowrap text-[12px] tabular text-muted">{frDate(c.end_on)}</span>
-                  </li>
-                ))}
-              </ul>
-            </Section>
-          )}
-          <Section title="Exécution des recommandations">
-            <div className="p-4 pt-3">
-              <div className="flex items-center gap-4">
+              </Table>
+            ) : (
+              <Empty title="Aucune activité ici">Créez une activité ou renseignez la nature de vos projets.</Empty>
+            )}
+            <div className="h-3" />
+          </Card>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {!!o.indicators.length && (
+              <Card title="Indicateurs stratégiques" action={<Target className="size-4 text-faint" />}>
+                <ul className="space-y-4 px-5 pb-5 pt-2">
+                  {o.indicators.map((i) => {
+                    const pct =
+                      i.target > i.baseline
+                        ? Math.max(0, Math.min(100, ((i.result - i.baseline) / (i.target - i.baseline)) * 100))
+                        : 0;
+                    return (
+                      <li key={i.id} title={`Source : ${i.source || "non renseignée"}`}>
+                        <p className="flex items-baseline justify-between gap-3 text-[13.5px]">
+                          <span className="font-medium">{i.name}</span>
+                          <span className="whitespace-nowrap tabular text-[12.5px] text-muted">
+                            <span className="font-semibold text-fg">{i.result}</span> / {i.target} {i.unit_label}
+                          </span>
+                        </p>
+                        <div className="mt-2 h-3 overflow-hidden rounded-full bg-hover">
+                          <div
+                            className="bar-fill stripes h-full rounded-full"
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor:
+                                pct >= 75 ? "var(--success)" : pct >= 40 ? "var(--primary)" : "var(--warning)",
+                            }}
+                          />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Card>
+            )}
+            <Card title="Exécution des recommandations" action={<CircleAction to="/reunions" label="Réunions" />}>
+              <div className="flex items-center gap-5 px-5 pb-4 pt-2">
                 <HealthRing
-                  size={96}
+                  size={120}
                   track="var(--hover)"
                   caption={`${rate(o.recommendations)} % des recommandations réalisées`}
                   parts={[
@@ -482,41 +514,145 @@ export function PilotagePage() {
                     { key: "late", value: o.recommendations.late, color: "var(--danger)", label: "En retard" },
                   ]}
                   center={
-                    <span className="font-serif text-[24px] leading-none">
-                      <CountUp value={rate(o.recommendations)} />
-                      <span className="text-[14px]"> %</span>
+                    <span className="text-[26px] font-semibold leading-none tracking-[-0.04em]">
+                      <CountUp value={rate(o.recommendations)} />%
                     </span>
                   }
                 />
-                <ul className="space-y-1 text-[12.5px] text-muted">
-                  <li className="flex items-center gap-2">
-                    <span className="size-2 rounded-full bg-success" />
-                    {o.recommendations.done} réalisées
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="size-2 rounded-full bg-primary" />
-                    {o.recommendations.open - o.recommendations.late} en cours
-                  </li>
-                  <li className={cn("flex items-center gap-2", o.recommendations.late > 0 && "font-medium text-danger")}>
-                    <span className="size-2 rounded-full bg-danger" />
-                    {o.recommendations.late} en retard
-                  </li>
+                <ul className="flex-1 space-y-2 text-[13px]">
+                  <Legend color="var(--success)" label="Réalisées" value={o.recommendations.done} />
+                  <Legend
+                    color="var(--primary)"
+                    label="En cours"
+                    value={o.recommendations.open - o.recommendations.late}
+                  />
+                  <Legend color="var(--danger)" label="En retard" value={o.recommendations.late} />
                 </ul>
               </div>
-              {o.recommendations.late_list.map((r) => (
+              {o.recommendations.late_list.slice(0, 2).map((r) => (
                 <Link
                   key={r.id}
                   to={`/reunions/${r.meeting_id}`}
-                  className="mt-3 block border-t border-line pt-2 text-[12.5px] hover:text-primary"
+                  className="mx-4 mb-3 block rounded-[16px] bg-danger-soft/60 px-3.5 py-2.5 text-[12.5px] transition-colors hover:bg-danger-soft"
                 >
-                  {r.text}
+                  <span className="line-clamp-2 font-medium">{r.text}</span>
                   <span className="mt-0.5 block text-[12px] text-muted">
-                    {r.responsible_name || "Sans responsable"} · <span className="text-danger">{frDate(r.due_on)}</span>
+                    {r.responsible_name || "Sans responsable"} ·{" "}
+                    <span className="font-medium text-danger">{frDate(r.due_on)}</span>
                   </span>
                 </Link>
               ))}
+            </Card>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="hero-night relative isolate overflow-hidden rounded-[24px] p-5 shadow-md">
+            <Topo
+              peaks={BRIEF_PEAKS}
+              width={340}
+              height={240}
+              className="absolute inset-0 -z-10 size-full text-[#8CCBF2] opacity-[0.2]"
+            />
+            <p className="flex items-center gap-2 text-[15px] font-semibold">
+              <Sparkles className="size-4 text-[#8CCBF2]" />
+              Point de situation
+            </p>
+            <ul className="stagger mt-3 space-y-2 text-[13px] leading-snug text-white/80">
+              {o.brief.map((b) => (
+                <li key={b} className="flex gap-2">
+                  <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-[#8CCBF2]" />
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <Card title="Décisions attendues" action={<Scale className="size-4 text-faint" />}>
+            <div className="space-y-2.5 px-4 pb-4 pt-1">
+              {o.decisions.length ? (
+                o.decisions.map((d) => {
+                  const I = FORMS[d.form].Icon;
+                  return (
+                    <Link
+                      key={d.id}
+                      to={d.href}
+                      className="group block rounded-[18px] p-3.5 transition-transform hover:-translate-y-0.5"
+                      style={{ background: `color-mix(in oklab, var(--form-${d.form}) 9%, var(--panel))` }}
+                    >
+                      <span className="flex items-start justify-between gap-2">
+                        <span
+                          className="flex size-8 items-center justify-center rounded-full bg-panel shadow-sm"
+                          style={{ color: `var(--form-${d.form})` }}
+                        >
+                          <I className="size-4" />
+                        </span>
+                        <span className="flex size-7 items-center justify-center rounded-full border border-line-strong text-muted transition-colors group-hover:border-transparent group-hover:bg-night group-hover:text-white">
+                          <ArrowUpRight className="size-3.5" />
+                        </span>
+                      </span>
+                      <span className="mt-2.5 block text-[14px] font-semibold leading-snug">{d.title}</span>
+                      <span className="mt-0.5 block text-[12.5px] leading-snug text-muted">{d.decision_needed}</span>
+                    </Link>
+                  );
+                })
+              ) : (
+                <p className="px-1 py-3 text-[13px] text-muted">Aucun arbitrage en attente.</p>
+              )}
             </div>
-          </Section>
+          </Card>
+
+          {!!o.risks.length && (
+            <Card title="Risques majeurs" action={<ShieldAlert className="size-4 text-faint" />}>
+              <ul className="space-y-2.5 px-4 pb-4 pt-1">
+                {o.risks.map((r) => (
+                  <li key={r.id} className="flex items-start gap-3 rounded-[18px] border border-line p-3">
+                    <span
+                      className={cn(
+                        "flex size-10 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold tabular",
+                        r.score >= 15
+                          ? "bg-danger-soft text-danger"
+                          : r.score >= 8
+                            ? "bg-warning-soft text-warning"
+                            : "bg-hover text-muted",
+                      )}
+                      title="Probabilité × impact"
+                    >
+                      {r.score}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[13.5px] font-semibold leading-snug">{r.title}</span>
+                      <span className="text-[12px] text-muted">{r.owner_name ?? "Sans responsable"}</span>
+                      {r.mitigation && (
+                        <span className="mt-1 line-clamp-2 block text-[12px] leading-snug text-muted">
+                          {r.mitigation}
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
+          {!!o.ending_contracts.length && (
+            <Card title="Fins de mission proches">
+              <ul className="space-y-1 px-4 pb-4 pt-1">
+                {o.ending_contracts.map((c) => (
+                  <li key={c.id} className="flex items-center gap-3 rounded-2xl px-1 py-1.5 text-[13px]">
+                    <Initials name={c.consultant_name} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold">{c.consultant_name}</span>
+                      <span className="block truncate text-[12px] text-muted">{c.title}</span>
+                    </span>
+                    <span className="rounded-full bg-warning-soft px-2.5 py-1 text-[11.5px] font-medium tabular text-warning">
+                      {frDate(c.end_on)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
         </div>
       </div>
     </div>
@@ -527,43 +663,123 @@ const rank = (i: Item) =>
   ({ off_track: 0, at_risk: 1, on_track: 2, done: 3 })[i.health] - (i.decision_needed ? 0.5 : 0);
 const rate = (r: { open: number; done: number }) =>
   r.open + r.done ? Math.round((r.done / (r.open + r.done)) * 100) : 0;
-const HERO_HEALTH: Record<Health, string> = {
-  on_track: "#3DD68C",
-  at_risk: "#F5B544",
-  off_track: "#FF7A7F",
-  done: "#8CCBF2",
-};
-const AGENDA_HUE: Record<string, string> = {
-  reunion: "var(--primary)",
-  commission: "var(--form-commission)",
-  conference: "var(--form-conference)",
-  rendez_vous: "var(--form-rendez_vous)",
-  interne: "var(--form-interne)",
-};
 
-function HeroStat({ label, value, to, alert }: { label: string; value: number; to?: string; alert?: boolean }) {
+function Card({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="min-w-0 rounded-[24px] border border-line bg-panel shadow-sm">
+      <div className="flex items-center justify-between gap-3 px-5 pb-2 pt-5">
+        <h2 className="text-[17px] font-semibold tracking-[-0.02em]">{title}</h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function CircleAction({ to, label }: { to: string; label: string }) {
+  return (
+    <Link
+      to={to}
+      aria-label={label}
+      title={label}
+      className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line-strong text-fg transition-colors hover:border-transparent hover:bg-night hover:text-white"
+    >
+      <ArrowUpRight className="size-4" />
+    </Link>
+  );
+}
+
+function RoundLink({ to, label, Icon, dot }: { to: string; label: string; Icon: LucideIcon; dot?: boolean }) {
+  return (
+    <Link
+      to={to}
+      aria-label={label}
+      title={label}
+      className="relative flex size-11 items-center justify-center rounded-full border border-line-strong bg-panel text-fg transition-colors hover:bg-hover"
+    >
+      <Icon className="size-4.5" />
+      {dot && <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-danger ring-2 ring-panel" />}
+    </Link>
+  );
+}
+
+function Kpi({
+  label,
+  value,
+  Icon,
+  foot,
+  to,
+  alert,
+}: {
+  label: string;
+  value: number;
+  Icon: LucideIcon;
+  foot: string;
+  to?: string;
+  alert?: boolean;
+}) {
   const body = (
     <>
-      <p className="flex items-center gap-2 font-serif text-[34px] leading-none">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[13px] font-medium leading-snug sm:text-[14px]">{label}</p>
+        <span
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors sm:size-10",
+            alert ? "border-danger/30 bg-danger-soft text-danger" : "border-line-strong text-fg",
+            to && "group-hover:border-transparent group-hover:bg-night group-hover:text-white",
+          )}
+        >
+          <Icon className="size-4.5" />
+        </span>
+      </div>
+      <p className="mt-2 text-[44px] font-semibold leading-none tracking-[-0.04em]">
         <CountUp value={value} />
-        {alert && <span className="pulse-dot size-1.5 rounded-full bg-[#FF7A7F]" aria-hidden />}
-        {to && (
-          <ArrowUpRight className="size-4 text-white/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white" />
-        )}
       </p>
-      <p className="mt-1.5 text-[11.5px] uppercase leading-tight tracking-[0.08em] text-white/55">{label}</p>
+      <p
+        className={cn(
+          "mt-3 inline-flex items-center gap-1.5 text-[12.5px]",
+          alert ? "font-medium text-danger" : "text-muted",
+        )}
+      >
+        {alert && <span className="pulse-dot size-1.5 rounded-full bg-danger" />}
+        {foot}
+      </p>
     </>
   );
-  const cls =
-    "group border-white/10 px-6 py-4 [&:not(:first-child)]:border-l max-sm:[&:nth-child(odd)]:border-l-0 max-sm:[&:nth-child(n+3)]:border-t";
+  const cls = "group min-w-0 rounded-[24px] border border-line bg-panel p-4 shadow-sm sm:p-5";
   return to ? (
-    <Link to={to} className={cn(cls, "transition-colors hover:bg-white/[0.05]")}>
+    <Link to={to} className={cn(cls, "card-hover")}>
       {body}
     </Link>
   ) : (
     <div className={cls}>{body}</div>
   );
 }
+
+function Pill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-[12.5px] font-medium transition-colors",
+        active
+          ? "border-night bg-night text-white dark:border-primary dark:bg-primary dark:text-on-primary"
+          : "border-line-strong text-fg hover:bg-hover",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+const Legend = ({ color, label, value }: { color: string; label: string; value: number }) => (
+  <li className="flex items-center gap-2">
+    <span className="size-2.5 rounded-full" style={{ background: color }} />
+    <span className="text-muted">{label}</span>
+    <span className="ml-auto font-semibold tabular">{value}</span>
+  </li>
+);
 
 function Initials({ name }: { name: string }) {
   const ini = name
@@ -573,7 +789,7 @@ function Initials({ name }: { name: string }) {
     .join("")
     .toUpperCase();
   return (
-    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[10px] font-semibold text-primary">
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[11px] font-semibold text-primary">
       {ini}
     </span>
   );

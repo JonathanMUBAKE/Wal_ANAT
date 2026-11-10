@@ -50,7 +50,7 @@ import { api } from "@/lib/api";
 import { Topo } from "./territory";
 import { STATUS } from "@/lib/format";
 
-const SIDE_PEAKS = [{ x: 210, y: 360, rings: 11, seed: 3.4, r0: 12, step: 19 }];
+const SIDE_PEAKS = [{ x: 210, y: 20, rings: 9, seed: 3.4, r0: 12, step: 17 }];
 
 export const ORG_ROLE: Record<string, string> = {
   owner: "Propriétaire",
@@ -124,10 +124,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          "group relative flex h-8 items-center gap-2.5 rounded-lg px-2 text-[13.5px] transition-colors",
-          isActive
-            ? "bg-brand-soft font-medium text-primary before:absolute before:-left-3 before:top-1.5 before:h-5 before:w-[3px] before:rounded-r-full before:bg-primary"
-            : "text-muted hover:bg-hover hover:text-fg",
+          "group relative flex h-9 items-center gap-3 rounded-full px-3 text-[13.5px] transition-colors",
+          isActive ? "bg-brand-soft font-semibold text-primary" : "text-muted hover:bg-hover hover:text-fg",
         )
       }
     >
@@ -137,7 +135,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <span
           className={cn(
             "min-w-[18px] rounded-full px-1.5 text-center text-[11px] font-semibold tabular",
-            ai ? "bg-ai text-white" : "bg-fg text-night",
+            ai ? "bg-ai text-white" : "bg-primary text-on-primary",
           )}
         >
           {badge}
@@ -147,15 +145,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   );
 
   return (
-    <div className="nightside relative isolate flex h-full flex-col overflow-hidden">
-      <Topo
-        peaks={SIDE_PEAKS}
-        width={260}
-        height={420}
-        draw={false}
-        className="absolute inset-x-0 bottom-0 -z-10 h-[420px] w-full text-white opacity-[0.07]"
-      />
-      <div className="flex items-center gap-2 px-3 pb-2 pt-3">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-[24px] border border-line bg-panel shadow-sm">
+      <div className="flex items-center gap-2 px-3 pb-2 pt-4">
         <Menu>
           <MenuTrigger asChild>
             <button className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1.5 text-left hover:bg-hover">
@@ -233,7 +224,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="px-3 pb-2">
         <button
           onClick={() => shell.setPalette(true)}
-          className="flex h-8 w-full items-center gap-2 rounded-lg border border-line bg-panel px-2.5 text-[13px] text-faint shadow-sm hover:text-muted"
+          className="flex h-10 w-full items-center gap-2 rounded-full border border-line-strong bg-panel px-3.5 text-[13px] text-faint hover:text-muted"
         >
           <Search className="size-3.5" />
           <span className="flex-1 text-left">Rechercher…</span>
@@ -360,23 +351,27 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </Dialog>
 
-      <div className="border-t border-line p-3">
+      <div className="p-3">
         <button
           onClick={() => shell.openAssistant()}
-          className="group relative flex w-full items-center gap-2.5 overflow-hidden rounded-xl border border-ai-line bg-ai-soft px-3 py-2.5 text-left"
+          className="hero-night group relative isolate flex w-full flex-col overflow-hidden rounded-[20px] p-4 text-left shadow-md"
         >
-          <span className="flex size-7 items-center justify-center rounded-lg bg-[conic-gradient(from_200deg,var(--ai),#4FB3F0,var(--ai))] text-white shadow-sm">
-            <Sparkles className="size-3.5" />
+          <Topo
+            peaks={SIDE_PEAKS}
+            width={240}
+            height={150}
+            draw={false}
+            className="absolute inset-0 -z-10 size-full text-[#8CCBF2] opacity-[0.22]"
+          />
+          <span className="flex items-center gap-2 text-[13.5px] font-semibold">
+            <Sparkles className="size-4 text-[#C4B8FF]" />
+            Assistant IA
           </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[13px] font-semibold text-ai-fg">Demander à l'assistant IA</span>
-            <span className="block truncate text-[11.5px] text-muted">
-              {aiStatus?.provider === "anthropic" ? "Propulsé par Claude" : "Mode démo · sans clé API"}
-            </span>
+          <span className="mt-1 text-[12px] leading-snug text-white/70">
+            Il propose, vous décidez. {aiStatus?.provider === "anthropic" ? "Propulsé par Claude." : "Mode démo."}
           </span>
-          <span className="flex gap-0.5">
-            <Kbd>⌘</Kbd>
-            <Kbd>J</Kbd>
+          <span className="mt-3 inline-flex h-9 items-center justify-center rounded-full bg-white text-[12.5px] font-semibold text-[#0B2A45] transition-transform group-hover:scale-[1.02]">
+            Poser une question
           </span>
         </button>
       </div>

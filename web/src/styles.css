@@ -5,14 +5,14 @@
 /* ANAT Pilotage — graphite froid et filets nets, relevés du bleu de l'Agence (#007BC4) et d'un bleu nuit.
    L'iris reste réservé à l'IA. Les documents officiels gardent Montserrat. */
 :root {
-  --bg: #FAFBFC;
+  --bg: #F1F4F8;
   --panel: #FFFFFF;
-  --sidebar: #F4F6F8;
+  --sidebar: #F1F4F8;
   --raised: #FFFFFF;
   --hover: rgba(15, 35, 60, 0.045);
   --active: rgba(0, 123, 196, 0.1);
-  --line: rgba(15, 30, 50, 0.085);
-  --line-strong: rgba(15, 30, 50, 0.15);
+  --line: rgba(15, 30, 50, 0.06);
+  --line-strong: rgba(15, 30, 50, 0.12);
   --field: rgba(15, 30, 50, 0.17);
   --table-head: transparent;
   --fg: #111A27;
@@ -36,8 +36,8 @@
   --danger-soft: rgba(209, 59, 59, 0.09);
   --info: #2F6FEB;
   --info-soft: rgba(47, 111, 235, 0.09);
-  --shadow-sm: 0 1px 2px rgba(16, 16, 30, 0.05);
-  --shadow-md: 0 1px 2px rgba(16, 16, 30, 0.04), 0 6px 20px -6px rgba(16, 16, 30, 0.12);
+  --shadow-sm: 0 1px 2px rgba(16, 30, 54, 0.03), 0 8px 24px -12px rgba(16, 30, 54, 0.08);
+  --shadow-md: 0 2px 4px rgba(16, 30, 54, 0.03), 0 16px 40px -14px rgba(16, 30, 54, 0.16);
   --shadow-lg: 0 2px 4px rgba(16, 16, 30, 0.04), 0 24px 60px -16px rgba(16, 16, 30, 0.28);
   /* Une teinte par forme d'activité, toujours accompagnée de son icône et de son nom */
   --form-projet_interne: #007BC4;
@@ -93,30 +93,6 @@
   color-scheme: dark;
 }
 
-/* Barre latérale bleu nuit : les jetons sont redéfinis localement, les composants restent les mêmes */
-.nightside {
-  --fg: #EAF2F9;
-  --muted: rgba(226, 238, 248, 0.66);
-  --faint: rgba(226, 238, 248, 0.42);
-  --hover: rgba(255, 255, 255, 0.06);
-  --active: rgba(255, 255, 255, 0.09);
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.16);
-  --panel: rgba(255, 255, 255, 0.05);
-  --bg: rgba(255, 255, 255, 0.06);
-  --primary: #8CCBF2;
-  --brand-soft: rgba(140, 203, 242, 0.13);
-  --ai-fg: #C4B8FF;
-  --ai-soft: rgba(158, 140, 252, 0.12);
-  --ai-line: rgba(158, 140, 252, 0.3);
-  --shadow-sm: none;
-  color: var(--fg);
-  background:
-    radial-gradient(420px 260px at 0% 0%, rgba(0, 123, 196, 0.35), transparent 70%),
-    linear-gradient(180deg, #0B2A45 0%, #0A2239 55%, #081B2E 100%);
-}
-.dark .nightside { background: linear-gradient(180deg, #0B1B2C, #070F1A); }
-
 @theme inline {
   --color-bg: var(--bg);
   --color-panel: var(--panel);
@@ -150,7 +126,8 @@
   --color-info-soft: var(--info-soft);
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+  /* Les chiffres « font-serif » passent en Geist demi-gras, plus net et plus moderne */
+  --font-serif: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
@@ -175,6 +152,7 @@ input, textarea, select, button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 6px; }
 input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
 .tabular { font-variant-numeric: tabular-nums; }
+.font-serif { font-weight: 600; letter-spacing: -0.035em; font-style: normal; }
 }
 
 /* Barres de défilement discrètes */
@@ -254,6 +232,22 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
 }
 .form-tile:hover::after, .form-tile[aria-pressed="true"]::after { opacity: 1; }
 .form-chip { color: var(--hue); background: color-mix(in oklab, var(--hue) 11%, transparent); }
+
+/* Carte chiffre mise en avant, au bleu de l'Agence */
+.kpi-feature {
+  background:
+    radial-gradient(260px 160px at 100% 0%, rgba(140, 203, 242, 0.45), transparent 70%),
+    linear-gradient(140deg, #0A8FDB 0%, #007BC4 45%, #005F99 100%);
+}
+/* Barre vide : hachures fines plutôt qu'un trou */
+.hatch {
+  background: repeating-linear-gradient(135deg, var(--line-strong) 0 2px, transparent 2px 7px) !important;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+/* Rayures douces sur les barres d'avancement épaisses */
+.stripes { background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0 6px, transparent 6px 12px); }
+@keyframes bar-rise { from { transform: scaleY(0); } }
+.bar-rise { transform-origin: bottom; animation: bar-rise 700ms cubic-bezier(.2, .8, .2, 1) backwards; }
 
 .card-hover { transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease; }
 .card-hover:hover { box-shadow: var(--shadow-md); border-color: var(--line-strong); transform: translateY(-1px); }

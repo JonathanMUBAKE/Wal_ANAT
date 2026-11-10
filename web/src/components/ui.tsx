@@ -42,11 +42,11 @@ export const Button = forwardRef<HTMLButtonElement, BtnProps>(function Button(
       disabled={disabled || loading}
       className={cn(
         "inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-medium transition-[background,color,box-shadow,border-color,transform] duration-150 active:scale-[0.985] disabled:pointer-events-none disabled:opacity-50 select-none",
-        size === "sm" && "h-7.5 rounded-lg px-2.5 text-[12.5px]",
-        size === "md" && "h-9 rounded-lg px-3.5 text-[13px]",
-        size === "lg" && "h-10 rounded-[10px] px-4 text-sm",
+        size === "sm" && "h-8 rounded-full px-3 text-[12.5px]",
+        size === "md" && "h-10 rounded-full px-4.5 text-[13px]",
+        size === "lg" && "h-11 rounded-full px-5 text-sm",
         variant === "primary" && "btn-brand text-on-primary",
-        variant === "secondary" && "border border-line-strong bg-raised text-fg shadow-sm hover:bg-hover",
+        variant === "secondary" && "border border-line-strong bg-raised text-fg hover:bg-hover",
         variant === "ghost" && "text-muted hover:bg-hover hover:text-fg",
         variant === "ai" &&
           "border border-ai-line bg-ai-soft text-ai-fg hover:bg-[color-mix(in_oklab,var(--ai)_16%,transparent)]",
@@ -71,7 +71,7 @@ export const IconButton = forwardRef<
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-hover hover:text-fg disabled:opacity-40",
+        "inline-flex shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-hover hover:text-fg disabled:opacity-40",
         size === "sm" ? "size-6" : "size-8",
         className,
       )}

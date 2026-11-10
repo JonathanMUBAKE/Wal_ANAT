@@ -47,7 +47,10 @@ import { useAiStatus, useApprovals, useCan, useMe, useNotifications, useProjects
 import { useShell } from "@/lib/shell";
 import { AvatarUpload } from "./AvatarUpload";
 import { api } from "@/lib/api";
+import { Topo } from "./territory";
 import { STATUS } from "@/lib/format";
+
+const SIDE_PEAKS = [{ x: 210, y: 360, rings: 11, seed: 3.4, r0: 12, step: 19 }];
 
 export const ORG_ROLE: Record<string, string> = {
   owner: "Propriétaire",
@@ -134,7 +137,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <span
           className={cn(
             "min-w-[18px] rounded-full px-1.5 text-center text-[11px] font-semibold tabular",
-            ai ? "bg-ai text-white" : "bg-fg text-bg",
+            ai ? "bg-ai text-white" : "bg-fg text-night",
           )}
         >
           {badge}
@@ -144,7 +147,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   );
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="nightside relative isolate flex h-full flex-col overflow-hidden">
+      <Topo
+        peaks={SIDE_PEAKS}
+        width={260}
+        height={420}
+        draw={false}
+        className="absolute inset-x-0 bottom-0 -z-10 h-[420px] w-full text-white opacity-[0.07]"
+      />
       <div className="flex items-center gap-2 px-3 pb-2 pt-3">
         <Menu>
           <MenuTrigger asChild>

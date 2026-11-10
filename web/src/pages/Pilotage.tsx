@@ -30,6 +30,7 @@ import {
   isLate,
   type Tone,
 } from "@/components/gov";
+import { HERO_PEAKS, HealthRing, Topo } from "@/components/territory";
 import { api } from "@/lib/api";
 import { useMe } from "@/lib/hooks";
 import { firstName, greeting } from "@/lib/format";
@@ -136,42 +137,67 @@ export function PilotagePage() {
     .sort((a, b) => rank(a) - rank(b) || (a.next_due ?? "9").localeCompare(b.next_due ?? "9"));
   const total = Object.values(o.health).reduce((s, n) => s + n, 0);
 
+  const healthy = (o.health.on_track ?? 0) + (o.health.done ?? 0);
+  const score = total ? Math.round((healthy / total) * 100) : 0;
+
   return (
-    <div className="mx-auto max-w-[1320px] space-y-4 p-4 sm:px-8 sm:py-6">
-      <section className="hero-night overflow-hidden rounded-2xl p-6 shadow-md sm:p-8">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
-          <div>
-            <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-[#8CCBF2]">
+    <div className="mx-auto max-w-[1320px] space-y-5 p-4 sm:px-8 sm:py-6">
+      <section className="hero-night relative isolate overflow-hidden rounded-3xl shadow-lg">
+        <Topo peaks={HERO_PEAKS} className="absolute inset-0 -z-10 size-full text-[#8CCBF2] opacity-[0.2]" />
+        <div className="grid items-center gap-8 p-6 sm:p-9 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="min-w-0">
+            <p className="eyebrow text-[11.5px] font-medium uppercase tracking-[0.18em]">
               {format(parseISO(o.today), "EEEE d MMMM yyyy", { locale: fr })}
+              <span className="mx-2 opacity-50">·</span>Direction générale
             </p>
-            <h1 className="mt-2 font-serif text-[40px] leading-[1.05] tracking-[-0.01em] sm:text-[52px]">
-              {greeting()}, {firstName(me?.name ?? "")}
+            <h1 className="mt-3 font-serif text-[44px] leading-[1.02] tracking-[-0.015em] sm:text-[60px]">
+              {greeting()}, <span className="italic text-[#BFE3F8]">{firstName(me?.name ?? "")}</span>
             </h1>
-            <div className="mt-5 grid grid-cols-3 gap-x-5 gap-y-3 sm:grid-cols-5">
-              <HeroStat label="Activités suivies" value={total} />
-              <HeroStat label="Décisions attendues" value={o.counters.decisions} />
-              <HeroStat label="Retards à résorber" value={o.counters.retards} />
-              <Link to="/parapheur" className="transition-opacity hover:opacity-80">
-                <HeroStat label="À signer" value={o.to_sign} />
-              </Link>
-              <Link to="/attributions" className="transition-opacity hover:opacity-80">
-                <HeroStat label="Écarts à examiner" value={o.open_gaps} />
-              </Link>
-            </div>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-sm">
-            <p className="mb-2 text-[11.5px] font-medium uppercase tracking-[0.1em] text-[#8CCBF2]">
-              Point de situation
-            </p>
-            <ul className="stagger space-y-1.5 text-[13.5px] leading-snug text-white/85">
+            <ul className="stagger mt-5 max-w-2xl space-y-2 border-l border-white/15 pl-4 text-[14px] leading-snug text-white/80">
               {o.brief.map((b) => (
-                <li key={b} className="flex gap-2">
-                  <span className="mt-[7px] size-1 shrink-0 rounded-full bg-[#8CCBF2]" />
-                  {b}
+                <li key={b}>{b}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="flex items-center gap-6 rounded-2xl border border-white/10 bg-white/[0.05] p-5 backdrop-blur-md">
+            <HealthRing
+              size={150}
+              caption={`Santé du portefeuille : ${score} % dans les temps ou terminé`}
+              parts={(Object.keys(HEALTH) as Health[]).map((h) => ({
+                key: h,
+                value: o.health[h] ?? 0,
+                color: HERO_HEALTH[h],
+                label: HEALTH[h].label,
+              }))}
+              center={
+                <>
+                  <span className="font-serif text-[38px] leading-none">
+                    <CountUp value={score} />
+                    <span className="text-[22px]"> %</span>
+                  </span>
+                  <span className="mt-1.5 max-w-[78px] text-[9.5px] uppercase leading-tight tracking-[0.12em] text-white/55">
+                    en bonne voie
+                  </span>
+                </>
+              }
+            />
+            <ul className="space-y-2 text-[12.5px]">
+              {(Object.keys(HEALTH) as Health[]).map((h) => (
+                <li key={h} className="flex items-center gap-2.5 text-white/75">
+                  <span className="size-2 rounded-full" style={{ background: HERO_HEALTH[h] }} />
+                  <span className="flex-1">{HEALTH[h].label}</span>
+                  <span className="tabular pl-3 font-medium text-white">{o.health[h] ?? 0}</span>
                 </li>
               ))}
             </ul>
           </div>
+        </div>
+        <div className="grid grid-cols-2 border-t border-white/10 bg-[#061a2c]/40 sm:grid-cols-5">
+          <HeroStat label="Activités suivies" value={total} />
+          <HeroStat label="Décisions attendues" value={o.counters.decisions} />
+          <HeroStat label="Retards à résorber" value={o.counters.retards} alert={o.counters.retards > 0} />
+          <HeroStat label="À signer" value={o.to_sign} to="/parapheur" />
+          <HeroStat label="Écarts à examiner" value={o.open_gaps} to="/attributions" />
         </div>
       </section>
 
@@ -179,29 +205,53 @@ export function PilotagePage() {
         {(Object.keys(FORMS) as Form[]).map((f) => {
           const { plural, Icon, counter } = FORMS[f];
           const active = form === f;
+          const mine = o.items.filter((i) => i.form === f);
+          const late = mine.filter((i) => i.overdue > 0).length;
           return (
             <button
               key={f}
               aria-pressed={active}
               onClick={() => setForm(active ? null : f)}
+              style={{ "--hue": `var(--form-${f})` } as React.CSSProperties}
               className={cn(
-                "card-hover rounded-xl border bg-panel p-4 text-left shadow-sm",
-                active ? "border-primary ring-2 ring-[var(--ring)]" : "border-line",
+                "form-tile card-hover rounded-2xl border bg-panel p-4 text-left shadow-sm",
+                active ? "border-[var(--hue)] ring-2 ring-[color-mix(in_oklab,var(--hue)_22%,transparent)]" : "border-line",
               )}
             >
-              <span className="flex size-7 items-center justify-center rounded-lg bg-brand-soft text-primary">
-                <Icon className="size-3.5" />
+              <span className="flex items-center justify-between gap-2">
+                <span className="form-chip flex size-8 items-center justify-center rounded-xl">
+                  <Icon className="size-4" />
+                </span>
+                {late > 0 && (
+                  <span className="rounded-full bg-danger-soft px-1.5 text-[10.5px] font-semibold text-danger">
+                    {late} en retard
+                  </span>
+                )}
               </span>
-              <p className="mt-3 font-serif text-[32px] leading-none">
+              <p className="mt-4 font-serif text-[40px] leading-none">
                 <CountUp value={o.counters[counter] ?? 0} />
               </p>
               <p className="mt-1 text-[12.5px] text-muted">{plural}</p>
+              <span
+                className="mt-3 flex min-h-2 flex-wrap gap-1"
+                aria-label={mine.map((i) => `${i.title} : ${HEALTH[i.health].label}`).join(", ") || "Aucune activité"}
+              >
+                {mine.slice(0, 14).map((i) => (
+                  <span
+                    key={i.id}
+                    title={`${i.title} · ${HEALTH[i.health].label}`}
+                    className="size-2 rounded-full"
+                    style={{ background: HEALTH[i.health].color }}
+                  />
+                ))}
+                {mine.length > 14 && <span className="text-[10.5px] leading-none text-faint">+{mine.length - 14}</span>}
+              </span>
             </button>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Section
           title={form ? FORMS[form].plural : "Portefeuille des activités"}
           aside={
@@ -241,13 +291,30 @@ export function PilotagePage() {
               {items.map((i) => (
                 <Tr key={i.id} onClick={() => nav(i.href)}>
                   <Td className="max-w-[230px]">
-                    <span className="block truncate font-medium">{i.title}</span>
-                    <span className="text-[12px] text-muted">
-                      {FORMS[i.form].label}
-                      {i.unit_name ? ` · ${i.unit_name}` : ""}
+                    <span className="flex items-start gap-2.5">
+                      <span
+                        className="mt-[3px] h-8 w-[3px] shrink-0 rounded-full"
+                        style={{ background: `var(--form-${i.form})` }}
+                      />
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium">{i.title}</span>
+                        <span className="text-[12px] text-muted">
+                          {FORMS[i.form].label}
+                          {i.unit_name ? ` · ${i.unit_name}` : ""}
+                        </span>
+                      </span>
                     </span>
                   </Td>
-                  <Td className="whitespace-nowrap">{i.lead_name ?? "—"}</Td>
+                  <Td className="whitespace-nowrap">
+                    {i.lead_name ? (
+                      <span className="flex items-center gap-2" title={i.lead_name}>
+                        <Initials name={i.lead_name} />
+                        <span className="hidden 2xl:inline">{i.lead_name}</span>
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </Td>
                   <Td>
                     <Status label={HEALTH[i.health].label} tone={HEALTH[i.health].tone} />
                   </Td>
@@ -303,30 +370,36 @@ export function PilotagePage() {
             </div>
           </Section>
           <Section title="Sept prochains jours" aside={<CalendarClock className="size-4 text-faint" />}>
-            <div className="p-2">
-              {o.agenda.length ? (
-                o.agenda.slice(0, 7).map((a) => (
-                  <Link
-                    key={a.id}
-                    to={a.href}
-                    className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-hover"
-                  >
-                    <span className="flex w-10 shrink-0 flex-col items-center rounded-lg border border-line bg-bg py-0.5">
-                      <span className="font-serif text-[18px] leading-none">{format(parseISO(a.date), "d")}</span>
-                      <span className="text-[9.5px] uppercase text-muted">
-                        {format(parseISO(a.date), "MMM", { locale: fr })}
+            {o.agenda.length ? (
+              <ol className="relative px-2 pb-2 pt-1">
+                <span aria-hidden className="absolute bottom-5 left-[60px] top-4 w-px bg-line" />
+                {o.agenda.slice(0, 7).map((a) => (
+                  <li key={a.id}>
+                    <Link
+                      to={a.href}
+                      className="group relative flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-hover"
+                    >
+                      <span className="w-9 shrink-0 text-right leading-none">
+                        <span className="block font-serif text-[20px]">{format(parseISO(a.date), "d")}</span>
+                        <span className="text-[9.5px] uppercase tracking-wide text-muted">
+                          {format(parseISO(a.date), "EEE", { locale: fr })}
+                        </span>
                       </span>
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-medium">{a.title}</span>
-                      <span className="text-[12px] text-muted">{AGENDA_LABEL[a.form]}</span>
-                    </span>
-                  </Link>
-                ))
-              ) : (
-                <p className="px-2 py-3 text-[13px] text-muted">Rien de prévu sur la semaine.</p>
-              )}
-            </div>
+                      <span
+                        className="relative z-10 size-2.5 shrink-0 rounded-full ring-[3px] ring-panel transition-transform group-hover:scale-125"
+                        style={{ background: AGENDA_HUE[a.form] ?? "var(--primary)" }}
+                      />
+                      <span className="min-w-0">
+                        <span className="block truncate text-[13px] font-medium">{a.title}</span>
+                        <span className="text-[12px] text-muted">{AGENDA_LABEL[a.form]}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="px-4 py-3 text-[13px] text-muted">Rien de prévu sur la semaine.</p>
+            )}
           </Section>
           {!!o.risks.length && (
             <Section title="Risques majeurs" aside={<ShieldAlert className="size-4 text-faint" />}>
@@ -393,20 +466,42 @@ export function PilotagePage() {
           )}
           <Section title="Exécution des recommandations">
             <div className="p-4 pt-3">
-              <div className="flex items-end justify-between">
-                <p className="font-serif text-[32px] leading-none">
-                  <CountUp value={rate(o.recommendations)} /> %
-                </p>
-                <p className="text-right text-[12px] text-muted">
-                  {o.recommendations.done} réalisées
-                  <br />
-                  <span className={o.recommendations.late ? "font-medium text-danger" : ""}>
+              <div className="flex items-center gap-4">
+                <HealthRing
+                  size={96}
+                  track="var(--hover)"
+                  caption={`${rate(o.recommendations)} % des recommandations réalisées`}
+                  parts={[
+                    { key: "done", value: o.recommendations.done, color: "var(--success)", label: "Réalisées" },
+                    {
+                      key: "open",
+                      value: o.recommendations.open - o.recommendations.late,
+                      color: "var(--primary)",
+                      label: "En cours",
+                    },
+                    { key: "late", value: o.recommendations.late, color: "var(--danger)", label: "En retard" },
+                  ]}
+                  center={
+                    <span className="font-serif text-[24px] leading-none">
+                      <CountUp value={rate(o.recommendations)} />
+                      <span className="text-[14px]"> %</span>
+                    </span>
+                  }
+                />
+                <ul className="space-y-1 text-[12.5px] text-muted">
+                  <li className="flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-success" />
+                    {o.recommendations.done} réalisées
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-primary" />
+                    {o.recommendations.open - o.recommendations.late} en cours
+                  </li>
+                  <li className={cn("flex items-center gap-2", o.recommendations.late > 0 && "font-medium text-danger")}>
+                    <span className="size-2 rounded-full bg-danger" />
                     {o.recommendations.late} en retard
-                  </span>
-                </p>
-              </div>
-              <div className="mt-2">
-                <ProgressBar value={rate(o.recommendations)} tone="success" />
+                  </li>
+                </ul>
               </div>
               {o.recommendations.late_list.map((r) => (
                 <Link
@@ -432,11 +527,54 @@ const rank = (i: Item) =>
   ({ off_track: 0, at_risk: 1, on_track: 2, done: 3 })[i.health] - (i.decision_needed ? 0.5 : 0);
 const rate = (r: { open: number; done: number }) =>
   r.open + r.done ? Math.round((r.done / (r.open + r.done)) * 100) : 0;
-const HeroStat = ({ label, value }: { label: string; value: number }) => (
-  <div>
-    <p className="font-serif text-[34px] leading-none">
-      <CountUp value={value} />
-    </p>
-    <p className="mt-1 text-[12px] leading-tight text-white/65">{label}</p>
-  </div>
-);
+const HERO_HEALTH: Record<Health, string> = {
+  on_track: "#3DD68C",
+  at_risk: "#F5B544",
+  off_track: "#FF7A7F",
+  done: "#8CCBF2",
+};
+const AGENDA_HUE: Record<string, string> = {
+  reunion: "var(--primary)",
+  commission: "var(--form-commission)",
+  conference: "var(--form-conference)",
+  rendez_vous: "var(--form-rendez_vous)",
+  interne: "var(--form-interne)",
+};
+
+function HeroStat({ label, value, to, alert }: { label: string; value: number; to?: string; alert?: boolean }) {
+  const body = (
+    <>
+      <p className="flex items-center gap-2 font-serif text-[34px] leading-none">
+        <CountUp value={value} />
+        {alert && <span className="pulse-dot size-1.5 rounded-full bg-[#FF7A7F]" aria-hidden />}
+        {to && (
+          <ArrowUpRight className="size-4 text-white/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white" />
+        )}
+      </p>
+      <p className="mt-1.5 text-[11.5px] uppercase leading-tight tracking-[0.08em] text-white/55">{label}</p>
+    </>
+  );
+  const cls =
+    "group border-white/10 px-6 py-4 [&:not(:first-child)]:border-l max-sm:[&:nth-child(odd)]:border-l-0 max-sm:[&:nth-child(n+3)]:border-t";
+  return to ? (
+    <Link to={to} className={cn(cls, "transition-colors hover:bg-white/[0.05]")}>
+      {body}
+    </Link>
+  ) : (
+    <div className={cls}>{body}</div>
+  );
+}
+
+function Initials({ name }: { name: string }) {
+  const ini = name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  return (
+    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[10px] font-semibold text-primary">
+      {ini}
+    </span>
+  );
+}

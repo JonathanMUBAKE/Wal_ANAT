@@ -11,6 +11,9 @@ import { AlertTriangle, Check, CircleDashed, Clock, type LucideIcon, X } from "l
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { cn } from "./ui";
+import { Topo } from "./territory";
+
+const HEADER_PEAKS = [{ x: 420, y: 40, rings: 9, seed: 2.2, r0: 10, step: 17 }];
 
 // Composants de la version ANAT : libellé permanent, filet fin, halo à la saisie, erreur écrite sous le champ.
 const fieldBase =
@@ -78,7 +81,13 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="mx-auto flex w-full max-w-[1240px] flex-wrap items-end justify-between gap-3 px-4 pb-4 pt-7 sm:px-8">
+    <header className="relative isolate mx-auto flex w-full max-w-[1240px] flex-wrap items-end justify-between gap-3 px-4 pb-4 pt-7 sm:px-8">
+      <Topo
+        peaks={HEADER_PEAKS}
+        width={520}
+        height={150}
+        className="absolute right-0 top-0 -z-10 h-full w-[520px] max-w-full text-primary opacity-[0.16] [mask-image:linear-gradient(90deg,transparent,#000_45%)]"
+      />
       <div className="min-w-0">
         <h1 className="font-serif text-[34px] leading-[1.08] tracking-[-0.01em]">{title}</h1>
         {subtitle && <p className="mt-1.5 max-w-2xl text-[13.5px] text-muted">{subtitle}</p>}
@@ -99,10 +108,10 @@ export const Section = ({
   children: ReactNode;
   className?: string;
 }) => (
-  <section className={cn("rounded-xl border border-line bg-panel shadow-sm", className)}>
+  <section className={cn("rounded-2xl border border-line bg-panel shadow-sm", className)}>
     {title && (
       <div className="flex items-center justify-between gap-2 px-4 pb-1 pt-3.5">
-        <h2 className="text-[14px] font-semibold">{title}</h2>
+        <h2 className="text-[14px] font-semibold tracking-[-0.01em]">{title}</h2>
         {aside}
       </div>
     )}

@@ -39,6 +39,13 @@
   --shadow-sm: 0 1px 2px rgba(16, 16, 30, 0.05);
   --shadow-md: 0 1px 2px rgba(16, 16, 30, 0.04), 0 6px 20px -6px rgba(16, 16, 30, 0.12);
   --shadow-lg: 0 2px 4px rgba(16, 16, 30, 0.04), 0 24px 60px -16px rgba(16, 16, 30, 0.28);
+  /* Une teinte par forme d'activité, toujours accompagnée de son icône et de son nom */
+  --form-projet_interne: #007BC4;
+  --form-projet_confie: #0B8580;
+  --form-commission: #9A7420;
+  --form-conference: #B4553A;
+  --form-rendez_vous: #4A5FC1;
+  --form-interne: #56677F;
   color-scheme: light;
 }
 
@@ -77,8 +84,38 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -8px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 64px -12px rgba(0, 0, 0, 0.75);
+  --form-projet_interne: #4FB0EC;
+  --form-projet_confie: #3CC4BD;
+  --form-commission: #D9B45A;
+  --form-conference: #F08A6C;
+  --form-rendez_vous: #8C9CF2;
+  --form-interne: #A3B1C6;
   color-scheme: dark;
 }
+
+/* Barre latérale bleu nuit : les jetons sont redéfinis localement, les composants restent les mêmes */
+.nightside {
+  --fg: #EAF2F9;
+  --muted: rgba(226, 238, 248, 0.66);
+  --faint: rgba(226, 238, 248, 0.42);
+  --hover: rgba(255, 255, 255, 0.06);
+  --active: rgba(255, 255, 255, 0.09);
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --panel: rgba(255, 255, 255, 0.05);
+  --bg: rgba(255, 255, 255, 0.06);
+  --primary: #8CCBF2;
+  --brand-soft: rgba(140, 203, 242, 0.13);
+  --ai-fg: #C4B8FF;
+  --ai-soft: rgba(158, 140, 252, 0.12);
+  --ai-line: rgba(158, 140, 252, 0.3);
+  --shadow-sm: none;
+  color: var(--fg);
+  background:
+    radial-gradient(420px 260px at 0% 0%, rgba(0, 123, 196, 0.35), transparent 70%),
+    linear-gradient(180deg, #0B2A45 0%, #0A2239 55%, #081B2E 100%);
+}
+.dark .nightside { background: linear-gradient(180deg, #0B1B2C, #070F1A); }
 
 @theme inline {
   --color-bg: var(--bg);
@@ -196,6 +233,28 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
     linear-gradient(135deg, #0B2A45, #0E3556 60%, #0A3E66);
   color: #F2F7FB;
 }
+.hero-night .eyebrow, .eyebrow-night { color: #8CCBF2; }
+
+/* Courbes de niveau : chaque anneau se trace une fois, du centre vers l'extérieur */
+@keyframes topo-draw { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
+.topo-draw { animation: topo-draw 1600ms cubic-bezier(.3, .6, .2, 1) backwards; }
+@keyframes ring-in { from { opacity: 0; transform: rotate(-140deg) scale(0.92); } }
+.ring-in { animation: ring-in 900ms cubic-bezier(.2, .8, .2, 1); }
+
+/* Tuile de forme d'activité : liseré et halo à la teinte de la forme */
+.form-tile { --hue: var(--primary); position: relative; overflow: hidden; }
+.form-tile::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: linear-gradient(90deg, var(--hue), transparent 85%); opacity: 0.85;
+}
+.form-tile::after {
+  content: ""; position: absolute; width: 180px; height: 180px; right: -70px; top: -90px; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--hue) 22%, transparent), transparent);
+  opacity: 0; transition: opacity 300ms ease; pointer-events: none;
+}
+.form-tile:hover::after, .form-tile[aria-pressed="true"]::after { opacity: 1; }
+.form-chip { color: var(--hue); background: color-mix(in oklab, var(--hue) 11%, transparent); }
+
 .card-hover { transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease; }
 .card-hover:hover { box-shadow: var(--shadow-md); border-color: var(--line-strong); transform: translateY(-1px); }
 

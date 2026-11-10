@@ -6,7 +6,13 @@ import { ArrowRight, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Spinner } from "@/components/ui";
 import { Logo } from "@/components/Sidebar";
+import { Topo } from "@/components/territory";
 import { api } from "@/lib/api";
+
+const LOGIN_PEAKS = [
+  { x: 700, y: 220, rings: 16, seed: 0.8, r0: 16, step: 24 },
+  { x: 120, y: 820, rings: 10, seed: 5.2, r0: 24, step: 26 },
+];
 import type { User } from "@/lib/types";
 
 type Step = "login" | "mfa" | "forgot" | "request" | "sent";
@@ -16,7 +22,13 @@ export const authField =
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-full flex-col bg-bg lg:flex-row">
-      <section className="hero-night relative flex flex-1 flex-col justify-between overflow-hidden px-6 py-8 sm:px-12 lg:py-12">
+      <section className="hero-night relative isolate flex flex-1 flex-col justify-between overflow-hidden px-6 py-8 sm:px-12 lg:py-12">
+        <Topo
+          peaks={LOGIN_PEAKS}
+          width={900}
+          height={900}
+          className="absolute inset-0 -z-10 size-full text-white opacity-[0.13]"
+        />
         <div className="flex items-center gap-3">
           <Logo size={48} />
         </div>
@@ -48,7 +60,23 @@ export function AuthShell({ children }: { children: ReactNode }) {
             humaine à chaque étape.
           </motion.p>
         </div>
-        <span />
+        <motion.ul
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.35 }}
+          className="grid max-w-xl grid-cols-3 border-t border-white/15 pt-5 text-[12px] text-white/60"
+        >
+          {[
+            ["01", "Gérer"],
+            ["02", "Suivre et évaluer"],
+            ["03", "Décider"],
+          ].map(([n, t]) => (
+            <li key={n}>
+              <span className="block font-serif text-[22px] italic text-[#8CCBF2]">{n}</span>
+              {t}
+            </li>
+          ))}
+        </motion.ul>
       </section>
       <section className="flex w-full items-center justify-center border-t border-line bg-panel px-6 py-10 lg:w-[480px] lg:border-l lg:border-t-0">
         <div className="w-full max-w-sm">{children}</div>

@@ -182,6 +182,30 @@ describe("grand tableau de bord", () => {
     });
     expect((await g.api("u_alice", "GET", "/api/pilotage")).body.recommendations.late).toBe(0);
   });
+  it("rassemble signatures, risques, indicateurs et fins de mission", async () => {
+    const doc = (
+      await g.api("u_karim", "POST", "/api/signature", {
+        title: "Note",
+        steps: [{ actor_id: "u_alice", action: "signature" }],
+      })
+    ).body;
+    await g.api("u_karim", "POST", `/api/signature/${doc.id}/start`);
+    await g.api("u_alice", "POST", "/api/risks", { title: "Financement", probability: 5, impact: 4 });
+    await g.api("u_alice", "POST", "/api/indicators", { name: "Plans", target: 10, result: 4 });
+    await g.api("u_alice", "POST", "/api/contracts", {
+      consultant_name: "C",
+      title: "M",
+      start_on: today,
+      end_on: today,
+      supervisor_id: "u_karim",
+    });
+    const r = (await g.api("u_alice", "GET", "/api/pilotage")).body;
+    expect(r.to_sign).toBe(1);
+    expect(r.risks[0]).toMatchObject({ title: "Financement", score: 20 });
+    expect(r.indicators[0]).toMatchObject({ target: 10, result: 4 });
+    expect(r.ending_contracts).toHaveLength(1);
+    expect(r.brief[0]).toContain("signature");
+  });
   it("est réservé aux profils de pilotage", async () => {
     expect((await g.api("u_karim", "GET", "/api/pilotage")).status).toBe(403);
   });

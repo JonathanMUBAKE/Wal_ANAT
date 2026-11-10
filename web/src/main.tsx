@@ -25,6 +25,10 @@ import { AccountPage } from "./pages/Account";
 import { AdminPage } from "./pages/Admin";
 import { MeetingPage, MeetingsPage } from "./pages/Meetings";
 import { PilotagePage } from "./pages/Pilotage";
+import { AttributionsPage } from "./pages/Attributions";
+import { PlanPage, PlansPage } from "./pages/Plans";
+import { DeliverablesPage } from "./pages/Deliverables";
+import { CourrierPage, ParapheurPage } from "./pages/Parapheur";
 import { ActivitiesPage, ActivityPage } from "./pages/Activities";
 
 createRoot(document.getElementById("root")!).render(
@@ -46,6 +50,12 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="org" element={<OrganizationPage />} />
                   <Route path="account" element={<AccountPage />} />
                   <Route path="admin" element={<AdminPage />} />
+                  <Route path="attributions" element={<AttributionsPage />} />
+                  <Route path="plans" element={<PlansPage />} />
+                  <Route path="plans/:id" element={<PlanPage />} />
+                  <Route path="livrables" element={<DeliverablesPage />} />
+                  <Route path="parapheur" element={<ParapheurPage />} />
+                  <Route path="courrier" element={<CourrierPage />} />
                   <Route path="pilotage" element={<PilotagePage />} />
                   <Route path="activites" element={<ActivitiesPage />} />
                   <Route path="activites/:id" element={<ActivityPage />} />

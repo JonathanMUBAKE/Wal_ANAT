@@ -8,6 +8,8 @@ import {
   useState,
 } from "react";
 import { AlertTriangle, Check, CircleDashed, Clock, type LucideIcon, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import { cn } from "./ui";
 
 // Composants de la version ANAT : libellé permanent, filet fin, halo à la saisie, erreur écrite sous le champ.
@@ -261,6 +263,59 @@ export function Tabs<T extends string>({
         </button>
       ))}
     </div>
+  );
+}
+
+/** Domaine du catalogue commun : c'est lui qui permet de comparer l'activité aux attributions. */
+export function DomainSelect({
+  value,
+  onChange,
+  ...a
+}: { value: string | null | undefined; onChange: (v: string) => void } & Omit<
+  SelectHTMLAttributes<HTMLSelectElement>,
+  "value" | "onChange"
+>) {
+  const { data } = useQuery({
+    queryKey: ["domains"],
+    queryFn: () => api.get<{ id: string; name: string; archived: boolean }[]>("/api/domains"),
+  });
+  return (
+    <Select {...a} value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
+      <option value="">Non précisé</option>
+      {data
+        ?.filter((d) => !d.archived || d.id === value)
+        .map((d) => (
+          <option key={d.id} value={d.id}>
+            {d.name}
+          </option>
+        ))}
+    </Select>
+  );
+}
+
+export function PeopleSelect({
+  value,
+  onChange,
+  people,
+  placeholder = "Choisir…",
+  ...a
+}: {
+  value: string | null | undefined;
+  onChange: (v: string) => void;
+  people: { id: string; name: string; is_ai?: boolean }[] | undefined;
+  placeholder?: string;
+} & Omit<SelectHTMLAttributes<HTMLSelectElement>, "value" | "onChange">) {
+  return (
+    <Select {...a} value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
+      <option value="">{placeholder}</option>
+      {people
+        ?.filter((p) => !p.is_ai)
+        .map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+    </Select>
   );
 }
 

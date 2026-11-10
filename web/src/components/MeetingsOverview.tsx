@@ -103,7 +103,7 @@ export function MeetingsOverview({ rows }: { rows: CalendarMeeting[] }) {
   };
 
   return (
-    <div className="mx-auto grid w-full max-w-[1240px] gap-4 px-4 pb-2 sm:px-8 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+    <div className="mx-auto grid w-full max-w-[1240px] grid-cols-1 gap-4 px-4 pb-2 sm:px-8 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
       <Section>
         <div className="p-4">
           <div className="mb-3 flex items-center justify-between">

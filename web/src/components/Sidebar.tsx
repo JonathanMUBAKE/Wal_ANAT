@@ -6,6 +6,11 @@ import {
   Building2,
   CalendarDays,
   CalendarRange,
+  ClipboardList,
+  FileCheck2,
+  FileSignature,
+  ListTree,
+  Mail,
   Gauge,
   Check,
   CheckCircle2,
@@ -227,68 +232,75 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </button>
       </div>
 
-      <nav className="space-y-0.5 px-3">
-        {can("pilotage.view") && link("/pilotage", <Gauge className="size-4" />, "Tableau de bord DG")}
-        {link("/", <House className="size-4" />, "Accueil")}
-        {link("/my-tasks", <CheckCircle2 className="size-4" />, "Mes tâches")}
-        {link("/inbox", <Inbox className="size-4" />, "Boîte de réception", unread)}
-        {link("/ai", <Sparkles className="size-4" />, "Coéquipiers IA", approvals?.length, true)}
-        {can("agenda.view") && link("/activites", <CalendarRange className="size-4" />, "Activités")}
-        {can("meetings.view") && link("/reunions", <CalendarDays className="size-4" />, "Réunions")}
-        {link("/teams", <Users className="size-4" />, "Équipes")}
-        {link("/org", <Network className="size-4" />, "Organisation")}
-        {me?.platform_role && link("/admin", <ShieldCheck className="size-4" />, "Administration")}
-      </nav>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <nav className="space-y-0.5 px-3">
+          {can("pilotage.view") && link("/pilotage", <Gauge className="size-4" />, "Tableau de bord DG")}
+          {link("/", <House className="size-4" />, "Accueil")}
+          {link("/my-tasks", <CheckCircle2 className="size-4" />, "Mes tâches")}
+          {link("/inbox", <Inbox className="size-4" />, "Boîte de réception", unread)}
+          {link("/ai", <Sparkles className="size-4" />, "Coéquipiers IA", approvals?.length, true)}
+          {can("agenda.view") && link("/activites", <CalendarRange className="size-4" />, "Activités")}
+          {can("meetings.view") && link("/reunions", <CalendarDays className="size-4" />, "Réunions")}
+          {can("plans.view") && link("/plans", <ClipboardList className="size-4" />, "Plans de travail")}
+          {link("/livrables", <FileCheck2 className="size-4" />, "Livrables")}
+          {can("signature.use") && link("/parapheur", <FileSignature className="size-4" />, "Parapheur")}
+          {can("correspondence.view") && link("/courrier", <Mail className="size-4" />, "Courrier")}
+          {can("attributions.view") && link("/attributions", <ListTree className="size-4" />, "Attributions")}
+          {link("/teams", <Users className="size-4" />, "Équipes")}
+          {link("/org", <Network className="size-4" />, "Organisation")}
+          {me?.platform_role && link("/admin", <ShieldCheck className="size-4" />, "Administration")}
+        </nav>
 
-      <div className="mt-5 flex items-center justify-between px-5 pb-1">
-        <span className="text-[11.5px] font-medium uppercase tracking-wider text-faint">Projets</span>
-        <button
-          aria-label="Nouveau projet"
-          onClick={() => shell.setNewProject(true)}
-          className="rounded-md p-0.5 text-faint hover:bg-hover hover:text-fg"
-        >
-          <Plus className="size-3.5" />
-        </button>
+        <div className="mt-5 flex items-center justify-between px-5 pb-1">
+          <span className="text-[11.5px] font-medium uppercase tracking-wider text-faint">Projets</span>
+          <button
+            aria-label="Nouveau projet"
+            onClick={() => shell.setNewProject(true)}
+            className="rounded-md p-0.5 text-faint hover:bg-hover hover:text-fg"
+          >
+            <Plus className="size-3.5" />
+          </button>
+        </div>
+        <nav className="space-y-0.5 px-3 pb-3">
+          {groups.map(([teamName, teamId, list]) => (
+            <div key={teamName} className="pb-1.5">
+              {teamId ? (
+                <NavLink
+                  to={`/teams/${teamId}`}
+                  onClick={onNavigate}
+                  className="flex h-6 items-center gap-1.5 px-2 text-[11.5px] font-medium text-faint hover:text-fg"
+                >
+                  <Users className="size-3" />
+                  {teamName}
+                </NavLink>
+              ) : (
+                <span className="flex h-6 items-center px-2 text-[11.5px] font-medium text-faint">{teamName}</span>
+              )}
+              {list.map((p) => (
+                <NavLink
+                  key={p.id}
+                  to={`/projects/${p.id}`}
+                  onClick={onNavigate}
+                  className={({ isActive }) =>
+                    cn(
+                      "group flex h-8 items-center gap-2.5 rounded-lg px-2 text-[13.5px]",
+                      isActive ? "bg-active font-medium text-fg" : "text-muted hover:bg-hover hover:text-fg",
+                    )
+                  }
+                >
+                  <ProjectIcon icon={p.icon} color={p.color} size={18} />
+                  <span className="flex-1 truncate">{p.name}</span>
+                  <span
+                    className="size-1.5 rounded-full"
+                    style={{ background: STATUS[p.status].color }}
+                    title={STATUS[p.status].label}
+                  />
+                </NavLink>
+              ))}
+            </div>
+          ))}
+        </nav>
       </div>
-      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-3 pb-3">
-        {groups.map(([teamName, teamId, list]) => (
-          <div key={teamName} className="pb-1.5">
-            {teamId ? (
-              <NavLink
-                to={`/teams/${teamId}`}
-                onClick={onNavigate}
-                className="flex h-6 items-center gap-1.5 px-2 text-[11.5px] font-medium text-faint hover:text-fg"
-              >
-                <Users className="size-3" />
-                {teamName}
-              </NavLink>
-            ) : (
-              <span className="flex h-6 items-center px-2 text-[11.5px] font-medium text-faint">{teamName}</span>
-            )}
-            {list.map((p) => (
-              <NavLink
-                key={p.id}
-                to={`/projects/${p.id}`}
-                onClick={onNavigate}
-                className={({ isActive }) =>
-                  cn(
-                    "group flex h-8 items-center gap-2.5 rounded-lg px-2 text-[13.5px]",
-                    isActive ? "bg-active font-medium text-fg" : "text-muted hover:bg-hover hover:text-fg",
-                  )
-                }
-              >
-                <ProjectIcon icon={p.icon} color={p.color} size={18} />
-                <span className="flex-1 truncate">{p.name}</span>
-                <span
-                  className="size-1.5 rounded-full"
-                  style={{ background: STATUS[p.status].color }}
-                  title={STATUS[p.status].label}
-                />
-              </NavLink>
-            ))}
-          </div>
-        ))}
-      </nav>
 
       <Dialog
         open={creating}

@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { Button, ConfirmDialog, Dialog, Empty, IconButton } from "@/components/ui";
 import {
+  DomainSelect,
   Field,
   Input,
   LoadingRows,
@@ -55,6 +56,7 @@ interface AgendaItem {
   subject: string;
   speakers: string;
   notes: string;
+  domain_id?: string | null;
   actions: MeetingAction[];
 }
 interface Attendee {
@@ -470,6 +472,7 @@ export function MeetingPage() {
           subject: i.subject,
           speakers: i.speakers,
           notes: i.notes,
+          domain_id: i.domain_id || null,
           actions: i.actions.map((a) => ({
             ...(a.id ? { id: a.id } : {}),
             text: a.text,
@@ -820,7 +823,7 @@ export function MeetingPage() {
               }
             >
               <div className="space-y-3 p-4">
-                <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+                <div className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr]">
                   <Field label="Sujet à aborder" required>
                     {(a) => (
                       <Input
@@ -838,6 +841,16 @@ export function MeetingPage() {
                         disabled={ro}
                         value={item.speakers}
                         onChange={(e) => setItem(i, { speakers: e.target.value })}
+                      />
+                    )}
+                  </Field>
+                  <Field label="Domaine d'activité">
+                    {(a) => (
+                      <DomainSelect
+                        {...a}
+                        disabled={ro}
+                        value={item.domain_id}
+                        onChange={(v) => setItem(i, { domain_id: v || null })}
                       />
                     )}
                   </Field>

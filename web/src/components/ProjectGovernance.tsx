@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Scale, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, cn } from "./ui";
-import { Field, Input, ProgressBar, Section, Select, Status, frDate } from "./gov";
+import { DomainSelect, Field, Input, ProgressBar, Section, Select, Status, frDate } from "./gov";
 import { api } from "@/lib/api";
 import { useUnits, useUsers } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
@@ -15,6 +15,7 @@ interface Gov {
   lead_id: string | null;
   lead_name: string | null;
   unit_id: string | null;
+  domain_id: string | null;
   unit_name: string | null;
   budget_planned: number | null;
   budget_spent: number | null;
@@ -68,7 +69,7 @@ export function ProjectGovernance({ projectId, canEdit }: { projectId: string; c
   return (
     <div className="space-y-4">
       <Section>
-        <div className="grid gap-5 p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
           <div>
             <div className="flex items-center gap-2">
               <Status
@@ -122,7 +123,7 @@ export function ProjectGovernance({ projectId, canEdit }: { projectId: string; c
           </div>
         </div>
       </Section>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Section title={`Équipe projet · ${g.team.length}`}>
           <ul className="stagger p-2">
             {g.team.map((m) => (
@@ -193,6 +194,7 @@ function EditGovernance({ g, projectId, onClose }: { g: Gov; projectId: string; 
     convention_ref: g.convention_ref,
     lead_id: g.lead_id ?? "",
     unit_id: g.unit_id ?? "",
+    domain_id: g.domain_id ?? "",
     budget_planned: g.budget_planned?.toString() ?? "",
     budget_spent: g.budget_spent?.toString() ?? "",
     decision_needed: g.decision_needed,
@@ -205,6 +207,7 @@ function EditGovernance({ g, projectId, onClose }: { g: Gov; projectId: string; 
         ...f,
         lead_id: f.lead_id || null,
         unit_id: f.unit_id || null,
+        domain_id: f.domain_id || null,
         budget_planned: num(f.budget_planned),
         budget_spent: num(f.budget_spent),
       }),
@@ -252,6 +255,9 @@ function EditGovernance({ g, projectId, onClose }: { g: Gov; projectId: string; 
                 ))}
             </Select>
           )}
+        </Field>
+        <Field label="Domaine d'activité">
+          {(a) => <DomainSelect {...a} value={f.domain_id} onChange={(v) => setF({ ...f, domain_id: v })} />}
         </Field>
         <Field label="Entité porteuse">
           {(a) => (

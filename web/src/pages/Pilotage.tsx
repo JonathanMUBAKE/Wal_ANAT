@@ -3,7 +3,18 @@ import { Link, useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ArrowUpRight, Briefcase, CalendarClock, FileSignature, Handshake, Landmark, Mic2, Scale } from "lucide-react";
+import {
+  ArrowUpRight,
+  Briefcase,
+  CalendarClock,
+  FileSignature,
+  Handshake,
+  Landmark,
+  Mic2,
+  Scale,
+  ShieldAlert,
+  Target,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Empty, cn } from "@/components/ui";
 import {
@@ -59,6 +70,21 @@ interface Overview {
     }[];
   };
   brief: string[];
+  to_sign: number;
+  late_deliverables: number;
+  open_gaps: number;
+  ending_contracts: { id: string; consultant_name: string; title: string; end_on: string }[];
+  risks: { id: string; title: string; score: number; owner_name: string | null; mitigation: string }[];
+  indicators: {
+    id: string;
+    name: string;
+    unit_label: string;
+    baseline: number;
+    target: number;
+    result: number;
+    source: string;
+  }[];
+  plans: { total: number; approved: number };
 }
 
 export const FORMS: Record<Form, { label: string; plural: string; Icon: LucideIcon; counter: string }> = {
@@ -121,10 +147,16 @@ export function PilotagePage() {
             <h1 className="mt-2 font-serif text-[40px] leading-[1.05] tracking-[-0.01em] sm:text-[52px]">
               {greeting()}, {firstName(me?.name ?? "")}
             </h1>
-            <div className="mt-5 flex flex-wrap gap-x-8 gap-y-3">
+            <div className="mt-5 grid grid-cols-3 gap-x-5 gap-y-3 sm:grid-cols-5">
               <HeroStat label="Activités suivies" value={total} />
               <HeroStat label="Décisions attendues" value={o.counters.decisions} />
               <HeroStat label="Retards à résorber" value={o.counters.retards} />
+              <Link to="/parapheur" className="transition-opacity hover:opacity-80">
+                <HeroStat label="À signer" value={o.to_sign} />
+              </Link>
+              <Link to="/attributions" className="transition-opacity hover:opacity-80">
+                <HeroStat label="Écarts à examiner" value={o.open_gaps} />
+              </Link>
             </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-sm">
@@ -169,7 +201,7 @@ export function PilotagePage() {
         })}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <Section
           title={form ? FORMS[form].plural : "Portefeuille des activités"}
           aside={
@@ -208,7 +240,7 @@ export function PilotagePage() {
             <Table head={["Activité", "Responsable", "État", "Avancement", "Échéance", "Retards"]}>
               {items.map((i) => (
                 <Tr key={i.id} onClick={() => nav(i.href)}>
-                  <Td className="max-w-[320px]">
+                  <Td className="max-w-[230px]">
                     <span className="block truncate font-medium">{i.title}</span>
                     <span className="text-[12px] text-muted">
                       {FORMS[i.form].label}
@@ -225,7 +257,9 @@ export function PilotagePage() {
                     ) : (
                       <span className="flex items-center gap-2">
                         <ProgressBar value={i.progress} />
-                        <span className="tabular w-9 text-right text-[12px] text-muted">{i.progress} %</span>
+                        <span className="tabular w-10 shrink-0 whitespace-nowrap text-right text-[12px] text-muted">
+                          {i.progress} %
+                        </span>
                       </span>
                     )}
                   </Td>
@@ -294,6 +328,69 @@ export function PilotagePage() {
               )}
             </div>
           </Section>
+          {!!o.risks.length && (
+            <Section title="Risques majeurs" aside={<ShieldAlert className="size-4 text-faint" />}>
+              <ul className="stagger p-2">
+                {o.risks.map((r) => (
+                  <li key={r.id} className="flex items-start gap-3 rounded-lg px-2 py-1.5">
+                    <span
+                      className={cn(
+                        "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg text-[12px] font-semibold tabular",
+                        r.score >= 15
+                          ? "bg-danger-soft text-danger"
+                          : r.score >= 8
+                            ? "bg-warning-soft text-warning"
+                            : "bg-hover text-muted",
+                      )}
+                      title="Probabilité × impact"
+                    >
+                      {r.score}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-medium leading-snug">{r.title}</span>
+                      <span className="text-[12px] text-muted">{r.owner_name ?? "Sans responsable"}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+          {!!o.indicators.length && (
+            <Section title="Indicateurs stratégiques" aside={<Target className="size-4 text-faint" />}>
+              <ul className="stagger space-y-3 p-4 pt-3">
+                {o.indicators.map((i) => (
+                  <li key={i.id} title={`Source : ${i.source || "non renseignée"}`}>
+                    <p className="flex items-baseline justify-between gap-2 text-[13px]">
+                      <span className="font-medium">{i.name}</span>
+                      <span className="whitespace-nowrap tabular text-[12px] text-muted">
+                        {i.result} / {i.target} {i.unit_label}
+                      </span>
+                    </p>
+                    <div className="mt-1.5">
+                      <ProgressBar
+                        value={i.target > i.baseline ? ((i.result - i.baseline) / (i.target - i.baseline)) * 100 : 0}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+          {!!o.ending_contracts.length && (
+            <Section title="Fins de mission proches">
+              <ul className="p-2">
+                {o.ending_contracts.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-[13px]">
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium">{c.consultant_name}</span>
+                      <span className="block truncate text-[12px] text-muted">{c.title}</span>
+                    </span>
+                    <span className="whitespace-nowrap text-[12px] tabular text-muted">{frDate(c.end_on)}</span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
           <Section title="Exécution des recommandations">
             <div className="p-4 pt-3">
               <div className="flex items-end justify-between">
@@ -337,9 +434,9 @@ const rate = (r: { open: number; done: number }) =>
   r.open + r.done ? Math.round((r.done / (r.open + r.done)) * 100) : 0;
 const HeroStat = ({ label, value }: { label: string; value: number }) => (
   <div>
-    <p className="font-serif text-[38px] leading-none">
+    <p className="font-serif text-[34px] leading-none">
       <CountUp value={value} />
     </p>
-    <p className="mt-1 text-[12.5px] text-white/65">{label}</p>
+    <p className="mt-1 text-[12px] leading-tight text-white/65">{label}</p>
   </div>
 );

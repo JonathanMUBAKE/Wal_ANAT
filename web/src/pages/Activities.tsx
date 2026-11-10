@@ -5,6 +5,7 @@ import { ArrowLeft, CalendarRange, Lock, Plus, Save, Trash2 } from "lucide-react
 import { toast } from "sonner";
 import { Button, Checkbox, ConfirmDialog, Dialog, Empty, IconButton } from "@/components/ui";
 import {
+  DomainSelect,
   Field,
   Input,
   LoadingRows,
@@ -34,6 +35,7 @@ interface Activity {
   lead_id: string | null;
   lead_name: string | null;
   unit_id: string | null;
+  domain_id: string | null;
   unit_name: string | null;
   start_on: string | null;
   start_time: string | null;
@@ -255,6 +257,7 @@ export function ActivityPage() {
         description: d!.description,
         lead_id: d!.lead_id,
         unit_id: d!.unit_id,
+        domain_id: d!.domain_id,
         start_on: d!.start_on || null,
         start_time: d!.start_time || null,
         end_on: d!.end_on || null,
@@ -355,7 +358,7 @@ export function ActivityPage() {
           </>
         }
       />
-      <div className="mx-auto grid max-w-[1240px] gap-4 p-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-4 p-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-4">
           <Section title="Fiche">
             <div className="grid gap-3 p-4 sm:grid-cols-2">
@@ -377,6 +380,16 @@ export function ActivityPage() {
                       </option>
                     ))}
                   </Select>
+                )}
+              </Field>
+              <Field label="Domaine d'activité">
+                {(a) => (
+                  <DomainSelect
+                    {...a}
+                    disabled={ro}
+                    value={d.domain_id}
+                    onChange={(v) => patch({ domain_id: v || null })}
+                  />
                 )}
               </Field>
               <Field label="Entité">

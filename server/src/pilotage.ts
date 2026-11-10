@@ -171,7 +171,66 @@ export class Pilotage {
       decisions: decisions.length,
       retards: overdueTasks + (recs?.late ?? 0),
     };
+    const delegators = (
+      await db.query<{ from_user: string }>(
+        "SELECT from_user FROM delegations WHERE org_id = $1 AND to_user = $2 AND start_on <= CURRENT_DATE AND end_on >= CURRENT_DATE",
+        [orgId, actorId],
+      )
+    ).map((r) => r.from_user);
+    const toSign =
+      (
+        await db.one<{ n: number }>(
+          "SELECT count(*)::int AS n FROM sign_steps s JOIN sign_documents d ON d.id = s.document_id WHERE d.org_id = $1 AND s.status = 'pending' AND s.actor_id = ANY($2)",
+          [orgId, [actorId, ...delegators]],
+        )
+      )?.n ?? 0;
+    const lateDeliverables =
+      (
+        await db.one<{ n: number }>(
+          "SELECT count(*)::int AS n FROM deliverables WHERE org_id = $1 AND status <> 'valide' AND due_on < $2::date",
+          [orgId, today],
+        )
+      )?.n ?? 0;
+    const endingContracts = await db.query<{ id: string; consultant_name: string; title: string; end_on: string }>(
+      "SELECT id, consultant_name, title, end_on FROM consultant_contracts WHERE org_id = $1 AND status = 'active' AND end_on <= $2::date ORDER BY end_on LIMIT 5",
+      [orgId, day(30)],
+    );
+    const openGaps =
+      (
+        await db.one<{ n: number }>(
+          "SELECT count(*)::int AS n FROM participation_gaps WHERE org_id = $1 AND status = 'open'",
+          [orgId],
+        )
+      )?.n ?? 0;
+    const risks = await db.query<{
+      id: string;
+      title: string;
+      score: number;
+      owner_name: string | null;
+      mitigation: string;
+    }>(
+      `SELECT r.id, r.title, r.probability * r.impact AS score, u.name AS owner_name, r.mitigation FROM risks r LEFT JOIN users u ON u.id = r.owner_id
+       WHERE r.org_id = $1 AND r.status = 'open' ORDER BY score DESC LIMIT 5`,
+      [orgId],
+    );
+    const indicators = await db.query<{
+      id: string;
+      name: string;
+      unit_label: string;
+      baseline: number;
+      target: number;
+      result: number;
+      source: string;
+    }>(
+      "SELECT id, name, unit_label, source, baseline::float8 AS baseline, target::float8 AS target, result::float8 AS result FROM indicators WHERE org_id = $1 ORDER BY name LIMIT 8",
+      [orgId],
+    );
+    const plans = await db.one<{ n: number; approved: number }>(
+      "SELECT count(*)::int AS n, count(*) FILTER (WHERE status = 'approved')::int AS approved FROM work_plans WHERE org_id = $1 AND year = $2",
+      [orgId, Number(today.slice(0, 4))],
+    );
     const brief = [
+      ...(toSign ? [`${plural(toSign, "document attend", "documents attendent")} votre visa ou votre signature.`] : []),
       `${plural(items.length, "activité suivie", "activités suivies")}, dont ${plural(critical.length, "en difficulté", "en difficulté")}.`,
       decisions.length
         ? `${plural(decisions.length, "décision attend", "décisions attendent")} votre arbitrage.`
@@ -204,6 +263,13 @@ export class Pilotage {
         })),
       },
       brief,
+      to_sign: toSign,
+      late_deliverables: lateDeliverables,
+      open_gaps: openGaps,
+      ending_contracts: endingContracts,
+      risks,
+      indicators,
+      plans: { total: plans?.n ?? 0, approved: plans?.approved ?? 0 },
     };
   }
 }

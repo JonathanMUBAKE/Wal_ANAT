@@ -1,6 +1,11 @@
 import { Activities } from "./activities.js";
 import { Attributions } from "./attributions.js";
+import { Deliverables } from "./deliverables.js";
+import { Gaps } from "./gaps.js";
 import { Meetings } from "./meetings.js";
+import { Plans } from "./plans.js";
+import { Registers } from "./registers.js";
+import { Signature } from "./signature.js";
 import type { Services } from "./services.js";
 
 /** Données d'illustration, entièrement fictives, pour présenter la version ANAT (ANAT_DEMO=1 uniquement). */
@@ -158,4 +163,138 @@ export async function seedGovDemo(svc: Services) {
     location: "Visioconférence",
     writer_id: "u_karim",
   });
+
+  // Organisation : deux fiches approuvées, l'une sans activité pour illustrer un écart
+  await db.query("UPDATE org_members SET role = 'admin', profile_id = $1 WHERE org_id = $2 AND user_id = 'u_karim'", [
+    `prf_admin_${org}`,
+    org,
+  ]);
+  const units = await db.query<{ id: string }>("SELECT id FROM org_units WHERE org_id = $1 ORDER BY position LIMIT 2", [
+    org,
+  ]);
+  for (const [i, u] of units.entries()) {
+    const s = await at.create(me, org, {
+      unit_id: u.id,
+      mission: i ? "Conduire les études de planification territoriale." : "Assurer la gestion budgétaire de l'Agence.",
+      legal_ref: "Organigramme de l'Agence",
+      valid_from: day(-120),
+      domains: [{ domain_id: domains.at(i + 1) as string, role: "responsable" }],
+      relations: [],
+    });
+    await at.approve("u_karim", s.id);
+  }
+
+  // Plan, livrables, mission, parapheur, courrier, risques et indicateurs
+  const plans = new Plans(svc);
+  const d = new Deliverables(svc);
+  const sig = new Signature(svc);
+  const reg = new Registers(svc);
+  const year = Number(day(0).slice(0, 4));
+  const plan = await plans.create(me, org, { unit_id: units[0].id, year, title: `Plan de travail ${year}` });
+  for (const [title, target, unit_label, offset] of [
+    ["Révision du schéma d'aménagement", 1, "schéma", 40],
+    ["Ateliers provinciaux de concertation", 6, "ateliers", 25],
+    ["Rapport annuel de performance", 1, "rapport", -3],
+  ] as const)
+    await plans.addActivity(me, plan.id, {
+      title,
+      responsible_id: "u_karim",
+      target_value: target,
+      unit_label,
+      end_on: day(offset),
+      objective: "Objectif fixé au plan",
+      budget_planned: 50000,
+    });
+  await plans.submit(me, plan.id);
+  const approved = await plans.approve("u_karim", plan.id);
+  await plans.updateProgress("u_karim", approved.activities[0].id, { progress: 55, budget_spent: 21000 });
+  await plans.updateProgress("u_karim", approved.activities[1].id, { progress: 80, actual_value: 5 });
+
+  const mission = await d.createContract(me, org, {
+    user_id: "u_hugo",
+    title: "Étude foncière nationale",
+    start_on: day(-60),
+    end_on: day(20),
+    amount: 18000,
+    supervisor_id: "u_karim",
+  });
+  await d.create(me, org, {
+    title: "Rapport de cadrage de l'étude foncière",
+    responsible_id: "u_hugo",
+    validator_id: me,
+    due_on: day(-1),
+    contract_id: mission.id,
+    criteria: "Méthodologie validée, calendrier détaillé",
+  });
+  await d.create(me, org, {
+    title: "Note d'orientation stratégique",
+    responsible_id: "u_karim",
+    validator_id: me,
+    due_on: day(10),
+  });
+
+  const note = await sig.create("u_karim", org, {
+    title: "Note au ministère de tutelle",
+    kind: "Note",
+    body: "Projet de note d'information (texte d'illustration).",
+    due_on: day(2),
+    steps: [{ actor_id: me, action: "signature" }],
+  });
+  await sig.start("u_karim", note.id);
+
+  const courrier = await reg.registerMail(me, org, {
+    direction: "entrant",
+    subject: "Demande de données foncières",
+    correspondent: "Ministère de tutelle",
+    received_on: day(-5),
+    due_on: day(-1),
+  });
+  await reg.assignMail(me, courrier.id, { unit_id: units[0].id, assignee_id: "u_karim" });
+  await reg.registerMail(me, org, {
+    direction: "entrant",
+    subject: "Invitation au forum régional",
+    correspondent: "Partenaire technique",
+    received_on: day(-1),
+    due_on: day(9),
+  });
+
+  await reg.createRisk(me, org, {
+    title: "Retard de décaissement du bailleur",
+    probability: 4,
+    impact: 5,
+    owner_id: "u_karim",
+    mitigation: "Relance et plan de trésorerie",
+  });
+  await reg.createRisk(me, org, {
+    title: "Disponibilité des données provinciales",
+    probability: 3,
+    impact: 3,
+    owner_id: me,
+  });
+  await reg.createIndicator(me, org, {
+    name: "Provinces couvertes par un schéma",
+    target: 26,
+    baseline: 4,
+    result: 11,
+    unit_label: "provinces",
+    source: "Direction technique",
+  });
+  await reg.createIndicator(me, org, {
+    name: "Plans de travail approuvés",
+    target: 8,
+    baseline: 0,
+    result: 5,
+    unit_label: "plans",
+    source: "Secrétariat",
+  });
+  await reg.createIndicator(me, org, {
+    name: "Recommandations exécutées",
+    target: 90,
+    baseline: 40,
+    result: 62,
+    unit_label: "%",
+    source: "Comptes rendus",
+  });
+
+  await new Gaps(svc).detect(me, org);
 }

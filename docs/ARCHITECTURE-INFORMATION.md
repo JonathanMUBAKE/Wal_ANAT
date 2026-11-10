@@ -1,6 +1,8 @@
 # Architecture de l'information — ANAT Pilotage
 
 > Complète `docs/DESIGN-SYSTEM.md`. Répond à une seule question : **qu'est-ce qui va où, et pourquoi.**
+> Les parcours métier qui fondent ces choix sont dans `docs/PARCOURS-METIER.md` ; ils font du **projet le dossier
+> complet** (livrables et contrats y seront rangés, lot P1) et retirent le module « Livrables et missions ».
 
 ## 1. Méthode
 

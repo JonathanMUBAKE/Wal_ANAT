@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, Check, Clock, Inbox, Mail, Plus, Trash2, X } from "lucide-react";
+import { ArrowDown, Check, Clock, FileSignature, Inbox, Mail, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Empty, IconButton, cn } from "@/components/ui";
 import {
@@ -76,6 +76,8 @@ export function ParapheurPage() {
   return (
     <div className="min-h-full">
       <PageHeader
+        Icon={FileSignature}
+        crumbs={["Secrétariat", "Parapheur"]}
         title="Parapheur"
         subtitle="Chaque document suit son circuit dans l'ordre. Son contenu est scellé dès l'entrée dans le circuit."
         actions={
@@ -552,6 +554,8 @@ export function CourrierPage() {
   return (
     <div className="min-h-full">
       <PageHeader
+        Icon={Mail}
+        crumbs={["Secrétariat", "Courrier"]}
         title="Courrier"
         subtitle="Chaque courrier reçoit un numéro, une imputation et un délai. Un retard remonte automatiquement à l'entité."
         actions={

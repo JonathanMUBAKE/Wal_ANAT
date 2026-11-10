@@ -78,6 +78,8 @@ export function ActivitiesPage() {
   return (
     <div className="min-h-full">
       <PageHeader
+        Icon={CalendarRange}
+        crumbs={["Pilotage", "Activités"]}
         title="Activités de l'Agence"
         subtitle="Commissions, conférences, rendez-vous et activités internes, suivis jusqu'à leurs suites."
         actions={

@@ -7,14 +7,14 @@ import {
   useId,
   useState,
 } from "react";
-import { AlertTriangle, Check, CircleDashed, Clock, type LucideIcon, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronRight, CircleDashed, Clock, type LucideIcon, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { cn } from "./ui";
 
 // Composants de la version ANAT : libellé permanent, filet fin, halo à la saisie, erreur écrite sous le champ.
 const fieldBase =
-  "field-ring w-full rounded-xl border border-field bg-panel px-3.5 text-[13.5px] text-fg outline-none transition-[box-shadow,border-color] duration-150 placeholder:text-faint disabled:bg-hover disabled:text-muted disabled:shadow-none aria-[invalid=true]:border-danger";
+  "field-ring w-full rounded-[10px] border border-field bg-panel px-3 text-[13.5px] text-fg outline-none transition-[box-shadow,border-color] duration-150 placeholder:text-faint disabled:bg-hover disabled:text-muted disabled:shadow-none aria-[invalid=true]:border-danger";
 
 export function Field({
   label,
@@ -57,10 +57,10 @@ export function Field({
 }
 
 export const Input = ({ className, ...p }: InputHTMLAttributes<HTMLInputElement>) => (
-  <input className={cn(fieldBase, "h-10", className)} {...p} />
+  <input className={cn(fieldBase, "h-9", className)} {...p} />
 );
 export const Select = ({ className, children, ...p }: SelectHTMLAttributes<HTMLSelectElement>) => (
-  <select className={cn(fieldBase, "h-10 pr-8", className)} {...p}>
+  <select className={cn(fieldBase, "h-9 pr-8", className)} {...p}>
     {children}
   </select>
 );
@@ -68,22 +68,44 @@ export const Textarea = ({ className, ...p }: TextareaHTMLAttributes<HTMLTextAre
   <textarea className={cn(fieldBase, "min-h-[88px] resize-y py-2 leading-relaxed", className)} {...p} />
 );
 
+/** En-tête de page du gabarit Cadastre : fil d'Ariane, carré d'icône, titre 24 px, aide d'une ligne, actions à droite. */
 export function PageHeader({
   title,
   subtitle,
   actions,
+  Icon,
+  crumbs,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
   actions?: ReactNode;
+  Icon?: LucideIcon;
+  crumbs?: string[];
 }) {
   return (
-    <header className="relative isolate mx-auto flex w-full max-w-[1240px] flex-wrap items-end justify-between gap-3 px-4 pb-4 pt-7 sm:px-8">
-      <div className="min-w-0">
-        {subtitle && <p className="mb-1 max-w-2xl text-[14px] text-muted">{subtitle}</p>}
-        <h1 className="text-[32px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[38px]">{title}</h1>
+    <header className="mx-auto w-full max-w-[1240px] px-4 pb-4 pt-6 sm:px-8">
+      {crumbs && (
+        <p className="mb-3 flex items-center gap-1.5 text-[12.5px] text-muted">
+          {crumbs.map((c, i) => (
+            <span key={c} className="flex items-center gap-1.5">
+              {i > 0 && <ChevronRight className="size-3 text-faint" />}
+              <span className={i === crumbs.length - 1 ? "text-fg" : ""}>{c}</span>
+            </span>
+          ))}
+        </p>
+      )}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          {Icon && (
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-brand-soft text-primary">
+              <Icon className="size-[18px]" />
+            </span>
+          )}
+          <h1 className="min-w-0 text-[24px] font-semibold leading-tight tracking-[-0.025em]">{title}</h1>
+        </div>
+        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      {subtitle && <p className="mt-1.5 max-w-2xl text-[13px] text-muted">{subtitle}</p>}
     </header>
   );
 }
@@ -239,36 +261,32 @@ export function Tabs<T extends string>({
   items: { id: T; label: string; badge?: number }[];
 }) {
   return (
-    <div
-      role="tablist"
-      className="mx-auto flex w-full max-w-[1240px] gap-2 overflow-x-auto px-4 pb-1 sm:px-8"
-    >
-      {items.map((t) => (
-        <button
-          key={t.id}
-          role="tab"
-          aria-selected={value === t.id}
-          onClick={() => onChange(t.id)}
-          className={cn(
-            "h-10 shrink-0 whitespace-nowrap rounded-full border px-4.5 text-[13px] font-medium transition-colors",
-            value === t.id
-              ? "border-night bg-night text-white shadow-sm dark:border-primary dark:bg-primary dark:text-on-primary"
-              : "border-line-strong bg-panel text-fg hover:bg-hover",
-          )}
-        >
-          {t.label}
-          {!!t.badge && (
-            <span
+    <div className="mx-auto w-full max-w-[1240px] px-4 sm:px-8">
+      <div role="tablist" className="flex overflow-x-auto border-b border-line">
+        {items.map((t) => {
+          const on = value === t.id;
+          return (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={on}
+              onClick={() => onChange(t.id)}
               className={cn(
-                "ml-1.5 rounded-full px-1.5 text-[11px] font-semibold",
-                value === t.id ? "bg-white/20 text-white" : "bg-brand-soft text-primary",
+                "relative inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 text-[13px] font-medium transition-colors first:pl-0",
+                "after:absolute after:bottom-0 after:left-3 after:right-3 after:h-[2px] after:rounded-full first:after:left-0",
+                on ? "text-fg after:bg-primary" : "text-muted hover:text-fg",
               )}
             >
-              {t.badge}
-            </span>
-          )}
-        </button>
-      ))}
+              {t.label}
+              {!!t.badge && (
+                <span className="rounded-md bg-brand-soft px-1.5 text-[11px] font-semibold tabular text-primary">
+                  {t.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

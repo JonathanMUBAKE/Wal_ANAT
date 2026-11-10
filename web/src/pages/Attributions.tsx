@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CopyPlus, Plus, Radar, ShieldCheck, Trash2 } from "lucide-react";
+import { CopyPlus, ListTree, Plus, Radar, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Empty, IconButton } from "@/components/ui";
 import {
@@ -98,6 +98,8 @@ export function AttributionsPage() {
   return (
     <div className="min-h-full">
       <PageHeader
+        Icon={ListTree}
+        crumbs={["Organisation", "Attributions"]}
         title="Attributions"
         subtitle="Ce dont chaque entité répond, avec qui elle travaille, et les écarts entre l'attendu et le réalisé."
       />

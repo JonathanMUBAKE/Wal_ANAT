@@ -1,8 +1,23 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileCheck2, Plus, UserRoundCheck } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarDays,
+  CheckCircle2,
+  CircleDashed,
+  CircleDot,
+  Eye,
+  FileCheck2,
+  Hash,
+  Plus,
+  Send,
+  ShieldCheck,
+  UserRound,
+  UserRoundCheck,
+} from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Empty } from "@/components/ui";
+import { Button, Dialog, Empty, cn } from "@/components/ui";
+import { GroupedTable, Seal } from "@/components/collection";
 import {
   Field,
   Input,
@@ -67,6 +82,21 @@ const STATE: Record<DStatus, { label: string; tone: Tone }> = {
   a_corriger: { label: "À corriger", tone: "danger" },
   valide: { label: "Validé", tone: "success" },
 };
+const HUE: Record<Tone, string> = {
+  neutral: "var(--faint)",
+  info: "var(--primary)",
+  warning: "var(--warning)",
+  danger: "var(--danger)",
+  success: "var(--success)",
+};
+const STAGE_ICON: Record<DStatus, typeof CircleDot> = {
+  prevu: CircleDot,
+  en_cours: CircleDashed,
+  soumis: Send,
+  en_revue: Eye,
+  a_corriger: AlertCircle,
+  valide: CheckCircle2,
+};
 const fail = (e: unknown) => toast.error((e as Error).message);
 
 export function DeliverablesPage() {
@@ -76,6 +106,8 @@ export function DeliverablesPage() {
   return (
     <div className="min-h-full">
       <PageHeader
+        Icon={FileCheck2}
+        crumbs={["Pilotage", "Livrables"]}
         title="Livrables et consultants"
         subtitle="Un livrable est validé par une autre personne que son auteur. Une mission suit ses livrables jusqu'au paiement."
         actions={
@@ -115,38 +147,81 @@ function List() {
     queryFn: () => api.get<Row[]>("/api/deliverables"),
   });
   if (isLoading) return <LoadingRows />;
+  const rows = [...(data ?? [])].sort((a, b) => (a.due_on ?? "9").localeCompare(b.due_on ?? "9"));
   return (
-    <Section>
-      {data?.length ? (
-        <Table head={["Livrable", "Responsable", "Valideur", "Échéance", "Version", "Statut"]}>
-          {data.map((d) => (
-            <Tr key={d.id} onClick={() => setOpen(d.id)}>
-              <Td className="font-medium">
-                {d.title}
-                {d.contract_title && (
-                  <span className="block text-[12px] font-normal text-muted">{d.contract_title}</span>
-                )}
-              </Td>
-              <Td>{d.responsible_name ?? "—"}</Td>
-              <Td>{d.validator_name ?? "—"}</Td>
-              <Td className={d.status !== "valide" && isLate(d.due_on) ? "font-medium text-danger tabular" : "tabular"}>
+    <>
+      <GroupedTable
+        storageKey="anat.livrables.groupes"
+        groups={(Object.keys(STATE) as DStatus[]).map((s) => ({
+          id: s,
+          label: STATE[s].label,
+          hue: HUE[STATE[s].tone],
+          Icon: STAGE_ICON[s],
+          rows: rows.filter((d) => d.status === s),
+        }))}
+        rowKey={(d) => d.id}
+        onOpen={(d) => setOpen(d.id)}
+        columns={[
+          {
+            key: "titre",
+            label: "Livrable",
+            Icon: FileCheck2,
+            width: "32%",
+            render: (d) => (
+              <span className="block min-w-0">
+                <span className="block truncate font-medium">{d.title}</span>
+                {d.contract_title && <span className="block truncate text-[12px] text-muted">{d.contract_title}</span>}
+              </span>
+            ),
+          },
+          {
+            key: "resp",
+            label: "Responsable",
+            Icon: UserRound,
+            width: "18%",
+            render: (d) => <span className="text-muted">{d.responsible_name ?? "—"}</span>,
+          },
+          {
+            key: "valid",
+            label: "Valideur",
+            Icon: ShieldCheck,
+            width: "18%",
+            render: (d) => <span className="text-muted">{d.validator_name ?? "—"}</span>,
+          },
+          {
+            key: "due",
+            label: "Échéance",
+            Icon: CalendarDays,
+            width: "13%",
+            render: (d) => (
+              <span className={cn("tabular", d.status !== "valide" && isLate(d.due_on) ? "font-medium text-danger" : "")}>
                 {frDate(d.due_on)}
-              </Td>
-              <Td className="tabular">v{d.version}</Td>
-              <Td>
-                <Status {...STATE[d.status]} />
-                {d.to_pay && <span className="ml-1.5 text-[12px] font-medium text-primary">À payer</span>}
-              </Td>
-            </Tr>
-          ))}
-        </Table>
-      ) : (
-        <Empty icon={<FileCheck2 className="size-6" />} title="Aucun livrable">
-          Les livrables attendus et leur validation apparaîtront ici.
-        </Empty>
-      )}
+              </span>
+            ),
+          },
+          {
+            key: "suivi",
+            label: "Suivi",
+            Icon: Hash,
+            width: "12%",
+            render: (d) => (
+              <span className="flex items-center gap-1.5">
+                <Seal>v{d.version}</Seal>
+                {d.to_pay && (
+                  <span className="rounded-md bg-brand-soft px-1.5 py-0.5 text-[11px] font-medium text-primary">À payer</span>
+                )}
+              </span>
+            ),
+          },
+        ]}
+        empty={
+          <Empty icon={<FileCheck2 className="size-6" />} title="Aucun livrable">
+            Les livrables attendus et leur validation apparaîtront ici.
+          </Empty>
+        }
+      />
       {open && <DeliverableDialog id={open} onClose={() => setOpen(null)} />}
-    </Section>
+    </>
   );
 }
 

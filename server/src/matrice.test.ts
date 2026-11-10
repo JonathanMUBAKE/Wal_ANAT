@@ -202,6 +202,15 @@ async function boot(kind: Kind) {
       await ctx.db.query("UPDATE deliverables SET status = $1 WHERE id = $2", [status, d.id]);
       return d.id;
     },
+    decision: async () =>
+      (
+        await inj(a, "POST", "/api/decisions", {
+          title: u("Décision"),
+          content: "Texte",
+          decided_on: "2026-03-02",
+          owner_id: "u_karim",
+        })
+      ).body,
     toPay: async () => {
       const id = await X.deliverableAt("valide");
       await ctx.db.query("UPDATE deliverables SET to_pay = TRUE WHERE id = $1", [id]);
@@ -572,6 +581,13 @@ const TABLE = [
     body: { evaluation: "Bien", rating: 4 },
   })),
   R_("GET", "/api/pilotage"),
+  R_("GET", "/api/decisions"),
+  R_("POST", "/api/decisions", () => ({ body: { title: "D", content: "Texte", decided_on: "2026-03-02" } })),
+  R_("GET", "/api/decisions/:id", async (X) => ({ url: `/api/decisions/${(await X.decision()).id}` })),
+  R_("PATCH", "/api/decisions/:id/execution", async (X) => ({
+    url: `/api/decisions/${(await X.decision()).id}/execution`,
+    body: { status: "en_cours" },
+  })),
   R_("GET", "/api/activities"),
   R_("POST", "/api/activities", () => ({ body: { kind: "commission", title: "Commission" } })),
   R_("GET", "/api/activities/:id", async (X) => ({ url: `/api/activities/${(await X.activity()).id}` })),

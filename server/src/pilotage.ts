@@ -1,3 +1,4 @@
+import { Decisions } from "./decisions.js";
 import { meetingReference } from "./meetings.js";
 import type { Services } from "./services.js";
 
@@ -173,6 +174,7 @@ export class Pilotage {
       [orgId, today],
     );
     const decisions = items.filter((i) => i.decision_needed.trim() && i.health !== "done");
+    const registry = await new Decisions(this.svc).summary(actorId, orgId);
     const critical = items.filter((i) => i.health === "off_track");
     const overdueTasks = items.filter((i) => i.overdue > 0).reduce((s, i) => s + i.overdue, 0);
     const counters = {
@@ -189,13 +191,16 @@ export class Pilotage {
         (recs?.late ?? 0) +
         (lateCounts?.livrables ?? 0) +
         (lateCounts?.activites_plan ?? 0) +
-        (lateCounts?.courrier ?? 0),
+        (lateCounts?.courrier ?? 0) +
+        registry.late,
+      decisions_a_executer: registry.open,
       retards_detail: {
         taches_et_suites: overdueTasks,
         recommandations: recs?.late ?? 0,
         livrables: lateCounts?.livrables ?? 0,
         activites_plan: lateCounts?.activites_plan ?? 0,
         courrier: lateCounts?.courrier ?? 0,
+        decisions: registry.late,
       },
     };
     const delegators = (
@@ -275,6 +280,7 @@ export class Pilotage {
       health,
       items,
       decisions,
+      recent_decisions: registry.recent,
       agenda,
       recommendations: {
         open: recs?.open ?? 0,

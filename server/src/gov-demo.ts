@@ -1,5 +1,6 @@
 import { Activities } from "./activities.js";
 import { Attributions } from "./attributions.js";
+import { Decisions } from "./decisions.js";
 import { Deliverables } from "./deliverables.js";
 import { Gaps } from "./gaps.js";
 import { Meetings } from "./meetings.js";
@@ -231,6 +232,24 @@ export async function seedGovDemo(svc: Services) {
     responsible_id: "u_karim",
     validator_id: me,
     due_on: day(10),
+  });
+
+  // Registre des décisions : une décision en exécution, une en retard
+  const dec = new Decisions(svc);
+  const d1 = await dec.record(me, org, {
+    title: "Lancement des ateliers provinciaux",
+    content: "Les ateliers provinciaux de concertation sont lancés dans six provinces pilotes (texte d'illustration).",
+    decided_on: day(-14),
+    owner_id: "u_karim",
+    due_on: day(20),
+  });
+  await dec.execute("u_karim", d1.id, { status: "en_cours" });
+  await dec.record(me, org, {
+    title: "Transmission du rapport annuel de performance",
+    content: "Le rapport annuel est transmis au ministère de tutelle après relecture (texte d'illustration).",
+    decided_on: day(-20),
+    owner_id: "u_karim",
+    due_on: day(-4),
   });
 
   const note = await sig.create("u_karim", org, {

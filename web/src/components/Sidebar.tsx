@@ -4,6 +4,7 @@ import { NavLink, useNavigate } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
+  Scale,
   Building2,
   CalendarDays,
   Briefcase,
@@ -174,6 +175,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <NavSection title="Pilotage">
           {can("pilotage.view") && link("/pilotage", Gauge, "Tableau de bord DG")}
           {link("/activites", Briefcase, "Portefeuille")}
+          {(can("decisions.view") || can("decisions.record")) && link("/decisions", Scale, "Décisions")}
           {can("meetings.view") && link("/reunions", CalendarDays, "Réunions")}
         </NavSection>
 

@@ -23,6 +23,7 @@ Quatre règles de conception, appliquées dans cet ordre :
 | **Équipe** | Organisation › Équipes | Membres, projets | Entité de rattachement |
 | **Projet** (interne ou confié) | **Pilotage › Portefeuille** | Équipe et rôles, tâches, budget, décisions, tableau de bord du projet | Équipe, tableau de bord DG |
 | **Activité** (commission, conférence, rendez-vous, interne) | **Pilotage › Portefeuille** | Mandat, suites à donner | Tableau de bord DG, agenda |
+| **Décision de la DG** | **Pilotage › Décisions** (registre) | Numéro annuel, date, objet, texte, dossier d'origine, chargé d'exécution, échéance, exécution | Dossier d'origine (projet, activité, réunion), tableau de bord DG |
 | **Réunion et compte rendu** | Pilotage › Réunions | Ordre du jour, participants, **recommandations** | Tableau de bord (exécution), « Mes recommandations » |
 | **Plan de travail** | Suivi-évaluation › Plans | Activités planifiées, révisions | Entité concernée |
 | **Livrable, mission de consultant** | Suivi-évaluation › Livrables et missions | Validation, historique, paiement | Projet, plan |
@@ -46,7 +47,7 @@ Quatre règles de conception, appliquées dans cet ordre :
 
 ```
 Accueil · Mes tâches · Coéquipiers IA
-PILOTAGE            Tableau de bord DG · Portefeuille · Réunions
+PILOTAGE            Tableau de bord DG · Portefeuille · Décisions · Réunions
 SUIVI-ÉVALUATION    Plans de travail · Livrables et missions
 SECRÉTARIAT         Parapheur · Courrier
 ORGANISATION        Structure · Équipes · (Administration)
@@ -62,6 +63,14 @@ ORGANISATION        Structure · Équipes · (Administration)
 3. La fiche reste en préparation jusqu'à son approbation par une autre personne ; elle est ensuite figée et versionnée.
 4. Dans le panneau de l'entité, le bloc « Attributions » affiche l'état de la fiche et l'ouvre.
 
-## 6. Anciennes adresses
+## 6. Parcours de référence : la DG tranche
+
+1. Un projet ou une activité porte une **décision attendue** ; elle remonte dans le tableau de bord DG (« Décisions attendues »).
+2. « Arbitrer » ouvre l'enregistrement : objet, texte de la décision, date, chargé d'exécution, échéance.
+3. La décision reçoit un **numéro annuel** (`DEC/2026/0001`), est **figée** et la décision attendue du dossier est levée.
+4. Le chargé d'exécution est prévenu ; il fait avancer l'exécution (à exécuter → en cours → exécutée) jusqu'à son terme.
+5. Une décision ne se modifie jamais : une erreur se corrige par **une nouvelle décision qui remplace** la précédente (marquée « remplacée »).
+
+## 7. Anciennes adresses
 
 `/attributions` renvoie vers `/org?tab=attributions`. Les liens existants restent valides.

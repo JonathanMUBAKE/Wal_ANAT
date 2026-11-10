@@ -38,7 +38,7 @@ Légende : ✅ corrigé et testé · 🟡 manque fonctionnel, à construire.
 | Une activité ou un projet **en retard** pouvait s'afficher « dans les temps » | ✅ l'état affiché passe à « à surveiller » dès qu'un retard existe |
 | « Retards à résorber » ne comptait que tâches et recommandations | ✅ compte aussi livrables, activités de plan approuvé et courrier ; détail affiché sous le chiffre |
 | Un indicateur **qui doit baisser** (délai, coût) affichait toujours 0 % | ✅ calcul juste dans les deux sens |
-| 🟡 Pas de **registre des décisions** : la décision de la DG n'est pas enregistrée (date, contenu, dossier) ; le champ « décision attendue » est simplement vidé | à construire en priorité |
+| Pas de **registre des décisions** : la décision de la DG n'était pas enregistrée (date, contenu, dossier) ; le champ « décision attendue » était simplement vidé | ✅ registre construit (§ 9) |
 
 ## 4. Plans de travail
 
@@ -93,3 +93,20 @@ Légende : ✅ corrigé et testé · 🟡 manque fonctionnel, à construire.
 | 🟡 Deux entités peuvent être déclarées responsables d'un même domaine : l'écart n'apparaît qu'à la détection suivante, pas au moment d'approuver | avertir à l'approbation |
 | 🟡 Les indicateurs n'ont pas d'historique de mesures (date, valeur, source) : pas de tendance | à construire |
 | 🟡 Écrans de saisie des risques et des indicateurs | à construire |
+
+## 9. Registre des décisions de la DG
+
+**Scénario.** Le projet « Schéma national » attend une décision. La DG tranche en comité ; son secrétariat enregistre la décision depuis le tableau de bord (« Arbitrer ») : objet, texte, date, chargé d'exécution, échéance. La décision reçoit le numéro `DEC/2026/0001`, la décision attendue du projet est levée, le chargé d'exécution est prévenu. Il passe la décision « en cours », puis « exécutée » avec une note ; le secrétariat est prévenu.
+
+| Règle | Contrôle serveur |
+| --- | --- |
+| Seul un profil autorisé (« Enregistrer les décisions de la DG ») enregistre ; un coéquipier IA ne le peut jamais | ✅ refusé |
+| Numérotation annuelle sans trou ni doublon, même en cas d'enregistrements simultanés | ✅ |
+| La date de décision n'est pas dans le futur ; l'échéance ne la précède pas | ✅ refusé |
+| Le dossier d'origine (projet, activité, réunion) et le chargé d'exécution appartiennent à l'organisation ; le chargé est une personne, pas une IA | ✅ refusé |
+| L'enregistrement lève la décision attendue du dossier | ✅ |
+| Une décision est **figée** : aucun texte ne se modifie, seule l'exécution avance ; une décision exécutée ou remplacée est close | ✅ |
+| Une erreur se corrige par une décision qui **remplace** la précédente | ✅ l'ancienne passe « remplacée » |
+| Une décision sur un dossier confidentiel est confidentielle : visible du secrétariat, du chargé d'exécution et de son auteur seulement | ✅ |
+| Chaque enregistrement et chaque étape d'exécution sont journalisés ; le chargé puis le secrétariat sont prévenus | ✅ |
+| Une décision non exécutée à son échéance compte dans « Retards à résorber » | ✅ |

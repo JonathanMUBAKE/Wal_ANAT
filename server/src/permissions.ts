@@ -78,6 +78,8 @@ export const PERMISSION_GROUPS = [
     group: "Pilotage",
     items: [
       { key: "pilotage.view", label: "Accéder au poste de pilotage" },
+      { key: "decisions.view", label: "Consulter le registre des décisions" },
+      { key: "decisions.record", label: "Enregistrer les décisions de la DG" },
       { key: "risks.manage", label: "Gérer les risques et les indicateurs" },
       { key: "agenda.view", label: "Consulter l'agenda de la direction" },
       { key: "agenda.manage", label: "Gérer l'agenda de la direction" },
@@ -123,6 +125,7 @@ const GOVERNANCE = new Set<Permission>([
   "consultants.manage",
   "correspondence.manage",
   "pilotage.view",
+  "decisions.record",
   "risks.manage",
   "agenda.manage",
 ]);
@@ -134,6 +137,7 @@ const NOT_FOR_GUESTS = new Set<Permission>([
   "deliverables.view",
   "signature.use",
   "correspondence.view",
+  "decisions.view",
   "agenda.view",
   "projects.create",
   "projects.import",

@@ -38,7 +38,8 @@ import { CollectionHeader } from "@/components/collection";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 import { api } from "@/lib/api";
-import { useMe } from "@/lib/hooks";
+import { useCan, useMe } from "@/lib/hooks";
+import { DecisionDialog, type DecisionSource } from "./Decisions";
 import { useShell } from "@/lib/shell";
 import { firstName, greeting } from "@/lib/format";
 
@@ -141,7 +142,9 @@ const AGENDA_LABEL: Record<string, string> = {
 export function PilotagePage() {
   const { data: me } = useMe();
   const shell = useShell();
+  const can = useCan();
   const [day, setDay] = useState<string | null>(null);
+  const [arbitrating, setArbitrating] = useState<DecisionSource | null>(null);
   const {
     data: o,
     isLoading,
@@ -215,7 +218,12 @@ export function PilotagePage() {
           tile="bg-ai-soft text-ai-fg"
           label="Décisions attendues"
           value={o.counters.decisions}
-          foot="à arbitrer par la DG"
+          foot={
+            o.counters.decisions_a_executer
+              ? `${o.counters.decisions_a_executer} décidée${o.counters.decisions_a_executer > 1 ? "s" : ""}, en exécution`
+              : "à arbitrer par la DG"
+          }
+          to="/decisions"
         />
         <Stat
           className="md:col-span-3 xl:col-span-3"
@@ -290,18 +298,23 @@ export function PilotagePage() {
         <Bento
           className="md:col-span-3 xl:col-span-5"
           title="Décisions attendues"
-          action={<span className="rounded-md bg-hover px-2 py-0.5 text-[12px] font-medium tabular text-muted">{o.decisions.length}</span>}
+          action={
+            <span className="flex items-center gap-2">
+              <span className="rounded-md bg-hover px-2 py-0.5 text-[12px] font-medium tabular text-muted">{o.decisions.length}</span>
+              <CircleAction to="/decisions" label="Ouvrir le registre des décisions" />
+            </span>
+          }
         >
           {o.decisions.length ? (
             <ul className="space-y-2 px-4 pb-4 pt-1">
               {o.decisions.slice(0, 4).map((d) => {
                 const I = FORMS[d.form].Icon;
                 return (
-                  <li key={d.id}>
-                    <Link
-                      to={d.href}
-                      className="group flex items-center gap-3 rounded-xl border border-line p-3 transition-colors hover:border-line-strong hover:bg-hover/50"
-                    >
+                  <li
+                    key={d.id}
+                    className="group flex items-center gap-3 rounded-xl border border-line p-3 transition-colors hover:border-line-strong hover:bg-hover/50"
+                  >
+                    <Link to={d.href} className="flex min-w-0 flex-1 items-center gap-3">
                       <span
                         className="flex size-9 shrink-0 items-center justify-center rounded-[10px]"
                         style={{
@@ -315,10 +328,23 @@ export function PilotagePage() {
                         <span className="block truncate text-[13.5px] font-medium">{d.title}</span>
                         <span className="block truncate text-[12px] text-muted">{d.decision_needed}</span>
                       </span>
-                      <span className="hidden rounded-lg border border-line px-2.5 py-1 text-[12px] font-medium text-fg/80 transition-colors group-hover:border-transparent group-hover:bg-night group-hover:text-white sm:inline">
-                        Arbitrer
-                      </span>
                     </Link>
+                    {can("decisions.record") && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setArbitrating({
+                            kind: d.form.startsWith("projet") ? "project" : "activity",
+                            id: d.id,
+                            label: d.title,
+                            question: d.decision_needed,
+                          })
+                        }
+                        className="shrink-0 rounded-lg border border-line px-2.5 py-1 text-[12px] font-medium text-fg/80 transition-colors hover:border-transparent hover:bg-night hover:text-white"
+                      >
+                        Arbitrer
+                      </button>
+                    )}
                   </li>
                 );
               })}
@@ -551,11 +577,12 @@ export function PilotagePage() {
           )}
         </Bento>
       </div>
+      {arbitrating && <DecisionDialog source={arbitrating} onClose={() => setArbitrating(null)} />}
     </div>
   );
 }
 
-const rank = (i: Item) =>
+const rank =(i: Item) =>
   ({ off_track: 0, at_risk: 1, on_track: 2, done: 3 })[i.health] - (i.decision_needed ? 0.5 : 0);
 /** Détail des retards en une ligne : « 2 tâches, 1 livrable, 1 courrier ». */
 const LATE_LABEL: Record<string, [string, string]> = {
@@ -564,6 +591,7 @@ const LATE_LABEL: Record<string, [string, string]> = {
   livrables: ["livrable", "livrables"],
   activites_plan: ["activité de plan", "activités de plan"],
   courrier: ["courrier", "courriers"],
+  decisions: ["décision à exécuter", "décisions à exécuter"],
 };
 const lateFoot = (detail: Record<string, number> | undefined, items: number) => {
   const parts = Object.entries(detail ?? {})

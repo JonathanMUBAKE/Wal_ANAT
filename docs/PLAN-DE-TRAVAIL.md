@@ -141,6 +141,19 @@ Besoin exprimé : « créer un agent IA, lui donner un prompt système, un nom, 
 - [ ] **F2. Aperçu intégré** dans le panneau de tâche : images, PDF (lecteur du navigateur), texte et Markdown, Word (`.docx` → HTML avec `mammoth`), Excel (`.xlsx` → tableau avec `xlsx`/SheetJS).
 - [ ] **F3. Droits** : un fichier hérite des droits de sa tâche ; téléchargement journalisé.
 
+### Lot H — Paramétrage et administration système de l'ANAT (demandé le 10 novembre 2026, à coder après le registre des décisions)
+
+Besoin exprimé : « dynamiser le paramétrage » ; les listes métier (types d'activités par exemple) se modifient dans les
+paramètres, dans un **espace d'administration système réservé à l'administrateur système**.
+**Pas de logique multi-organisations dans la version ANAT** : une seule institution, avec ses entités (directions,
+services) et ses **représentations provinciales**. Ce lot remplace, pour l'ANAT, la partie « entreprises clientes » du Lot C.
+
+- [ ] **H1. Inventaire** de toutes les listes aujourd'hui figées dans le code (types d'activités, états de santé, statuts, rôles d'attribution, types de rapports entre entités, natures de documents au parapheur, types de réunions, catégories de courrier, unités des indicateurs…) : lesquelles deviennent paramétrables, lesquelles restent fixes parce que des règles en dépendent.
+- [ ] **H2. Référentiels paramétrables** : table de référentiels (libellé, code stable, ordre, couleur, icône, actif ou archivé) ; une valeur utilisée ne se supprime pas, elle s'archive ; chaque changement est journalisé.
+- [ ] **H3. Espace « Administration système »** réservé à l'administrateur système (`platform_role`), distinct de l'administration courante : référentiels, paramètres de l'institution, sécurité, journaux.
+- [ ] **H4. Une seule institution** : retirer de l'interface ANAT le changement d'organisation et la création d'organisations ; l'isolation par `org_id` reste en place côté serveur (sans coût, et protège les données).
+- [ ] **H5. Provinces** : un type d'entité « représentation provinciale » dans la structure, avec ses entités, ses responsables et ses attributions, comme le siège.
+
 ### Lot G — Connecteurs (plus tard)
 
 Messageries (Slack, Teams), visioconférence (Teams, Zoom, Meet), drives (Nextcloud, OneDrive, Google Drive),
@@ -192,3 +205,4 @@ Ne pas commencer le Lot D3 avant la réponse à Q1.
 | 2026-11-10 | Claude (session sur l'ordinateur) | ANAT — gabarit étendu à toutes les pages | `PageHeader` et `Tabs` alignés sur le gabarit (fil d'Ariane, carré d'icône, titre 24 px, onglets soulignés) : Activités, Plans, Livrables, Parapheur, Courrier, Attributions. Champs ramenés à 36 px. Livrables groupés par étape. | `lot-identite` |
 | 2026-11-10 | Claude (session sur l'ordinateur) | ANAT — architecture de l'information | `docs/ARCHITECTURE-INFORMATION.md` : chaque objet a un seul domicile. Attributions, écarts et référentiel des domaines intégrés à Organisation › Structure ; la fiche d'attributions s'ouvre dès la création d'une entité et se consulte depuis son panneau. Portefeuille = projets + activités. Groupe Suivi-évaluation (plans, livrables et missions). Section « Projets » retirée de la barre latérale. `/attributions` renvoie vers `/org?tab=attributions`. | `lot-identite` |
 | 2026-11-11 | Claude (session sur l'ordinateur) | ANAT — scénarios et cohérence logique | `docs/SCENARIOS.md` : chaque module rejoué, 18 incohérences corrigées et verrouillées par `scenarios.test.ts` (réunions, activités, tableau de bord, plans, livrables, parapheur, courrier). Nouvelle route « paiement constaté » (matrice à jour) et migration 018. Manques listés, en tête le registre des décisions de la DG. | `lot-identite` |
+| 2026-11-11 | Claude (session sur l'ordinateur) | ANAT — registre des décisions de la DG | Migration 019 (`dg_decisions`, clés composites, RLS) ; droits « Consulter le registre » (membres) et « Enregistrer les décisions de la DG » (administration). Numéro annuel `DEC/AAAA/NNNN`, texte figé (aucune route de modification), exécution à sens unique (à exécuter → en cours → exécutée), correction par décision de remplacement, confidentialité héritée du dossier, refus d'un coéquipier IA, décision attendue du dossier levée, chargé puis secrétariat prévenus, tout journalisé. Tableau de bord : « Arbitrer » ouvre l'enregistrement, retards d'exécution comptés. Page Pilotage › Décisions. 10 tests (`decisions.test.ts`), 4 routes dans la matrice : 386 tests au vert. Demande notée pour plus tard : Lot H (paramétrage, administration système, institution unique avec provinces). | `lot-identite` |

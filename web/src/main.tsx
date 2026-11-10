@@ -25,6 +25,7 @@ import { AccountPage } from "./pages/Account";
 import { AdminPage } from "./pages/Admin";
 import { MeetingPage, MeetingsPage } from "./pages/Meetings";
 import { PilotagePage } from "./pages/Pilotage";
+import { DecisionsPage } from "./pages/Decisions";
 import { AttributionsPage } from "./pages/Attributions";
 import { PlanPage, PlansPage } from "./pages/Plans";
 import { DeliverablesPage } from "./pages/Deliverables";
@@ -57,6 +58,7 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="parapheur" element={<ParapheurPage />} />
                   <Route path="courrier" element={<CourrierPage />} />
                   <Route path="pilotage" element={<PilotagePage />} />
+                  <Route path="decisions" element={<DecisionsPage />} />
                   <Route path="activites" element={<ActivitiesPage />} />
                   <Route path="activites/:id" element={<ActivityPage />} />
                   <Route path="reunions" element={<MeetingsPage />} />

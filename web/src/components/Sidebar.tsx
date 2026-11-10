@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { NavLink, useNavigate } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -6,7 +6,7 @@ import {
   Bell,
   Building2,
   CalendarDays,
-  CalendarRange,
+  Briefcase,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -18,7 +18,6 @@ import {
   House,
   Inbox,
   KeyRound,
-  ListTree,
   LogOut,
   Mail,
   Menu as MenuIcon,
@@ -42,14 +41,12 @@ import {
   MenuLabel,
   MenuSeparator,
   MenuTrigger,
-  ProjectIcon,
   cn,
 } from "./ui";
-import { useAiStatus, useApprovals, useCan, useMe, useNotifications, useProjects } from "@/lib/hooks";
+import { useAiStatus, useApprovals, useCan, useMe, useNotifications } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { AvatarUpload } from "./AvatarUpload";
 import { api } from "@/lib/api";
-import { STATUS } from "@/lib/format";
 
 export const ORG_ROLE: Record<string, string> = {
   owner: "Propriétaire",
@@ -115,23 +112,11 @@ function NavSection({
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { data: me } = useMe();
-  const { data: projects } = useProjects();
   const { data: approvals } = useApprovals();
   const { data: aiStatus } = useAiStatus();
   const shell = useShell();
   const can = useCan();
   const currentOrg = me?.orgs.find((o) => o.id === me.org_id);
-  const groups = useMemo(() => {
-    const m = new Map<string, [string, string | null, NonNullable<typeof projects>]>();
-    for (const p of projects ?? []) {
-      const k = p.team_name ?? "Sans équipe";
-      if (!m.has(k)) m.set(k, [k, p.team_id, []]);
-      m.get(k)![2].push(p);
-    }
-    return [...m.values()].sort(
-      (a, b) => (a[1] ? 0 : 1) - (b[1] ? 0 : 1) || a[0].localeCompare(b[0], "fr", { sensitivity: "base" }),
-    );
-  }, [projects]);
 
   const link = (to: string, Icon: typeof House, label: string, badge?: number, ai?: boolean) => (
     <NavLink
@@ -185,12 +170,16 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           {link("/ai", Sparkles, "Coéquipiers IA", approvals?.length, true)}
         </nav>
 
+        {/* Architecture : voir docs/ARCHITECTURE-INFORMATION.md — une information, un seul domicile */}
         <NavSection title="Pilotage">
           {can("pilotage.view") && link("/pilotage", Gauge, "Tableau de bord DG")}
-          {can("agenda.view") && link("/activites", CalendarRange, "Activités")}
+          {link("/activites", Briefcase, "Portefeuille")}
           {can("meetings.view") && link("/reunions", CalendarDays, "Réunions")}
+        </NavSection>
+
+        <NavSection title="Suivi-évaluation">
           {can("plans.view") && link("/plans", ClipboardList, "Plans de travail")}
-          {link("/livrables", FileCheck2, "Livrables")}
+          {link("/livrables", FileCheck2, "Livrables et missions")}
         </NavSection>
 
         {(can("signature.use") || can("correspondence.view")) && (
@@ -201,47 +190,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         )}
 
         <NavSection title="Organisation">
-          {can("attributions.view") && link("/attributions", ListTree, "Attributions")}
+          {link("/org", Network, "Structure")}
           {link("/teams", Users, "Équipes")}
-          {link("/org", Network, "Organigramme")}
           {me?.platform_role && link("/admin", ShieldCheck, "Administration")}
-        </NavSection>
-
-        <NavSection
-          title="Projets"
-          action={
-            <button
-              aria-label="Nouveau projet"
-              onClick={() => shell.setNewProject(true)}
-              className="ml-2 rounded-md p-0.5 text-faint hover:bg-hover hover:text-fg"
-            >
-              <Plus className="size-3.5" />
-            </button>
-          }
-        >
-          {groups.flatMap(([, , list]) =>
-            list.map((p) => (
-              <NavLink
-                key={p.id}
-                to={`/projects/${p.id}`}
-                onClick={onNavigate}
-                className={({ isActive }) =>
-                  cn(
-                    "flex h-9 items-center gap-3 rounded-[10px] px-2.5 text-[13.5px]",
-                    isActive ? "bg-brand-soft font-medium text-primary" : "text-fg/75 hover:bg-hover hover:text-fg",
-                  )
-                }
-              >
-                <ProjectIcon icon={p.icon} color={p.color} size={18} />
-                <span className="flex-1 truncate">{p.name}</span>
-                <span
-                  className="size-1.5 rounded-full"
-                  style={{ background: STATUS[p.status].color }}
-                  title={STATUS[p.status].label}
-                />
-              </NavLink>
-            )),
-          )}
         </NavSection>
       </div>
 

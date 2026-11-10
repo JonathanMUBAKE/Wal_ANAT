@@ -1,18 +1,17 @@
 import { useState } from "react";
+import { Navigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CopyPlus, ListTree, Plus, Radar, ShieldCheck, Trash2 } from "lucide-react";
+import { CopyPlus, Plus, Radar, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Empty, IconButton } from "@/components/ui";
 import {
   Field,
   Input,
   LoadingRows,
-  PageHeader,
   Section,
   Select,
   Status,
   Table,
-  Tabs,
   Td,
   Textarea,
   Tr,
@@ -87,33 +86,16 @@ const GAP_STATUS: Record<string, { label: string; tone: Tone }> = {
 };
 const fail = (e: unknown) => toast.error((e as Error).message);
 
+/** Les attributions vivent dans Organisation (docs/ARCHITECTURE-INFORMATION.md) : l'ancienne adresse y renvoie. */
 export function AttributionsPage() {
-  const can = useCan();
-  const [tab, setTab] = useState<"sheets" | "gaps" | "domains">("sheets");
-  const tabs = [
-    { id: "sheets" as const, label: "Fiches des entités" },
-    ...(can("pilotage.view") ? [{ id: "gaps" as const, label: "Écarts de participation" }] : []),
-    { id: "domains" as const, label: "Catalogue des domaines" },
-  ];
-  return (
-    <div className="min-h-full">
-      <PageHeader
-        Icon={ListTree}
-        crumbs={["Organisation", "Attributions"]}
-        title="Attributions"
-        subtitle="Ce dont chaque entité répond, avec qui elle travaille, et les écarts entre l'attendu et le réalisé."
-      />
-      <Tabs value={tab} onChange={setTab} items={tabs} />
-      <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
-        {tab === "sheets" && <Sheets />}
-        {tab === "gaps" && <Gaps />}
-        {tab === "domains" && <Domains />}
-      </div>
-    </div>
-  );
+  return <Navigate to="/org?tab=attributions" replace />;
 }
 
-function Sheets() {
+/** Fiches de toutes les entités, pour vérifier d'un coup d'œil qu'aucune ne manque. */
+export const useSheetRows = () =>
+  useQuery({ queryKey: ["attributions"], queryFn: () => api.get<SheetRow[]>("/api/attributions") });
+
+export function Sheets() {
   const can = useCan();
   const { data: units } = useUnits();
   const { data: rows, isLoading } = useQuery({
@@ -185,7 +167,7 @@ function Sheets() {
 }
 
 const useDomains = () => useQuery({ queryKey: ["domains"], queryFn: () => api.get<Domain[]>("/api/domains") });
-function SheetDialog({
+export function SheetDialog({
   id,
   unit_id,
   name,
@@ -463,7 +445,7 @@ const Head = ({ title, add }: { title: string; add?: () => void }) => (
   </div>
 );
 
-function Gaps() {
+export function Gaps() {
   const can = useCan();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["gaps"], queryFn: () => api.get<Gap[]>("/api/gaps") });
@@ -578,7 +560,7 @@ function Decide({ gap, onClose }: { gap: Gap; onClose: () => void }) {
   );
 }
 
-function Domains() {
+export function Domains() {
   const can = useCan();
   const qc = useQueryClient();
   const { data } = useDomains();

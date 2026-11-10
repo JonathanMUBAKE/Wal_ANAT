@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CalendarRange, Lock, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Briefcase, CalendarRange, Lock, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Checkbox, ConfirmDialog, Dialog, Empty, IconButton } from "@/components/ui";
+import { Button, Checkbox, ConfirmDialog, Dialog, Empty, IconButton, ProjectIcon, cn } from "@/components/ui";
+import { useShell } from "@/lib/shell";
+import type { ProjectSummary } from "@/lib/types";
 import {
   DomainSelect,
   Field,
   Input,
   LoadingRows,
   PageHeader,
+  ProgressBar,
   Section,
   Select,
   Status,
@@ -22,7 +25,7 @@ import {
   isLate,
 } from "@/components/gov";
 import { api } from "@/lib/api";
-import { useCan, useUnits, useUsers } from "@/lib/hooks";
+import { useCan, useProjects, useUnits, useUsers } from "@/lib/hooks";
 import { FORMS, HEALTH } from "./Pilotage";
 
 type Kind = "commission" | "conference" | "rendez_vous" | "interne";
@@ -68,25 +71,34 @@ const COUNTERPART: Record<Kind, string> = {
 export function ActivitiesPage() {
   const can = useCan();
   const nav = useNavigate();
-  const [tab, setTab] = useState<Kind | "all">("all");
+  const shell = useShell();
+  const [tab, setTab] = useState<Kind | "all" | "projects">("all");
   const [creating, setCreating] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ["activities"],
     queryFn: () => api.get<Activity[]>("/api/activities"),
   });
+  const { data: projects } = useProjects();
   const rows = data?.filter((a) => tab === "all" || a.kind === tab) ?? [];
+  // Le portefeuille de la DG : projets et activités au même endroit (docs/ARCHITECTURE-INFORMATION.md)
   return (
     <div className="min-h-full">
       <PageHeader
-        Icon={CalendarRange}
-        crumbs={["Pilotage", "Activités"]}
-        title="Activités de l'Agence"
-        subtitle="Commissions, conférences, rendez-vous et activités internes, suivis jusqu'à leurs suites."
+        Icon={Briefcase}
+        crumbs={["Pilotage", "Portefeuille"]}
+        title="Portefeuille"
+        subtitle="Projets internes et confiés, commissions, conférences, rendez-vous et activités internes, suivis jusqu'à leurs suites."
         actions={
-          can("agenda.manage") && (
-            <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
-              Nouvelle activité
+          tab === "projects" ? (
+            <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => shell.setNewProject(true)}>
+              Nouveau projet
             </Button>
+          ) : (
+            can("agenda.manage") && (
+              <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
+                Nouvelle activité
+              </Button>
+            )
           )
         }
       />
@@ -94,11 +106,15 @@ export function ActivitiesPage() {
         value={tab}
         onChange={setTab}
         items={[
-          { id: "all" as const, label: "Toutes" },
+          { id: "all" as const, label: "Toutes les activités" },
+          { id: "projects" as const, label: "Projets", badge: projects?.length },
           ...KINDS.map((k) => ({ id: k, label: FORMS[k].plural, badge: data?.filter((a) => a.kind === k).length })),
         ]}
       />
       <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
+        {tab === "projects" ? (
+          <ProjectsList projects={projects} />
+        ) : (
         <Section>
           {isLoading ? (
             <LoadingRows />
@@ -128,9 +144,63 @@ export function ActivitiesPage() {
             </Empty>
           )}
         </Section>
+        )}
       </div>
-      {creating && <NewActivity defaultKind={tab === "all" ? "commission" : tab} onClose={() => setCreating(false)} />}
+      {creating && (
+        <NewActivity
+          defaultKind={tab === "all" || tab === "projects" ? "commission" : tab}
+          onClose={() => setCreating(false)}
+        />
+      )}
     </div>
+  );
+}
+
+/** Projets du portefeuille : un clic ouvre le tableau de bord du projet. */
+function ProjectsList({ projects }: { projects: ProjectSummary[] | undefined }) {
+  const nav = useNavigate();
+  if (!projects) return <LoadingRows />;
+  if (!projects.length)
+    return (
+      <Section>
+        <Empty icon={<Briefcase className="size-6" />} title="Aucun projet">
+          Créez un projet interne ou un projet confié à l'Agence avec « Nouveau projet ».
+        </Empty>
+      </Section>
+    );
+  const today = new Date().toISOString().slice(0, 10);
+  return (
+    <Section>
+      <Table head={["Projet", "Équipe", "Avancement", "Échéance", "Tâches en retard", "État"]}>
+        {projects.map((p) => {
+          const pct = p.task_count ? Math.round((p.done_count / p.task_count) * 100) : 0;
+          return (
+            <Tr key={p.id} onClick={() => nav(`/projects/${p.id}`)}>
+              <Td>
+                <span className="flex items-center gap-2.5">
+                  <ProjectIcon icon={p.icon} color={p.color} size={22} />
+                  <span className="font-medium">{p.name}</span>
+                </span>
+              </Td>
+              <Td className="text-muted">{p.team_name ?? "—"}</Td>
+              <Td className="min-w-[130px]">
+                <span className="flex items-center gap-2">
+                  <ProgressBar value={pct} />
+                  <span className="w-9 text-right text-[12px] tabular text-muted">{pct}%</span>
+                </span>
+              </Td>
+              <Td className={cn("tabular", isLate(p.due_on, today) && "font-medium text-danger")}>{frDate(p.due_on)}</Td>
+              <Td className={cn("tabular", p.overdue_count > 0 && "font-semibold text-danger")}>
+                {p.overdue_count || "—"}
+              </Td>
+              <Td>
+                <Status label={HEALTH[p.status].label} tone={HEALTH[p.status].tone} />
+              </Td>
+            </Tr>
+          );
+        })}
+      </Table>
+    </Section>
   );
 }
 
@@ -331,7 +401,7 @@ export function ActivityPage() {
       <PageHeader
         title={
           <span className="flex flex-wrap items-center gap-2">
-            <Link to="/activites" aria-label="Retour aux activités" className="text-muted hover:text-fg">
+            <Link to="/activites" aria-label="Retour au portefeuille" className="text-muted hover:text-fg">
               <ArrowLeft className="size-5" />
             </Link>
             {d.title}

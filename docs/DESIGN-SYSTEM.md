@@ -105,7 +105,7 @@ Une seule échelle : **32 px** (compacte : pagination, actions de ligne), **36 p
 
 ### Charpente de l'application (modèle Tracklio / Oripio)
 - **Barre du haut** (64 px, blanche, filet en bas) : recherche bordée à gauche (« Rechercher une réunion, un dossier, une personne… », ⌘K) ; à droite, carrés d'icône bordés de 40 px (Assistant IA, Boîte de réception, Notifications avec pastille rouge), puis la pastille du compte (photo, nom, rôle, chevron) qui ouvre profil, sécurité, organisations, thème et déconnexion.
-- **Barre latérale** (256 px, blanche) : en tête, sur 64 px alignés avec la barre du haut, le logo ANAT, « ANAT Pilotage » et l'organisation. Puis Accueil, Mes tâches, Coéquipiers IA ; des sections titrées en **petites capitales** avec chevron : PILOTAGE, SECRÉTARIAT, ORGANISATION, PROJETS. Liens de 36 px, rayon 10 px, icône 18 px ; actif : fond bleu très léger, texte et icône bleus. En pied : Assistant IA.
+- **Barre latérale** (256 px, blanche) : en tête, sur 64 px alignés avec la barre du haut, le logo ANAT, « ANAT Pilotage » et l'organisation. Puis Accueil, Mes tâches, Coéquipiers IA ; des sections titrées en **petites capitales** avec chevron : PILOTAGE, SUIVI-ÉVALUATION, SECRÉTARIAT, ORGANISATION. Le contenu de chaque section est fixé par `docs/ARCHITECTURE-INFORMATION.md`. Liens de 36 px, rayon 10 px, icône 18 px ; actif : fond bleu très léger, texte et icône bleus. En pied : Assistant IA.
 - **Tableaux** : l'en-tête des colonnes est une **bande grise arrondie** (fond `--bg`, rayon 10 px) posée dans la carte blanche, libellés 12 px moyens.
 
 ### Calendrier

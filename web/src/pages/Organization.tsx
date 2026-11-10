@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
+import { PageHeader, Status, Tabs } from "@/components/gov";
+import { Domains, Gaps, SheetDialog, Sheets, useSheetRows } from "./Attributions";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AtSign, ChevronRight, Network, Plus, Trash2, Users } from "lucide-react";
@@ -19,7 +21,10 @@ export function OrganizationPage() {
   const { data: me } = useMe();
   const { data: units, isLoading } = useUnits();
   const { data: people } = useUsers();
-  const [tab, setTab] = useState<"tree" | "people" | "profiles" | "mail">("tree");
+  const [params, setParams] = useSearchParams();
+  type OrgTab = "tree" | "attributions" | "gaps" | "people" | "profiles" | "domains" | "mail";
+  const tab = (params.get("tab") as OrgTab) || "tree";
+  const setTab = (t: OrgTab) => setParams(t === "tree" ? {} : { tab: t }, { replace: true });
   const can = useCan();
   const org = me?.orgs.find((o) => o.id === me.org_id);
   const isAdmin = org?.role === "owner" || org?.role === "admin";
@@ -27,56 +32,48 @@ export function OrganizationPage() {
     canProfiles = can("org.profiles"),
     canMail = can("org.mail");
   const humans = (people ?? []).filter((u) => !u.is_ai);
+  // Une entité, ses attributions, ses écarts et le référentiel des domaines vivent ici (docs/ARCHITECTURE-INFORMATION.md)
+  const tabs: { id: OrgTab; label: string }[] = [
+    { id: "tree", label: "Organigramme" },
+    ...(can("attributions.view") ? [{ id: "attributions" as const, label: "Attributions" }] : []),
+    ...(can("pilotage.view") ? [{ id: "gaps" as const, label: "Écarts de participation" }] : []),
+    { id: "people", label: "Personnes" },
+    ...(canProfiles ? [{ id: "profiles" as const, label: "Profils et droits" }] : []),
+    ...(can("attributions.view") ? [{ id: "domains" as const, label: "Référentiel des domaines" }] : []),
+    ...(canMail ? [{ id: "mail" as const, label: "Messagerie" }] : []),
+  ];
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-16 pt-8 sm:px-8">
-      <header className="mb-6">
-        <p className="flex items-center gap-1.5 text-[13px] text-muted">
-          <Network className="size-4" />
-          Organisation
-        </p>
-        <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.02em]">{org?.name}</h1>
-        <p className="mt-1 text-[13px] text-muted tabular">
-          {units?.length ?? 0} entités · {humans.length} personnes · {(people ?? []).filter((u) => u.is_ai).length}{" "}
-          coéquipiers IA
-          {!isAdmin && " · lecture seule"}
-        </p>
-      </header>
-      <div className="mb-5 flex gap-1 border-b border-line">
-        {(
-          [
-            ["tree", "Organigramme"],
-            ["people", "Personnes"],
-            ...(canProfiles ? [["profiles", "Profils et droits"]] : []),
-            ...(canMail ? [["mail", "Messagerie"]] : []),
-          ] as [typeof tab, string][]
-        ).map(([k, l]) => (
-          <button
-            key={k}
-            onClick={() => setTab(k)}
-            className={cn(
-              "-mb-px border-b-2 px-2.5 pb-2.5 text-[13.5px]",
-              tab === k ? "border-fg font-medium text-fg" : "border-transparent text-muted hover:text-fg",
-            )}
-          >
-            {l}
-          </button>
-        ))}
+    <div className="min-h-full pb-16">
+      <PageHeader
+        Icon={Network}
+        crumbs={["Organisation", "Structure"]}
+        title={org?.name ?? "Organisation"}
+        subtitle={`${units?.length ?? 0} entités · ${humans.length} personnes · chaque entité porte sa fiche d'attributions et ses rapports avec les autres.${isAdmin ? "" : " Lecture seule."}`}
+      />
+      <Tabs value={tab} onChange={setTab} items={tabs} />
+      <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
+        {isLoading ? (
+          <Spinner />
+        ) : tab === "tree" ? (
+          <Tree units={units ?? []} isAdmin={isAdmin} />
+        ) : tab === "attributions" ? (
+          <Sheets />
+        ) : tab === "gaps" ? (
+          <Gaps />
+        ) : tab === "domains" ? (
+          <Domains />
+        ) : tab === "mail" && canMail ? (
+          <OrgMail orgName={org?.name ?? ""} />
+        ) : tab === "profiles" && canProfiles ? (
+          <ProfilesPanel />
+        ) : (
+          <>
+            <People units={units ?? []} isAdmin={isAdmin} canManage={canManage} canStructure={can("org.structure")} />
+            {canManage && <InvitationsPanel />}
+          </>
+        )}
       </div>
-      {isLoading ? (
-        <Spinner />
-      ) : tab === "tree" ? (
-        <Tree units={units ?? []} isAdmin={isAdmin} />
-      ) : tab === "mail" && canMail ? (
-        <OrgMail orgName={org?.name ?? ""} />
-      ) : tab === "profiles" && canProfiles ? (
-        <ProfilesPanel />
-      ) : (
-        <>
-          <People units={units ?? []} isAdmin={isAdmin} canManage={canManage} canStructure={can("org.structure")} />
-          {canManage && <InvitationsPanel />}
-        </>
-      )}
     </div>
   );
 }
@@ -188,10 +185,31 @@ function UnitDetail({
   const [name, setName] = useState(unit.name);
   const [child, setChild] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [sheetFor, setSheetFor] = useState<{ id?: string; unit_id: string; name: string } | null>(null);
+  const can = useCan();
+  const { data: sheets } = useSheetRows();
+  const approved = sheets?.find((s) => s.unit_id === unit.id && s.status === "approved");
+  const draft = sheets?.find((s) => s.unit_id === unit.id && s.status === "draft");
   const humans = (people ?? []).filter((u) => !u.is_ai);
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["units"] });
     qc.invalidateQueries({ queryKey: ["users"] });
+  };
+  // Créer une entité, c'est aussitôt définir ce dont elle répond : la fiche d'attributions s'ouvre
+  const createChild = () => {
+    const name = child.trim();
+    if (!name) return;
+    api.post<{ id: string }>("/api/org/units", { name, parent_id: unit.id, kind: "Service" }).then(
+      (r) => {
+        setChild("");
+        refresh();
+        if (can("attributions.manage")) {
+          toast.success("Sous-entité créée. Définissez maintenant ses attributions.");
+          setSheetFor({ unit_id: r.id, name });
+        } else toast.success("Sous-entité créée");
+      },
+      (er) => toast.error(er.message),
+    );
   };
   const patch = (body: Record<string, unknown>, ok?: string) =>
     api.patch(`/api/units/${unit.id}`, body).then(
@@ -296,6 +314,39 @@ function UnitDetail({
         </div>
       </div>
 
+      {can("attributions.view") && (
+        <Block title="Attributions">
+          <div className="rounded-xl border border-line p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {approved ? (
+                <Status label={`Fiche approuvée · version ${approved.version}`} tone="success" />
+              ) : draft ? (
+                <Status label="Fiche en préparation" tone="info" />
+              ) : (
+                <Status label="Fiche manquante" tone="warning" />
+              )}
+              {(approved ?? draft) && (
+                <span className="text-[12px] tabular text-muted">
+                  {(approved ?? draft)!.domain_count} domaine(s) · {(approved ?? draft)!.relation_count} rapport(s)
+                </span>
+              )}
+            </div>
+            <p className="mt-2 text-[12px] leading-snug text-muted">
+              Ce dont l'entité répond, avec qui elle travaille : c'est la référence pour repérer les écarts de participation.
+            </p>
+            {(approved || draft || can("attributions.manage")) && (
+              <Button
+                size="sm"
+                className="mt-2.5"
+                onClick={() => setSheetFor({ id: (draft ?? approved)?.id, unit_id: unit.id, name: unit.name })}
+              >
+                {approved || draft ? "Ouvrir la fiche" : "Définir les attributions"}
+              </Button>
+            )}
+          </div>
+        </Block>
+      )}
+
       <Block title={`Sous-entités · ${sub.length}`}>
         {sub.map((u) => (
           <button
@@ -314,35 +365,10 @@ function UnitDetail({
               onChange={(e) => setChild(e.target.value)}
               placeholder="Nouvelle sous-entité"
               aria-label="Nom de la nouvelle sous-entité"
-              onKeyDown={(e) =>
-                e.key === "Enter" &&
-                child.trim() &&
-                api.post("/api/org/units", { name: child.trim(), parent_id: unit.id, kind: "Service" }).then(
-                  () => {
-                    setChild("");
-                    refresh();
-                    toast.success("Sous-entité créée");
-                  },
-                  (er) => toast.error(er.message),
-                )
-              }
+              onKeyDown={(e) => e.key === "Enter" && createChild()}
               className={field}
             />
-            <Button
-              size="sm"
-              icon={<Plus className="size-3.5" />}
-              disabled={!child.trim()}
-              onClick={() =>
-                api.post("/api/org/units", { name: child.trim(), parent_id: unit.id, kind: "Service" }).then(
-                  () => {
-                    setChild("");
-                    refresh();
-                    toast.success("Sous-entité créée");
-                  },
-                  (er) => toast.error(er.message),
-                )
-              }
-            >
+            <Button size="sm" icon={<Plus className="size-3.5" />} disabled={!child.trim()} onClick={createChild}>
               Ajouter
             </Button>
           </div>
@@ -378,6 +404,16 @@ function UnitDetail({
           {!members.length && <p className="px-2 text-[12.5px] text-faint">Personne n'est rattaché ici.</p>}
         </div>
       </Block>
+
+      {sheetFor && (
+        <SheetDialog
+          id={sheetFor.id}
+          unit_id={sheetFor.unit_id}
+          name={sheetFor.name}
+          onClose={() => setSheetFor(null)}
+          onOpen={(id) => setSheetFor({ ...sheetFor, id })}
+        />
+      )}
 
       {isAdmin && unit.parent_id && (
         <>

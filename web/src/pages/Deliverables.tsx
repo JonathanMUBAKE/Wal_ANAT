@@ -107,8 +107,8 @@ export function DeliverablesPage() {
     <div className="min-h-full">
       <PageHeader
         Icon={FileCheck2}
-        crumbs={["Pilotage", "Livrables"]}
-        title="Livrables et consultants"
+        crumbs={["Suivi-évaluation", "Livrables et missions"]}
+        title="Livrables et missions"
         subtitle="Un livrable est validé par une autre personne que son auteur. Une mission suit ses livrables jusqu'au paiement."
         actions={
           <>

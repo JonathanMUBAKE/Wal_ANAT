@@ -94,7 +94,7 @@ export function PlansPage() {
     <div className="min-h-full">
       <PageHeader
         Icon={ClipboardList}
-        crumbs={["Pilotage", "Plans de travail"]}
+        crumbs={["Suivi-évaluation", "Plans de travail"]}
         title="Plans de travail"
         subtitle="Un plan annuel par entité. Une fois approuvé, il devient la référence et toute révision reste tracée."
         actions={

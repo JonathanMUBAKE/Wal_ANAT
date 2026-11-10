@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -29,9 +28,6 @@ import {
   LoadingRows,
   ProgressBar,
   Status,
-  Table,
-  Td,
-  Tr,
   frDate,
   isLate,
   type Tone,
@@ -139,25 +135,9 @@ const AGENDA_LABEL: Record<string, string> = {
   rendez_vous: "Rendez-vous",
   interne: "Activité",
 };
-const AGENDA_ICON: Record<string, LucideIcon> = {
-  reunion: Users,
-  commission: Landmark,
-  conference: Mic2,
-  rendez_vous: Handshake,
-  interne: CalendarClock,
-};
-const AGENDA_HUE: Record<string, string> = {
-  reunion: "var(--primary)",
-  commission: "var(--form-commission)",
-  conference: "var(--form-conference)",
-  rendez_vous: "var(--form-rendez_vous)",
-  interne: "var(--form-interne)",
-};
 
 export function PilotagePage() {
   const { data: me } = useMe();
-  const nav = useNavigate();
-  const [form, setForm] = useState<Form | null>(null);
   const {
     data: o,
     isLoading,
@@ -171,9 +151,11 @@ export function PilotagePage() {
     return (
       <Empty title="Tableau de bord inaccessible">{(error as Error)?.message ?? "Réessayez dans un instant."}</Empty>
     );
-  const items = o.items
-    .filter((i) => !form || i.form === form)
-    .sort((a, b) => rank(a) - rank(b) || (a.next_due ?? "9").localeCompare(b.next_due ?? "9"));
+  // Ce qui demande attention d'abord : en difficulté, à surveiller, décision attendue, puis l'échéance la plus proche
+  const priorities = o.items
+    .filter((i) => i.health !== "done")
+    .sort((a, b) => rank(a) - rank(b) || (a.next_due ?? "9").localeCompare(b.next_due ?? "9"))
+    .slice(0, 6);
   const total = Object.values(o.health).reduce((s, n) => s + n, 0);
   const healthy = (o.health.on_track ?? 0) + (o.health.done ?? 0);
   const score = total ? Math.round((healthy / total) * 100) : 0;
@@ -236,12 +218,12 @@ export function PilotagePage() {
         </div>
       </section>
 
-      {/* Santé, formes d'activité, agenda */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,1fr)]">
+      {/* Rangée 1 : santé, répartition, agenda — trois cartes de même hauteur */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card title="Santé du portefeuille" action={<CircleAction to="/activites" label="Voir les activités" />}>
-          <div className="flex flex-col items-center px-5 pb-5 pt-2">
+          <div className="flex items-center gap-6 px-5 pb-5 pt-3">
             <HealthRing
-              size={156}
+              size={128}
               track="var(--hover)"
               caption={`${score} % des activités dans les temps ou terminées`}
               parts={(Object.keys(HEALTH) as Health[]).map((h) => ({
@@ -252,382 +234,242 @@ export function PilotagePage() {
               }))}
               center={
                 <>
-                  <span className="text-[30px] font-semibold leading-none tracking-[-0.03em]">
+                  <span className="text-[26px] font-semibold leading-none tracking-[-0.03em]">
                     <CountUp value={score} />%
                   </span>
-                  <span className="mt-1 text-[12px] text-muted">en bonne voie</span>
+                  <span className="mt-1 text-[11px] text-muted">en bonne voie</span>
                 </>
               }
             />
-            <ul className="mt-5 grid w-full grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
+            <ul className="min-w-0 flex-1 space-y-2.5 text-[13px]">
               {(Object.keys(HEALTH) as Health[]).map((h) => (
                 <li key={h} className="flex items-center gap-2">
-                  <span className="size-2.5 rounded-full" style={{ background: HEALTH[h].color }} />
-                  <span className="text-muted">{HEALTH[h].label}</span>
-                  <span className="ml-auto font-semibold tabular">{o.health[h] ?? 0}</span>
+                  <span className="size-2 rounded-full" style={{ background: HEALTH[h].color }} />
+                  <span className="truncate text-muted">{HEALTH[h].label}</span>
+                  <span className="ml-auto font-medium tabular">{o.health[h] ?? 0}</span>
                 </li>
               ))}
             </ul>
           </div>
         </Card>
 
-        <Card
-          title="Activités par forme"
-          action={
-            form ? (
-              <button
-                onClick={() => setForm(null)}
-                className="h-8 rounded-lg border border-line-strong px-3 text-[12px] font-medium hover:bg-hover"
-              >
-                Tout afficher
-              </button>
-            ) : (
-              <span className="text-[12px] text-faint">Cliquez pour filtrer</span>
-            )
-          }
-        >
-          <div className="flex h-[250px] items-end justify-between gap-2 px-5 pb-5 pt-4">
+        <Card title="Répartition par forme" action={<CircleAction to="/activites" label="Voir les activités" />}>
+          <div className="flex h-[168px] items-end gap-2.5 px-5 pb-5 pt-2">
             {forms.map((f) => {
               const n = o.counters[FORMS[f].counter] ?? 0;
-              const { Icon } = FORMS[f];
-              const active = form === f;
+              const top = n > 0 && n === maxForm;
               return (
-                <button
-                  key={f}
-                  onClick={() => setForm(active ? null : f)}
-                  aria-pressed={active}
-                  title={`${FORMS[f].plural} : ${n}`}
-                  className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2"
-                >
-                  <span className="text-[13px] font-semibold tabular">{n}</span>
+                <div key={f} title={`${FORMS[f].plural} : ${n}`} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1.5">
+                  <span className={cn("text-[12px] tabular", top ? "font-semibold text-fg" : "text-muted")}>{n}</span>
+                  <span className="flex min-h-0 w-full flex-1 items-end justify-center">
                   <span
-                    className={cn(
-                      "bar-rise w-full max-w-[32px] rounded-[10px] transition-[filter,transform] group-hover:brightness-110",
-                      n === 0 && "hatch",
-                      form && !active && "opacity-35",
-                    )}
+                    className={cn("bar-rise w-full max-w-[28px] rounded-lg", n === 0 && "hatch")}
                     style={{
-                      height: `${Math.max(12, (n / maxForm) * 100) * 1.45}px`,
-                      background: n ? `var(--form-${f})` : undefined,
+                      height: `${Math.max(8, (n / maxForm) * 100)}%`,
+                      background: n
+                        ? "linear-gradient(180deg, color-mix(in oklab, var(--primary) 55%, var(--panel)), color-mix(in oklab, var(--primary) 22%, var(--panel)))"
+                        : undefined,
                     }}
                   />
-                  <span
-                    className={cn(
-                      "flex size-8 items-center justify-center rounded-full border transition-colors",
-                      active ? "border-transparent text-white" : "border-line-strong text-muted",
-                    )}
-                    style={active ? { background: `var(--form-${f})` } : undefined}
-                  >
-                    <Icon className="size-3.5" />
                   </span>
                   <span className="w-full truncate text-center text-[11px] text-muted">{FORMS[f].short}</span>
-                </button>
+                </div>
               );
             })}
           </div>
         </Card>
 
         <Card title="Sept prochains jours" action={<CircleAction to="/activites" label="Tout l'agenda" />}>
-          <div className="space-y-2.5 px-4 pb-4 pt-1">
+          <ul className="px-2 pb-3">
             {o.agenda.length ? (
-              o.agenda.slice(0, 3).map((a) => {
-                const Icon = AGENDA_ICON[a.form] ?? CalendarClock;
-                return (
+              o.agenda.slice(0, 4).map((a) => (
+                <li key={a.id}>
                   <Link
-                    key={a.id}
                     to={a.href}
-                    className="group flex items-center gap-3 rounded-xl border border-line bg-bg/60 p-3 transition-colors hover:border-line-strong hover:bg-panel"
+                    className="group flex items-center gap-3 rounded-[10px] px-3 py-2 transition-colors hover:bg-hover"
                   >
-                    <span className="flex w-12 shrink-0 flex-col items-center rounded-2xl bg-panel py-1.5 shadow-sm">
-                      <span className="text-[18px] font-semibold leading-none tracking-[-0.03em]">
+                    <span className="w-9 shrink-0 text-center leading-none">
+                      <span className="block text-[17px] font-semibold tracking-[-0.03em]">
                         {format(parseISO(a.date), "d")}
                       </span>
-                      <span className="text-[10px] uppercase text-muted">
+                      <span className="text-[10px] uppercase text-faint">
                         {format(parseISO(a.date), "EEE", { locale: fr })}
                       </span>
                     </span>
+                    <span className="h-7 w-px shrink-0 bg-line" />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13.5px] font-semibold">{a.title}</span>
-                      <span className="mt-0.5 inline-flex items-center gap-1.5 text-[12px] text-muted">
-                        <Icon className="size-3.5" style={{ color: AGENDA_HUE[a.form] }} />
-                        {AGENDA_LABEL[a.form]}
-                      </span>
+                      <span className="block truncate text-[13px] font-medium">{a.title}</span>
+                      <span className="text-[12px] text-muted">{AGENDA_LABEL[a.form]}</span>
                     </span>
-                    <ArrowUpRight className="size-4 shrink-0 text-faint transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-fg" />
                   </Link>
-                );
-              })
+                </li>
+              ))
             ) : (
-              <p className="px-1 py-3 text-[13px] text-muted">Rien de prévu sur la semaine.</p>
+              <li className="px-3 py-3 text-[13px] text-muted">Rien de prévu sur la semaine.</li>
             )}
-            {o.agenda.length > 3 && (
-              <Link
-                to="/activites"
-                className="inline-flex items-center gap-1 px-1 pt-1 text-[13px] font-medium hover:text-primary"
-              >
-                Voir les {o.agenda.length} rendez-vous de la semaine
-                <ChevronRight className="size-4" />
-              </Link>
-            )}
-          </div>
+          </ul>
         </Card>
       </div>
 
-      {/* Portefeuille et colonne de décision */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0 space-y-4">
-          <Card title={form ? FORMS[form].plural : "Portefeuille des activités"}>
-            <div className="flex gap-2 overflow-x-auto px-5 pb-3 pt-2">
-              <Pill active={!form} onClick={() => setForm(null)}>
-                Toutes <span className="opacity-60">{o.items.length}</span>
-              </Pill>
-              {forms.map((f) => (
-                <Pill key={f} active={form === f} onClick={() => setForm(form === f ? null : f)}>
-                  <span className="size-2 rounded-full" style={{ background: `var(--form-${f})` }} />
-                  {FORMS[f].plural}
-                </Pill>
-              ))}
-            </div>
-            {items.length ? (
-              <Table head={["Activité", "Responsable", "État", "Avancement", "Échéance", "Retards"]}>
-                {items.map((i) => (
-                  <Tr key={i.id} onClick={() => nav(i.href)}>
-                    <Td className="max-w-[210px]">
-                      <span className="flex items-center gap-3">
-                        <span
-                          className="flex size-9 shrink-0 items-center justify-center rounded-full"
-                          style={{
-                            color: `var(--form-${i.form})`,
-                            background: `color-mix(in oklab, var(--form-${i.form}) 12%, transparent)`,
-                          }}
-                        >
-                          {(() => {
-                            const I = FORMS[i.form].Icon;
-                            return <I className="size-4" />;
-                          })()}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block truncate font-semibold">{i.title}</span>
-                          <span className="text-[12px] text-muted">
-                            {FORMS[i.form].label}
-                            {i.unit_name ? ` · ${i.unit_name}` : ""}
-                          </span>
-                        </span>
-                      </span>
-                    </Td>
-                    <Td className="whitespace-nowrap">
-                      {i.lead_name ? (
-                        <span className="flex items-center gap-2" title={i.lead_name}>
-                          <Initials name={i.lead_name} />
-                          <span className="hidden 2xl:inline">{i.lead_name}</span>
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </Td>
-                    <Td>
-                      <Status label={HEALTH[i.health].label} tone={HEALTH[i.health].tone} />
-                    </Td>
-                    <Td className="min-w-[96px]">
-                      {i.progress === null ? (
-                        <span className="text-faint">—</span>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          <ProgressBar value={i.progress} />
-                          <span className="tabular w-10 shrink-0 whitespace-nowrap text-right text-[12px] text-muted">
-                            {i.progress} %
-                          </span>
-                        </span>
-                      )}
-                    </Td>
-                    <Td
-                      className={cn(
-                        "whitespace-nowrap tabular",
-                        isLate(i.next_due, o.today) && i.health !== "done" && "font-medium text-danger",
-                      )}
-                    >
-                      {frDate(i.next_due)}
-                    </Td>
-                    <Td className={cn("tabular", i.overdue > 0 && "font-semibold text-danger")}>{i.overdue || "—"}</Td>
-                  </Tr>
-                ))}
-              </Table>
-            ) : (
-              <Empty title="Aucune activité ici">Créez une activité ou renseignez la nature de vos projets.</Empty>
-            )}
-            <div className="h-3" />
-          </Card>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {!!o.indicators.length && (
-              <Card title="Indicateurs stratégiques" action={<Target className="size-4 text-faint" />}>
-                <ul className="space-y-4 px-5 pb-5 pt-2">
-                  {o.indicators.map((i) => {
-                    const pct =
-                      i.target > i.baseline
-                        ? Math.max(0, Math.min(100, ((i.result - i.baseline) / (i.target - i.baseline)) * 100))
-                        : 0;
-                    return (
-                      <li key={i.id} title={`Source : ${i.source || "non renseignée"}`}>
-                        <p className="flex items-baseline justify-between gap-3 text-[13.5px]">
-                          <span className="font-medium">{i.name}</span>
-                          <span className="whitespace-nowrap tabular text-[12.5px] text-muted">
-                            <span className="font-semibold text-fg">{i.result}</span> / {i.target} {i.unit_label}
-                          </span>
-                        </p>
-                        <div className="mt-2 h-3 overflow-hidden rounded-full bg-hover">
-                          <div
-                            className="bar-fill stripes h-full rounded-full"
-                            style={{
-                              width: `${pct}%`,
-                              backgroundColor:
-                                pct >= 75 ? "var(--success)" : pct >= 40 ? "var(--primary)" : "var(--warning)",
-                            }}
-                          />
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </Card>
-            )}
-            <Card title="Exécution des recommandations" action={<CircleAction to="/reunions" label="Réunions" />}>
-              <div className="flex items-center gap-5 px-5 pb-4 pt-2">
-                <HealthRing
-                  size={120}
-                  track="var(--hover)"
-                  caption={`${rate(o.recommendations)} % des recommandations réalisées`}
-                  parts={[
-                    { key: "done", value: o.recommendations.done, color: "var(--success)", label: "Réalisées" },
-                    {
-                      key: "open",
-                      value: o.recommendations.open - o.recommendations.late,
-                      color: "var(--primary)",
-                      label: "En cours",
-                    },
-                    { key: "late", value: o.recommendations.late, color: "var(--danger)", label: "En retard" },
-                  ]}
-                  center={
-                    <span className="text-[26px] font-semibold leading-none tracking-[-0.04em]">
-                      <CountUp value={rate(o.recommendations)} />%
-                    </span>
-                  }
-                />
-                <ul className="flex-1 space-y-2 text-[13px]">
-                  <Legend color="var(--success)" label="Réalisées" value={o.recommendations.done} />
-                  <Legend
-                    color="var(--primary)"
-                    label="En cours"
-                    value={o.recommendations.open - o.recommendations.late}
-                  />
-                  <Legend color="var(--danger)" label="En retard" value={o.recommendations.late} />
-                </ul>
-              </div>
-              {o.recommendations.late_list.slice(0, 2).map((r) => (
-                <Link
-                  key={r.id}
-                  to={`/reunions/${r.meeting_id}`}
-                  className="mx-4 mb-3 block rounded-xl bg-danger-soft/60 px-3.5 py-2.5 text-[12.5px] transition-colors hover:bg-danger-soft"
-                >
-                  <span className="line-clamp-2 font-medium">{r.text}</span>
-                  <span className="mt-0.5 block text-[12px] text-muted">
-                    {r.responsible_name || "Sans responsable"} ·{" "}
-                    <span className="font-medium text-danger">{frDate(r.due_on)}</span>
-                  </span>
-                </Link>
-              ))}
-            </Card>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-
-          <Card title="Décisions attendues" action={<Scale className="size-4 text-faint" />}>
-            <div className="space-y-2.5 px-4 pb-4 pt-1">
-              {o.decisions.length ? (
-                o.decisions.map((d) => {
-                  const I = FORMS[d.form].Icon;
-                  return (
+      {/* Rangée 2 : ce qui demande attention, et ce que la DG doit trancher */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+        <Card
+          title="À suivre en priorité"
+          action={
+            <Link to="/activites" className="inline-flex items-center gap-1 text-[12.5px] font-medium text-muted hover:text-fg">
+              Tout le portefeuille ({o.items.length})
+              <ChevronRight className="size-4" />
+            </Link>
+          }
+        >
+          {priorities.length ? (
+            <ul className="pb-2">
+              {priorities.map((i) => {
+                const I = FORMS[i.form].Icon;
+                const late = isLate(i.next_due, o.today);
+                return (
+                  <li key={i.id}>
                     <Link
-                      key={d.id}
-                      to={d.href}
-                      className="group block rounded-xl p-3.5 transition-transform hover:-translate-y-0.5"
-                      style={{ background: `color-mix(in oklab, var(--form-${d.form}) 9%, var(--panel))` }}
+                      to={i.href}
+                      className="flex items-center gap-3 border-t border-line px-5 py-3 transition-colors first:border-t-0 hover:bg-hover/60"
                     >
-                      <span className="flex items-start justify-between gap-2">
-                        <span
-                          className="flex size-8 items-center justify-center rounded-full bg-panel shadow-sm"
-                          style={{ color: `var(--form-${d.form})` }}
-                        >
-                          <I className="size-4" />
-                        </span>
-                        <span className="flex size-7 items-center justify-center rounded-lg border border-line text-muted transition-colors group-hover:border-transparent group-hover:bg-night group-hover:text-white">
-                          <ArrowUpRight className="size-3.5" />
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-hover text-muted">
+                        <I className="size-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13.5px] font-medium">{i.title}</span>
+                        <span className="block truncate text-[12px] text-muted">
+                          {FORMS[i.form].label}
+                          {i.lead_name ? ` · ${i.lead_name}` : ""}
                         </span>
                       </span>
-                      <span className="mt-2.5 block text-[14px] font-semibold leading-snug">{d.title}</span>
-                      <span className="mt-0.5 block text-[12.5px] leading-snug text-muted">{d.decision_needed}</span>
-                    </Link>
-                  );
-                })
-              ) : (
-                <p className="px-1 py-3 text-[13px] text-muted">Aucun arbitrage en attente.</p>
-              )}
-            </div>
-          </Card>
-
-          {!!o.risks.length && (
-            <Card title="Risques majeurs" action={<ShieldAlert className="size-4 text-faint" />}>
-              <ul className="space-y-2.5 px-4 pb-4 pt-1">
-                {o.risks.map((r) => (
-                  <li key={r.id} className="flex items-start gap-3 rounded-xl border border-line p-3">
-                    <span
-                      className={cn(
-                        "flex size-10 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold tabular",
-                        r.score >= 15
-                          ? "bg-danger-soft text-danger"
-                          : r.score >= 8
-                            ? "bg-warning-soft text-warning"
-                            : "bg-hover text-muted",
-                      )}
-                      title="Probabilité × impact"
-                    >
-                      {r.score}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-[13.5px] font-semibold leading-snug">{r.title}</span>
-                      <span className="text-[12px] text-muted">{r.owner_name ?? "Sans responsable"}</span>
-                      {r.mitigation && (
-                        <span className="mt-1 line-clamp-2 block text-[12px] leading-snug text-muted">
-                          {r.mitigation}
+                      {i.progress !== null && (
+                        <span className="hidden w-28 items-center gap-2 md:flex">
+                          <ProgressBar value={i.progress} />
+                          <span className="w-8 text-right text-[11.5px] tabular text-muted">{i.progress}%</span>
                         </span>
                       )}
-                    </span>
+                      <span className="hidden sm:block">
+                        <Status label={HEALTH[i.health].label} tone={HEALTH[i.health].tone} />
+                      </span>
+                      <span className={cn("w-[74px] text-right text-[12.5px] tabular", late ? "font-medium text-danger" : "text-muted")}>
+                        {frDate(i.next_due)}
+                      </span>
+                    </Link>
                   </li>
-                ))}
-              </ul>
-            </Card>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="px-5 pb-5 text-[13px] text-muted">Toutes les activités sont dans les temps.</p>
           )}
+        </Card>
 
-          {!!o.ending_contracts.length && (
-            <Card title="Fins de mission proches">
-              <ul className="space-y-1 px-4 pb-4 pt-1">
-                {o.ending_contracts.map((c) => (
-                  <li key={c.id} className="flex items-center gap-3 rounded-2xl px-1 py-1.5 text-[13px]">
-                    <Initials name={c.consultant_name} />
+        <Card title="Décisions attendues" action={<span className="text-[12.5px] tabular text-muted">{o.decisions.length}</span>}>
+          {o.decisions.length ? (
+            <ul className="pb-2">
+              {o.decisions.map((d) => (
+                <li key={d.id}>
+                  <Link
+                    to={d.href}
+                    className="group flex items-start gap-3 border-t border-line px-5 py-3 transition-colors first:border-t-0 hover:bg-hover/60"
+                  >
+                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold">{c.consultant_name}</span>
-                      <span className="block truncate text-[12px] text-muted">{c.title}</span>
+                      <span className="block text-[13.5px] font-medium leading-snug">{d.title}</span>
+                      <span className="mt-0.5 block text-[12.5px] leading-snug text-muted">{d.decision_needed}</span>
                     </span>
-                    <span className="rounded-full bg-warning-soft px-2.5 py-1 text-[11.5px] font-medium tabular text-warning">
-                      {frDate(c.end_on)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
+                    <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-faint transition-colors group-hover:text-fg" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-5 pb-5 text-[13px] text-muted">Aucun arbitrage en attente.</p>
           )}
-        </div>
+        </Card>
+      </div>
+
+      {/* Rangée 3 : suivi-évaluation, en trois colonnes égales */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card title="Indicateurs stratégiques" action={<Target className="size-4 text-faint" />}>
+          <ul className="space-y-4 px-5 pb-5 pt-2">
+            {[
+              ...o.indicators.map((i) => ({
+                id: i.id,
+                name: i.name,
+                value: `${i.result} / ${i.target} ${i.unit_label}`,
+                pct:
+                  i.target > i.baseline
+                    ? Math.max(0, Math.min(100, ((i.result - i.baseline) / (i.target - i.baseline)) * 100))
+                    : 0,
+                hint: `Source : ${i.source || "non renseignée"}`,
+              })),
+              {
+                id: "recos",
+                name: "Recommandations des réunions",
+                value: `${o.recommendations.done} / ${o.recommendations.open + o.recommendations.done} réalisées`,
+                pct: rate(o.recommendations),
+                hint: `${o.recommendations.late} en retard`,
+              },
+            ].map((i) => (
+              <li key={i.id} title={i.hint}>
+                <p className="flex items-baseline justify-between gap-3 text-[13px]">
+                  <span className="truncate">{i.name}</span>
+                  <span className="whitespace-nowrap text-[12px] tabular text-muted">{i.value}</span>
+                </p>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-hover">
+                  <div className="bar-fill h-full rounded-full bg-primary" style={{ width: `${i.pct}%` }} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        <Card title="Risques majeurs" action={<ShieldAlert className="size-4 text-faint" />}>
+          {o.risks.length ? (
+            <ul className="pb-2">
+              {o.risks.map((r) => (
+                <li key={r.id} className="flex items-start gap-3 border-t border-line px-5 py-3 first:border-t-0">
+                  <span
+                    className={cn(
+                      "flex size-8 shrink-0 items-center justify-center rounded-[10px] text-[12.5px] font-semibold tabular",
+                      r.score >= 15 ? "bg-danger-soft text-danger" : r.score >= 8 ? "bg-warning-soft text-warning" : "bg-hover text-muted",
+                    )}
+                    title="Probabilité × impact"
+                  >
+                    {r.score}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[13px] font-medium leading-snug">{r.title}</span>
+                    <span className="text-[12px] text-muted">{r.owner_name ?? "Sans responsable"}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-5 pb-5 text-[13px] text-muted">Aucun risque majeur ouvert.</p>
+          )}
+        </Card>
+
+        <Card title="Fins de mission proches">
+          {o.ending_contracts.length ? (
+            <ul className="pb-2">
+              {o.ending_contracts.map((c) => (
+                <li key={c.id} className="flex items-center gap-3 border-t border-line px-5 py-3 first:border-t-0">
+                  <Initials name={c.consultant_name} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-medium">{c.consultant_name}</span>
+                    <span className="block truncate text-[12px] text-muted">{c.title}</span>
+                  </span>
+                  <span className="text-[12px] tabular text-muted">{frDate(c.end_on)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-5 pb-5 text-[13px] text-muted">Aucune mission ne s'achève ce mois-ci.</p>
+          )}
+        </Card>
       </div>
     </div>
   );
@@ -729,31 +571,6 @@ function Kpi({
     <div className={cls}>{body}</div>
   );
 }
-
-function Pill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border px-3 text-[12.5px] font-medium transition-colors",
-        active
-          ? "border-primary/40 bg-brand-soft text-primary"
-          : "border-line-strong text-fg hover:bg-hover",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-const Legend = ({ color, label, value }: { color: string; label: string; value: number }) => (
-  <li className="flex items-center gap-2">
-    <span className="size-2.5 rounded-full" style={{ background: color }} />
-    <span className="text-muted">{label}</span>
-    <span className="ml-auto font-semibold tabular">{value}</span>
-  </li>
-);
 
 function Initials({ name }: { name: string }) {
   const ini = name

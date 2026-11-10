@@ -277,6 +277,22 @@ ORGANISATION        Structure · Équipes
 | Les membres d'un projet voient ses livrables et ses contrats | Hors projet : seulement les siens (responsable, valideur, consultant, superviseur), sauf droit de lecture général |
 | Un projet qui porte des contrats ou des livrables ne se supprime pas | Il s'archive : les procès-verbaux et paiements sont des pièces officielles |
 
+### Lot P2 — règles contrôlées par le serveur
+
+| Règle | Effet |
+| --- | --- |
+| **Programmer** : présidence de séance, lien de visioconférence, dossier rattaché (projet ou activité de l'institution, un seul), convoqués (personnes, ou entités entières dont les membres sont convoqués) | Un convoqué hors institution est refusé ; une entité convoquée est développée en ses membres |
+| **Récurrence** : chaque semaine, toutes les deux semaines ou chaque mois, 12 séances au plus | Chaque séance reçoit son numéro à la programmation ; une séance annulée garde son numéro, marquée « annulée » (traçabilité du registre) |
+| **Suivi d'office** : si la réunion précédente du même type a laissé des recommandations ouvertes, le premier point « Suivi des recommandations de la réunion précédente » est créé avec leur liste | Le bilan est présenté à chaque séance |
+| **Convoquer** : au moins un convoqué et un point à l'ordre du jour ; pas de convocation pour une séance passée ; à moins de 48 h, l'urgence doit être confirmée | Chaque convoqué est prévenu ; une nouvelle convocation (changement de date, de lieu) remet les réponses à zéro ; tout est tracé |
+| **Répondre** : seul le convoqué répond (présent, excusé, représenté par…), jusqu'au jour de la séance | La feuille de présence part des réponses |
+| **Pièces de l'ordre du jour** : fichiers joints à la réunion ou à un point, mêmes formats et taille que les pièces jointes des tâches | Lisibles par qui voit la réunion ; figées avec le compte rendu validé |
+| **Soumettre** : le rédacteur soumet le compte rendu (séance passée, au moins un point, chaque recommandation avec responsable et échéance) | Le compte rendu n'est plus modifiable ; la présidence (à défaut les valideurs) est prévenue |
+| **Retourner** : le valideur peut le renvoyer avec un motif obligatoire | Retour au rédacteur, prévenu, qui corrige et soumet à nouveau |
+| **Valider** : seulement un compte rendu soumis ; par la **présidence de séance** si elle est désignée (réponse Q5), sinon par un détenteur du droit de validation ; jamais par le rédacteur | Numéroté et figé ; **diffusé** à tous les participants et responsables de recommandations |
+
+Restent pour le lot P3 : décisions de séance vers le registre, recommandations devenant tâches du projet.
+
 ## 7. Questions à trancher
 
 | N° | Question | Proposition par défaut |

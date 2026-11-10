@@ -45,6 +45,16 @@ export async function boot() {
     }
     return { status: res.statusCode, body, raw: res.rawPayload, headers: res.headers };
   };
+  /** Envoi d'un fichier brut, comme le fait l'écran (pièces des réunions). */
+  const upload = async (who: string, url: string, data: Buffer) => {
+    const res = await ctx.app.inject({
+      method: "POST",
+      url,
+      payload: data,
+      headers: { cookie: cookies[who] ?? who, "content-type": "application/octet-stream" },
+    });
+    return { status: res.statusCode, body: res.body ? JSON.parse(res.body) : null };
+  };
   const org = (await ctx.db.one<{ id: string }>("SELECT id FROM organizations WHERE name = 'Nova Mobile'"))!.id;
   const profiles = (await api("u_alice", "GET", "/api/org/profiles")).body as { id: string; name: string }[];
   const profile = (name: string) => profiles.find((p) => p.name === name)!.id;
@@ -80,6 +90,6 @@ export async function boot() {
     const unit = list[0]?.id ?? (await api("b", "POST", "/api/org/units", { name: "Racine" })).body.id;
     return { who: "b", unit: unit as string };
   };
-  return { ctx, api, org, profile, promote, units, foreignOrg, login, project };
+  return { ctx, api, org, profile, promote, units, foreignOrg, login, project, upload };
 }
 export type GovCtx = Awaited<ReturnType<typeof boot>>;

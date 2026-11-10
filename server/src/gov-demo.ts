@@ -128,6 +128,8 @@ export async function seedGovDemo(svc: Services) {
     facilitator: "Directrice générale",
     timekeeper: "Secrétariat",
     writer_id: "u_karim",
+    chair_id: me,
+    invitees: [{ user_id: me }, { user_id: "u_karim" }],
   });
   await m.saveContent(me, past.id, {
     agenda: [
@@ -153,26 +155,53 @@ export async function seedGovDemo(svc: Services) {
     location: "Salle B",
     writer_id: "u_karim",
   });
-  await m.create(me, org, {
+  // Le compte rendu du comité passé est soumis : il attend la validation de la présidente de séance
+  await m.submit("u_karim", past.id);
+  // Comité du jour : convoqué en urgence, les recommandations ouvertes viennent d'office au point de suivi
+  const today = await m.create(me, org, {
     meeting_type: "Comité de direction",
     meeting_date: day(0),
     start_time: "16:00",
     location: "Salle de conférence",
     writer_id: "u_karim",
+    chair_id: me,
+    invitees: [{ user_id: me }, { user_id: "u_karim" }, { user_id: "u_hugo" }],
   });
-  await m.create(me, org, {
+  await m.convene(me, today.id, { short_notice: true });
+  await m.respond("u_karim", today.id, { response: "accepted" });
+  await m.respond("u_hugo", today.id, { response: "delegated", delegate_name: "Son adjoint (exemple)" });
+  const steering = await m.create(me, org, {
     meeting_type: "Comité de pilotage des projets",
     meeting_date: day(3),
     start_time: "10:30",
     location: "Salle de conférence",
     writer_id: "u_karim",
+    chair_id: me,
+    invitees: [{ user_id: me }, { user_id: "u_karim" }],
   });
+  await m.saveContent(me, steering.id, {
+    agenda: [
+      { subject: "État d'avancement des projets", speakers: "Chefs de projet" },
+      { subject: "Arbitrages budgétaires", speakers: "Direction financière" },
+    ],
+    attendees: [],
+  });
+  await m.convene(me, steering.id, {});
+  // Avec les provinces : une séance par mois, en visioconférence, les représentations provinciales convoquées
+  const provinces = await db.query<{ id: string }>(
+    "SELECT id FROM org_units WHERE org_id = $1 AND kind IN ('representation_provinciale', 'antenne')",
+    [org],
+  );
   await m.create(me, org, {
     meeting_type: "Réunion avec les provinces",
     meeting_date: day(8),
     start_time: "09:30",
     location: "Visioconférence",
+    video_link: "https://visio.exemple/provinces",
     writer_id: "u_karim",
+    chair_id: me,
+    invitees: [{ user_id: me }, ...provinces.map((p) => ({ unit_id: p.id }))],
+    repeat: { every: "month", count: 3 },
   });
 
   // Organisation : deux fiches approuvées, l'une sans activité pour illustrer un écart

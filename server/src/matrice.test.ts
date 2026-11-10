@@ -295,10 +295,47 @@ async function boot(kind: Kind) {
       ).body;
       return s;
     },
-    validated: async () => {
+    // Le compte rendu se soumet avant d'être validé (docs/PARCOURS-METIER.md, lot P2)
+    submitted: async () => {
       const m = await X.filled();
+      await ctx.db.query("UPDATE meetings SET status = 'submitted' WHERE id = $1", [m.id]);
+      return m;
+    },
+    validated: async () => {
+      const m = await X.submitted();
       await inj(a, "POST", `/api/meetings/${m.id}/validate`);
       return m;
+    },
+    /** Une séance future, avec ordre du jour et convoqués : prête à être convoquée. */
+    upcoming: async (invitee = "u_karim") => {
+      const m = (
+        await inj(a, "POST", "/api/meetings", {
+          meeting_type: u("Comité"),
+          meeting_date: "2030-01-15",
+          writer_id: "u_karim",
+          invitees: [{ user_id: invitee }],
+        })
+      ).body;
+      await inj(a, "PUT", `/api/meetings/${m.id}/content`, { agenda: [{ subject: "Point" }], attendees: [] });
+      return m;
+    },
+    convened: async () => {
+      const m = await X.upcoming(a);
+      await inj(a, "POST", `/api/meetings/${m.id}/convene`, {});
+      return m;
+    },
+    mdoc: async () => {
+      const m = await X.meeting();
+      return JSON.parse(
+        (
+          await ctx.app.inject({
+            method: "POST",
+            url: `/api/meetings/${m.id}/documents?name=note.txt`,
+            payload: Buffer.from("texte"),
+            headers: { cookie: c[a], "content-type": "application/octet-stream" },
+          })
+        ).body,
+      ).id as string;
     },
     request: async () => {
       const t = await X.team("request");
@@ -670,7 +707,27 @@ const TABLE = [
     url: `/api/meetings/${(await X.meeting()).id}/content`,
     body: { agenda: [], attendees: [] },
   })),
-  R_("POST", "/api/meetings/:id/validate", async (X) => ({ url: `/api/meetings/${(await X.filled()).id}/validate` })),
+  R_("PUT", "/api/meetings/:id/invitees", async (X) => ({
+    url: `/api/meetings/${(await X.meeting()).id}/invitees`,
+    body: { invitees: [{ user_id: "u_karim" }] },
+  })),
+  R_("POST", "/api/meetings/:id/convene", async (X) => ({ url: `/api/meetings/${(await X.upcoming()).id}/convene` })),
+  R_("POST", "/api/meetings/:id/respond", async (X) => ({
+    url: `/api/meetings/${(await X.convened()).id}/respond`,
+    body: { response: "accepted" },
+  })),
+  R_("POST", "/api/meetings/:id/documents", async (X) => ({
+    url: `/api/meetings/${(await X.meeting()).id}/documents?name=a.txt`,
+    bin: "texte",
+  })),
+  R_("GET", "/api/meeting-documents/:id", async (X) => ({ url: `/api/meeting-documents/${await X.mdoc()}` })),
+  R_("DELETE", "/api/meeting-documents/:id", async (X) => ({ url: `/api/meeting-documents/${await X.mdoc()}` })),
+  R_("POST", "/api/meetings/:id/submit", async (X) => ({ url: `/api/meetings/${(await X.filled()).id}/submit` })),
+  R_("POST", "/api/meetings/:id/return", async (X) => ({
+    url: `/api/meetings/${(await X.submitted()).id}/return`,
+    body: { comment: "À compléter" },
+  })),
+  R_("POST", "/api/meetings/:id/validate", async (X) => ({ url: `/api/meetings/${(await X.submitted()).id}/validate` })),
   R_("POST", "/api/meetings/:id/reopen", async (X) => ({ url: `/api/meetings/${(await X.validated()).id}/reopen` })),
   R_("GET", "/api/meetings/:id/report.docx", async (X) => ({
     url: `/api/meetings/${(await X.filled()).id}/report.docx`,

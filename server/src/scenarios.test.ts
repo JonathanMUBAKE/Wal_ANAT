@@ -31,25 +31,30 @@ describe("réunions : un compte rendu officiel ne se valide que s'il est complet
       attendees: [],
     });
   const complete = { text: "Préparer la note", responsible_id: "u_hugo", due_on: day(10) };
+  // Le rédacteur soumet, puis le compte rendu se valide (lot P2) : les contrôles de complétude jouent dès la soumission
+  const submit = (id: string) => g.api("u_karim", "POST", `/api/meetings/${id}/submit`);
 
   it("refuse de valider le compte rendu d'une réunion qui n'a pas encore eu lieu", async () => {
     const m = await meeting(day(5));
     await fill(m.id, [complete]);
-    const r = await g.api("u_alice", "POST", `/api/meetings/${m.id}/validate`);
+    const r = await submit(m.id);
     expect(r.status).toBe(400);
     expect(r.body.error).toMatch(/pas encore eu lieu/);
+    expect((await g.api("u_alice", "POST", `/api/meetings/${m.id}/validate`)).status).toBe(400);
   });
   it("refuse une recommandation sans responsable ou sans échéance", async () => {
     const m = await meeting();
     await fill(m.id, [{ text: "Sans échéance", responsible_id: "u_hugo" }]);
-    const r = await g.api("u_alice", "POST", `/api/meetings/${m.id}/validate`);
+    const r = await submit(m.id);
     expect(r.status).toBe(400);
     expect(r.body.error).toContain("Sans échéance");
     await fill(m.id, [complete]);
+    await submit(m.id);
     expect((await g.api("u_alice", "POST", `/api/meetings/${m.id}/validate`)).body.status).toBe("validated");
   });
   it("prévient le rédacteur quand un responsable soumet sa recommandation", async () => {
     const m = (await fill((await meeting()).id, [complete])).body;
+    await submit(m.id);
     await g.api("u_alice", "POST", `/api/meetings/${m.id}/validate`);
     await g.api("u_hugo", "PATCH", `/api/meeting-actions/${m.agenda[0].actions[0].id}`, { status: "soumis" });
     expect((await notes("u_karim")).some((n) => n.kind === "meeting.action.submitted")).toBe(true);

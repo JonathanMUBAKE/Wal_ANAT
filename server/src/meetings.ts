@@ -1,8 +1,26 @@
+import { ATTACHMENT_MAX_BYTES } from "./attachments.js";
 import { uid, type Queryable } from "./db.js";
+import { ALLOWED_FORMATS, detectType } from "./documents/filetypes.js";
 import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
 
 export type ActionStatus = "a_faire" | "en_cours" | "soumis" | "realise" | "reporte" | "annule";
-export type MeetingStatus = "planned" | "held" | "validated" | "cancelled";
+export type MeetingStatus = "planned" | "held" | "submitted" | "validated" | "cancelled";
+export type Response = "pending" | "accepted" | "declined" | "delegated";
+/** Convoqué : une personne de l'institution, une personne extérieure nommée, ou une entité entière. */
+export interface InviteeInput {
+  user_id?: string | null;
+  name?: string;
+  function_label?: string;
+  unit_id?: string;
+}
+export interface Repeat {
+  every: "week" | "2weeks" | "month";
+  count: number;
+}
+const MAX_SERIES = 12;
+const MAX_DOCUMENTS = 30;
+const NOTICE_HOURS = 48;
+const FOLLOW_UP = "Suivi des recommandations de la réunion précédente";
 const CLOSED: ActionStatus[] = ["realise", "annule"];
 
 export interface MeetingRow {
@@ -35,6 +53,15 @@ export interface MeetingRow {
   status: MeetingStatus;
   validated_by: string | null;
   validated_at: string | null;
+  chair_id: string | null;
+  video_link: string;
+  project_id: string | null;
+  activity_id: string | null;
+  series_id: string | null;
+  convened_at: string | null;
+  submitted_at: string | null;
+  submitted_by: string | null;
+  return_comment: string;
 }
 export interface MeetingAction {
   id: string;
@@ -67,9 +94,24 @@ export interface Attendee {
   name: string;
   function_label: string;
   presence: string;
+  invited: boolean;
+  response: Response | null;
+  delegate_name: string;
+}
+export interface MeetingDocument {
+  id: string;
+  agenda_item_id: string | null;
+  filename: string;
+  mime: string;
+  size: number;
+  uploader_name: string | null;
+  created_at: string;
 }
 export interface MeetingDetail extends MeetingRow {
   reference: string;
+  chair_name: string | null;
+  dossier: { kind: "project" | "activity"; id: string; label: string; href: string } | null;
+  documents: MeetingDocument[];
   agenda: AgendaItem[];
   attendees: Attendee[];
   previous: {
@@ -80,7 +122,7 @@ export interface MeetingDetail extends MeetingRow {
     end_time: string | null;
   } | null;
   carried: (MeetingAction & { meeting_reference: string })[];
-  can: { edit: boolean; validate: boolean };
+  can: { edit: boolean; validate: boolean; convene: boolean; submit: boolean; decide: boolean; respond: boolean };
 }
 
 export type MeetingInput = Partial<
@@ -106,6 +148,10 @@ export type MeetingInput = Partial<
     | "next_location"
     | "next_topics"
     | "confidential"
+    | "chair_id"
+    | "video_link"
+    | "project_id"
+    | "activity_id"
   >
 > & { status?: "planned" | "held" | "cancelled" };
 
@@ -146,9 +192,26 @@ const assertDate = (v: string | null | undefined) => {
   if (v && !isRealDate(v)) throw badRequest(`Date invalide : ${v}`);
 };
 const locked = () => new HttpError(409, "Ce compte rendu est validé : rouvrez-le pour le modifier");
-/** Une réunion confidentielle ne se voit que de ses gestionnaires, de son rédacteur et de ses participants. */
+const pending = () =>
+  new HttpError(409, "Ce compte rendu est soumis à validation : demandez son retour pour le modifier");
+const today = () => new Date().toISOString().slice(0, 10);
+const cleanName = (name: string) =>
+  name
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .split(/[\\/]/)
+    .pop()!
+    .trim()
+    .slice(-200) || "piece";
+/** Date de la séance suivante d'une série. */
+const nextDate = (d: string, every: Repeat["every"], n: number) => {
+  const t = new Date(`${d}T00:00:00Z`);
+  if (every === "month") t.setUTCMonth(t.getUTCMonth() + n);
+  else t.setUTCDate(t.getUTCDate() + n * (every === "week" ? 7 : 14));
+  return t.toISOString().slice(0, 10);
+};
+/** Une réunion confidentielle ne se voit que de ses gestionnaires, de sa présidence, de son rédacteur et de ses participants. */
 const VISIBLE = (alias: string, actor: string, manager: string) =>
-  `(NOT ${alias}.confidential OR ${manager} OR ${alias}.writer_id = ${actor} OR EXISTS (SELECT 1 FROM meeting_attendees x WHERE x.meeting_id = ${alias}.id AND x.user_id = ${actor}))`;
+  `(NOT ${alias}.confidential OR ${manager} OR ${alias}.writer_id = ${actor} OR ${alias}.chair_id = ${actor} OR EXISTS (SELECT 1 FROM meeting_attendees x WHERE x.meeting_id = ${alias}.id AND x.user_id = ${actor}))`;
 
 export class Meetings {
   constructor(private svc: Services) {}
@@ -179,7 +242,13 @@ export class Meetings {
     const m = await this.row(id);
     await this.svc.requirePerm(actorId, m.org_id, "meetings.view");
     const can = await this.can(actorId, m.org_id);
-    if (m.confidential && !can.manage && m.writer_id !== actorId && !(await this.attends(actorId, id)))
+    if (
+      m.confidential &&
+      !can.manage &&
+      m.writer_id !== actorId &&
+      m.chair_id !== actorId &&
+      !(await this.attends(actorId, id))
+    )
       throw notFound("Réunion introuvable");
     return { m, can };
   }
@@ -189,7 +258,112 @@ export class Meetings {
     if (!can.manage && m.writer_id !== actorId)
       throw forbidden("Seuls le rédacteur et les gestionnaires modifient cette réunion");
     if (m.status === "validated") throw locked();
+    if (m.status === "submitted") throw pending();
     return m;
+  }
+
+  /** Valide ou retourne un compte rendu : la présidence de séance si elle est désignée, sinon un valideur ; jamais le rédacteur. */
+  private async assertDecider(actorId: string, m: MeetingRow) {
+    if (m.writer_id === actorId) throw forbidden("Le rédacteur ne peut pas valider son propre compte rendu");
+    if (m.chair_id) {
+      if (m.chair_id !== actorId) {
+        const chair = await this.svc.db.one<{ name: string }>("SELECT name FROM users WHERE id = $1", [m.chair_id]);
+        throw forbidden(`Seule la présidence de séance (${chair?.name ?? "désignée"}) valide ce compte rendu`);
+      }
+      return;
+    }
+    await this.svc.requirePerm(actorId, m.org_id, "meetings.validate");
+  }
+
+  /** Dossier rattaché : un projet ou une activité de l'institution, jamais les deux. */
+  private async assertDossier(orgId: string, i: { project_id?: string | null; activity_id?: string | null }) {
+    if (i.project_id && i.activity_id) throw badRequest("Une réunion se rattache à un seul dossier");
+    if (i.project_id && !(await this.svc.db.one("SELECT 1 FROM projects WHERE org_id = $1 AND id = $2", [orgId, i.project_id])))
+      throw badRequest("Projet inconnu dans cette institution");
+    if (
+      i.activity_id &&
+      !(await this.svc.db.one("SELECT 1 FROM agency_activities WHERE org_id = $1 AND id = $2", [orgId, i.activity_id]))
+    )
+      throw badRequest("Activité inconnue dans cette institution");
+  }
+
+  /** Les convoqués : une entité convoquée l'est par ses membres ; une personne de l'institution par son compte. */
+  private async resolveInvitees(orgId: string, list: InviteeInput[]) {
+    const out = new Map<string, { user_id: string | null; name: string; function_label: string }>();
+    for (const i of list) {
+      if (i.unit_id) {
+        if (!(await this.svc.db.one("SELECT 1 FROM org_units WHERE org_id = $1 AND id = $2", [orgId, i.unit_id])))
+          throw badRequest("Entité inconnue dans cette institution");
+        const members = await this.svc.db.query<{ id: string; name: string; title: string | null }>(
+          `SELECT u.id, u.name, u.title FROM org_members om JOIN users u ON u.id = om.user_id
+           WHERE om.org_id = $1 AND om.unit_id = $2 AND NOT u.is_ai AND u.status = 'active'`,
+          [orgId, i.unit_id],
+        );
+        for (const u of members) out.set(u.id, { user_id: u.id, name: u.name, function_label: u.title ?? "" });
+      } else if (i.user_id) {
+        await this.assertMember(orgId, i.user_id, "Un convoqué");
+        const u = await this.svc.user(i.user_id);
+        out.set(u.id, { user_id: u.id, name: u.name, function_label: i.function_label ?? u.title ?? "" });
+      } else if (i.name?.trim()) {
+        out.set(`n:${i.name.trim().toLowerCase()}`, { user_id: null, name: i.name.trim(), function_label: i.function_label ?? "" });
+      }
+    }
+    return [...out.values()];
+  }
+
+  /** Fixe la liste des convoqués sans toucher à la présence déjà notée ni aux réponses des convoqués maintenus. */
+  private async writeInvitees(
+    q: Queryable,
+    m: Pick<MeetingRow, "id" | "org_id" | "convened_at">,
+    list: { user_id: string | null; name: string; function_label: string }[],
+  ) {
+    const key = (a: { user_id: string | null; name: string }) => a.user_id ?? `n:${a.name.trim().toLowerCase()}`;
+    const existing = await q.query<Attendee>("SELECT * FROM meeting_attendees WHERE meeting_id = $1", [m.id]);
+    const wanted = new Set(list.map(key));
+    for (const a of existing)
+      if (a.invited && !wanted.has(key(a))) await q.query("DELETE FROM meeting_attendees WHERE id = $1", [a.id]);
+    for (const i of list) {
+      const found = existing.find((a) => key(a) === key(i));
+      if (found) {
+        if (!found.invited)
+          await q.query("UPDATE meeting_attendees SET invited = TRUE, response = $1 WHERE id = $2", [
+            m.convened_at ? "pending" : null,
+            found.id,
+          ]);
+      } else
+        await q.query(
+          "INSERT INTO meeting_attendees (id, org_id, meeting_id, user_id, name, function_label, presence, invited, response) VALUES ($1,$2,$3,$4,$5,$6,'present',TRUE,$7)",
+          [uid("att"), m.org_id, m.id, i.user_id, i.name, i.function_label, m.convened_at ? "pending" : null],
+        );
+    }
+  }
+
+  /** Recommandations encore ouvertes des réunions précédentes du même type, présentées au point de suivi. */
+  private async openFromPrevious(m: Pick<MeetingRow, "org_id" | "meeting_type" | "meeting_date" | "confidential">) {
+    return this.svc.db.query<{ text: string; responsible_name: string; due_on: string | null }>(
+      `SELECT a.text, a.responsible_name, a.due_on FROM meeting_actions a JOIN meetings p ON p.id = a.meeting_id
+       WHERE a.org_id = $1 AND p.meeting_type = $2 AND p.meeting_date < $3 AND p.status <> 'cancelled'
+         AND a.status NOT IN ('realise','annule') AND (NOT p.confidential OR $4) ORDER BY a.due_on NULLS LAST`,
+      [m.org_id, m.meeting_type, m.meeting_date, m.confidential],
+    );
+  }
+  /** `open` est lu avant la transaction : la base embarquée n'accepte pas de lecture parallèle à une transaction ouverte. */
+  private async addFollowUp(
+    q: Queryable,
+    m: Pick<MeetingRow, "id" | "org_id">,
+    open: { text: string; responsible_name: string; due_on: string | null }[],
+  ) {
+    if (!open.length) return;
+    if ((await q.query("SELECT 1 FROM meeting_agenda_items WHERE meeting_id = $1 AND subject = $2", [m.id, FOLLOW_UP])).length)
+      return;
+    await q.query("UPDATE meeting_agenda_items SET position = position + 1 WHERE meeting_id = $1", [m.id]);
+    const lines = open.map(
+      (a) => `- ${a.text}${a.responsible_name ? ` (${a.responsible_name}` : " ("}${a.due_on ? `, échéance ${a.due_on})` : ")"}`,
+    );
+    await q.query(
+      "INSERT INTO meeting_agenda_items (id, org_id, meeting_id, position, subject, speakers, notes) VALUES ($1,$2,$3,0,$4,'Secrétariat',$5)",
+      [uid("agd"), m.org_id, m.id, FOLLOW_UP, lines.join("\n")],
+    );
   }
 
   private async assertMember(orgId: string, userId: string, label: string) {
@@ -197,14 +371,19 @@ export class Meetings {
   }
 
   // ---------------------------------------------------------------- lecture
-  async list(actorId: string, orgId: string) {
+  async list(actorId: string, orgId: string, f: { project_id?: string; activity_id?: string } = {}) {
     await this.svc.requirePerm(actorId, orgId, "meetings.view");
     const can = await this.can(actorId, orgId);
-    const rows = await this.svc.db.query<MeetingRow & { open_actions: number; action_count: number }>(
-      `SELECT m.*, (SELECT count(*)::int FROM meeting_actions a WHERE a.meeting_id = m.id) AS action_count,
-        (SELECT count(*)::int FROM meeting_actions a WHERE a.meeting_id = m.id AND a.status NOT IN ('realise','annule')) AS open_actions
-       FROM meetings m WHERE m.org_id = $1 AND ${VISIBLE("m", "$2", "$3")} ORDER BY m.meeting_date DESC, m.seq DESC`,
-      [orgId, actorId, can.manage],
+    const rows = await this.svc.db.query<
+      MeetingRow & { open_actions: number; action_count: number; my_response: Response | null; chair_name: string | null }
+    >(
+      `SELECT m.*, c.name AS chair_name, (SELECT count(*)::int FROM meeting_actions a WHERE a.meeting_id = m.id) AS action_count,
+        (SELECT count(*)::int FROM meeting_actions a WHERE a.meeting_id = m.id AND a.status NOT IN ('realise','annule')) AS open_actions,
+        (SELECT x.response FROM meeting_attendees x WHERE x.meeting_id = m.id AND x.user_id = $2 AND x.invited LIMIT 1) AS my_response
+       FROM meetings m LEFT JOIN users c ON c.id = m.chair_id
+       WHERE m.org_id = $1 AND ${VISIBLE("m", "$2", "$3")} AND ($4::text IS NULL OR m.project_id = $4) AND ($5::text IS NULL OR m.activity_id = $5)
+       ORDER BY m.meeting_date DESC, m.seq DESC`,
+      [orgId, actorId, can.manage, f.project_id ?? null, f.activity_id ?? null],
     );
     return rows.map((m) => ({ ...m, reference: meetingReference(m) }));
   }
@@ -237,14 +416,38 @@ export class Meetings {
        ORDER BY a.due_on NULLS LAST`,
       [m.org_id, m.meeting_type, m.meeting_date, actorId, can.manage],
     );
+    const attendees = await db.query<Attendee>(
+      "SELECT id, user_id, name, function_label, presence, invited, response, delegate_name FROM meeting_attendees WHERE meeting_id = $1 ORDER BY invited DESC, name",
+      [m.id],
+    );
+    const chair = m.chair_id ? await db.one<{ name: string }>("SELECT name FROM users WHERE id = $1", [m.chair_id]) : null;
+    const dossier = m.project_id
+      ? await db.one<{ label: string }>("SELECT name AS label FROM projects WHERE id = $1", [m.project_id])
+      : m.activity_id
+        ? await db.one<{ label: string }>("SELECT title AS label FROM agency_activities WHERE id = $1", [m.activity_id])
+        : null;
+    const documents = await db.query<MeetingDocument>(
+      `SELECT d.id, d.agenda_item_id, d.filename, d.mime, d.size, u.name AS uploader_name, d.created_at
+       FROM meeting_documents d LEFT JOIN users u ON u.id = d.uploader_id WHERE d.meeting_id = $1 ORDER BY d.created_at`,
+      [m.id],
+    );
+    const t = today();
+    const writes = can.manage || m.writer_id === actorId;
+    const decides = m.writer_id !== actorId && (m.chair_id ? m.chair_id === actorId : can.validate);
+    const invited = attendees.find((a) => a.invited && a.user_id === actorId);
     return {
       ...m,
       reference: meetingReference(m),
+      chair_name: chair?.name ?? null,
+      dossier:
+        dossier && (m.project_id || m.activity_id)
+          ? m.project_id
+            ? { kind: "project", id: m.project_id, label: dossier.label, href: `/projects/${m.project_id}/reunions` }
+            : { kind: "activity", id: m.activity_id as string, label: dossier.label, href: `/activites/${m.activity_id}` }
+          : null,
+      documents,
       agenda: items.map((i) => ({ ...i, actions: actions.filter((a) => a.agenda_item_id === i.id) })),
-      attendees: await db.query<Attendee>(
-        "SELECT id, user_id, name, function_label, presence FROM meeting_attendees WHERE meeting_id = $1 ORDER BY name",
-        [m.id],
-      ),
+      attendees,
       previous: previous
         ? {
             id: previous.id,
@@ -256,19 +459,71 @@ export class Meetings {
         : null,
       carried: carried.map((a) => ({ ...a, meeting_reference: meetingReference(a) })),
       can: {
-        edit: m.status !== "validated" && (can.manage || m.writer_id === actorId),
-        validate: can.validate && m.writer_id !== actorId,
+        edit: (m.status === "planned" || m.status === "held") && writes,
+        // Valideur de ce compte rendu : la présidence si elle est désignée, sinon un détenteur du droit
+        validate: decides,
+        convene: m.status === "planned" && writes && m.meeting_date >= t,
+        submit: (m.status === "planned" || m.status === "held") && writes && m.meeting_date <= t,
+        decide: m.status === "submitted" && decides,
+        respond: !!invited && !!m.convened_at && m.status === "planned" && m.meeting_date >= t,
       },
     };
   }
 
   // ---------------------------------------------------------------- écriture
-  async create(actorId: string, orgId: string, input: MeetingInput & { meeting_type: string; meeting_date: string }) {
+  /**
+   * Programmer : une séance, ou une série (au plus 12). Chaque séance reçoit son numéro à la programmation,
+   * ses convoqués, et d'office le point de suivi des recommandations restées ouvertes.
+   */
+  async create(
+    actorId: string,
+    orgId: string,
+    input: MeetingInput & {
+      meeting_type: string;
+      meeting_date: string;
+      invitees?: InviteeInput[];
+      repeat?: Repeat | null;
+    },
+  ) {
     await this.svc.requirePerm(actorId, orgId, "meetings.manage");
     assertDate(input.meeting_date);
     assertDate(input.next_date);
     const writerId = input.writer_id ?? actorId;
     await this.assertMember(orgId, writerId, "Le rédacteur");
+    if (input.chair_id) await this.assertMember(orgId, input.chair_id, "La présidence de séance");
+    await this.assertDossier(orgId, input);
+    const count = input.repeat?.count ?? 1;
+    if (!Number.isInteger(count) || count < 1 || count > MAX_SERIES)
+      throw badRequest(`Une série compte de 1 à ${MAX_SERIES} séances`);
+    const invitees = await this.resolveInvitees(orgId, input.invitees ?? []);
+    const seriesId = count > 1 ? uid("ser") : null;
+    let first = "";
+    for (let n = 0; n < count; n++) {
+      const date = input.repeat ? nextDate(input.meeting_date, input.repeat.every, n) : input.meeting_date;
+      const id = await this.insertOne(actorId, orgId, { ...input, meeting_date: date }, writerId, seriesId);
+      first ||= id;
+      const m = await this.row(id);
+      const open = await this.openFromPrevious(m);
+      await this.svc.db.tx(async (q) => {
+        await this.writeInvitees(q, m, invitees);
+        await this.addFollowUp(q, m, open);
+      });
+    }
+    await this.svc.log(actorId, "meeting.created", {
+      orgId,
+      projectId: input.project_id ?? null,
+      data: { id: first, type: input.meeting_type, series: seriesId, count },
+    });
+    return this.get(actorId, first);
+  }
+
+  private async insertOne(
+    actorId: string,
+    orgId: string,
+    input: MeetingInput & { meeting_type: string; meeting_date: string },
+    writerId: string,
+    seriesId: string | null,
+  ) {
     const writer = await this.svc.user(writerId);
     const previous = await this.svc.db.one<MeetingRow>(
       "SELECT * FROM meetings WHERE org_id = $1 AND meeting_type = $2 AND meeting_date < $3 AND status <> 'cancelled' ORDER BY meeting_date DESC, seq DESC LIMIT 1",
@@ -280,8 +535,8 @@ export class Meetings {
     for (let attempt = 0; ; attempt++) {
       try {
         await this.svc.db.query(
-          `INSERT INTO meetings (id, org_id, year, seq, service_code, writer_initials, title, meeting_type, meeting_date, start_time, end_time, location, convened_by, facilitator, timekeeper, writer_id, writer_name, attendance_note, previous_meeting_id, previous_summary, summary, next_date, next_time, next_location, next_topics, confidential, created_by)
-           VALUES ($1, $2, $3, (SELECT COALESCE(max(seq), 0) + 1 FROM meetings WHERE org_id = $2 AND year = $3), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)`,
+          `INSERT INTO meetings (id, org_id, year, seq, service_code, writer_initials, title, meeting_type, meeting_date, start_time, end_time, location, convened_by, facilitator, timekeeper, writer_id, writer_name, attendance_note, previous_meeting_id, previous_summary, summary, next_date, next_time, next_location, next_topics, confidential, created_by, chair_id, video_link, project_id, activity_id, series_id)
+           VALUES ($1, $2, $3, (SELECT COALESCE(max(seq), 0) + 1 FROM meetings WHERE org_id = $2 AND year = $3), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)`,
           [
             id,
             orgId,
@@ -309,6 +564,11 @@ export class Meetings {
             input.next_topics ?? "",
             input.confidential ?? false,
             actorId,
+            input.chair_id ?? null,
+            input.video_link?.trim() ?? "",
+            input.project_id ?? null,
+            input.activity_id ?? null,
+            seriesId,
           ],
         );
         break;
@@ -316,8 +576,7 @@ export class Meetings {
         if ((e as { code?: string }).code !== "23505" || attempt >= 8) throw e;
       }
     }
-    await this.svc.log(actorId, "meeting.created", { orgId, data: { id, type: input.meeting_type } });
-    return this.get(actorId, id);
+    return id;
   }
 
   async update(actorId: string, id: string, patch: MeetingInput) {
@@ -332,7 +591,18 @@ export class Meetings {
       fields.writer_name = (await this.svc.user(patch.writer_id)).name;
     }
     if (patch.writer_initials) fields.writer_initials = patch.writer_initials.trim().toUpperCase();
+    if (patch.chair_id) await this.assertMember(m.org_id, patch.chair_id, "La présidence de séance");
+    if (patch.project_id !== undefined || patch.activity_id !== undefined)
+      await this.assertDossier(m.org_id, {
+        project_id: patch.project_id === undefined ? m.project_id : patch.project_id,
+        activity_id: patch.activity_id === undefined ? m.activity_id : patch.activity_id,
+      });
+    if (patch.video_link !== undefined) fields.video_link = patch.video_link.trim();
     const allowed = [
+      "chair_id",
+      "video_link",
+      "project_id",
+      "activity_id",
       "title",
       "meeting_type",
       "meeting_date",
@@ -358,6 +628,7 @@ export class Meetings {
     ];
     const sets: string[] = [];
     const vals: unknown[] = [];
+    // null efface la présidence ou le dossier ; undefined ne touche à rien
     for (const k of allowed) {
       if (fields[k] === undefined) continue;
       vals.push(fields[k]);
@@ -408,21 +679,42 @@ export class Meetings {
       const keptActions = input.agenda.flatMap((i) => (i.actions ?? []).flatMap((a) => (a.id ? [a.id] : [])));
       await q.query("DELETE FROM meeting_actions WHERE meeting_id = $1 AND NOT (id = ANY($2))", [id, keptActions]);
       for (const [position, item] of input.agenda.entries()) await this.saveItem(q, m, actorId, position, item, people);
+      // Feuille de présence : les convoqués gardent leur convocation et leur réponse, la présence est notée en séance
+      const before = await q.query<Attendee>("SELECT * FROM meeting_attendees WHERE meeting_id = $1", [id]);
+      const key = (a: { user_id?: string | null; name: string }) => a.user_id ?? `n:${a.name.trim().toLowerCase()}`;
       await q.query("DELETE FROM meeting_attendees WHERE meeting_id = $1", [id]);
-      for (const a of input.attendees)
+      const seen = new Set<string>();
+      for (const a of input.attendees) {
+        const k = key(a);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        const was = before.find((b) => key(b) === k);
         await q.query(
-          "INSERT INTO meeting_attendees (id, org_id, meeting_id, user_id, name, function_label, presence) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+          "INSERT INTO meeting_attendees (id, org_id, meeting_id, user_id, name, function_label, presence, invited, response, delegate_name, responded_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
           [
             uid("att"),
             m.org_id,
             id,
             a.user_id ?? null,
             a.user_id ? (people.get(a.user_id) ?? a.name.trim()) : a.name.trim(),
-            a.function_label ?? "",
+            a.function_label ?? was?.function_label ?? "",
             a.presence ?? "present",
+            was?.invited ?? false,
+            was?.response ?? null,
+            was?.delegate_name ?? "",
+            (was as { responded_at?: string | null } | undefined)?.responded_at ?? null,
           ],
         );
-      const hasNotes = input.agenda.some((i) => i.notes?.trim());
+      }
+      // Un convoqué absent de la feuille reste convoqué : il n'est pas effacé par mégarde
+      for (const b of before)
+        if (b.invited && !seen.has(key(b)))
+          await q.query(
+            "INSERT INTO meeting_attendees (id, org_id, meeting_id, user_id, name, function_label, presence, invited, response, delegate_name) VALUES ($1,$2,$3,$4,$5,$6,$7,TRUE,$8,$9)",
+            [uid("att"), m.org_id, id, b.user_id, b.name, b.function_label, b.presence, b.response, b.delegate_name],
+          );
+      // Des notes ne font une séance « tenue » qu'une fois sa date venue : préparer l'ordre du jour ne la tient pas
+      const hasNotes = input.agenda.some((i) => i.notes?.trim()) && m.meeting_date <= today();
       await q.query(
         `UPDATE meetings SET updated_at = now(), status = CASE WHEN status = 'planned' AND $1 THEN 'held' ELSE status END WHERE id = $2`,
         [hasNotes, id],
@@ -490,10 +782,86 @@ export class Meetings {
   }
 
   // ---------------------------------------------------------------- validation
+  /** Un compte rendu se soumet, se valide ou se retourne seulement s'il est complet et que la séance a eu lieu. */
+  private async assertComplete(m: MeetingRow) {
+    const n = await this.svc.db.one<{ n: number }>(
+      "SELECT count(*)::int AS n FROM meeting_agenda_items WHERE meeting_id = $1",
+      [m.id],
+    );
+    if (!n?.n) throw badRequest("Le compte rendu doit contenir au moins un point à l'ordre du jour");
+    if (m.meeting_date > today())
+      throw badRequest("Cette réunion n'a pas encore eu lieu : son compte rendu ne peut pas être soumis ni validé");
+    const incomplete = await this.svc.db.query<{ text: string }>(
+      "SELECT text FROM meeting_actions WHERE meeting_id = $1 AND status NOT IN ('realise','annule') AND (responsible_id IS NULL AND responsible_name = '' OR due_on IS NULL) ORDER BY position",
+      [m.id],
+    );
+    if (incomplete.length)
+      throw badRequest(
+        `Chaque recommandation doit avoir un responsable et une échéance. À compléter : ${incomplete.map((a) => a.text).join(", ")}`,
+      );
+  }
+
+  /** Le rédacteur soumet ; la présidence (à défaut les valideurs) est prévenue ; le compte rendu est alors figé. */
+  async submit(actorId: string, id: string) {
+    const { m, can } = await this.readable(actorId, id);
+    if (!can.manage && m.writer_id !== actorId) throw forbidden("Seuls le rédacteur et les gestionnaires soumettent");
+    if (m.status === "validated") throw locked();
+    if (m.status === "submitted") throw pending();
+    if (m.status === "cancelled") throw badRequest("Cette réunion est annulée");
+    await this.assertComplete(m);
+    const done = await this.svc.db.one(
+      "UPDATE meetings SET status = 'submitted', submitted_at = now(), submitted_by = $1, return_comment = '', updated_at = now() WHERE id = $2 AND status IN ('planned','held') RETURNING id",
+      [actorId, id],
+    );
+    if (!done) throw pending();
+    const to = m.chair_id
+      ? [m.chair_id]
+      : (
+          await this.svc.db.query<{ user_id: string }>(
+            `SELECT om.user_id FROM org_members om JOIN users u ON u.id = om.user_id WHERE om.org_id = $1 AND NOT u.is_ai AND u.status = 'active'`,
+            [m.org_id],
+          )
+        ).map((r) => r.user_id);
+    for (const u of to) {
+      if (u === actorId || u === m.writer_id) continue;
+      if (!m.chair_id && !(await this.svc.permissionsOf(u, m.org_id)).includes("meetings.validate")) continue;
+      await this.svc.notify(u, m.org_id, {
+        kind: "meeting.submitted",
+        title: `Compte rendu à valider : ${m.meeting_type}`,
+        body: `${meetingReference(m)} · soumis par ${(await this.svc.user(actorId)).name}`,
+        actor_id: actorId,
+      });
+    }
+    await this.svc.log(actorId, "meeting.submitted", { orgId: m.org_id, data: { reference: meetingReference(m) } });
+    return this.get(actorId, id);
+  }
+
+  /** Retour au rédacteur, avec un motif : il corrige puis soumet à nouveau. */
+  async returnReport(actorId: string, id: string, comment: string) {
+    const { m } = await this.readable(actorId, id);
+    await this.assertDecider(actorId, m);
+    if (m.status !== "submitted") throw badRequest("Seul un compte rendu soumis peut être retourné");
+    if (!comment.trim()) throw badRequest("Indiquez ce qui doit être revu");
+    await this.svc.db.query(
+      "UPDATE meetings SET status = 'held', return_comment = $1, updated_at = now() WHERE id = $2",
+      [comment.trim(), id],
+    );
+    if (m.writer_id && m.writer_id !== actorId)
+      await this.svc.notify(m.writer_id, m.org_id, {
+        kind: "meeting.returned",
+        title: `Compte rendu à revoir : ${m.meeting_type}`,
+        body: comment.trim(),
+        actor_id: actorId,
+      });
+    await this.svc.log(actorId, "meeting.returned", { orgId: m.org_id, data: { reference: meetingReference(m) } });
+    return this.get(actorId, id);
+  }
+
   async validate(actorId: string, id: string) {
     const { m } = await this.readable(actorId, id);
-    await this.svc.requirePerm(actorId, m.org_id, "meetings.validate");
-    if (m.writer_id === actorId) throw forbidden("Le rédacteur ne peut pas valider son propre compte rendu");
+    if (m.status === "validated") throw locked();
+    if (m.status !== "submitted") throw badRequest("Le compte rendu doit d'abord être soumis par son rédacteur");
+    await this.assertDecider(actorId, m);
     const n = await this.svc.db.one<{ n: number }>(
       "SELECT count(*)::int AS n FROM meeting_agenda_items WHERE meeting_id = $1",
       [id],
@@ -512,12 +880,29 @@ export class Meetings {
       );
     if (
       !(await this.svc.db.one(
-        "UPDATE meetings SET status = 'validated', validated_by = $1, validated_at = now(), updated_at = now() WHERE id = $2 AND status <> 'validated' RETURNING id",
+        "UPDATE meetings SET status = 'validated', validated_by = $1, validated_at = now(), updated_at = now() WHERE id = $2 AND status = 'submitted' RETURNING id",
         [actorId, id],
       ))
     )
       throw locked();
     await this.svc.log(actorId, "meeting.validated", { orgId: m.org_id, data: { reference: meetingReference(m) } });
+    // Diffusion : chaque participant, la présidence et le rédacteur reçoivent le compte rendu validé
+    const readers = await this.svc.db.query<{ user_id: string }>(
+      `SELECT DISTINCT user_id FROM (
+         SELECT user_id FROM meeting_attendees WHERE meeting_id = $1 AND user_id IS NOT NULL
+         UNION SELECT responsible_id FROM meeting_actions WHERE meeting_id = $1 AND responsible_id IS NOT NULL
+         UNION SELECT writer_id FROM meetings WHERE id = $1 AND writer_id IS NOT NULL
+         UNION SELECT chair_id FROM meetings WHERE id = $1 AND chair_id IS NOT NULL) r`,
+      [id],
+    );
+    for (const r of readers)
+      if (r.user_id !== actorId)
+        await this.svc.notify(r.user_id, m.org_id, {
+          kind: "meeting.report",
+          title: `Compte rendu diffusé : ${m.meeting_type} du ${m.meeting_date}`,
+          body: meetingReference(m),
+          actor_id: actorId,
+        });
     const owners = await this.svc.db.query<{ responsible_id: string }>(
       "SELECT DISTINCT responsible_id FROM meeting_actions WHERE meeting_id = $1 AND responsible_id IS NOT NULL AND status NOT IN ('realise','annule')",
       [id],
@@ -541,6 +926,141 @@ export class Meetings {
     );
     await this.svc.log(actorId, "meeting.reopened", { orgId: m.org_id, data: { reference: meetingReference(m) } });
     return this.get(actorId, id);
+  }
+
+  // ---------------------------------------------------------------- convocation
+  async setInvitees(actorId: string, id: string, list: InviteeInput[]) {
+    const m = await this.editable(actorId, id);
+    const invitees = await this.resolveInvitees(m.org_id, list);
+    await this.svc.db.tx((q) => this.writeInvitees(q, m, invitees));
+    return this.get(actorId, id);
+  }
+
+  /**
+   * Convoquer : des convoqués, un ordre du jour, une séance à venir ; à moins de 48 h l'urgence est confirmée.
+   * Une nouvelle convocation (date, lieu changés) remet les réponses à zéro.
+   */
+  async convene(actorId: string, id: string, i: { short_notice?: boolean }) {
+    const m = await this.editable(actorId, id);
+    if (m.status !== "planned") throw badRequest("Seule une réunion programmée peut être convoquée");
+    if (m.meeting_date < today()) throw badRequest("Cette séance est passée : elle ne se convoque plus");
+    const invited = await this.svc.db.query<{ user_id: string | null }>(
+      "SELECT user_id FROM meeting_attendees WHERE meeting_id = $1 AND invited",
+      [id],
+    );
+    if (!invited.length) throw badRequest("Ajoutez au moins un convoqué avant d'envoyer la convocation");
+    const open = await this.openFromPrevious(m);
+    await this.svc.db.tx((q) => this.addFollowUp(q, m, open));
+    const items = await this.svc.db.one<{ n: number }>(
+      "SELECT count(*)::int AS n FROM meeting_agenda_items WHERE meeting_id = $1",
+      [id],
+    );
+    if (!items?.n) throw badRequest("L'ordre du jour est vide : la convocation l'annonce à chaque convoqué");
+    const at = Date.parse(`${m.meeting_date}T${m.start_time ?? "00:00"}:00`);
+    if ((at - Date.now()) / 36e5 < NOTICE_HOURS && !i.short_notice)
+      throw badRequest(`Convocation à moins de ${NOTICE_HOURS} h de la séance : confirmez l'urgence pour l'envoyer`);
+    await this.svc.db.tx(async (q) => {
+      await q.query(
+        "UPDATE meeting_attendees SET response = 'pending', delegate_name = '', responded_at = NULL WHERE meeting_id = $1 AND invited",
+        [id],
+      );
+      await q.query("UPDATE meetings SET convened_at = now(), convened_actor = $1, updated_at = now() WHERE id = $2", [
+        actorId,
+        id,
+      ]);
+    });
+    const where = [m.location, m.video_link].filter(Boolean).join(" · ") || "lieu à préciser";
+    const again = !!m.convened_at;
+    for (const a of invited)
+      if (a.user_id && a.user_id !== actorId)
+        await this.svc.notify(a.user_id, m.org_id, {
+          kind: "meeting.convened",
+          title: `${again ? "Convocation modifiée" : "Convocation"} : ${m.meeting_type} du ${m.meeting_date}${m.start_time ? ` à ${m.start_time}` : ""}`,
+          body: `${where}. Indiquez si vous serez présent, excusé ou représenté.`,
+          actor_id: actorId,
+        });
+    await this.svc.log(actorId, "meeting.convened", {
+      orgId: m.org_id,
+      projectId: m.project_id,
+      data: { reference: meetingReference(m), invited: invited.length, short_notice: !!i.short_notice, again },
+    });
+    return this.get(actorId, id);
+  }
+
+  /** Seul le convoqué répond, jusqu'au jour de la séance : présent, excusé, ou représenté par une personne nommée. */
+  async respond(actorId: string, id: string, i: { response: "accepted" | "declined" | "delegated"; delegate_name?: string }) {
+    const m = await this.row(id);
+    const row = await this.svc.db.one<{ id: string }>(
+      "SELECT id FROM meeting_attendees WHERE meeting_id = $1 AND user_id = $2 AND invited",
+      [id, actorId],
+    );
+    if (!row) throw forbidden("Seuls les convoqués répondent à cette convocation");
+    if (!m.convened_at) throw badRequest("Cette réunion n'a pas encore été convoquée");
+    if (m.status !== "planned" || m.meeting_date < today()) throw badRequest("La séance est passée : la réponse est close");
+    if (i.response === "delegated" && !i.delegate_name?.trim())
+      throw badRequest("Indiquez le nom de la personne qui vous représente");
+    await this.svc.db.query(
+      "UPDATE meeting_attendees SET response = $1, delegate_name = $2, responded_at = now() WHERE id = $3",
+      [i.response, i.response === "delegated" ? i.delegate_name!.trim() : "", row.id],
+    );
+    await this.svc.log(actorId, "meeting.response", {
+      orgId: m.org_id,
+      data: { reference: meetingReference(m), response: i.response },
+    });
+    const can = await this.can(actorId, m.org_id);
+    return this.detail(m, actorId, can);
+  }
+
+  // ---------------------------------------------------------------- pièces de l'ordre du jour
+  async addDocument(actorId: string, id: string, filename: string, data: Buffer, itemId?: string) {
+    const m = await this.editable(actorId, id);
+    if (!data.length) throw badRequest("Le fichier est vide");
+    if (data.length > ATTACHMENT_MAX_BYTES) throw new HttpError(413, "Fichier trop volumineux : 25 Mo au maximum");
+    const name = cleanName(filename);
+    const type = detectType(name, data);
+    if (!type) throw new HttpError(415, `Format non pris en charge. Formats acceptés : ${ALLOWED_FORMATS}`);
+    if (
+      itemId &&
+      !(await this.svc.db.one("SELECT 1 FROM meeting_agenda_items WHERE meeting_id = $1 AND id = $2", [id, itemId]))
+    )
+      throw badRequest("Point de l'ordre du jour inconnu pour cette réunion");
+    const n = await this.svc.db.one<{ n: number }>("SELECT count(*)::int AS n FROM meeting_documents WHERE meeting_id = $1", [
+      id,
+    ]);
+    if ((n?.n ?? 0) >= MAX_DOCUMENTS) throw badRequest(`Une réunion ne peut pas avoir plus de ${MAX_DOCUMENTS} pièces`);
+    const docId = uid("mdc");
+    await this.svc.db.query(
+      "INSERT INTO meeting_documents (id, org_id, meeting_id, agenda_item_id, uploader_id, filename, mime, size, data) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+      [docId, m.org_id, id, itemId ?? null, actorId, name, type.mime, data.length, data],
+    );
+    await this.svc.log(actorId, "meeting.document", { orgId: m.org_id, data: { reference: meetingReference(m), filename: name } });
+    return { id: docId, filename: name, mime: type.mime, size: data.length };
+  }
+
+  async document(actorId: string, docId: string) {
+    const d = await this.svc.db.one<{ meeting_id: string; filename: string; mime: string; data: Buffer }>(
+      "SELECT meeting_id, filename, mime, data FROM meeting_documents WHERE id = $1",
+      [docId],
+    );
+    if (!d) throw notFound("Pièce introuvable");
+    await this.readable(actorId, d.meeting_id).catch(() => {
+      throw notFound("Pièce introuvable");
+    });
+    return d;
+  }
+
+  async removeDocument(actorId: string, docId: string) {
+    const d = await this.svc.db.one<{ meeting_id: string; filename: string }>(
+      "SELECT meeting_id, filename FROM meeting_documents WHERE id = $1",
+      [docId],
+    );
+    if (!d) throw notFound("Pièce introuvable");
+    const m = await this.editable(actorId, d.meeting_id);
+    await this.svc.db.query("DELETE FROM meeting_documents WHERE id = $1", [docId]);
+    await this.svc.log(actorId, "meeting.document.deleted", {
+      orgId: m.org_id,
+      data: { reference: meetingReference(m), filename: d.filename },
+    });
   }
 
   // ---------------------------------------------------------------- suivi des recommandations

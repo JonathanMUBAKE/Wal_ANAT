@@ -220,15 +220,19 @@ describe("validation", () => {
     await ctx.db.query(
       "UPDATE org_members SET role = 'admin', profile_id = 'prf_admin_' || org_id WHERE user_id = 'u_karim'",
     );
+    // Le compte rendu se soumet d'abord (docs/PARCOURS-METIER.md, lot P2)
+    await api("u_karim", "POST", `/api/meetings/${m.id}/submit`);
     expect((await api("u_karim", "POST", `/api/meetings/${m.id}/validate`)).status).toBe(403);
     expect((await api("u_alice", "POST", `/api/meetings/${m.id}/validate`)).body.status).toBe("validated");
   });
   it("refuse un compte rendu sans ordre du jour", async () => {
     const m = await create();
+    expect((await api("u_karim", "POST", `/api/meetings/${m.id}/submit`)).status).toBe(400);
     expect((await api("u_alice", "POST", `/api/meetings/${m.id}/validate`)).status).toBe(400);
   });
   it("un compte rendu validé est figé, et se rouvre en le traçant", async () => {
     const m = await saved(await create());
+    await api("u_karim", "POST", `/api/meetings/${m.id}/submit`);
     await api("u_alice", "POST", `/api/meetings/${m.id}/validate`);
     expect((await api("u_alice", "PATCH", `/api/meetings/${m.id}`, { location: "x" })).status).toBe(409);
     expect((await api("u_alice", "PUT", `/api/meetings/${m.id}/content`, content())).status).toBe(409);
@@ -239,6 +243,7 @@ describe("validation", () => {
   });
   it("prévient les responsables à la validation", async () => {
     const m = await saved(await create());
+    await api("u_karim", "POST", `/api/meetings/${m.id}/submit`);
     await api("u_alice", "POST", `/api/meetings/${m.id}/validate`);
     expect(
       (await api("u_theo", "GET", "/api/notifications")).body.some(

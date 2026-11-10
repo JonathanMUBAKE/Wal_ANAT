@@ -75,7 +75,9 @@ Une seule échelle : **32 px** (compacte : pagination, actions de ligne), **36 p
 
 | Composant | Règle |
 | --- | --- |
-| **Bouton** | 36 px, rayon 10 px. Un seul bouton principal (bleu) par zone. Libellé = verbe + objet. |
+| **Bouton** | 36 px, rayon 10 px. Un seul bouton principal par zone, **à l'encre bleu nuit** (`btn-brand`) ; le bleu vif est réservé à la sélection, aux liens et aux onglets actifs. Libellé = verbe + objet. |
+| **Vue d'ensemble** | Les chiffres clés vivent dans **une seule carte** découpée par des filets, chaque cellule : icône grise + libellé, chiffre, petite pastille d'état (vert, orange, rouge, gris). |
+| **Bandeau IA** | Message de l'IA en bandeau clair d'une ligne sous l'en-tête, avec le carré d'icône IA ; jamais de gros bloc sombre. |
 | **Bouton-icône** | 32 px, rayon 8 px, sans bordure, toujours avec une étiquette accessible. |
 | **Onglets soulignés** | Vues et sections d'une page ; trait bleu de 2 px sous l'actif, icône bleue. |
 | **Onglets segmentés** | Seulement pour une période (Jour · Semaine · Mois) : rail gris, actif blanc en relief. |

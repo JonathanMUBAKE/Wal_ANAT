@@ -36,7 +36,7 @@ import {
   isLate,
   type Tone,
 } from "@/components/gov";
-import { HealthRing, Topo } from "@/components/territory";
+import { HealthRing } from "@/components/territory";
 import { CollectionHeader } from "@/components/collection";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -153,8 +153,6 @@ const AGENDA_HUE: Record<string, string> = {
   rendez_vous: "var(--form-rendez_vous)",
   interne: "var(--form-interne)",
 };
-const FEATURE_PEAKS = [{ x: 260, y: 10, rings: 9, seed: 1.9, r0: 10, step: 16 }];
-const BRIEF_PEAKS = [{ x: 300, y: 200, rings: 10, seed: 4.4, r0: 12, step: 18 }];
 
 export function PilotagePage() {
   const { data: me } = useMe();
@@ -204,42 +202,39 @@ export function PilotagePage() {
           </>
         }
       />
-      <div className="h-1" />
-
-      {/* Chiffres clés : la première carte, mise en avant, résume le portefeuille */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
-        <div className="kpi-feature relative isolate col-span-2 overflow-hidden rounded-2xl p-5 text-white shadow-md sm:col-span-1">
-          <Topo
-            peaks={FEATURE_PEAKS}
-            width={300}
-            height={170}
-            className="absolute inset-0 -z-10 size-full text-white opacity-[0.18]"
-          />
-          <div className="flex items-start justify-between">
-            <p className="text-[14px] font-medium text-white/90">Activités suivies</p>
-            <span className="flex size-8 items-center justify-center rounded-[10px] bg-white text-primary shadow-sm">
-              <Briefcase className="size-4.5" />
-            </span>
-          </div>
-          <p className="mt-2 text-[30px] font-semibold leading-none tracking-[-0.03em]">
-            <CountUp value={total} />
-          </p>
-          <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[12px] font-medium">
-            <ArrowUpRight className="size-3.5" />
-            {score} % en bonne voie
-          </p>
-        </div>
-        <Kpi label="Décisions attendues" value={o.counters.decisions} Icon={Scale} foot="à arbitrer par la DG" />
-        <Kpi
-          label="Retards à résorber"
-          value={o.counters.retards}
-          Icon={AlarmClock}
-          foot={`${lateItems} activité${lateItems > 1 ? "s" : ""} concernée${lateItems > 1 ? "s" : ""}`}
-          alert={o.counters.retards > 0}
-        />
-        <Kpi label="À signer" value={o.to_sign} Icon={FileSignature} foot="au parapheur" to="/parapheur" />
-        <Kpi label="Écarts à examiner" value={o.open_gaps} Icon={ListTree} foot="attributions" to="/attributions" />
+      {/* Point de situation : un bandeau clair, l'IA propose, la DG lit */}
+      <div className="flex items-start gap-3 rounded-xl border border-line bg-panel px-4 py-3">
+        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-[conic-gradient(from_200deg,var(--ai),#4FB3F0,var(--ai))] text-white">
+          <Sparkles className="size-3.5" />
+        </span>
+        <p className="text-[13px] leading-relaxed text-muted">
+          <span className="font-semibold text-fg">Point de situation. </span>
+          {o.brief.join(" ")}
+        </p>
       </div>
+
+      {/* Vue d'ensemble : une seule carte, des cellules séparées par des filets */}
+      <section className="overflow-hidden rounded-2xl border border-line bg-panel">
+        <div className="grid grid-cols-2 divide-line sm:grid-cols-3 xl:grid-cols-5 [&>*]:border-line max-sm:[&>*:nth-child(n+3)]:border-t sm:max-xl:[&>*:nth-child(n+4)]:border-t [&>*:not(:first-child)]:border-l max-sm:[&>*:nth-child(odd)]:border-l-0 sm:max-xl:[&>*:nth-child(3n+1)]:border-l-0">
+          <Kpi
+            label="Activités suivies"
+            value={total}
+            Icon={Briefcase}
+            foot={`${score} % en bonne voie`}
+            tone={score >= 70 ? "good" : "warn"}
+          />
+          <Kpi label="Décisions attendues" value={o.counters.decisions} Icon={Scale} foot="à arbitrer" />
+          <Kpi
+            label="Retards à résorber"
+            value={o.counters.retards}
+            Icon={AlarmClock}
+            foot={`${lateItems} activité${lateItems > 1 ? "s" : ""} concernée${lateItems > 1 ? "s" : ""}`}
+            tone={o.counters.retards > 0 ? "bad" : "good"}
+          />
+          <Kpi label="À signer" value={o.to_sign} Icon={FileSignature} foot="au parapheur" to="/parapheur" />
+          <Kpi label="Écarts à examiner" value={o.open_gaps} Icon={ListTree} foot="attributions" to="/attributions" />
+        </div>
+      </section>
 
       {/* Santé, formes d'activité, agenda */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,1fr)]">
@@ -546,26 +541,6 @@ export function PilotagePage() {
         </div>
 
         <div className="space-y-4">
-          <div className="hero-night relative isolate overflow-hidden rounded-2xl p-5 shadow-md">
-            <Topo
-              peaks={BRIEF_PEAKS}
-              width={340}
-              height={240}
-              className="absolute inset-0 -z-10 size-full text-[#8CCBF2] opacity-[0.2]"
-            />
-            <p className="flex items-center gap-2 text-[15px] font-semibold">
-              <Sparkles className="size-4 text-[#8CCBF2]" />
-              Point de situation
-            </p>
-            <ul className="stagger mt-3 space-y-2 text-[13px] leading-snug text-white/80">
-              {o.brief.map((b) => (
-                <li key={b} className="flex gap-2">
-                  <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-[#8CCBF2]" />
-                  {b}
-                </li>
-              ))}
-            </ul>
-          </div>
 
           <Card title="Décisions attendues" action={<Scale className="size-4 text-faint" />}>
             <div className="space-y-2.5 px-4 pb-4 pt-1">
@@ -708,46 +683,46 @@ function Kpi({
   Icon,
   foot,
   to,
-  alert,
+  tone,
 }: {
   label: string;
   value: number;
   Icon: LucideIcon;
   foot: string;
   to?: string;
-  alert?: boolean;
+  tone?: "good" | "warn" | "bad";
 }) {
   const body = (
     <>
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-[13px] font-medium leading-snug sm:text-[14px]">{label}</p>
-        <span
-          className={cn(
-            "flex size-8 shrink-0 items-center justify-center rounded-[10px] border transition-colors",
-            alert ? "border-danger/30 bg-danger-soft text-danger" : "border-line-strong text-fg",
-            to && "group-hover:border-transparent group-hover:bg-night group-hover:text-white",
-          )}
-        >
-          <Icon className="size-4.5" />
-        </span>
-      </div>
-      <p className="mt-2 text-[30px] font-semibold leading-none tracking-[-0.03em]">
+      <p className="flex items-center gap-2 text-[12.5px] font-medium text-muted">
+        <Icon className="size-4 text-faint" />
+        {label}
+        {to && (
+          <ArrowUpRight className="ml-auto size-3.5 text-faint opacity-0 transition-opacity group-hover:opacity-100" />
+        )}
+      </p>
+      <p className="mt-3 text-[28px] font-semibold leading-none tracking-[-0.03em]">
         <CountUp value={value} />
       </p>
-      <p
-        className={cn(
-          "mt-3 inline-flex items-center gap-1.5 text-[12.5px]",
-          alert ? "font-medium text-danger" : "text-muted",
-        )}
-      >
-        {alert && <span className="pulse-dot size-1.5 rounded-full bg-danger" />}
-        {foot}
+      <p className="mt-3">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11.5px] font-medium",
+            tone === "good" && "bg-success-soft text-success",
+            tone === "warn" && "bg-warning-soft text-warning",
+            tone === "bad" && "bg-danger-soft text-danger",
+            !tone && "bg-hover text-muted",
+          )}
+        >
+          {tone === "bad" && <span className="pulse-dot size-1.5 rounded-full bg-current" />}
+          {foot}
+        </span>
       </p>
     </>
   );
-  const cls = "group min-w-0 rounded-2xl border border-line bg-panel p-4 shadow-sm sm:p-5";
+  const cls = "group min-w-0 p-4 sm:p-5";
   return to ? (
-    <Link to={to} className={cn(cls, "card-hover")}>
+    <Link to={to} className={cn(cls, "transition-colors hover:bg-hover/60")}>
       {body}
     </Link>
   ) : (

@@ -3,9 +3,12 @@ import { boot, type GovCtx } from "./gov-test-helpers.js";
 
 let g: GovCtx;
 let unit: string;
+/** Le projet qui sert de dossier aux livrables et aux missions (docs/PARCOURS-METIER.md, lot P1). */
+let prj: string;
 beforeEach(async () => {
   g = await boot();
   [unit] = await g.units(1);
+  prj = await g.project();
 });
 afterEach(() => g.ctx.app.close());
 const plan = async () =>
@@ -118,6 +121,7 @@ describe("livrables", () => {
   const make = async (patch: Record<string, unknown> = {}) =>
     (
       await g.api("u_alice", "POST", "/api/deliverables", {
+        project_id: prj,
         title: "Rapport",
         responsible_id: "u_karim",
         validator_id: "u_alice",
@@ -128,6 +132,7 @@ describe("livrables", () => {
     expect(
       (
         await g.api("u_alice", "POST", "/api/deliverables", {
+        project_id: prj,
           title: "x",
           responsible_id: "u_karim",
           validator_id: "u_karim",
@@ -188,6 +193,7 @@ describe("livrables", () => {
 describe("missions des consultants", () => {
   const contract = (patch: Record<string, unknown> = {}) =>
     g.api("u_alice", "POST", "/api/contracts", {
+      project_id: prj,
       user_id: "u_hugo",
       title: "Étude foncière",
       start_on: "2026-01-01",
@@ -200,6 +206,7 @@ describe("missions des consultants", () => {
     const c = (await contract()).body;
     const d = (
       await g.api("u_alice", "POST", "/api/deliverables", {
+        project_id: prj,
         title: "Rapport",
         responsible_id: "u_hugo",
         validator_id: "u_alice",

@@ -266,6 +266,17 @@ ORGANISATION        Structure · Équipes
 | **P4. L'accès externe des consultants** | Compte externe limité aux dossiers du contrat, expirant avec lui ; TdR structurés | 2 |
 | **P5. Les délais comme paramètres** | Délais de convocation, de compte rendu, de réponse, de compte rendu de mission ; relances | 1, 4, 6 |
 
+### Lot P1 — règles contrôlées par le serveur
+
+| Règle | Effet |
+| --- | --- |
+| Tout **nouveau** contrat et tout **nouveau** livrable appartiennent à un projet de l'institution | Refus sans projet (réponse Q4) ; les pièces créées avant ce lot restent lisibles |
+| Un livrable contractuel appartient au **même projet** que son contrat | Refus sinon |
+| Chaque livrable contractuel peut porter une **tranche de paiement** (pourcentage du montant du contrat) | La somme des tranches d'un contrat ne dépasse jamais 100 % ; une tranche exige un contrat |
+| À la validation, le procès-verbal de réception rend la tranche **« à payer »** avec son montant | Le service financier constate le paiement une seule fois, tracé |
+| Les membres d'un projet voient ses livrables et ses contrats | Hors projet : seulement les siens (responsable, valideur, consultant, superviseur), sauf droit de lecture général |
+| Un projet qui porte des contrats ou des livrables ne se supprime pas | Il s'archive : les procès-verbaux et paiements sont des pièces officielles |
+
 ## 7. Questions à trancher
 
 | N° | Question | Proposition par défaut |

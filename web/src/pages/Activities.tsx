@@ -28,6 +28,7 @@ import { api } from "@/lib/api";
 import { useCan, useProjects, useUnits, useUsers } from "@/lib/hooks";
 import { type RefValue, useForms, useReferentials } from "@/lib/referentials";
 import { HEALTH } from "./Pilotage";
+import { ContractsPayments } from "./ProjectDossier";
 
 /** Code d'un type d'activité du référentiel de l'institution. */
 type Kind = string;
@@ -69,7 +70,7 @@ export function ActivitiesPage() {
   const can = useCan();
   const nav = useNavigate();
   const shell = useShell();
-  const [tab, setTab] = useState<Kind | "all" | "projects">("all");
+  const [tab, setTab] = useState<Kind | "all" | "projects" | "contracts">("all");
   const [creating, setCreating] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ["activities"],
@@ -91,7 +92,7 @@ export function ActivitiesPage() {
         title="Portefeuille"
         subtitle="Projets internes et confiés, commissions, conférences, rendez-vous et activités internes, suivis jusqu'à leurs suites."
         actions={
-          tab === "projects" ? (
+          tab === "contracts" ? null : tab === "projects" ? (
             <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => shell.setNewProject(true)}>
               Nouveau projet
             </Button>
@@ -115,10 +116,14 @@ export function ActivitiesPage() {
             label: t.plural || t.label,
             badge: data?.filter((a) => a.kind === t.code).length,
           })),
+          // Vue transverse du service administratif et financier : les contrats restent rangés dans leurs projets
+          ...(can("consultants.manage") ? [{ id: "contracts" as const, label: "Contrats et paiements" }] : []),
         ]}
       />
       <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
-        {tab === "projects" ? (
+        {tab === "contracts" ? (
+          <ContractsPayments />
+        ) : tab === "projects" ? (
           <ProjectsList projects={projects} />
         ) : (
         <Section>
@@ -155,7 +160,10 @@ export function ActivitiesPage() {
       {creating && (
         <NewActivity
           defaultKind={
-            tab !== "all" && tab !== "projects" && refs?.activity_type.some((t) => t.code === tab && !t.archived)
+            tab !== "all" &&
+            tab !== "projects" &&
+            tab !== "contracts" &&
+            refs?.activity_type.some((t) => t.code === tab && !t.archived)
               ? tab
               : firstActive
           }

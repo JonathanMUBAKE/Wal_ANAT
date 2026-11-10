@@ -1208,6 +1208,14 @@ export class Services {
     await this.projectPerm(actorId, projectId, "projects.delete");
     const p = await this.projectRow(projectId);
     if (confirm.trim() !== p.name) throw badRequest("Saisissez le nom exact du projet pour confirmer la suppression");
+    // Contrats, procès-verbaux et paiements sont des pièces officielles : le dossier s'archive, il ne disparaît pas
+    if (
+      await this.db.one(
+        "SELECT 1 FROM consultant_contracts WHERE project_id = $1 UNION ALL SELECT 1 FROM deliverables WHERE project_id = $1 LIMIT 1",
+        [projectId],
+      )
+    )
+      throw new HttpError(409, "Ce projet porte des contrats ou des livrables : archivez-le plutôt que de le supprimer");
     const members = await this.readableUsers(projectId);
     await this.db.tx(async (q) => {
       await q.query("DELETE FROM notifications WHERE project_id = $1", [projectId]);

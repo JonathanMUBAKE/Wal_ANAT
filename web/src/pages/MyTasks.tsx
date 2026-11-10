@@ -6,6 +6,7 @@ import { useMe, useMyTasks, useProjects, useUpdateTask } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { isoIn, todayIso } from "@/lib/format";
 import type { Task } from "@/lib/types";
+import { MyDeliverables } from "./ProjectDossier";
 
 const BUCKETS: { id: string; label: string; test: (t: Task) => boolean }[] = [
   { id: "overdue", label: "En retard", test: (t) => !!t.due_on && t.due_on < todayIso() },
@@ -36,7 +37,9 @@ export function MyTasksPage() {
       <header className="flex flex-wrap items-end gap-3 px-4 pb-5 pt-8 sm:px-8">
         <div>
           <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Mes tâches</h1>
-          <p className="mt-1 text-[13px] text-muted">Tout ce qui vous est assigné, dans tous vos projets.</p>
+          <p className="mt-1 text-[13px] text-muted">
+            Tout ce qui vous est assigné, dans tous vos projets : livrables à produire ou à valider, puis tâches.
+          </p>
         </div>
         <label className="ml-auto flex items-center gap-2 text-[13px] text-muted">
           <input
@@ -48,6 +51,10 @@ export function MyTasksPage() {
           Afficher les terminées
         </label>
       </header>
+      {/* Les livrables à produire ou à valider vivent dans leur projet ; ils se retrouvent ici (docs/PARCOURS-METIER.md) */}
+      <div className="px-4 pb-6 sm:px-8">
+        <MyDeliverables />
+      </div>
       <div className="border-t border-line">
         {open.length === 0 && <Empty title="Vous êtes à jour">Aucune tâche ouverte ne vous est assignée.</Empty>}
         {BUCKETS.map((b) => {

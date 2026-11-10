@@ -77,6 +77,7 @@ describe("livrables et missions : réception, paiement, durée de la mission", (
   const mission = async (start: string, end: string) =>
     (
       await g.api("u_alice", "POST", "/api/contracts", {
+        project_id: await g.project(),
         consultant_name: "Cabinet Géo",
         title: "Étude foncière",
         start_on: start,
@@ -92,6 +93,7 @@ describe("livrables et missions : réception, paiement, durée de la mission", (
         responsible_id: "u_karim",
         validator_id: "u_alice",
         contract_id: c.id,
+      project_id: c.project_id,
       })
     ).body;
     await g.ctx.db.query("UPDATE deliverables SET status = 'en_revue' WHERE id = $1", [d.id]);
@@ -112,6 +114,7 @@ describe("livrables et missions : réception, paiement, durée de la mission", (
       responsible_id: "u_karim",
       validator_id: "u_alice",
       contract_id: c.id,
+      project_id: c.project_id,
     });
     expect(r.status).toBe(400);
   });
@@ -122,6 +125,7 @@ describe("livrables et missions : réception, paiement, durée de la mission", (
       responsible_id: "u_karim",
       validator_id: "u_alice",
       contract_id: c.id,
+      project_id: c.project_id,
       due_on: day(40),
     });
     expect(r.status).toBe(400);
@@ -241,6 +245,7 @@ describe("tableau de bord : une lecture fidèle", () => {
   it("les retards comptent aussi les livrables, les activités de plan et le courrier", async () => {
     const before = (await pilotage()).counters;
     await g.api("u_alice", "POST", "/api/deliverables", {
+      project_id: await g.project(),
       title: "En retard",
       responsible_id: "u_karim",
       validator_id: "u_alice",

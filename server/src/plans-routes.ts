@@ -24,6 +24,7 @@ const reason = z.string().trim().min(1).max(1000);
 const Deliverable = z.object({
   activity_id: id.nullable().optional(),
   contract_id: id.nullable().optional(),
+  payment_percent: z.number().gt(0).max(100).nullable().optional(),
   title: title.optional(),
   description: z.string().max(5000).optional(),
   criteria: z.string().max(5000).optional(),
@@ -32,6 +33,7 @@ const Deliverable = z.object({
   due_on: date.nullable().optional(),
 });
 const Contract = z.object({
+  project_id: id.optional(),
   user_id: id.nullable().optional(),
   consultant_name: z.string().max(200).optional(),
   title,
@@ -90,14 +92,16 @@ export function planRoutes(r: FastifyInstance, p: Plans, d: Deliverables) {
     return p.revise(req.userId, req.params.id, b.changes, b.reason);
   });
 
-  r.get("/api/deliverables", async (req) =>
-    d.list(req.userId, req.orgId, { mine: z.object({ mine: z.string().optional() }).parse(req.query).mine === "true" }),
-  );
+  r.get("/api/deliverables", async (req) => {
+    const q = z.object({ mine: z.string().optional(), project_id: id.optional() }).parse(req.query);
+    return d.list(req.userId, req.orgId, { mine: q.mine === "true", project_id: q.project_id });
+  });
+  // Le projet est obligatoire : le service le contrôle et répond par un message clair
   r.post("/api/deliverables", async (req) =>
     d.create(
       req.userId,
       req.orgId,
-      Deliverable.extend({ title, responsible_id: id, validator_id: id }).parse(req.body),
+      Deliverable.extend({ project_id: id.optional(), title, responsible_id: id, validator_id: id }).parse(req.body),
     ),
   );
   r.get<Id>("/api/deliverables/:id", async (req) => d.get(req.userId, req.params.id));
@@ -120,7 +124,9 @@ export function planRoutes(r: FastifyInstance, p: Plans, d: Deliverables) {
     ),
   );
 
-  r.get("/api/contracts", async (req) => d.contracts(req.userId, req.orgId));
+  r.get("/api/contracts", async (req) =>
+    d.contracts(req.userId, req.orgId, z.object({ project_id: id.optional() }).parse(req.query)),
+  );
   r.post("/api/contracts", async (req) => d.createContract(req.userId, req.orgId, Contract.parse(req.body)));
   r.post<Id>("/api/contracts/:id/evaluate", async (req) =>
     d.evaluate(

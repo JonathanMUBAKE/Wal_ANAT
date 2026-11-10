@@ -193,6 +193,7 @@ describe("grand tableau de bord", () => {
     await g.api("u_alice", "POST", "/api/risks", { title: "Financement", probability: 5, impact: 4 });
     await g.api("u_alice", "POST", "/api/indicators", { name: "Plans", target: 10, result: 4 });
     await g.api("u_alice", "POST", "/api/contracts", {
+      project_id: await g.project(),
       consultant_name: "C",
       title: "M",
       start_on: today,

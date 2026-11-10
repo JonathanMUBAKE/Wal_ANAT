@@ -192,6 +192,7 @@ async function boot(kind: Kind) {
     deliverable: async (responsible: string, validator = responsible === "u_alice" ? "u_karim" : "u_alice") =>
       (
         await inj(a, "POST", "/api/deliverables", {
+          project_id: app,
           title: u("L"),
           responsible_id: responsible,
           validator_id: validator,
@@ -221,6 +222,7 @@ async function boot(kind: Kind) {
     contract: async () =>
       (
         await inj(a, "POST", "/api/contracts", {
+          project_id: app,
           consultant_name: "C",
           title: "M",
           start_on: "2026-01-01",
@@ -549,7 +551,9 @@ const TABLE = [
     body: { changes: { title: "C" }, reason: "x" },
   })),
   R_("GET", "/api/deliverables"),
-  R_("POST", "/api/deliverables", () => ({ body: { title: "L", responsible_id: "u_karim", validator_id: "u_alice" } })),
+  R_("POST", "/api/deliverables", (X) => ({
+    body: { project_id: X.app, title: "L", responsible_id: "u_karim", validator_id: "u_alice" },
+  })),
   R_("GET", "/api/deliverables/:id", async (X) => ({
     url: `/api/deliverables/${(await X.deliverable("u_karim")).id}`,
   })),
@@ -575,8 +579,15 @@ const TABLE = [
   })),
   R_("POST", "/api/deliverables/:id/paid", async (X) => ({ url: `/api/deliverables/${await X.toPay()}/paid` })),
   R_("GET", "/api/contracts"),
-  R_("POST", "/api/contracts", () => ({
-    body: { consultant_name: "C", title: "M", start_on: "2026-01-01", end_on: "2026-12-31", supervisor_id: "u_alice" },
+  R_("POST", "/api/contracts", (X) => ({
+    body: {
+      project_id: X.app,
+      consultant_name: "C",
+      title: "M",
+      start_on: "2026-01-01",
+      end_on: "2026-12-31",
+      supervisor_id: "u_alice",
+    },
   })),
   R_("POST", "/api/contracts/:id/evaluate", async (X) => ({
     url: `/api/contracts/${(await X.contract()).id}/evaluate`,

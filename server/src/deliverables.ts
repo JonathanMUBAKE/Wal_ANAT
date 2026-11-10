@@ -5,8 +5,10 @@ export type DeliverableStatus = "prevu" | "en_cours" | "soumis" | "en_revue" | "
 export interface Deliverable {
   id: string;
   org_id: string;
+  project_id: string | null;
   activity_id: string | null;
   contract_id: string | null;
+  payment_percent: number | null;
   title: string;
   description: string;
   criteria: string;
@@ -22,6 +24,7 @@ export interface Deliverable {
 export interface Contract {
   id: string;
   org_id: string;
+  project_id: string | null;
   user_id: string | null;
   consultant_name: string;
   title: string;
@@ -39,10 +42,20 @@ export interface Contract {
 export type DeliverableInput = Partial<
   Pick<
     Deliverable,
-    "activity_id" | "contract_id" | "title" | "description" | "criteria" | "responsible_id" | "validator_id" | "due_on"
+    | "project_id"
+    | "activity_id"
+    | "contract_id"
+    | "payment_percent"
+    | "title"
+    | "description"
+    | "criteria"
+    | "responsible_id"
+    | "validator_id"
+    | "due_on"
   >
 >;
 export type ContractInput = {
+  project_id?: string | null;
   user_id?: string | null;
   consultant_name?: string;
   title: string;
@@ -61,21 +74,62 @@ export class Deliverables {
   constructor(private svc: Services) {}
 
   private async row(id: string) {
-    const d = await this.svc.db.one<Deliverable>("SELECT * FROM deliverables WHERE id = $1", [id]);
+    const d = await this.svc.db.one<
+      Deliverable & { project_name: string | null; amount_due: number | null; currency: string | null }
+    >(
+      `SELECT d.*, d.payment_percent::float8 AS payment_percent, p.name AS project_name, c.currency, c.title AS contract_title,
+        r.name AS responsible_name, v.name AS validator_name,
+        CASE WHEN d.payment_percent IS NOT NULL AND c.amount IS NOT NULL THEN round(c.amount * d.payment_percent / 100, 2)::float8 END AS amount_due
+       FROM deliverables d LEFT JOIN consultant_contracts c ON c.id = d.contract_id LEFT JOIN projects p ON p.id = d.project_id
+       LEFT JOIN users r ON r.id = d.responsible_id LEFT JOIN users v ON v.id = d.validator_id
+       WHERE d.id = $1`,
+      [id],
+    );
     if (!d) throw notFound("Livrable introuvable");
     return d;
   }
   private async perms(actorId: string, orgId: string) {
     return this.svc.permissionsOf(actorId, orgId);
   }
-  /** Le consultant ne voit que ce qui le concerne : sa mission et ses livrables. */
+  /** Les membres d'un projet voient les pièces de ce dossier (docs/PARCOURS-METIER.md). */
+  private async seesProject(actorId: string, projectId: string | null) {
+    if (!projectId) return false;
+    return this.svc.require(actorId, projectId, "viewer", { allowArchived: true }).then(
+      () => true,
+      () => false,
+    );
+  }
+  /** Le projet doit exister dans l'institution : c'est le domicile de toute nouvelle pièce. */
+  private async assertProject(orgId: string, projectId: string | null | undefined, what: string) {
+    if (!projectId) throw badRequest(`${what} appartient à un projet : choisissez le projet concerné`);
+    if (!(await this.svc.db.one("SELECT 1 FROM projects WHERE org_id = $1 AND id = $2", [orgId, projectId])))
+      throw badRequest("Projet inconnu dans cette institution");
+  }
+  /** Le consultant ne voit que ce qui le concerne : sa mission et ses livrables ; les membres du projet voient le dossier. */
   private async readable(actorId: string, id: string) {
     const d = await this.row(id);
     if (!(await this.svc.orgRole(actorId, d.org_id))) throw forbidden("Vous n'appartenez pas à cette organisation");
     const p = await this.perms(actorId, d.org_id);
-    if (!p.includes("deliverables.view") && d.responsible_id !== actorId && d.validator_id !== actorId)
+    if (
+      !p.includes("deliverables.view") &&
+      d.responsible_id !== actorId &&
+      d.validator_id !== actorId &&
+      !(await this.seesProject(actorId, d.project_id))
+    )
       throw notFound("Livrable introuvable");
     return { d, p };
+  }
+  /** Tranche de paiement : elle exige un contrat, et les tranches d'un contrat ne dépassent jamais 100 %. */
+  private async assertPayment(contractId: string | null, percent: number | null, exceptId: string | null) {
+    if (percent === null) return;
+    if (!contractId) throw badRequest("Une tranche de paiement n'a de sens que pour un livrable de contrat");
+    const used = await this.svc.db.one<{ n: number }>(
+      "SELECT COALESCE(sum(payment_percent), 0)::float8 AS n FROM deliverables WHERE contract_id = $1 AND id IS DISTINCT FROM $2",
+      [contractId, exceptId],
+    );
+    const total = (used?.n ?? 0) + percent;
+    if (total > 100)
+      throw badRequest(`Les tranches de ce contrat dépasseraient 100 % (${Math.round(total * 100) / 100} %)`);
   }
   private async assertRefs(orgId: string, i: DeliverableInput) {
     if (i.due_on && !isRealDate(i.due_on)) throw badRequest(`Date invalide : ${i.due_on}`);
@@ -90,29 +144,48 @@ export class Deliverables {
     )
       throw badRequest("Activité du plan inconnue");
     if (i.contract_id) {
-      const c = await this.svc.db.one<{ status: string; end_on: string }>(
-        "SELECT status, end_on::text AS end_on FROM consultant_contracts WHERE org_id = $1 AND id = $2",
+      const c = await this.svc.db.one<{ status: string; end_on: string; project_id: string | null }>(
+        "SELECT status, end_on::text AS end_on, project_id FROM consultant_contracts WHERE org_id = $1 AND id = $2",
         [orgId, i.contract_id],
       );
       if (!c) throw badRequest("Mission inconnue");
+      if (i.project_id !== undefined && c.project_id !== i.project_id)
+        throw badRequest("Un livrable de contrat appartient au même projet que son contrat");
       // Un livrable de mission s'inscrit dans la durée de la mission
       if (c.status === "ended" || c.end_on < day())
         throw badRequest("Cette mission est terminée : aucun livrable ne peut plus y être rattaché");
-      if (i.due_on && i.due_on > c.end_on)
-        throw badRequest(`L'échéance dépasse la fin de la mission (${c.end_on})`);
+      if (i.due_on && i.due_on > c.end_on) throw badRequest(`L'échéance dépasse la fin de la mission (${c.end_on})`);
     }
   }
 
-  async list(actorId: string, orgId: string, f: { mine?: boolean }) {
+  async list(actorId: string, orgId: string, f: { mine?: boolean; project_id?: string }) {
     if (!(await this.svc.orgRole(actorId, orgId))) throw forbidden("Vous n'appartenez pas à cette organisation");
-    const all = (await this.perms(actorId, orgId)).includes("deliverables.view") && !f.mine;
+    let all = (await this.perms(actorId, orgId)).includes("deliverables.view") && !f.mine;
+    if (f.project_id) {
+      await this.assertProject(orgId, f.project_id, "Un livrable");
+      // Le dossier d'un projet se lit par ses membres ; les autres n'y accèdent qu'avec le droit général
+      if (!all && !f.mine) {
+        if (!(await this.seesProject(actorId, f.project_id))) throw forbidden("Vous n'avez pas accès à ce projet");
+        all = true;
+      }
+    }
     return this.svc.db.query<
-      Deliverable & { responsible_name: string | null; validator_name: string | null; contract_title: string | null }
+      Deliverable & {
+        responsible_name: string | null;
+        validator_name: string | null;
+        contract_title: string | null;
+        project_name: string | null;
+        amount_due: number | null;
+      }
     >(
-      `SELECT d.*, r.name AS responsible_name, v.name AS validator_name, c.title AS contract_title
-       FROM deliverables d LEFT JOIN users r ON r.id = d.responsible_id LEFT JOIN users v ON v.id = d.validator_id LEFT JOIN consultant_contracts c ON c.id = d.contract_id
-       WHERE d.org_id = $1 AND ($2 OR d.responsible_id = $3 OR d.validator_id = $3) ORDER BY d.status = 'valide', d.due_on NULLS LAST, d.created_at DESC`,
-      [orgId, all, actorId],
+      `SELECT d.*, d.payment_percent::float8 AS payment_percent, r.name AS responsible_name, v.name AS validator_name,
+        c.title AS contract_title, c.currency, p.name AS project_name,
+        CASE WHEN d.payment_percent IS NOT NULL AND c.amount IS NOT NULL THEN round(c.amount * d.payment_percent / 100, 2)::float8 END AS amount_due
+       FROM deliverables d LEFT JOIN users r ON r.id = d.responsible_id LEFT JOIN users v ON v.id = d.validator_id
+       LEFT JOIN consultant_contracts c ON c.id = d.contract_id LEFT JOIN projects p ON p.id = d.project_id
+       WHERE d.org_id = $1 AND ($2 OR d.responsible_id = $3 OR d.validator_id = $3) AND ($4::text IS NULL OR d.project_id = $4)
+       ORDER BY d.status = 'valide', d.due_on NULLS LAST, d.created_at DESC`,
+      [orgId, all, actorId, f.project_id ?? null],
     );
   }
 
@@ -149,15 +222,19 @@ export class Deliverables {
     i: DeliverableInput & { title: string; responsible_id: string; validator_id: string },
   ) {
     await this.svc.requirePerm(actorId, orgId, "deliverables.manage");
+    await this.assertProject(orgId, i.project_id, "Un livrable");
     await this.assertRefs(orgId, i);
+    await this.assertPayment(i.contract_id ?? null, i.payment_percent ?? null, null);
     const id = uid("liv");
     await this.svc.db.query(
-      "INSERT INTO deliverables (id, org_id, activity_id, contract_id, title, description, criteria, responsible_id, validator_id, due_on, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+      "INSERT INTO deliverables (id, org_id, project_id, activity_id, contract_id, payment_percent, title, description, criteria, responsible_id, validator_id, due_on, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
       [
         id,
         orgId,
+        i.project_id,
         i.activity_id ?? null,
         i.contract_id ?? null,
+        i.payment_percent ?? null,
         i.title.trim(),
         i.description ?? "",
         i.criteria ?? "",
@@ -177,12 +254,22 @@ export class Deliverables {
     if (d.status === "valide") throw frozen();
     const responsible = i.responsible_id === undefined ? d.responsible_id : i.responsible_id;
     const validator = i.validator_id === undefined ? d.validator_id : i.validator_id;
-    await this.assertRefs(d.org_id, { ...i, responsible_id: responsible, validator_id: validator });
+    const contractId = i.contract_id === undefined ? d.contract_id : i.contract_id;
+    const percent = i.payment_percent === undefined ? d.payment_percent : i.payment_percent;
+    // Le projet d'un livrable ne change pas : il reste rangé dans son dossier
+    await this.assertRefs(d.org_id, {
+      ...i,
+      project_id: d.project_id ?? undefined,
+      contract_id: i.contract_id,
+      responsible_id: responsible,
+      validator_id: validator,
+    });
+    await this.assertPayment(contractId, percent, d.id);
     await this.svc.db.query(
-      "UPDATE deliverables SET activity_id = $1, contract_id = $2, title = $3, description = $4, criteria = $5, responsible_id = $6, validator_id = $7, due_on = $8 WHERE id = $9",
+      "UPDATE deliverables SET activity_id = $1, contract_id = $2, title = $3, description = $4, criteria = $5, responsible_id = $6, validator_id = $7, due_on = $8, payment_percent = $10 WHERE id = $9",
       [
         i.activity_id === undefined ? d.activity_id : i.activity_id,
-        i.contract_id === undefined ? d.contract_id : i.contract_id,
+        contractId,
         i.title?.trim() ?? d.title,
         i.description ?? d.description,
         i.criteria ?? d.criteria,
@@ -190,6 +277,7 @@ export class Deliverables {
         validator,
         i.due_on === undefined ? d.due_on : i.due_on,
         id,
+        percent,
       ],
     );
     return this.get(actorId, id);
@@ -329,19 +417,43 @@ export class Deliverables {
     if (!c) throw notFound("Mission introuvable");
     return c;
   }
-  async contracts(actorId: string, orgId: string) {
+  /** Contrats : le service gestionnaire voit tout ; les membres d'un projet voient ceux de leur dossier. */
+  async contracts(actorId: string, orgId: string, f: { project_id?: string } = {}) {
     if (!(await this.svc.orgRole(actorId, orgId))) throw forbidden("Vous n'appartenez pas à cette organisation");
-    const manager = (await this.perms(actorId, orgId)).includes("consultants.manage");
-    return this.svc.db.query<Contract & { supervisor_name: string | null; open_deliverables: number; to_pay: number }>(
-      `SELECT c.*, c.amount::float8 AS amount, s.name AS supervisor_name,
+    let all = (await this.perms(actorId, orgId)).includes("consultants.manage");
+    if (f.project_id) {
+      await this.assertProject(orgId, f.project_id, "Un contrat");
+      if (!all) {
+        if (!(await this.seesProject(actorId, f.project_id))) throw forbidden("Vous n'avez pas accès à ce projet");
+        all = true;
+      }
+    }
+    return this.svc.db.query<
+      Contract & {
+        supervisor_name: string | null;
+        project_name: string | null;
+        open_deliverables: number;
+        to_pay: number;
+        scheduled_percent: number;
+        to_pay_amount: number;
+        paid_amount: number;
+      }
+    >(
+      `SELECT c.*, c.amount::float8 AS amount, s.name AS supervisor_name, p.name AS project_name,
         (SELECT count(*)::int FROM deliverables d WHERE d.contract_id = c.id AND d.status <> 'valide') AS open_deliverables,
-        (SELECT count(*)::int FROM deliverables d WHERE d.contract_id = c.id AND d.to_pay) AS to_pay
-       FROM consultant_contracts c LEFT JOIN users s ON s.id = c.supervisor_id WHERE c.org_id = $1 AND ($2 OR c.user_id = $3 OR c.supervisor_id = $3) ORDER BY c.status, c.end_on`,
-      [orgId, manager, actorId],
+        (SELECT count(*)::int FROM deliverables d WHERE d.contract_id = c.id AND d.to_pay) AS to_pay,
+        (SELECT COALESCE(sum(d.payment_percent), 0)::float8 FROM deliverables d WHERE d.contract_id = c.id) AS scheduled_percent,
+        (SELECT COALESCE(round(sum(c.amount * d.payment_percent / 100), 2), 0)::float8 FROM deliverables d WHERE d.contract_id = c.id AND d.to_pay) AS to_pay_amount,
+        (SELECT COALESCE(round(sum(c.amount * d.payment_percent / 100), 2), 0)::float8 FROM deliverables d WHERE d.contract_id = c.id AND d.paid_at IS NOT NULL) AS paid_amount
+       FROM consultant_contracts c LEFT JOIN users s ON s.id = c.supervisor_id LEFT JOIN projects p ON p.id = c.project_id
+       WHERE c.org_id = $1 AND ($2 OR c.user_id = $3 OR c.supervisor_id = $3) AND ($4::text IS NULL OR c.project_id = $4)
+       ORDER BY c.status, c.end_on`,
+      [orgId, all, actorId, f.project_id ?? null],
     );
   }
   async createContract(actorId: string, orgId: string, i: ContractInput) {
     await this.svc.requirePerm(actorId, orgId, "consultants.manage");
+    await this.assertProject(orgId, i.project_id, "Un contrat");
     for (const d of [i.start_on, i.end_on]) if (!isRealDate(d)) throw badRequest(`Date invalide : ${d}`);
     if (i.end_on < i.start_on) throw badRequest("La fin de mission précède son début");
     if (!(await this.svc.orgRole(i.supervisor_id, orgId)))
@@ -352,7 +464,7 @@ export class Deliverables {
     if (!name) throw badRequest("Indiquez le nom du consultant");
     const id = uid("mis");
     await this.svc.db.query(
-      "INSERT INTO consultant_contracts (id, org_id, user_id, consultant_name, title, terms, start_on, end_on, amount, currency, supervisor_id, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
+      "INSERT INTO consultant_contracts (id, org_id, user_id, consultant_name, title, terms, start_on, end_on, amount, currency, supervisor_id, created_by, project_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
       [
         id,
         orgId,
@@ -366,9 +478,10 @@ export class Deliverables {
         i.currency ?? "USD",
         i.supervisor_id,
         actorId,
+        i.project_id,
       ],
     );
-    await this.svc.log(actorId, "contract.created", { orgId, data: { id } });
+    await this.svc.log(actorId, "contract.created", { orgId, projectId: i.project_id, data: { id } });
     return this.contract(id);
   }
   async evaluate(actorId: string, id: string, i: { evaluation: string; rating: number }) {

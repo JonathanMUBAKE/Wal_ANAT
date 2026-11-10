@@ -221,23 +221,50 @@ export async function seedGovDemo(svc: Services) {
   await plans.updateProgress("u_karim", approved.activities[0].id, { progress: 55, budget_spent: 21000 });
   await plans.updateProgress("u_karim", approved.activities[1].id, { progress: 80, actual_value: 5 });
 
+  // Le projet est le dossier : la mission du consultant et ses livrables y sont rangés (docs/PARCOURS-METIER.md)
+  const schema = await svc.createProject(me, org, {
+    name: "Schéma national d'aménagement (exemple)",
+    description: "Dossier d'illustration : étude foncière confiée à un consultant, livrables et paiements.",
+    access: "team",
+    due_on: day(120),
+  });
+  for (const u of ["u_karim", "u_hugo"]) await svc.setMember(me, schema.id, u, "editor");
   const mission = await d.createContract(me, org, {
+    project_id: schema.id,
     user_id: "u_hugo",
     title: "Étude foncière nationale",
+    terms:
+      "Termes de référence (illustration) : diagnostic du foncier, recensement des conflits, propositions de régulation. Livrables : rapport de démarrage, rapport intermédiaire, rapport final.",
     start_on: day(-60),
     end_on: day(20),
     amount: 18000,
     supervisor_id: "u_karim",
   });
+  for (const [title, pct, offset, criteria] of [
+    ["Rapport de démarrage", 30, -30, "Méthodologie validée, calendrier détaillé"],
+    ["Rapport intermédiaire", 40, -1, "Diagnostic complet de deux provinces pilotes"],
+    ["Rapport final", 30, 18, "Propositions chiffrées, restitution faite"],
+  ] as const)
+    await d.create(me, org, {
+      project_id: schema.id,
+      title,
+      responsible_id: "u_hugo",
+      validator_id: "u_karim",
+      due_on: day(offset),
+      contract_id: mission.id,
+      payment_percent: pct,
+      criteria,
+    });
+  // Le rapport de démarrage est reçu : son procès-verbal rend la première tranche « à payer »
+  const first = (await d.list(me, org, { project_id: schema.id })).find((x) => x.title === "Rapport de démarrage");
+  if (first) {
+    await d.start("u_hugo", first.id);
+    await d.submit("u_hugo", first.id);
+    await d.review("u_karim", first.id);
+    await d.decide("u_karim", first.id, { decision: "valide" });
+  }
   await d.create(me, org, {
-    title: "Rapport de cadrage de l'étude foncière",
-    responsible_id: "u_hugo",
-    validator_id: me,
-    due_on: day(-1),
-    contract_id: mission.id,
-    criteria: "Méthodologie validée, calendrier détaillé",
-  });
-  await d.create(me, org, {
+    project_id: schema.id,
     title: "Note d'orientation stratégique",
     responsible_id: "u_karim",
     validator_id: me,

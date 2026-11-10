@@ -28,7 +28,7 @@ Quatre règles de conception, appliquées dans cet ordre :
 | **Décision de la DG** | **Pilotage › Décisions** (registre) | Numéro annuel, date, objet, texte, dossier d'origine, chargé d'exécution, échéance, exécution | Dossier d'origine (projet, activité, réunion), tableau de bord DG |
 | **Réunion et compte rendu** | Pilotage › Réunions | Ordre du jour, participants, **recommandations** | Tableau de bord (exécution), « Mes recommandations » |
 | **Plan de travail** | Suivi-évaluation › Plans | Activités planifiées, révisions | Entité concernée |
-| **Livrable, mission de consultant** | Suivi-évaluation › Livrables et missions | Validation, historique, paiement | Projet, plan |
+| **Livrable, contrat de prestataire** | **Dans le projet** (onglets Livrables et Contrats) | Validation, historique, tranche de paiement, termes de référence | Mes tâches (à produire, à valider), Portefeuille › Contrats et paiements (service financier) |
 | **Indicateur, risque** | Suivi-évaluation (écrans de saisie à venir) | Valeurs, cotation | Tableau de bord DG |
 | **Document à signer, délégation** | Secrétariat › Parapheur | Circuit, visas, délégations | Tableau de bord (« À signer ») |
 | **Courrier** | Secrétariat › Courrier | Numéro, imputation, délai | Entité imputée |
@@ -50,7 +50,7 @@ Quatre règles de conception, appliquées dans cet ordre :
 ```
 Accueil · Mes tâches · Coéquipiers IA
 PILOTAGE            Tableau de bord DG · Portefeuille · Décisions · Réunions
-SUIVI-ÉVALUATION    Plans de travail · Livrables et missions
+SUIVI-ÉVALUATION    Plans de travail
 SECRÉTARIAT         Parapheur · Courrier
 ORGANISATION        Structure · Équipes · (Administration)
 ```

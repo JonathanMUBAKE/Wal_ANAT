@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { MotionConfig } from "motion/react";
@@ -28,7 +28,6 @@ import { PilotagePage } from "./pages/Pilotage";
 import { DecisionsPage } from "./pages/Decisions";
 import { AttributionsPage } from "./pages/Attributions";
 import { PlanPage, PlansPage } from "./pages/Plans";
-import { DeliverablesPage } from "./pages/Deliverables";
 import { CourrierPage, ParapheurPage } from "./pages/Parapheur";
 import { ActivitiesPage, ActivityPage } from "./pages/Activities";
 
@@ -54,7 +53,8 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="attributions" element={<AttributionsPage />} />
                   <Route path="plans" element={<PlansPage />} />
                   <Route path="plans/:id" element={<PlanPage />} />
-                  <Route path="livrables" element={<DeliverablesPage />} />
+                  {/* Les livrables vivent dans leur projet ; l'ancienne adresse mène à « Mes tâches » */}
+                  <Route path="livrables" element={<Navigate to="/my-tasks" replace />} />
                   <Route path="parapheur" element={<ParapheurPage />} />
                   <Route path="courrier" element={<CourrierPage />} />
                   <Route path="pilotage" element={<PilotagePage />} />

@@ -60,6 +60,10 @@ export async function boot() {
       );
     return out;
   };
+  /** Un projet privé d'Alice : le dossier où se rangent contrats et livrables (docs/PARCOURS-METIER.md). */
+  const project = async () =>
+    (await api("u_alice", "POST", "/api/projects", { name: `Projet ${Math.random()}`, access: "private" })).body
+      .id as string;
   /** Hugo fonde une autre organisation et y reste seul : c'est le propriétaire « extérieur ». */
   const foreignOrg = async () => {
     const b = await ctx.app.inject({
@@ -76,6 +80,6 @@ export async function boot() {
     const unit = list[0]?.id ?? (await api("b", "POST", "/api/org/units", { name: "Racine" })).body.id;
     return { who: "b", unit: unit as string };
   };
-  return { ctx, api, org, profile, promote, units, foreignOrg, login };
+  return { ctx, api, org, profile, promote, units, foreignOrg, login, project };
 }
 export type GovCtx = Awaited<ReturnType<typeof boot>>;

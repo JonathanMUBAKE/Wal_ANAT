@@ -10,7 +10,6 @@ import {
   ChevronDown,
   CircleUser,
   ClipboardList,
-  FileCheck2,
   FileSignature,
   Gauge,
   House,
@@ -174,10 +173,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           {can("meetings.view") && link("/reunions", CalendarDays, "Réunions")}
         </NavSection>
 
-        <NavSection title="Suivi-évaluation">
-          {can("plans.view") && link("/plans", ClipboardList, "Plans de travail")}
-          {link("/livrables", FileCheck2, "Livrables et missions")}
-        </NavSection>
+        {/* Livrables et contrats vivent dans leur projet (docs/PARCOURS-METIER.md) : plus de module à part */}
+        {can("plans.view") && (
+          <NavSection title="Suivi-évaluation">{link("/plans", ClipboardList, "Plans de travail")}</NavSection>
+        )}
 
         {(can("signature.use") || can("correspondence.view")) && (
           <NavSection title="Secrétariat">

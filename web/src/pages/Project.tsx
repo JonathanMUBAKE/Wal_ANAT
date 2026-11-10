@@ -7,6 +7,8 @@ import {
   BarChart3,
   CalendarDays,
   ChartNoAxesGantt,
+  FileCheck2,
+  FileSignature,
   Check,
   ChevronDown,
   Ellipsis,
@@ -50,6 +52,7 @@ import { BoardView } from "@/views/BoardView";
 import { CalendarView } from "@/views/CalendarView";
 import { TimelineView } from "@/views/TimelineView";
 import { DashboardView } from "@/views/DashboardView";
+import { ProjectContracts, ProjectDeliverables } from "./ProjectDossier";
 import { AutomationsView } from "@/views/AutomationsView";
 
 export interface ViewProps {
@@ -64,6 +67,9 @@ const VIEWS = [
   { id: "board", label: "Tableau", icon: SquareKanban },
   { id: "calendar", label: "Calendrier", icon: CalendarDays },
   { id: "timeline", label: "Chronologie", icon: ChartNoAxesGantt },
+  // Le projet est le dossier complet : ses livrables et ses contrats y sont rangés (docs/PARCOURS-METIER.md)
+  { id: "livrables", label: "Livrables", icon: FileCheck2 },
+  { id: "contrats", label: "Contrats", icon: FileSignature },
   { id: "dashboard", label: "Tableau de bord", icon: BarChart3 },
   { id: "automations", label: "Automatisations", icon: Zap },
 ] as const;
@@ -225,6 +231,8 @@ export function ProjectPage() {
         {view === "timeline" && <TimelineView {...props} />}
         {view === "dashboard" && <DashboardView {...props} onStatusUpdate={() => setStatusOpen(true)} />}
         {view === "automations" && <AutomationsView {...props} />}
+        {view === "livrables" && <ProjectDeliverables projectId={project.id} />}
+        {view === "contrats" && <ProjectContracts projectId={project.id} />}
       </div>
       <StatusUpdateDialog projectId={project.id} open={statusOpen} onOpenChange={setStatusOpen} />
     </div>

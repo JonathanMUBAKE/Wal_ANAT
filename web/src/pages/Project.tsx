@@ -9,6 +9,7 @@ import {
   ChartNoAxesGantt,
   FileCheck2,
   FileSignature,
+  Landmark,
   Check,
   ChevronDown,
   Ellipsis,
@@ -52,7 +53,7 @@ import { BoardView } from "@/views/BoardView";
 import { CalendarView } from "@/views/CalendarView";
 import { TimelineView } from "@/views/TimelineView";
 import { DashboardView } from "@/views/DashboardView";
-import { ProjectContracts, ProjectDeliverables } from "./ProjectDossier";
+import { ProjectContracts, ProjectDeliverables, ProjectMeetings } from "./ProjectDossier";
 import { AutomationsView } from "@/views/AutomationsView";
 
 export interface ViewProps {
@@ -70,6 +71,7 @@ const VIEWS = [
   // Le projet est le dossier complet : ses livrables et ses contrats y sont rangés (docs/PARCOURS-METIER.md)
   { id: "livrables", label: "Livrables", icon: FileCheck2 },
   { id: "contrats", label: "Contrats", icon: FileSignature },
+  { id: "reunions", label: "Réunions", icon: Landmark },
   { id: "dashboard", label: "Tableau de bord", icon: BarChart3 },
   { id: "automations", label: "Automatisations", icon: Zap },
 ] as const;
@@ -233,6 +235,7 @@ export function ProjectPage() {
         {view === "automations" && <AutomationsView {...props} />}
         {view === "livrables" && <ProjectDeliverables projectId={project.id} />}
         {view === "contrats" && <ProjectContracts projectId={project.id} />}
+        {view === "reunions" && <ProjectMeetings projectId={project.id} />}
       </div>
       <StatusUpdateDialog projectId={project.id} open={statusOpen} onOpenChange={setStatusOpen} />
     </div>

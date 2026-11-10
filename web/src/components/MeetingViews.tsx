@@ -62,20 +62,30 @@ import type { MeetingDetail, MeetingRow } from "@/pages/Meetings";
 export type Stage = "a_venir" | "a_etablir" | "a_valider" | "valide" | "annulee";
 export const STAGES: Stage[] = ["a_venir", "a_etablir", "a_valider", "valide", "annulee"];
 export const STAGE: Record<Stage, { label: string; tone: BadgeTone; hue: string; hint: string }> = {
-  a_venir: { label: "À venir", tone: "primary", hue: "var(--primary)", hint: "Réunion planifiée dont la date n'est pas passée" },
+  a_venir: {
+    label: "À venir",
+    tone: "primary",
+    hue: "var(--primary)",
+    hint: "Réunion planifiée dont la date n'est pas passée",
+  },
   a_etablir: {
     label: "Compte rendu à établir",
     tone: "danger",
     hue: "var(--danger)",
-    hint: "Réunion passée sans compte rendu saisi",
+    hint: "Séance passée : le rédacteur établit le compte rendu puis le soumet",
   },
   a_valider: {
-    label: "À valider",
+    label: "Soumis à validation",
     tone: "warning",
     hue: "var(--warning)",
-    hint: "Compte rendu rédigé, en attente de validation par une autre personne que le rédacteur",
+    hint: "Compte rendu soumis par le rédacteur, en attente de la présidence de séance",
   },
-  valide: { label: "Validé", tone: "success", hue: "var(--success)", hint: "Compte rendu figé, exportable au modèle officiel" },
+  valide: {
+    label: "Validé",
+    tone: "success",
+    hue: "var(--success)",
+    hint: "Compte rendu figé, exportable au modèle officiel",
+  },
   annulee: { label: "Annulée", tone: "neutral", hue: "var(--faint)", hint: "Réunion qui n'a pas eu lieu" },
 };
 const STAGE_ICON: Record<Stage, typeof CircleDot> = {
@@ -91,9 +101,9 @@ export const stageOf = (m: MeetingRow, t = today()): Stage =>
     ? "annulee"
     : m.status === "validated"
       ? "valide"
-      : m.status === "held"
+      : m.status === "submitted"
         ? "a_valider"
-        : m.meeting_date < t
+        : m.status === "held" || m.meeting_date < t
           ? "a_etablir"
           : "a_venir";
 const when = (m: MeetingRow) => `${m.meeting_date}${m.start_time ?? ""}`;
@@ -205,65 +215,65 @@ export function MeetingsBrowser({
       {!meetingsView ? (
         renderActions(view === "mine")
       ) : (
-      <div className="flex flex-col gap-4 lg:flex-row">
-        {panel === "1" && (
-          <FilterPanel active={active} onClear={clear}>
-            <FilterGroup title="Étape">
-              {STAGES.map((s) => (
-                <CheckOption
-                  key={s}
-                  checked={stages.has(s)}
-                  onChange={() => toggleStage(s)}
-                  label={STAGE[s].label}
-                  color={STAGE[s].hue}
-                  count={counts[s]}
-                />
-              ))}
-            </FilterGroup>
-            <FilterGroup title="Période">
-              {(
-                [
-                  ["toutes", "Toutes les dates"],
-                  ["mois", "Ce mois-ci"],
-                  ["futur", "À venir"],
-                  ["passe", "Passées"],
-                ] as [Period, string][]
-              ).map(([id, l]) => (
-                <CheckOption key={id} type="radio" checked={period === id} onChange={() => setPeriod(id)} label={l} />
-              ))}
-            </FilterGroup>
-            <FilterGroup title="Rédaction">
-              <CheckOption
-                checked={confOnly}
-                onChange={() => setConfOnly(!confOnly)}
-                label="Confidentielles uniquement"
-              />
-              <select
-                aria-label="Rédacteur"
-                value={writer}
-                onChange={(e) => setWriter(e.target.value)}
-                className="mt-1 h-9 w-full rounded-xl border border-line-strong bg-panel px-3 text-[13px] outline-none"
-              >
-                <option value="">Tous les rédacteurs</option>
-                {writers.map((w) => (
-                  <option key={w}>{w}</option>
+        <div className="flex flex-col gap-4 lg:flex-row">
+          {panel === "1" && (
+            <FilterPanel active={active} onClear={clear}>
+              <FilterGroup title="Étape">
+                {STAGES.map((s) => (
+                  <CheckOption
+                    key={s}
+                    checked={stages.has(s)}
+                    onChange={() => toggleStage(s)}
+                    label={STAGE[s].label}
+                    color={STAGE[s].hue}
+                    count={counts[s]}
+                  />
                 ))}
-              </select>
-            </FilterGroup>
-          </FilterPanel>
-        )}
-        <div className="min-w-0 flex-1">
-          {isLoading ? (
-            <LoadingRows />
-          ) : view === "liste" ? (
-            <ListView rows={filtered} filtered={active > 0 || !!q} onClear={clear} />
-          ) : view === "tableau" ? (
-            <BoardView rows={filtered} />
-          ) : (
-            <CalendarView rows={filtered} stages={stages} counts={counts} toggleStage={toggleStage} />
+              </FilterGroup>
+              <FilterGroup title="Période">
+                {(
+                  [
+                    ["toutes", "Toutes les dates"],
+                    ["mois", "Ce mois-ci"],
+                    ["futur", "À venir"],
+                    ["passe", "Passées"],
+                  ] as [Period, string][]
+                ).map(([id, l]) => (
+                  <CheckOption key={id} type="radio" checked={period === id} onChange={() => setPeriod(id)} label={l} />
+                ))}
+              </FilterGroup>
+              <FilterGroup title="Rédaction">
+                <CheckOption
+                  checked={confOnly}
+                  onChange={() => setConfOnly(!confOnly)}
+                  label="Confidentielles uniquement"
+                />
+                <select
+                  aria-label="Rédacteur"
+                  value={writer}
+                  onChange={(e) => setWriter(e.target.value)}
+                  className="mt-1 h-9 w-full rounded-xl border border-line-strong bg-panel px-3 text-[13px] outline-none"
+                >
+                  <option value="">Tous les rédacteurs</option>
+                  {writers.map((w) => (
+                    <option key={w}>{w}</option>
+                  ))}
+                </select>
+              </FilterGroup>
+            </FilterPanel>
           )}
+          <div className="min-w-0 flex-1">
+            {isLoading ? (
+              <LoadingRows />
+            ) : view === "liste" ? (
+              <ListView rows={filtered} filtered={active > 0 || !!q} onClear={clear} />
+            ) : view === "tableau" ? (
+              <BoardView rows={filtered} />
+            ) : (
+              <CalendarView rows={filtered} stages={stages} counts={counts} toggleStage={toggleStage} />
+            )}
+          </div>
         </div>
-      </div>
       )}
     </div>
   );
@@ -378,7 +388,10 @@ function ListView({ rows, filtered, onClear }: { rows: MeetingRow[]; filtered: b
         hue: STAGE[s].hue,
         Icon: STAGE_ICON[s],
         hint: STAGE[s].hint,
-        rows: s === "a_venir" ? [...sorted].reverse().filter((m) => stageOf(m) === s) : sorted.filter((m) => stageOf(m) === s),
+        rows:
+          s === "a_venir"
+            ? [...sorted].reverse().filter((m) => stageOf(m) === s)
+            : sorted.filter((m) => stageOf(m) === s),
       }))}
       columns={columns}
       rowKey={(m) => m.id}
@@ -419,7 +432,18 @@ function ListView({ rows, filtered, onClear }: { rows: MeetingRow[]; filtered: b
 
 /** Tableur pour Excel : point-virgule, accents conservés. Données de la sélection seulement. */
 function exportCsv(rows: MeetingRow[]) {
-  const head = ["Numéro", "Réunion", "Date", "Début", "Fin", "Lieu", "Rédacteur", "Étape", "Recommandations ouvertes", "Recommandations"];
+  const head = [
+    "Numéro",
+    "Réunion",
+    "Date",
+    "Début",
+    "Fin",
+    "Lieu",
+    "Rédacteur",
+    "Étape",
+    "Recommandations ouvertes",
+    "Recommandations",
+  ];
   const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const lines = rows.map((m) =>
     [
@@ -468,7 +492,9 @@ function BoardView({ rows }: { rows: MeetingRow[] }) {
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5 text-[13.5px] font-semibold leading-snug">
                         <span className="line-clamp-2">{m.meeting_type}</span>
-                        {m.confidential && <Lock aria-label="Confidentielle" className="size-3 shrink-0 text-warning" />}
+                        {m.confidential && (
+                          <Lock aria-label="Confidentielle" className="size-3 shrink-0 text-warning" />
+                        )}
                       </span>
                       <Seal>{m.reference}</Seal>
                     </span>
@@ -546,7 +572,9 @@ function CalendarView({
     muted: m.status === "cancelled",
   }));
   const week = weekOf(cursor);
-  const weekendBusy = events.some((e) => e.date === format(week[5], "yyyy-MM-dd") || e.date === format(week[6], "yyyy-MM-dd"));
+  const weekendBusy = events.some(
+    (e) => e.date === format(week[5], "yyyy-MM-dd") || e.date === format(week[6], "yyyy-MM-dd"),
+  );
   const days = mode === "jour" ? [cursor] : weekendBusy ? week : week.slice(0, 5);
   const step = (n: number) =>
     setCursor(mode === "mois" ? addMonths(cursor, n) : addDays(cursor, mode === "jour" ? n : 7 * n));
@@ -608,7 +636,9 @@ function CalendarView({
               </div>
             </>
           ) : (
-            <p className="mt-2 text-[13px] text-white/75">Aucune réunion planifiée. Créez-en une avec « Nouvelle réunion ».</p>
+            <p className="mt-2 text-[13px] text-white/75">
+              Aucune réunion planifiée. Créez-en une avec « Nouvelle réunion ».
+            </p>
           )}
         </div>
         <div className="rounded-2xl border border-line bg-panel p-3 shadow-sm">
@@ -686,7 +716,10 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
       </aside>
     );
   const st = stageOf(m);
-  const open = m.agenda.reduce((n, i) => n + i.actions.filter((a) => !["realise", "annule"].includes(a.status)).length, 0);
+  const open = m.agenda.reduce(
+    (n, i) => n + i.actions.filter((a) => !["realise", "annule"].includes(a.status)).length,
+    0,
+  );
   const total = m.agenda.reduce((n, i) => n + i.actions.length, 0);
   return (
     <aside className="rise-in flex flex-col self-start rounded-2xl border border-line bg-panel shadow-sm lg:sticky lg:top-4">
@@ -731,9 +764,12 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
                   <Initials name={a.name || "?"} />
                   <span className="min-w-0 flex-1 truncate">{a.name}</span>
                   <span className="text-[11.5px] text-faint">
-                    {({ present: "Présent", represente: "Représenté", excuse: "Excusé", absent: "Absent" } as Record<string, string>)[
-                      a.presence
-                    ] ?? ""}
+                    {(
+                      { present: "Présent", represente: "Représenté", excuse: "Excusé", absent: "Absent" } as Record<
+                        string,
+                        string
+                      >
+                    )[a.presence] ?? ""}
                   </span>
                 </li>
               ))}
@@ -762,7 +798,8 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
         </div>
         {total > 0 && (
           <p className="rounded-[14px] bg-bg px-3 py-2 text-[12.5px] text-muted">
-            <b className="font-semibold text-fg">{open}</b> recommandation{open > 1 ? "s" : ""} ouverte{open > 1 ? "s" : ""} sur {total}
+            <b className="font-semibold text-fg">{open}</b> recommandation{open > 1 ? "s" : ""} ouverte
+            {open > 1 ? "s" : ""} sur {total}
           </p>
         )}
       </div>

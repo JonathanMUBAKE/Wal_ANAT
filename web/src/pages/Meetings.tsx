@@ -1,13 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CalendarDays,
+  CornerUpLeft,
   Download,
+  FolderOpen,
+  Megaphone,
+  Paperclip,
   Plus,
   RotateCcw,
   Save,
+  Send,
   ShieldCheck,
   Trash2,
 } from "lucide-react";
@@ -19,6 +24,7 @@ import {
   Input,
   LoadingRows,
   PageHeader,
+  PeopleSelect,
   Section,
   Select,
   Stamp,
@@ -33,7 +39,7 @@ import {
 } from "@/components/gov";
 import { MeetingsBrowser } from "@/components/MeetingViews";
 import { api } from "@/lib/api";
-import { useCan, useMe, useUsers } from "@/lib/hooks";
+import { useCan, useMe, useUnits, useUsers } from "@/lib/hooks";
 
 type ActionStatus = "a_faire" | "en_cours" | "soumis" | "realise" | "reporte" | "annule";
 interface MeetingAction {
@@ -56,11 +62,23 @@ interface AgendaItem {
   domain_id?: string | null;
   actions: MeetingAction[];
 }
+type Response = "pending" | "accepted" | "declined" | "delegated";
 interface Attendee {
+  id?: string;
   user_id: string | null;
   name: string;
   function_label: string;
   presence: string;
+  invited?: boolean;
+  response?: Response | null;
+  delegate_name?: string;
+}
+interface MeetingDocument {
+  id: string;
+  filename: string;
+  mime: string;
+  size: number;
+  uploader_name: string | null;
 }
 export interface MeetingRow {
   end_time?: string | null;
@@ -70,12 +88,15 @@ export interface MeetingRow {
   meeting_type: string;
   meeting_date: string;
   location: string;
-  status: "planned" | "held" | "validated" | "cancelled";
+  status: "planned" | "held" | "submitted" | "validated" | "cancelled";
   confidential: boolean;
   open_actions: number;
   action_count: number;
   writer_name: string;
   start_time: string | null;
+  chair_name?: string | null;
+  series_id?: string | null;
+  my_response?: Response | null;
 }
 export interface MeetingDetail extends MeetingRow {
   end_time: string | null;
@@ -89,18 +110,33 @@ export interface MeetingDetail extends MeetingRow {
   next_time: string | null;
   next_location: string;
   next_topics: string;
+  chair_id: string | null;
+  video_link: string;
+  convened_at: string | null;
+  submitted_at: string | null;
+  return_comment: string;
+  dossier: { kind: "project" | "activity"; id: string; label: string; href: string } | null;
+  documents: MeetingDocument[];
   agenda: AgendaItem[];
   attendees: Attendee[];
   previous: { id: string; reference: string; meeting_date: string } | null;
   carried: MeetingAction[];
-  can: { edit: boolean; validate: boolean };
+  can: { edit: boolean; validate: boolean; convene: boolean; submit: boolean; decide: boolean; respond: boolean };
 }
 
 const MEETING: Record<MeetingRow["status"], { label: string; tone: Tone }> = {
   planned: { label: "Planifiée", tone: "neutral" },
   held: { label: "Tenue", tone: "info" },
+  submitted: { label: "Soumis à validation", tone: "warning" },
   validated: { label: "Validé", tone: "success" },
   cancelled: { label: "Annulée", tone: "danger" },
+};
+/** Réponse d'un convoqué à la convocation. */
+const RESPONSE: Record<Response, { label: string; tone: Tone }> = {
+  pending: { label: "En attente de réponse", tone: "neutral" },
+  accepted: { label: "Sera présent", tone: "success" },
+  declined: { label: "Excusé", tone: "warning" },
+  delegated: { label: "Représenté", tone: "info" },
 };
 const ACTION: Record<ActionStatus, { label: string; tone: Tone }> = {
   a_faire: { label: "À faire", tone: "neutral" },
@@ -139,9 +175,13 @@ export function MeetingsPage() {
   );
 }
 
-function NewMeeting({ onClose }: { onClose: () => void }) {
+/** Convoqué choisi à la programmation : une personne, une entité entière, ou une personne extérieure nommée. */
+type InviteeChip = { user_id?: string; unit_id?: string; name?: string; label: string };
+
+export function NewMeeting({ projectId, onClose }: { projectId?: string; onClose: () => void }) {
   const { data: me } = useMe();
   const { data: users } = useUsers();
+  const { data: units } = useUnits();
   const nav = useNavigate();
   const qc = useQueryClient();
   const [f, setF] = useState({
@@ -150,38 +190,60 @@ function NewMeeting({ onClose }: { onClose: () => void }) {
     start_time: "09:00",
     end_time: "10:00",
     location: "",
+    video_link: "",
     convened_by: "",
     facilitator: "",
     timekeeper: "",
     writer_id: me?.id ?? "",
+    chair_id: "",
     confidential: false,
   });
+  const [invitees, setInvitees] = useState<InviteeChip[]>([]);
+  const [external, setExternal] = useState("");
+  const [every, setEvery] = useState<"" | "week" | "2weeks" | "month">("");
+  const [count, setCount] = useState(4);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
+  const addChip = (c: InviteeChip) =>
+    setInvitees((list) => (list.some((x) => x.label === c.label) ? list : [...list, c]));
   const create = useMutation({
-    mutationFn: () => api.post<MeetingDetail>("/api/meetings", f),
+    mutationFn: () =>
+      api.post<MeetingDetail>("/api/meetings", {
+        ...f,
+        chair_id: f.chair_id || null,
+        project_id: projectId ?? null,
+        invitees: invitees.map(({ label: _l, ...rest }) => rest),
+        repeat: every ? { every, count } : null,
+      }),
     onSuccess: (m) => {
       qc.invalidateQueries({ queryKey: ["meetings"] });
       nav(`/reunions/${m.id}`);
     },
     onError: fail,
   });
+  const people = users?.filter((u) => !u.is_ai) ?? [];
   return (
     <Dialog
       open
       onOpenChange={onClose}
-      title="Nouvelle réunion"
-      description="Le numéro officiel est attribué automatiquement. Les réunions de même type se suivent et reprennent la synthèse précédente."
-      width={620}
+      title="Programmer une réunion"
+      description={
+        projectId
+          ? "La réunion sera rattachée à ce projet. Le numéro officiel est attribué automatiquement."
+          : "Le numéro officiel est attribué automatiquement. Les réunions de même type se suivent et reprennent la synthèse précédente."
+      }
+      width={640}
       footer={
         <>
           <Button onClick={onClose}>Annuler</Button>
           <Button
             variant="primary"
             loading={create.isPending}
-            disabled={!f.meeting_type.trim() || !f.meeting_date || !f.writer_id}
+            disabled={
+              !f.meeting_type.trim() || !f.meeting_date || !f.writer_id || (!!every && (count < 2 || count > 12))
+            }
             onClick={() => create.mutate()}
           >
-            Créer la réunion
+            {every ? `Programmer ${count} séances` : "Programmer la réunion"}
           </Button>
         </>
       }
@@ -198,41 +260,134 @@ function NewMeeting({ onClose }: { onClose: () => void }) {
         <Field label="Date" required>
           {(a) => <Input {...a} type="date" value={f.meeting_date} onChange={set("meeting_date")} />}
         </Field>
-        <Field label="Lieu">{(a) => <Input {...a} value={f.location} onChange={set("location")} />}</Field>
+        <Field label="Récurrence">
+          {(a) => (
+            <span className="flex gap-2">
+              <Select {...a} value={every} onChange={(e) => setEvery(e.target.value as typeof every)}>
+                <option value="">Séance unique</option>
+                <option value="week">Chaque semaine</option>
+                <option value="2weeks">Toutes les 2 semaines</option>
+                <option value="month">Chaque mois</option>
+              </Select>
+              {every && (
+                <Input
+                  aria-label="Nombre de séances"
+                  type="number"
+                  min={2}
+                  max={12}
+                  className="w-20"
+                  value={count}
+                  onChange={(e) => setCount(Number(e.target.value))}
+                />
+              )}
+            </span>
+          )}
+        </Field>
         <Field label="Heure de début">
           {(a) => <Input {...a} type="time" value={f.start_time} onChange={set("start_time")} />}
         </Field>
         <Field label="Heure de fin">
           {(a) => <Input {...a} type="time" value={f.end_time} onChange={set("end_time")} />}
         </Field>
-        <Field label="Convoquée par">
-          {(a) => <Input {...a} value={f.convened_by} onChange={set("convened_by")} />}
+        <Field label="Lieu">{(a) => <Input {...a} value={f.location} onChange={set("location")} />}</Field>
+        <Field label="Lien de visioconférence">
+          {(a) => <Input {...a} placeholder="https://…" value={f.video_link} onChange={set("video_link")} />}
         </Field>
-        <Field label="Animateur">{(a) => <Input {...a} value={f.facilitator} onChange={set("facilitator")} />}</Field>
-        <Field label="Maître du temps">
-          {(a) => <Input {...a} value={f.timekeeper} onChange={set("timekeeper")} />}
+        <Field label="Présidence de séance" hint="C'est elle qui validera le compte rendu.">
+          {(a) => (
+            <PeopleSelect
+              {...a}
+              people={users}
+              placeholder="Non désignée"
+              value={f.chair_id}
+              onChange={(v) => setF({ ...f, chair_id: v })}
+            />
+          )}
         </Field>
         <Field label="Rédacteur" required>
           {(a) => (
-            <Select {...a} value={f.writer_id} onChange={set("writer_id")}>
-              <option value="">Choisir…</option>
-              {users
-                ?.filter((u) => !u.is_ai)
-                .map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-            </Select>
+            <PeopleSelect {...a} people={users} value={f.writer_id} onChange={(v) => setF({ ...f, writer_id: v })} />
           )}
         </Field>
+        <Field label="Convoquée par" hint="L'autorité affichée sur le compte rendu officiel.">
+          {(a) => <Input {...a} value={f.convened_by} onChange={set("convened_by")} />}
+        </Field>
+        <Field label="Animateur">{(a) => <Input {...a} value={f.facilitator} onChange={set("facilitator")} />}</Field>
+        <fieldset className="sm:col-span-2">
+          <legend className="mb-1.5 text-[12.5px] font-medium text-muted">Convoqués</legend>
+          {!!invitees.length && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {invitees.map((c) => (
+                <span
+                  key={c.label}
+                  className="inline-flex items-center gap-1 rounded-full bg-hover px-2.5 py-1 text-[12.5px]"
+                >
+                  {c.label}
+                  <button
+                    type="button"
+                    aria-label={`Retirer ${c.label}`}
+                    className="text-faint hover:text-fg"
+                    onClick={() => setInvitees(invitees.filter((x) => x.label !== c.label))}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="grid gap-2 sm:grid-cols-3">
+            <Select
+              aria-label="Convoquer une personne"
+              value=""
+              onChange={(e) => {
+                const u = people.find((x) => x.id === e.target.value);
+                if (u) addChip({ user_id: u.id, label: u.name });
+              }}
+            >
+              <option value="">Personne…</option>
+              {people.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </Select>
+            <Select
+              aria-label="Convoquer une entité entière"
+              value=""
+              onChange={(e) => {
+                const u = units?.find((x) => x.id === e.target.value);
+                if (u) addChip({ unit_id: u.id, label: `${u.name} (entité)` });
+              }}
+            >
+              <option value="">Entité entière…</option>
+              {units?.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </Select>
+            <Input
+              aria-label="Personne extérieure"
+              placeholder="Personne extérieure ⏎"
+              value={external}
+              onChange={(e) => setExternal(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && external.trim()) {
+                  e.preventDefault();
+                  addChip({ name: external.trim(), label: external.trim() });
+                  setExternal("");
+                }
+              }}
+            />
+          </div>
+        </fieldset>
         <label className="flex items-center gap-2 text-[13px] sm:col-span-2">
           <input
             type="checkbox"
             checked={f.confidential}
             onChange={(e) => setF({ ...f, confidential: e.target.checked })}
           />
-          Réunion confidentielle : visible des seuls participants, du rédacteur et des gestionnaires
+          Réunion confidentielle : visible des seuls participants, de la présidence, du rédacteur et des gestionnaires
         </label>
       </div>
     </Dialog>
@@ -374,7 +529,9 @@ export function MeetingPage() {
   const { id } = useParams();
   const qc = useQueryClient();
   const nav = useNavigate();
+  const { data: me } = useMe();
   const { data: users } = useUsers();
+  const { data: units } = useUnits();
   const {
     data: m,
     isLoading,
@@ -403,6 +560,8 @@ export function MeetingPage() {
       const d = draft!;
       await api.patch(`/api/meetings/${id}`, {
         location: d.location,
+        chair_id: d.chair_id || null,
+        video_link: d.video_link,
         convened_by: d.convened_by,
         facilitator: d.facilitator,
         timekeeper: d.timekeeper,
@@ -466,6 +625,61 @@ export function MeetingPage() {
     },
     onError: fail,
   });
+  const refresh = (r: MeetingDetail) => {
+    qc.setQueryData(["meeting", id], r);
+    qc.invalidateQueries({ queryKey: ["meetings"] });
+  };
+  // Circuit officiel : le rédacteur soumet, la présidence retourne ou valide (docs/PARCOURS-METIER.md, lot P2)
+  const submit = useMutation({
+    mutationFn: () => api.post<MeetingDetail>(`/api/meetings/${id}/submit`),
+    onSuccess: (r) => {
+      refresh(r);
+      toast.success(r.chair_name ? `Soumis à ${r.chair_name} pour validation` : "Soumis pour validation");
+    },
+    onError: fail,
+  });
+  const giveBack = useMutation({
+    mutationFn: (comment: string) => api.post<MeetingDetail>(`/api/meetings/${id}/return`, { comment }),
+    onSuccess: (r) => {
+      refresh(r);
+      setReturning(false);
+      toast.success("Compte rendu retourné au rédacteur");
+    },
+    onError: fail,
+  });
+  const convene = useMutation({
+    mutationFn: (short_notice: boolean) => api.post<MeetingDetail>(`/api/meetings/${id}/convene`, { short_notice }),
+    onSuccess: (r) => {
+      refresh(r);
+      setUrgent(false);
+      toast.success("Convocation envoyée aux convoqués");
+    },
+    onError: (e) => {
+      if ((e as Error).message.includes("48")) setUrgent(true);
+      else fail(e);
+    },
+  });
+  const respond = useMutation({
+    mutationFn: (v: { response: "accepted" | "declined" | "delegated"; delegate_name?: string }) =>
+      api.post<MeetingDetail>(`/api/meetings/${id}/respond`, v),
+    onSuccess: (r) => {
+      refresh(r);
+      setDelegating(false);
+      toast.success("Réponse enregistrée");
+    },
+    onError: fail,
+  });
+  const setInvitees = useMutation({
+    mutationFn: (invitees: { user_id?: string | null; name?: string; unit_id?: string }[]) =>
+      api.put<MeetingDetail>(`/api/meetings/${id}/invitees`, { invitees }),
+    onSuccess: refresh,
+    onError: fail,
+  });
+  const [returning, setReturning] = useState(false);
+  const [urgent, setUrgent] = useState(false);
+  const [delegating, setDelegating] = useState(false);
+  const [returnText, setReturnText] = useState("");
+  const [delegateName, setDelegateName] = useState("");
   if (isLoading || (!draft && !error)) return <LoadingRows rows={8} />;
   if (error || !draft)
     return (
@@ -475,6 +689,14 @@ export function MeetingPage() {
     );
   const ro = !draft.can.edit;
   const people = users?.filter((u) => !u.is_ai) ?? [];
+  const myInvite = draft.attendees.find((a) => a.invited && a.user_id === me?.id);
+  const invited = draft.attendees.filter((a) => a.invited);
+  /** La liste des convoqués se modifie d'un geste : on renvoie la liste entière, le serveur garde les réponses. */
+  const sendInvitees = (list: Attendee[], extra?: { user_id?: string; name?: string; unit_id?: string }) =>
+    setInvitees.mutate([
+      ...list.map((a) => (a.user_id ? { user_id: a.user_id } : { name: a.name })),
+      ...(extra ? [extra] : []),
+    ]);
   const setItem = (i: number, p: Partial<AgendaItem>) =>
     patch({ agenda: draft.agenda.map((x, n) => (n === i ? { ...x, ...p } : x)) });
   const setAction = (i: number, j: number, p: Partial<MeetingAction>) =>
@@ -512,11 +734,26 @@ export function MeetingPage() {
                 Rouvrir
               </Button>
             )}
-            {draft.status !== "validated" && draft.can.validate && (
+            {draft.can.submit && (
               <Button
-                icon={<ShieldCheck className="size-4" />}
+                icon={<Send className="size-4" />}
                 disabled={dirty}
                 title={dirty ? "Enregistrez d'abord vos modifications" : undefined}
+                loading={submit.isPending}
+                onClick={() => submit.mutate()}
+              >
+                Soumettre pour validation
+              </Button>
+            )}
+            {draft.can.decide && (
+              <Button icon={<CornerUpLeft className="size-4" />} onClick={() => setReturning(true)}>
+                Retourner
+              </Button>
+            )}
+            {draft.can.decide && (
+              <Button
+                variant="primary"
+                icon={<ShieldCheck className="size-4" />}
                 loading={validate.isPending}
                 onClick={() => validate.mutate()}
               >
@@ -540,6 +777,41 @@ export function MeetingPage() {
         }
       />
       <div className="mx-auto max-w-[1040px] space-y-4 p-4 sm:px-8 sm:py-6">
+        {draft.return_comment && draft.status !== "validated" && draft.status !== "submitted" && (
+          <p className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft px-4 py-3 text-[13px]">
+            <CornerUpLeft className="mt-0.5 size-4 shrink-0 text-warning" />
+            <span>
+              <b className="font-semibold">Retourné par la présidence :</b> {draft.return_comment}
+            </span>
+          </p>
+        )}
+        {draft.can.respond && (
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-brand-soft/60 px-4 py-3">
+            <p className="min-w-0 flex-1 text-[13.5px]">
+              <b className="font-semibold">Vous êtes convoqué·e à cette séance.</b>{" "}
+              {myInvite?.response && myInvite.response !== "pending" ? (
+                <span className="text-muted">
+                  Votre réponse : {RESPONSE[myInvite.response].label.toLowerCase()}
+                  {myInvite.response === "delegated" && myInvite.delegate_name ? ` (${myInvite.delegate_name})` : ""}.
+                  Vous pouvez la changer jusqu'au jour de la séance.
+                </span>
+              ) : (
+                <span className="text-muted">Indiquez votre réponse au secrétariat.</span>
+              )}
+            </p>
+            <span className="flex flex-wrap gap-2">
+              <Button size="sm" loading={respond.isPending} onClick={() => respond.mutate({ response: "accepted" })}>
+                Présent
+              </Button>
+              <Button size="sm" loading={respond.isPending} onClick={() => respond.mutate({ response: "declined" })}>
+                Excusé
+              </Button>
+              <Button size="sm" onClick={() => setDelegating(true)}>
+                Représenté par…
+              </Button>
+            </span>
+          </div>
+        )}
         <Section title="Informations générales">
           <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Date">{(a) => <Input {...a} disabled value={frDate(draft.meeting_date)} />}</Field>
@@ -608,6 +880,139 @@ export function MeetingPage() {
             </Field>
           </div>
         </Section>
+
+        <Section
+          title="Convocation"
+          aside={
+            draft.can.convene &&
+            !!invited.length && (
+              <Button
+                size="sm"
+                icon={<Megaphone className="size-3.5" />}
+                loading={convene.isPending}
+                onClick={() => convene.mutate(false)}
+              >
+                {draft.convened_at ? "Nouvelle convocation" : "Envoyer la convocation"}
+              </Button>
+            )
+          }
+        >
+          <div className="space-y-3 p-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Présidence de séance" hint="C'est elle qui valide le compte rendu.">
+                {(a) => (
+                  <PeopleSelect
+                    {...a}
+                    disabled={ro}
+                    people={users}
+                    placeholder="Non désignée"
+                    value={draft.chair_id ?? ""}
+                    onChange={(v) => patch({ chair_id: v || null })}
+                  />
+                )}
+              </Field>
+              <Field label="Lien de visioconférence">
+                {(a) => (
+                  <Input
+                    {...a}
+                    disabled={ro}
+                    placeholder="https://…"
+                    value={draft.video_link}
+                    onChange={(e) => patch({ video_link: e.target.value })}
+                  />
+                )}
+              </Field>
+            </div>
+            {(draft.dossier || draft.video_link || draft.convened_at) && (
+              <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted">
+                {draft.dossier && (
+                  <Link to={draft.dossier.href} className="inline-flex items-center gap-1 text-primary hover:underline">
+                    <FolderOpen className="size-3.5" />
+                    Dossier : {draft.dossier.label}
+                  </Link>
+                )}
+                {draft.video_link && (
+                  <a href={draft.video_link} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                    Rejoindre la visioconférence
+                  </a>
+                )}
+                {draft.convened_at && (
+                  <span>
+                    Convocation envoyée le {frDate(draft.convened_at.slice(0, 10))} ; une nouvelle convocation remet les
+                    réponses à zéro.
+                  </span>
+                )}
+              </p>
+            )}
+            <div>
+              <p className="mb-1.5 text-[12.5px] font-semibold">Convoqués · {invited.length}</p>
+              {!invited.length && (
+                <p className="text-[13px] text-muted">
+                  Personne n'est convoqué : ajoutez des personnes ou une entité entière, puis envoyez la convocation.
+                </p>
+              )}
+              <ul className="space-y-1">
+                {invited.map((a) => (
+                  <li key={a.id ?? a.name} className="flex flex-wrap items-center gap-2 text-[13px]">
+                    <span className="min-w-0 flex-1 truncate">
+                      {a.name}
+                      {a.function_label && <span className="text-muted"> · {a.function_label}</span>}
+                    </span>
+                    {draft.convened_at && a.response && (
+                      <Status
+                        label={
+                          a.response === "delegated" && a.delegate_name
+                            ? `Représenté par ${a.delegate_name}`
+                            : RESPONSE[a.response].label
+                        }
+                        tone={RESPONSE[a.response].tone}
+                      />
+                    )}
+                    {!ro && (
+                      <IconButton
+                        label={`Retirer ${a.name} des convoqués`}
+                        size="sm"
+                        onClick={() => sendInvitees(invited.filter((x) => x !== a))}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </IconButton>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {!ro && (
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <Select
+                    aria-label="Convoquer une personne"
+                    value=""
+                    onChange={(e) => e.target.value && sendInvitees(invited, { user_id: e.target.value })}
+                  >
+                    <option value="">Convoquer une personne…</option>
+                    {people.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <Select
+                    aria-label="Convoquer une entité entière"
+                    value=""
+                    onChange={(e) => e.target.value && sendInvitees(invited, { unit_id: e.target.value })}
+                  >
+                    <option value="">Convoquer une entité entière…</option>
+                    {units?.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+            </div>
+          </div>
+        </Section>
+
+        <MeetingDocuments draft={draft} readOnly={ro} onChanged={refresh} />
 
         <Section
           title="Participants"
@@ -953,6 +1358,62 @@ export function MeetingPage() {
           </div>
         </Section>
       </div>
+      <Dialog
+        open={returning}
+        onOpenChange={setReturning}
+        title="Retourner le compte rendu"
+        description="Le rédacteur sera prévenu, corrigera puis soumettra à nouveau."
+        width={480}
+        footer={
+          <>
+            <Button onClick={() => setReturning(false)}>Annuler</Button>
+            <Button
+              variant="primary"
+              disabled={!returnText.trim()}
+              loading={giveBack.isPending}
+              onClick={() => giveBack.mutate(returnText.trim())}
+            >
+              Retourner au rédacteur
+            </Button>
+          </>
+        }
+      >
+        <Field label="Ce qui doit être revu" required>
+          {(a) => <Textarea {...a} autoFocus value={returnText} onChange={(e) => setReturnText(e.target.value)} />}
+        </Field>
+      </Dialog>
+      <ConfirmDialog
+        open={urgent}
+        onOpenChange={setUrgent}
+        title="Convocation à moins de 48 heures"
+        description="La séance est dans moins de 48 heures : confirmez-vous une convocation en urgence ?"
+        confirmLabel="Convoquer en urgence"
+        onConfirm={() => convene.mutate(true)}
+      />
+      <Dialog
+        open={delegating}
+        onOpenChange={setDelegating}
+        title="Se faire représenter"
+        description="La personne qui vous représentera sera indiquée sur la feuille de présence."
+        width={440}
+        footer={
+          <>
+            <Button onClick={() => setDelegating(false)}>Annuler</Button>
+            <Button
+              variant="primary"
+              disabled={!delegateName.trim()}
+              loading={respond.isPending}
+              onClick={() => respond.mutate({ response: "delegated", delegate_name: delegateName.trim() })}
+            >
+              Confirmer
+            </Button>
+          </>
+        }
+      >
+        <Field label="Nom et fonction du représentant" required>
+          {(a) => <Input {...a} autoFocus value={delegateName} onChange={(e) => setDelegateName(e.target.value)} />}
+        </Field>
+      </Dialog>
       <ConfirmDialog
         open={removing}
         onOpenChange={setRemoving}
@@ -962,5 +1423,104 @@ export function MeetingPage() {
         onConfirm={() => remove.mutate()}
       />
     </div>
+  );
+}
+
+/** Pièces de l'ordre du jour : jointes à la réunion, diffusées avec la convocation, figées avec le compte rendu. */
+function MeetingDocuments({
+  draft,
+  readOnly,
+  onChanged,
+}: {
+  draft: MeetingDetail;
+  readOnly: boolean;
+  onChanged: (r: MeetingDetail) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const reload = async () => onChanged(await api.get<MeetingDetail>(`/api/meetings/${draft.id}`));
+  const upload = async (file: File) => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/meetings/${draft.id}/documents?name=${encodeURIComponent(file.name)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/octet-stream" },
+        body: file,
+        credentials: "same-origin",
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Échec de l'envoi du fichier");
+      await reload();
+      toast.success("Pièce jointe à l'ordre du jour");
+    } catch (e) {
+      fail(e);
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+  const removeDoc = useMutation({
+    mutationFn: (docId: string) => api.del(`/api/meeting-documents/${docId}`),
+    onSuccess: reload,
+    onError: fail,
+  });
+  if (!draft.documents.length && readOnly) return null;
+  return (
+    <Section
+      title={`Pièces de l'ordre du jour · ${draft.documents.length}`}
+      aside={
+        !readOnly && (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              className="hidden"
+              aria-label="Choisir une pièce à joindre"
+              onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
+            />
+            <Button
+              size="sm"
+              icon={<Paperclip className="size-3.5" />}
+              loading={busy}
+              onClick={() => fileRef.current?.click()}
+            >
+              Joindre une pièce
+            </Button>
+          </>
+        )
+      }
+    >
+      <div className="p-4">
+        {draft.documents.length ? (
+          <ul className="divide-y divide-line rounded-xl border border-line">
+            {draft.documents.map((d) => (
+              <li key={d.id} className="flex items-center gap-3 px-3 py-2 text-[13px]">
+                <Paperclip className="size-4 shrink-0 text-faint" />
+                <a
+                  href={`/api/meeting-documents/${d.id}`}
+                  className="min-w-0 flex-1 truncate font-medium hover:underline"
+                >
+                  {d.filename}
+                </a>
+                <span className="shrink-0 text-[12px] tabular text-muted">
+                  {Math.max(1, Math.round(d.size / 1024))} ko
+                </span>
+                {d.uploader_name && (
+                  <span className="hidden shrink-0 text-[12px] text-muted sm:inline">{d.uploader_name}</span>
+                )}
+                {!readOnly && (
+                  <IconButton label={`Supprimer ${d.filename}`} size="sm" onClick={() => removeDoc.mutate(d.id)}>
+                    <Trash2 className="size-3.5" />
+                  </IconButton>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[13px] text-muted">
+            Notes et présentations se joignent ici : les convoqués les lisent avant la séance.
+          </p>
+        )}
+      </div>
+    </Section>
   );
 }

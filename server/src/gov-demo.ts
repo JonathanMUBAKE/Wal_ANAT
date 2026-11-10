@@ -258,6 +258,8 @@ export async function seedGovDemo(svc: Services) {
     due_on: day(120),
   });
   for (const u of ["u_karim", "u_hugo"]) await svc.setMember(me, schema.id, u, "editor");
+  // Le comité de pilotage appartient au dossier du projet : il apparaît dans son onglet Réunions
+  await m.update(me, steering.id, { project_id: schema.id });
   const mission = await d.createContract(me, org, {
     project_id: schema.id,
     user_id: "u_hugo",

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -20,7 +20,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Empty, cn } from "@/components/ui";
-import { GroupedTable, Seal } from "@/components/collection";
+import { Badge, GroupedTable, Seal } from "@/components/collection";
+import { STAGE, stageOf } from "@/components/MeetingViews";
+import { type MeetingRow, NewMeeting } from "./Meetings";
 import {
   Field,
   Input,
@@ -888,6 +890,67 @@ export function MyDeliverables() {
       {block("À produire", produce, Send)}
       {open && <DeliverableDialog id={open} onClose={() => setOpen(null)} />}
     </section>
+  );
+}
+
+// ---------------------------------------------------------------- onglet « Réunions » du projet
+/** Comités de pilotage, réunions de démarrage : les réunions du dossier, rattachées au projet. */
+export function ProjectMeetings({ projectId }: { projectId: string }) {
+  const can = useCan();
+  const nav = useNavigate();
+  const [creating, setCreating] = useState(false);
+  const { data, isLoading } = useQuery({
+    queryKey: ["meetings", { project: projectId }],
+    queryFn: () => api.get<MeetingRow[]>(`/api/meetings?project_id=${projectId}`),
+  });
+  return (
+    <div className="mx-auto max-w-[1240px] space-y-4 p-4 sm:px-8 sm:py-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[13px] text-muted">
+          Les réunions de ce dossier : comité de pilotage, démarrage, revues. Leur compte rendu suit le circuit officiel
+          (soumis au rédacteur, validé par la présidence).
+        </p>
+        {can("meetings.manage") && (
+          <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
+            Programmer une réunion
+          </Button>
+        )}
+      </div>
+      {isLoading ? (
+        <LoadingRows />
+      ) : data?.length ? (
+        <Section>
+          <Table head={["Numéro", "Réunion", "Date", "Étape", "Recommandations ouvertes"]}>
+            {data.map((m) => {
+              const s = stageOf(m);
+              return (
+                <Tr key={m.id} onClick={() => nav(`/reunions/${m.id}`)}>
+                  <Td>
+                    <Seal>{m.reference}</Seal>
+                  </Td>
+                  <Td className="font-medium">{m.meeting_type}</Td>
+                  <Td className="tabular">
+                    {frDate(m.meeting_date)}
+                    {m.start_time ? ` · ${m.start_time}` : ""}
+                  </Td>
+                  <Td>
+                    <Badge tone={STAGE[s].tone} label={STAGE[s].label} />
+                  </Td>
+                  <Td className="tabular">{m.open_actions || "—"}</Td>
+                </Tr>
+              );
+            })}
+          </Table>
+        </Section>
+      ) : (
+        <Section>
+          <Empty icon={<CalendarDays className="size-6" />} title="Aucune réunion dans ce dossier">
+            Programmez un comité de pilotage ou une réunion de démarrage : elle restera rattachée à ce projet.
+          </Empty>
+        </Section>
+      )}
+      {creating && <NewMeeting projectId={projectId} onClose={() => setCreating(false)} />}
+    </div>
   );
 }
 

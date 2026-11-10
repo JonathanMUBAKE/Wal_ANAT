@@ -16,7 +16,6 @@ import {
   Gauge,
   Handshake,
   Landmark,
-  ListTree,
   Mic2,
   Plus,
   Scale,
@@ -30,17 +29,17 @@ import { Empty, cn } from "@/components/ui";
 import {
   CountUp,
   LoadingRows,
-  Status,
   frDate,
   isLate,
   type Tone,
 } from "@/components/gov";
 import { HealthRing } from "@/components/territory";
-import { CollectionHeader, MiniMonth } from "@/components/collection";
+import { CollectionHeader } from "@/components/collection";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 import { api } from "@/lib/api";
 import { useMe } from "@/lib/hooks";
+import { useShell } from "@/lib/shell";
 import { firstName, greeting } from "@/lib/format";
 
 type Form = "projet_interne" | "projet_confie" | "commission" | "conference" | "rendez_vous" | "interne";
@@ -141,6 +140,7 @@ const AGENDA_LABEL: Record<string, string> = {
 
 export function PilotagePage() {
   const { data: me } = useMe();
+  const shell = useShell();
   const [day, setDay] = useState<string | null>(null);
   const {
     data: o,
@@ -164,16 +164,15 @@ export function PilotagePage() {
   const healthy = (o.health.on_track ?? 0) + (o.health.done ?? 0);
   const score = total ? Math.round((healthy / total) * 100) : 0;
   const lateItems = o.items.filter((i) => i.overdue > 0).length;
-  // Semaine glissante : nombre de rendez-vous par jour, pour le graphique principal
+  // Semaine glissante : nombre de rendez-vous par jour
   const week = Array.from({ length: 7 }, (_, n) => {
     const d = addDays(parseISO(o.today), n);
     const key = format(d, "yyyy-MM-dd");
     return { key, d, n: o.agenda.filter((a) => a.date === key).length };
   });
-  // Échelle plancher à 3 : un seul rendez-vous ne remplit pas toute la hauteur
   const peak = Math.max(3, ...week.map((w) => w.n));
   const busiest = week.reduce((a, b) => (b.n > a.n ? b : a), week[0]);
-  const dayList = day ? o.agenda.filter((a) => a.date === day) : o.agenda;
+  const dayList = (day ? o.agenda.filter((a) => a.date === day) : o.agenda).slice(0, 3);
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-5 p-4 sm:px-8 sm:py-6">
@@ -181,7 +180,7 @@ export function PilotagePage() {
         Icon={Gauge}
         crumbs={["Pilotage", "Tableau de bord DG"]}
         title={`${greeting()}, ${firstName(me?.name ?? "")}`}
-        subtitle={`${cap(format(parseISO(o.today), "EEEE d MMMM yyyy", { locale: fr }))} · toutes les activités de l'Agence en un coup d'œil.`}
+        subtitle={`${cap(format(parseISO(o.today), "EEEE d MMMM yyyy", { locale: fr }))} · voici l'essentiel pour décider aujourd'hui.`}
         actions={
           <>
             <RoundLink to="/reunions" label="Réunions" Icon={Users} />
@@ -197,338 +196,354 @@ export function PilotagePage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-        {/* Colonne principale */}
-        <div className="min-w-0 space-y-5">
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-            {/* Graphique en vedette : la semaine de la DG */}
-            <Card title="Agenda de la semaine" action={<CircleAction to="/activites" label="Tout l'agenda" />}>
-              <div className="px-5 pb-5">
-                <p className="inline-flex items-center gap-1.5 rounded-md bg-brand-soft px-2 py-0.5 text-[12px] font-medium text-primary">
-                  <ArrowUpRight className="size-3.5" />
-                  Jour le plus chargé : {format(busiest.d, "EEEE", { locale: fr })}
-                </p>
-                <p className="mt-3 flex items-baseline gap-2">
-                  <span className="text-[32px] font-semibold leading-none tracking-[-0.03em]">
-                    <CountUp value={o.agenda.length} />
-                  </span>
-                  <span className="text-[13px] text-muted">rendez-vous et séances sur 7 jours</span>
-                </p>
-                <div className="relative mt-5 h-[176px]">
-                  <div aria-hidden className="absolute inset-x-0 bottom-7 top-0">
-                    {[0, 1, 2, 3].map((g) => (
-                      <span
-                        key={g}
-                        className="absolute inset-x-0 border-t border-dashed border-line"
-                        style={{ bottom: `${(g / 3) * 100}%` }}
-                      />
-                    ))}
-                  </div>
-                  <div className="relative flex h-full items-end gap-3 sm:gap-4">
-                    {week.map((w) => {
-                      const top = w.key === busiest.key && w.n > 0;
-                      return (
-                        <button
-                          key={w.key}
-                          onClick={() => setDay(day === w.key ? null : w.key)}
-                          title={`${format(w.d, "EEEE d MMMM", { locale: fr })} : ${w.n}`}
-                          className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end"
-                        >
-                          <span className="flex min-h-0 w-full flex-1 items-end justify-center">
-                            <span
-                              className={cn(
-                                "bar-rise w-full max-w-[34px] rounded-t-[8px] rounded-b-[3px] transition-[filter] group-hover:brightness-95",
-                                w.n === 0 && "hatch",
-                                day === w.key && "ring-2 ring-[var(--ring)]",
-                              )}
-                              style={{
-                                height: `${w.n ? Math.max(14, (w.n / peak) * 100) : 6}%`,
-                                background: w.n
-                                  ? top
-                                    ? "var(--primary)"
-                                    : "color-mix(in oklab, var(--primary) 30%, var(--panel))"
-                                  : undefined,
-                              }}
-                            />
-                          </span>
-                          <span
-                            className={cn(
-                              "mt-2 h-5 text-[11.5px] capitalize",
-                              w.key === o.today ? "font-semibold text-fg" : "text-muted",
-                            )}
-                          >
-                            {format(w.d, "EEE", { locale: fr }).replace(".", "")}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </Card>
+      {/* Grille bento : 12 colonnes, chaque carte occupe la place que mérite son importance */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-6 xl:grid-cols-12 xl:grid-flow-row-dense">
+        {/* 1. Quatre chiffres qui appellent une action */}
+        <Stat
+          className="md:col-span-3 xl:col-span-3"
+          Icon={Briefcase}
+          tile="bg-brand-soft text-primary"
+          label="Activités suivies"
+          value={total}
+          foot={`${score} % en bonne voie`}
+          tone={score >= 70 ? "good" : "warn"}
+          to="/activites"
+        />
+        <Stat
+          className="md:col-span-3 xl:col-span-3"
+          Icon={Scale}
+          tile="bg-ai-soft text-ai-fg"
+          label="Décisions attendues"
+          value={o.counters.decisions}
+          foot="à arbitrer par la DG"
+        />
+        <Stat
+          className="md:col-span-3 xl:col-span-3"
+          Icon={AlarmClock}
+          tile="bg-danger-soft text-danger"
+          label="Retards à résorber"
+          value={o.counters.retards}
+          foot={`${lateItems} activité${lateItems > 1 ? "s" : ""} concernée${lateItems > 1 ? "s" : ""}`}
+          tone={o.counters.retards ? "bad" : "good"}
+        />
+        <Stat
+          className="md:col-span-3 xl:col-span-3"
+          Icon={FileSignature}
+          tile="bg-warning-soft text-warning"
+          label="À signer"
+          value={o.to_sign}
+          foot={o.to_sign ? "au parapheur" : "parapheur à jour"}
+          tone={o.to_sign ? undefined : "good"}
+          to="/parapheur"
+        />
 
-            {/* Anneau fin et trois lignes de chiffres */}
-            <Card title="Santé du portefeuille" action={<CircleAction to="/activites" label="Voir les activités" />}>
-              <div className="flex justify-center pb-2 pt-1">
-                <HealthRing
-                  size={136}
-                  track="var(--hover)"
-                  caption={`${score} % des activités dans les temps ou terminées`}
-                  parts={[
-                    { key: "ok", value: healthy, color: "var(--primary)", label: "Dans les temps ou terminées" },
-                    { key: "ko", value: total - healthy, color: "var(--hover)", label: "À surveiller ou en difficulté" },
-                  ]}
-                  center={
-                    <>
-                      <span className="text-[26px] font-semibold leading-none tracking-[-0.03em]">
-                        <CountUp value={score} />%
-                      </span>
-                      <span className="mt-1 text-[11px] text-muted">en bonne voie</span>
-                    </>
-                  }
-                />
-              </div>
-              <ul className="px-3 pb-3">
-                {(
-                  [
-                    ["on_track", CheckCircle2, "bg-success-soft text-success"],
-                    ["at_risk", AlertTriangle, "bg-warning-soft text-warning"],
-                    ["off_track", AlarmClock, "bg-danger-soft text-danger"],
-                  ] as const
-                ).map(([h, I, tile]) => (
-                  <li key={h}>
+        {/* 2. Santé du portefeuille */}
+        <Bento className="md:col-span-3 xl:col-span-4" title="Santé du portefeuille" action={<CircleAction to="/activites" label="Voir les activités" />}>
+          <div className="flex items-center gap-5 px-5 pb-2 pt-1">
+            <HealthRing
+              size={112}
+              track="var(--hover)"
+              caption={`${score} % des activités dans les temps ou terminées`}
+              parts={[
+                { key: "ok", value: healthy, color: "var(--primary)", label: "Dans les temps ou terminées" },
+                { key: "ko", value: total - healthy, color: "var(--hover)", label: "À surveiller ou en difficulté" },
+              ]}
+              center={
+                <span className="text-[22px] font-semibold leading-none tracking-[-0.03em]">
+                  <CountUp value={score} />%
+                </span>
+              }
+            />
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium">En bonne voie</p>
+              <p className="mt-0.5 text-[12px] leading-snug text-muted">
+                {healthy} activité{healthy > 1 ? "s" : ""} sur {total} sont dans les temps ou terminées.
+              </p>
+            </div>
+          </div>
+          <ul className="px-3 pb-3">
+            {(
+              [
+                ["on_track", CheckCircle2, "bg-success-soft text-success"],
+                ["at_risk", AlertTriangle, "bg-warning-soft text-warning"],
+                ["off_track", AlarmClock, "bg-danger-soft text-danger"],
+              ] as const
+            ).map(([h, I, tile]) => (
+              <li key={h}>
+                <Link to="/activites" className="flex items-center gap-3 rounded-[10px] px-2 py-2 transition-colors hover:bg-hover">
+                  <span className={cn("flex size-8 items-center justify-center rounded-[10px]", tile)}>
+                    <I className="size-4" />
+                  </span>
+                  <span className="flex-1 text-[13px] text-muted">{HEALTH[h].label}</span>
+                  <span className="text-[15px] font-semibold tabular">{o.health[h] ?? 0}</span>
+                  <ChevronRight className="size-4 text-faint" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Bento>
+
+        {/* 3. Décisions attendues : le cœur du rôle de la DG */}
+        <Bento
+          className="md:col-span-3 xl:col-span-5"
+          title="Décisions attendues"
+          action={<span className="rounded-md bg-hover px-2 py-0.5 text-[12px] font-medium tabular text-muted">{o.decisions.length}</span>}
+        >
+          {o.decisions.length ? (
+            <ul className="space-y-2 px-4 pb-4 pt-1">
+              {o.decisions.slice(0, 4).map((d) => {
+                const I = FORMS[d.form].Icon;
+                return (
+                  <li key={d.id}>
                     <Link
-                      to="/activites"
-                      className="flex items-center gap-3 border-t border-line px-2 py-2.5 transition-colors hover:bg-hover/60"
+                      to={d.href}
+                      className="group flex items-center gap-3 rounded-xl border border-line p-3 transition-colors hover:border-line-strong hover:bg-hover/50"
                     >
-                      <span className={cn("flex size-9 items-center justify-center rounded-[10px]", tile)}>
+                      <span
+                        className="flex size-9 shrink-0 items-center justify-center rounded-[10px]"
+                        style={{
+                          color: `var(--form-${d.form})`,
+                          background: `color-mix(in oklab, var(--form-${d.form}) 12%, transparent)`,
+                        }}
+                      >
                         <I className="size-4" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[15px] font-semibold leading-tight tabular">{o.health[h] ?? 0}</span>
-                        <span className="text-[12px] text-muted">{HEALTH[h].label}</span>
+                        <span className="block truncate text-[13.5px] font-medium">{d.title}</span>
+                        <span className="block truncate text-[12px] text-muted">{d.decision_needed}</span>
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[12px] font-medium text-primary">
-                        Voir <ChevronRight className="size-3.5" />
+                      <span className="hidden rounded-lg border border-line px-2.5 py-1 text-[12px] font-medium text-fg/80 transition-colors group-hover:border-transparent group-hover:bg-night group-hover:text-white sm:inline">
+                        Arbitrer
                       </span>
                     </Link>
                   </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="px-5 pb-5 text-[13px] text-muted">Aucun arbitrage en attente.</p>
+          )}
+        </Bento>
+
+        {/* 4. L'assistant : il lit, résume et propose ; la DG décide */}
+        <Bento
+          className="md:col-span-6 xl:col-span-3 xl:row-span-2"
+          title="Assistant IA"
+          action={<Sparkles className="size-4 text-ai-fg" />}
+        >
+          <div className="flex h-full flex-col px-5 pb-5">
+            <div className="rounded-xl bg-ai-soft p-4">
+              <p className="text-[12px] font-medium text-ai-fg">Point de situation</p>
+              <ul className="mt-2 space-y-2 text-[12.5px] leading-snug text-fg/85">
+                {o.brief.map((b) => (
+                  <li key={b} className="flex gap-2">
+                    <span className="mt-[6px] size-1.5 shrink-0 rounded-full bg-ai" />
+                    {b}
+                  </li>
                 ))}
               </ul>
-            </Card>
-          </div>
-
-          {/* Décisions attendues : cartes pastel, une par dossier */}
-          <Card
-            title="Décisions attendues"
-            action={
-              <Link to="/activites" className="rounded-lg bg-brand-soft px-2.5 py-1 text-[12px] font-medium text-primary hover:brightness-95">
-                Tout voir
-              </Link>
-            }
-          >
-            {o.decisions.length ? (
-              <div className="grid grid-cols-1 gap-3 px-5 pb-5 pt-1 md:grid-cols-3">
-                {o.decisions.slice(0, 3).map((d) => {
-                  const I = FORMS[d.form].Icon;
-                  return (
-                    <Link
-                      key={d.id}
-                      to={d.href}
-                      className="group flex min-h-[150px] flex-col rounded-xl p-4 transition-transform hover:-translate-y-0.5"
-                      style={{ background: `color-mix(in oklab, var(--form-${d.form}) 10%, var(--panel))` }}
-                    >
-                      <span className="flex items-center justify-between">
-                        <span className="rounded-md bg-panel/80 px-2 py-0.5 text-[11px] font-medium text-muted">
-                          {FORMS[d.form].label}
-                        </span>
-                        <I className="size-4" style={{ color: `var(--form-${d.form})` }} />
-                      </span>
-                      <span className="mt-3 text-[15px] font-semibold leading-snug tracking-[-0.01em]">{d.title}</span>
-                      <span className="mt-1 line-clamp-2 text-[12.5px] leading-snug text-muted">{d.decision_needed}</span>
-                      <span className="mt-auto flex items-center justify-between pt-3">
-                        {d.lead_name ? <Initials name={d.lead_name} /> : <span />}
-                        <span className="inline-flex items-center gap-1 text-[12px] font-medium text-fg/80 group-hover:text-fg">
-                          Arbitrer <ArrowUpRight className="size-3.5" />
-                        </span>
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="px-5 pb-5 text-[13px] text-muted">Aucun arbitrage en attente.</p>
-            )}
-          </Card>
-
-          {/* Chiffres clés : pastilles d'icône pastel, comme « Quick Stats » */}
-          <Card title="Chiffres clés">
-            <div className="grid grid-cols-2 gap-x-3 gap-y-4 px-5 pb-5 pt-1 sm:grid-cols-3 2xl:grid-cols-5">
-              <QuickStat Icon={Briefcase} tile="bg-brand-soft text-primary" value={total} label="Activités suivies" />
-              <QuickStat Icon={Scale} tile="bg-ai-soft text-ai-fg" value={o.counters.decisions} label="Décisions attendues" />
-              <QuickStat
-                Icon={AlarmClock}
-                tile="bg-danger-soft text-danger"
-                value={o.counters.retards}
-                label={`Retards · ${lateItems} activité${lateItems > 1 ? "s" : ""}`}
-              />
-              <QuickStat Icon={FileSignature} tile="bg-warning-soft text-warning" value={o.to_sign} label="À signer" to="/parapheur" />
-              <QuickStat Icon={ListTree} tile="bg-success-soft text-success" value={o.open_gaps} label="Écarts à examiner" to="/attributions" />
             </div>
-          </Card>
-
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-            <Card
-              title="À suivre en priorité"
-              action={
-                <Link to="/activites" className="inline-flex items-center gap-1 text-[12.5px] font-medium text-muted hover:text-fg">
-                  Portefeuille ({o.items.length}) <ChevronRight className="size-4" />
-                </Link>
-              }
-            >
-              <ul className="pb-2">
-                {priorities.map((i) => {
-                  const late = isLate(i.next_due, o.today);
-                  return (
-                    <li key={i.id}>
-                      <Link
-                        to={i.href}
-                        className="flex items-center gap-3 border-t border-line px-5 py-3 transition-colors first:border-t-0 hover:bg-hover/60"
-                      >
-                        <span className="size-2 shrink-0 rounded-full" style={{ background: HEALTH[i.health].color }} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[13.5px] font-medium">{i.title}</span>
-                          <span className="block truncate text-[12px] text-muted">
-                            {FORMS[i.form].label}
-                            {i.lead_name ? ` · ${i.lead_name}` : ""}
-                          </span>
-                        </span>
-                        <span className="hidden sm:block">
-                          <Status label={HEALTH[i.health].label} tone={HEALTH[i.health].tone} />
-                        </span>
-                        <span className={cn("w-[74px] text-right text-[12.5px] tabular", late ? "font-medium text-danger" : "text-muted")}>
-                          {frDate(i.next_due)}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </Card>
-
-            <Card title="Indicateurs stratégiques" action={<Target className="size-4 text-faint" />}>
-              <ul className="space-y-4 px-5 pb-5 pt-1">
-                {[
-                  ...o.indicators.map((i) => ({
-                    id: i.id,
-                    name: i.name,
-                    value: `${i.result} / ${i.target}`,
-                    pct:
-                      i.target > i.baseline
-                        ? Math.max(0, Math.min(100, ((i.result - i.baseline) / (i.target - i.baseline)) * 100))
-                        : 0,
-                  })),
-                  {
-                    id: "recos",
-                    name: "Recommandations réalisées",
-                    value: `${o.recommendations.done} / ${o.recommendations.open + o.recommendations.done}`,
-                    pct: rate(o.recommendations),
-                  },
-                ].map((i) => (
-                  <li key={i.id}>
-                    <p className="flex items-baseline justify-between gap-3 text-[13px]">
-                      <span className="truncate">{i.name}</span>
-                      <span className="whitespace-nowrap text-[12px] font-medium tabular">{Math.round(i.pct)}%</span>
-                    </p>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-hover">
-                      <div className="bar-fill h-full rounded-full bg-primary" style={{ width: `${i.pct}%` }} />
-                    </div>
-                    <p className="mt-1 text-[11.5px] tabular text-faint">{i.value}</p>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </div>
-        </div>
-
-        {/* Colonne de droite : le temps de la DG */}
-        <aside className="space-y-5">
-          <MiniMonth
-            value={day ? parseISO(day) : parseISO(o.today)}
-            onPick={(d) => {
-              const k = format(d, "yyyy-MM-dd");
-              setDay(day === k ? null : k);
-            }}
-            marks={new Set(o.agenda.map((a) => a.date))}
-          />
-
-          <Card
-            title={day ? cap(format(parseISO(day), "EEEE d MMMM", { locale: fr })) : "Au programme"}
-            action={
-              day ? (
-                <button onClick={() => setDay(null)} className="text-[12px] font-medium text-primary hover:underline">
-                  Toute la semaine
+            <p className="mt-4 text-[12px] font-medium text-muted">Demander</p>
+            <div className="mt-2 flex flex-col gap-2">
+              {[
+                ["Résumer la semaine", "Résume la semaine de la Direction générale : faits marquants, retards et décisions attendues."],
+                ["Proposer les priorités", "Quelles sont les trois priorités de la DG cette semaine, et pourquoi ?"],
+                ["Préparer le comité", "Prépare l'ordre du jour du prochain comité de direction à partir des dossiers en cours."],
+              ].map(([l, p]) => (
+                <button
+                  key={l}
+                  onClick={() => shell.openAssistant(p)}
+                  className="flex items-center justify-between rounded-[10px] border border-line px-3 py-2 text-left text-[12.5px] font-medium transition-colors hover:border-ai-line hover:bg-ai-soft"
+                >
+                  {l}
+                  <ArrowUpRight className="size-3.5 text-faint" />
                 </button>
-              ) : undefined
-            }
-          >
-            {dayList.length ? (
-              <ol className="relative px-5 pb-4 pt-1">
-                <span aria-hidden className="absolute bottom-6 left-[27px] top-3 w-px bg-line" />
-                {dayList.slice(0, 5).map((a) => (
+              ))}
+            </div>
+            <button
+              onClick={() => shell.openAssistant()}
+              className="mt-auto flex h-10 items-center gap-2 rounded-[10px] border border-line-strong px-3 pt-0 text-left text-[12.5px] text-faint transition-colors hover:border-ai-line"
+              style={{ marginTop: "1rem" }}
+            >
+              <Sparkles className="size-3.5 text-ai-fg" />
+              Poser une question…
+            </button>
+            <p className="mt-2 text-[11px] text-faint">L'assistant propose ; vous décidez.</p>
+          </div>
+        </Bento>
+
+        {/* 5. La semaine de la DG : graphique et prochains rendez-vous dans la même carte */}
+        <Bento className="md:col-span-6 xl:col-span-5" title="Agenda de la semaine" action={<CircleAction to="/activites" label="Tout l'agenda" />}>
+          <div className="grid gap-4 px-5 pb-5 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+            <div>
+              <p className="flex items-baseline gap-2">
+                <span className="text-[28px] font-semibold leading-none tracking-[-0.03em]">
+                  <CountUp value={o.agenda.length} />
+                </span>
+                <span className="text-[12.5px] text-muted">rendez-vous sur 7 jours</span>
+              </p>
+              <div className="relative mt-4 h-[124px]">
+                <div aria-hidden className="absolute inset-x-0 bottom-6 top-0">
+                  {[0, 1, 2].map((g) => (
+                    <span key={g} className="absolute inset-x-0 border-t border-dashed border-line" style={{ bottom: `${(g / 2) * 100}%` }} />
+                  ))}
+                </div>
+                <div className="relative flex h-full items-end gap-2">
+                  {week.map((w) => (
+                    <button
+                      key={w.key}
+                      onClick={() => setDay(day === w.key ? null : w.key)}
+                      title={`${format(w.d, "EEEE d MMMM", { locale: fr })} : ${w.n}`}
+                      className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+                    >
+                      <span className="flex min-h-0 w-full flex-1 items-end justify-center">
+                        <span
+                          className={cn(
+                            "bar-rise w-full max-w-[22px] rounded-t-[6px] rounded-b-[2px]",
+                            w.n === 0 && "hatch",
+                            day === w.key && "ring-2 ring-[var(--ring)]",
+                          )}
+                          style={{
+                            height: `${w.n ? Math.max(14, (w.n / peak) * 100) : 6}%`,
+                            background: w.n
+                              ? w.key === busiest.key
+                                ? "var(--primary)"
+                                : "color-mix(in oklab, var(--primary) 30%, var(--panel))"
+                              : undefined,
+                          }}
+                        />
+                      </span>
+                      <span className={cn("mt-1.5 h-4 text-[11px] capitalize", w.key === o.today ? "font-semibold text-fg" : "text-muted")}>
+                        {format(w.d, "EEEEE", { locale: fr })}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <ul className="space-y-1.5 self-start">
+              {dayList.length ? (
+                dayList.map((a) => (
                   <li key={a.id}>
-                    <Link to={a.href} className="group relative flex items-start gap-3 py-2">
-                      <span className="relative z-10 mt-1 size-[9px] shrink-0 rounded-full border-2 border-primary bg-panel" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-medium group-hover:text-primary">{a.title}</span>
-                        <span className="text-[12px] text-muted">
-                          {AGENDA_LABEL[a.form]} · {format(parseISO(a.date), "EEE d MMM", { locale: fr })}
-                        </span>
+                    <Link to={a.href} className="flex items-center gap-3 rounded-[10px] bg-bg/70 px-3 py-2 transition-colors hover:bg-hover">
+                      <span className="w-8 shrink-0 text-center leading-none">
+                        <span className="block text-[15px] font-semibold">{format(parseISO(a.date), "d")}</span>
+                        <span className="text-[10px] uppercase text-faint">{format(parseISO(a.date), "MMM", { locale: fr })}</span>
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-[12.5px] font-medium">{a.title}</span>
+                        <span className="text-[11.5px] text-muted">{AGENDA_LABEL[a.form]}</span>
                       </span>
                     </Link>
                   </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="px-5 pb-5 text-[13px] text-muted">Rien de prévu ce jour-là.</p>
-            )}
-          </Card>
+                ))
+              ) : (
+                <li className="px-1 py-2 text-[12.5px] text-muted">Rien de prévu ce jour-là.</li>
+              )}
+              {day && (
+                <li>
+                  <button onClick={() => setDay(null)} className="px-1 text-[12px] font-medium text-primary hover:underline">
+                    Toute la semaine
+                  </button>
+                </li>
+              )}
+            </ul>
+          </div>
+        </Bento>
 
-          <Card title="Point de situation" action={<Sparkles className="size-4 text-ai-fg" />}>
-            <ul className="space-y-2 px-5 pb-5 pt-1 text-[12.5px] leading-snug text-muted">
-              {o.brief.map((b) => (
-                <li key={b} className="flex gap-2">
-                  <span className="mt-[6px] size-1.5 shrink-0 rounded-full bg-ai" />
-                  {b}
+        {/* 6. Priorités */}
+        <Bento
+          className="md:col-span-6 xl:col-span-4"
+          title="À suivre en priorité"
+          action={
+            <Link to="/activites" className="inline-flex items-center gap-0.5 text-[12px] font-medium text-muted hover:text-fg">
+              Tout voir <ChevronRight className="size-3.5" />
+            </Link>
+          }
+        >
+          <ul className="px-2 pb-3">
+            {priorities.map((i) => {
+              const late = isLate(i.next_due, o.today);
+              return (
+                <li key={i.id}>
+                  <Link to={i.href} className="flex items-center gap-3 rounded-[10px] px-3 py-2 transition-colors hover:bg-hover">
+                    <span className="size-2 shrink-0 rounded-full" style={{ background: HEALTH[i.health].color }} title={HEALTH[i.health].label} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] font-medium">{i.title}</span>
+                      <span className="block truncate text-[11.5px] text-muted">
+                        {HEALTH[i.health].label} · {FORMS[i.form].label}
+                      </span>
+                    </span>
+                    <span className={cn("text-[12px] tabular", late ? "font-medium text-danger" : "text-muted")}>
+                      {frDate(i.next_due).slice(0, 5)}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </Bento>
+
+        {/* 7. Suivi-évaluation */}
+        <Bento className="md:col-span-3 xl:col-span-7" title="Indicateurs stratégiques" action={<Target className="size-4 text-faint" />}>
+          <ul className="grid gap-x-8 gap-y-4 px-5 pb-5 pt-1 sm:grid-cols-2">
+            {[
+              ...o.indicators.map((i) => ({
+                id: i.id,
+                name: i.name,
+                value: `${i.result} / ${i.target} ${i.unit_label}`,
+                pct:
+                  i.target > i.baseline
+                    ? Math.max(0, Math.min(100, ((i.result - i.baseline) / (i.target - i.baseline)) * 100))
+                    : 0,
+              })),
+              {
+                id: "recos",
+                name: "Recommandations réalisées",
+                value: `${o.recommendations.done} / ${o.recommendations.open + o.recommendations.done}`,
+                pct: rate(o.recommendations),
+              },
+            ].map((i) => (
+              <li key={i.id}>
+                <p className="flex items-baseline justify-between gap-3 text-[13px]">
+                  <span className="truncate">{i.name}</span>
+                  <span className="text-[13px] font-semibold tabular">{Math.round(i.pct)}%</span>
+                </p>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-hover">
+                  <div className="bar-fill h-full rounded-full bg-primary" style={{ width: `${i.pct}%` }} />
+                </div>
+                <p className="mt-1 truncate text-[11.5px] tabular text-faint">{i.value}</p>
+              </li>
+            ))}
+          </ul>
+        </Bento>
+
+        {/* 8. Risques */}
+        <Bento className="md:col-span-3 xl:col-span-5" title="Risques majeurs" action={<ShieldAlert className="size-4 text-faint" />}>
+          {o.risks.length ? (
+            <ul className="px-2 pb-3">
+              {o.risks.map((r) => (
+                <li key={r.id} className="flex items-center gap-3 rounded-[10px] px-3 py-2">
+                  <span
+                    className={cn(
+                      "flex size-8 shrink-0 items-center justify-center rounded-[10px] text-[12px] font-semibold tabular",
+                      r.score >= 15 ? "bg-danger-soft text-danger" : r.score >= 8 ? "bg-warning-soft text-warning" : "bg-hover text-muted",
+                    )}
+                    title="Probabilité × impact"
+                  >
+                    {r.score}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[13px] font-medium">{r.title}</span>
+                    <span className="block truncate text-[11.5px] text-muted">{r.owner_name ?? "Sans responsable"}</span>
+                  </span>
                 </li>
               ))}
             </ul>
-          </Card>
-
-          {!!o.risks.length && (
-            <Card title="Risques majeurs" action={<ShieldAlert className="size-4 text-faint" />}>
-              <ul className="pb-2">
-                {o.risks.map((r) => (
-                  <li key={r.id} className="flex items-center gap-3 border-t border-line px-5 py-2.5 first:border-t-0">
-                    <span
-                      className={cn(
-                        "flex size-8 shrink-0 items-center justify-center rounded-[10px] text-[12px] font-semibold tabular",
-                        r.score >= 15 ? "bg-danger-soft text-danger" : r.score >= 8 ? "bg-warning-soft text-warning" : "bg-hover text-muted",
-                      )}
-                      title="Probabilité × impact"
-                    >
-                      {r.score}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-[13px] font-medium leading-snug">{r.title}</span>
-                      <span className="text-[12px] text-muted">{r.owner_name ?? "Sans responsable"}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
+          ) : (
+            <p className="px-5 pb-5 text-[13px] text-muted">Aucun risque majeur ouvert.</p>
           )}
-        </aside>
+        </Bento>
       </div>
     </div>
   );
@@ -539,17 +554,6 @@ const rank = (i: Item) =>
 const rate = (r: { open: number; done: number }) =>
   r.open + r.done ? Math.round((r.done / (r.open + r.done)) * 100) : 0;
 
-function Card({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <section className="min-w-0 rounded-2xl border border-line bg-panel shadow-sm">
-      <div className="flex items-center justify-between gap-3 px-5 pb-2 pt-5">
-        <h2 className="text-[15px] font-semibold tracking-[-0.01em]">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
 
 function CircleAction({ to, label }: { to: string; label: string }) {
   return (
@@ -578,36 +582,80 @@ function RoundLink({ to, label, Icon, dot }: { to: string; label: string; Icon: 
   );
 }
 
-/** Chiffre clé : carré d'icône pastel, chiffre, libellé (modèle « Quick Stats »). */
-function QuickStat({
+/** Carte de la grille bento : même rayon, même filet, même en-tête partout. */
+function Bento({
+  title,
+  action,
+  className,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={cn("flex min-w-0 flex-col rounded-2xl border border-line bg-panel", className)}>
+      <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
+        <h2 className="text-[14.5px] font-semibold tracking-[-0.01em]">{title}</h2>
+        {action}
+      </div>
+      <div className="min-h-0 flex-1">{children}</div>
+    </section>
+  );
+}
+
+/** Chiffre qui appelle une action : carré d'icône pastel, chiffre, pastille d'état (modèles Pivot, VantaRisk). */
+function Stat({
   Icon,
   tile,
-  value,
   label,
+  value,
+  foot,
+  tone,
   to,
+  className,
 }: {
   Icon: LucideIcon;
   tile: string;
-  value: number;
   label: string;
+  value: number;
+  foot: string;
+  tone?: "good" | "warn" | "bad";
   to?: string;
+  className?: string;
 }) {
   const body = (
     <>
-      <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl", tile)}>
+      <span className={cn("flex size-12 shrink-0 items-center justify-center rounded-xl", tile)}>
         <Icon className="size-5" />
       </span>
-      <span className="min-w-0">
-        <span className="block text-[20px] font-semibold leading-tight tracking-[-0.02em] tabular">
-          <CountUp value={value} />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[12.5px] text-muted">{label}</span>
+        <span className="mt-0.5 flex items-baseline gap-2">
+          <span className="text-[26px] font-semibold leading-none tracking-[-0.03em] tabular">
+            <CountUp value={value} />
+          </span>
         </span>
-        <span className="block text-[12px] leading-tight text-muted">{label}</span>
+        <span
+          className={cn(
+            "mt-2 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium",
+            tone === "good" && "bg-success-soft text-success",
+            tone === "warn" && "bg-warning-soft text-warning",
+            tone === "bad" && "bg-danger-soft text-danger",
+            !tone && "bg-hover text-muted",
+          )}
+        >
+          {tone === "bad" && <span className="pulse-dot size-1.5 rounded-full bg-current" />}
+          {foot}
+        </span>
       </span>
+      {to && <ArrowUpRight className="size-4 shrink-0 self-start text-faint transition-colors group-hover:text-fg" />}
     </>
   );
-  const cls = "flex min-w-0 items-center gap-3 rounded-xl p-1.5";
+  const cls = cn("group flex min-w-0 items-center gap-4 rounded-2xl border border-line bg-panel p-4", className);
   return to ? (
-    <Link to={to} className={cn(cls, "transition-colors hover:bg-hover")}>
+    <Link to={to} className={cn(cls, "transition-colors hover:border-line-strong")}>
       {body}
     </Link>
   ) : (
@@ -615,16 +663,3 @@ function QuickStat({
   );
 }
 
-function Initials({ name }: { name: string }) {
-  const ini = name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-  return (
-    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[11px] font-semibold text-primary">
-      {ini}
-    </span>
-  );
-}

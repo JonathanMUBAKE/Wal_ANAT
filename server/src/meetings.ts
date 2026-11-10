@@ -499,6 +499,17 @@ export class Meetings {
       [id],
     );
     if (!n?.n) throw badRequest("Le compte rendu doit contenir au moins un point à l'ordre du jour");
+    // Un compte rendu officiel rend compte d'une réunion tenue, et chaque recommandation y a un porteur et un délai
+    if (m.meeting_date > new Date().toISOString().slice(0, 10))
+      throw badRequest("Cette réunion n'a pas encore eu lieu : son compte rendu ne peut pas être validé");
+    const incomplete = await this.svc.db.query<{ text: string }>(
+      "SELECT text FROM meeting_actions WHERE meeting_id = $1 AND status NOT IN ('realise','annule') AND (responsible_id IS NULL AND responsible_name = '' OR due_on IS NULL) ORDER BY position",
+      [id],
+    );
+    if (incomplete.length)
+      throw badRequest(
+        `Chaque recommandation doit avoir un responsable et une échéance. À compléter : ${incomplete.map((a) => a.text).join(", ")}`,
+      );
     if (
       !(await this.svc.db.one(
         "UPDATE meetings SET status = 'validated', validated_by = $1, validated_at = now(), updated_at = now() WHERE id = $2 AND status <> 'validated' RETURNING id",
@@ -571,6 +582,16 @@ export class Meetings {
       [status, patch.due_on ?? null, patch.postponed_reason?.trim() ?? null, closing, actorId, id],
     );
     await this.svc.log(actorId, "meeting.action", { orgId: a.org_id, data: { id, status } });
+    // Une recommandation soumise attend qu'on la clôture : le rédacteur du compte rendu en est prévenu
+    if (status === "soumis" && a.status !== "soumis") {
+      const m = await this.svc.db.one<MeetingRow>("SELECT * FROM meetings WHERE id = $1", [a.meeting_id]);
+      if (m?.writer_id && m.writer_id !== actorId)
+        await this.svc.notify(m.writer_id, a.org_id, {
+          kind: "meeting.action.submitted",
+          title: `Recommandation déclarée réalisée : ${a.text}`,
+          body: `Compte rendu ${meetingReference(m)} : à vérifier puis clôturer`,
+        });
+    }
     return row;
   }
 }

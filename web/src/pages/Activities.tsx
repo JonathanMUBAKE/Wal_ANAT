@@ -441,7 +441,8 @@ export function ActivityPage() {
                 {(a) => (
                   <Select
                     {...a}
-                    disabled={ro}
+                    disabled={ro || !d.can.remove}
+                    title={!d.can.remove ? "Seul un gestionnaire confie l'activité à une autre personne" : undefined}
                     value={d.lead_id ?? ""}
                     onChange={(e) => patch({ lead_id: e.target.value || null })}
                   >
@@ -575,7 +576,7 @@ export function ActivityPage() {
               <label className="flex items-center gap-2 text-[13px]">
                 <input
                   type="checkbox"
-                  disabled={ro}
+                  disabled={ro || !d.can.remove}
                   checked={d.confidential}
                   onChange={(e) => patch({ confidential: e.target.checked })}
                 />

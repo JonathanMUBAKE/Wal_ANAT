@@ -159,7 +159,7 @@ async function boot(kind: Kind) {
       const m = await X.meeting();
       return (
         await inj(a, "PUT", `/api/meetings/${m.id}/content`, {
-          agenda: [{ subject: "Point", actions: [{ text: "Faire", responsible_id: "u_karim" }] }],
+          agenda: [{ subject: "Point", actions: [{ text: "Faire", responsible_id: "u_karim", due_on: "2026-07-20" }] }],
           attendees: [],
         })
       ).body;
@@ -201,6 +201,11 @@ async function boot(kind: Kind) {
       const d = await X.deliverable(responsible);
       await ctx.db.query("UPDATE deliverables SET status = $1 WHERE id = $2", [status, d.id]);
       return d.id;
+    },
+    toPay: async () => {
+      const id = await X.deliverableAt("valide");
+      await ctx.db.query("UPDATE deliverables SET to_pay = TRUE WHERE id = $1", [id]);
+      return id;
     },
     contract: async () =>
       (
@@ -557,6 +562,7 @@ const TABLE = [
     url: `/api/deliverables/${await X.deliverableAt("en_revue")}/decide`,
     body: { decision: "valide" },
   })),
+  R_("POST", "/api/deliverables/:id/paid", async (X) => ({ url: `/api/deliverables/${await X.toPay()}/paid` })),
   R_("GET", "/api/contracts"),
   R_("POST", "/api/contracts", () => ({
     body: { consultant_name: "C", title: "M", start_on: "2026-01-01", end_on: "2026-12-31", supervisor_id: "u_alice" },

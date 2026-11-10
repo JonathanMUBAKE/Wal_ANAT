@@ -223,7 +223,10 @@ export function PilotagePage() {
           tile="bg-danger-soft text-danger"
           label="Retards à résorber"
           value={o.counters.retards}
-          foot={`${lateItems} activité${lateItems > 1 ? "s" : ""} concernée${lateItems > 1 ? "s" : ""}`}
+          foot={lateFoot(
+            (o.counters as unknown as { retards_detail?: Record<string, number> }).retards_detail,
+            lateItems,
+          )}
           tone={o.counters.retards ? "bad" : "good"}
         />
         <Stat
@@ -493,9 +496,12 @@ export function PilotagePage() {
                 name: i.name,
                 value: `${i.result} / ${i.target} ${i.unit_label}`,
                 pct:
-                  i.target > i.baseline
+                  // Vaut aussi pour un indicateur qui doit baisser (délai, coût) : cible sous la situation de départ
+                  i.target !== i.baseline
                     ? Math.max(0, Math.min(100, ((i.result - i.baseline) / (i.target - i.baseline)) * 100))
-                    : 0,
+                    : i.result === i.target
+                      ? 100
+                      : 0,
               })),
               {
                 id: "recos",
@@ -551,6 +557,20 @@ export function PilotagePage() {
 
 const rank = (i: Item) =>
   ({ off_track: 0, at_risk: 1, on_track: 2, done: 3 })[i.health] - (i.decision_needed ? 0.5 : 0);
+/** Détail des retards en une ligne : « 2 tâches, 1 livrable, 1 courrier ». */
+const LATE_LABEL: Record<string, [string, string]> = {
+  taches_et_suites: ["tâche ou suite", "tâches ou suites"],
+  recommandations: ["recommandation", "recommandations"],
+  livrables: ["livrable", "livrables"],
+  activites_plan: ["activité de plan", "activités de plan"],
+  courrier: ["courrier", "courriers"],
+};
+const lateFoot = (detail: Record<string, number> | undefined, items: number) => {
+  const parts = Object.entries(detail ?? {})
+    .filter(([, n]) => n > 0)
+    .map(([k, n]) => `${n} ${LATE_LABEL[k]?.[n > 1 ? 1 : 0] ?? k}`);
+  return parts.length ? parts.slice(0, 2).join(", ") + (parts.length > 2 ? "…" : "") : `${items} activité concernée`;
+};
 const rate = (r: { open: number; done: number }) =>
   r.open + r.done ? Math.round((r.done / (r.open + r.done)) * 100) : 0;
 

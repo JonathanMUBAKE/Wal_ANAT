@@ -54,6 +54,7 @@ interface Row {
   reception_ref: string | null;
 }
 interface Detail extends Row {
+  paid_at: string | null;
   description: string;
   criteria: string;
   review_comment: string;
@@ -227,6 +228,7 @@ function List() {
 
 function DeliverableDialog({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();
+  const can = useCan();
   const [comment, setComment] = useState("");
   const [stamp, setStamp] = useState(false);
   const { data: d } = useQuery({
@@ -308,6 +310,27 @@ function DeliverableDialog({ id, onClose }: { id: string; onClose: () => void })
                 Demander une correction
               </Button>
             </div>
+          </div>
+        )}
+        {(d.to_pay || d.paid_at) && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line px-3 py-2.5">
+            <span className="text-[13px]">
+              {d.paid_at ? (
+                <>
+                  Paiement constaté le <b className="font-medium">{frDate(d.paid_at.slice(0, 10))}</b>
+                </>
+              ) : (
+                <>
+                  Livrable reçu, <b className="font-medium text-primary">à payer</b>
+                  {d.reception_ref ? ` · procès-verbal ${d.reception_ref}` : ""}
+                </>
+              )}
+            </span>
+            {d.to_pay && can("consultants.manage") && (
+              <Button size="sm" variant="primary" loading={act.isPending} onClick={() => act.mutate({ path: "paid" })}>
+                Constater le paiement
+              </Button>
+            )}
           </div>
         )}
         {!!d.events.length && (

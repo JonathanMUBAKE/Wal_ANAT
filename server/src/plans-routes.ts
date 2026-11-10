@@ -109,6 +109,7 @@ export function planRoutes(r: FastifyInstance, p: Plans, d: Deliverables) {
   r.post<Id>("/api/deliverables/:id/start", async (req) => d.start(req.userId, req.params.id));
   r.post<Id>("/api/deliverables/:id/submit", async (req) => d.submit(req.userId, req.params.id));
   r.post<Id>("/api/deliverables/:id/review", async (req) => d.review(req.userId, req.params.id));
+  r.post<Id>("/api/deliverables/:id/paid", async (req) => d.markPaid(req.userId, req.params.id));
   r.post<Id>("/api/deliverables/:id/decide", async (req) =>
     d.decide(
       req.userId,

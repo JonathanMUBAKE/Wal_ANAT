@@ -24,6 +24,7 @@ export class Pilotage {
 
   async overview(actorId: string, orgId: string) {
     await this.svc.requirePerm(actorId, orgId, "pilotage.view");
+    const perms = await this.svc.permissionsOf(actorId, orgId);
     const db = this.svc.db;
     const today = day();
     const projects = await this.svc.listProjects(actorId, orgId);
@@ -65,9 +66,14 @@ export class Pilotage {
     }>(
       `SELECT a.id, a.kind, a.title, u.name AS lead_name, ou.name AS unit_name, a.health, a.progress, a.next_due_on, a.start_on, a.decision_needed,
         (SELECT count(*)::int FROM activity_followups f WHERE f.activity_id = a.id AND NOT f.done AND f.due_on < $2::date) AS overdue
-       FROM agency_activities a LEFT JOIN users u ON u.id = a.lead_id LEFT JOIN org_units ou ON ou.id = a.unit_id WHERE a.org_id = $1`,
-      [orgId, today],
+       FROM agency_activities a LEFT JOIN users u ON u.id = a.lead_id LEFT JOIN org_units ou ON ou.id = a.unit_id
+       WHERE a.org_id = $1 AND (NOT a.confidential OR $3 OR a.lead_id = $4)`,
+      // Une activité confidentielle n'apparaît qu'à son responsable et aux gestionnaires, comme dans le portefeuille
+      [orgId, today, perms.includes("agenda.manage"), actorId],
     );
+    // L'état affiché tient compte des retards : une activité en retard n'est jamais « dans les temps »
+    const effective = (h: PilotageItem["health"], overdue: number) =>
+      h === "on_track" && overdue > 0 ? "at_risk" : h;
     const items: PilotageItem[] = [
       ...projects.map((p) => {
         const g = gov.get(p.id);
@@ -77,7 +83,7 @@ export class Pilotage {
           title: p.name,
           lead_name: g?.lead_name ?? null,
           unit_name: g?.unit_name ?? p.team_name,
-          health: p.status,
+          health: effective(p.status, p.overdue_count),
           progress: p.task_count ? Math.round((p.done_count / p.task_count) * 100) : 0,
           next_due: nextDue.get(p.id) ?? p.due_on,
           overdue: p.overdue_count,
@@ -91,7 +97,7 @@ export class Pilotage {
         title: a.title,
         lead_name: a.lead_name,
         unit_name: a.unit_name,
-        health: a.health,
+        health: effective(a.health, a.overdue),
         progress: a.kind === "interne" ? a.progress : null,
         next_due: a.next_due_on ?? a.start_on,
         overdue: a.overdue,
@@ -157,6 +163,15 @@ export class Pilotage {
        WHERE a.org_id = $1 AND NOT m.confidential AND a.status NOT IN ('realise','annule') AND a.due_on < $2::date ORDER BY a.due_on LIMIT 6`,
       [orgId, today],
     );
+    // Tout ce qui a dépassé son échéance, quelle que soit sa nature : la DG voit un seul chiffre et son détail
+    const lateCounts = await db.one<{ livrables: number; activites_plan: number; courrier: number }>(
+      `SELECT
+        (SELECT count(*)::int FROM deliverables WHERE org_id = $1 AND status <> 'valide' AND due_on < $2::date) AS livrables,
+        (SELECT count(*)::int FROM plan_activities a JOIN work_plans p ON p.id = a.plan_id
+          WHERE a.org_id = $1 AND p.status = 'approved' AND a.progress < 100 AND a.end_on < $2::date) AS activites_plan,
+        (SELECT count(*)::int FROM correspondence WHERE org_id = $1 AND status <> 'traite' AND NOT confidential AND due_on < $2::date) AS courrier`,
+      [orgId, today],
+    );
     const decisions = items.filter((i) => i.decision_needed.trim() && i.health !== "done");
     const critical = items.filter((i) => i.health === "off_track");
     const overdueTasks = items.filter((i) => i.overdue > 0).reduce((s, i) => s + i.overdue, 0);
@@ -169,7 +184,19 @@ export class Pilotage {
       rendez_vous: count("rendez_vous"),
       activites_internes: count("interne"),
       decisions: decisions.length,
-      retards: overdueTasks + (recs?.late ?? 0),
+      retards:
+        overdueTasks +
+        (recs?.late ?? 0) +
+        (lateCounts?.livrables ?? 0) +
+        (lateCounts?.activites_plan ?? 0) +
+        (lateCounts?.courrier ?? 0),
+      retards_detail: {
+        taches_et_suites: overdueTasks,
+        recommandations: recs?.late ?? 0,
+        livrables: lateCounts?.livrables ?? 0,
+        activites_plan: lateCounts?.activites_plan ?? 0,
+        courrier: lateCounts?.courrier ?? 0,
+      },
     };
     const delegators = (
       await db.query<{ from_user: string }>(

@@ -78,6 +78,7 @@ export class Registers {
     await this.svc.requirePerm(actorId, orgId, "correspondence.manage");
     for (const d of [i.doc_date, i.received_on, i.due_on])
       if (d && !isRealDate(d)) throw badRequest(`Date invalide : ${d}`);
+    if (i.due_on && i.due_on < i.received_on) throw badRequest("Le délai de réponse précède la date de réception");
     const id = uid("crr");
     const year = Number(i.received_on.slice(0, 4));
     for (let attempt = 0; ; attempt++) {
@@ -124,6 +125,8 @@ export class Registers {
     if (i.assignee_id && !(await this.svc.orgRole(i.assignee_id, m.org_id)))
       throw badRequest("La personne doit être membre de l'organisation");
     if (i.due_on && !isRealDate(i.due_on)) throw badRequest(`Date invalide : ${i.due_on}`);
+    if (i.due_on && i.due_on < String(m.received_on).slice(0, 10))
+      throw badRequest("Le délai de réponse précède la date de réception");
     await this.svc.db.query(
       "UPDATE correspondence SET unit_id = COALESCE($1, unit_id), assignee_id = COALESCE($2, assignee_id), due_on = COALESCE($3, due_on), status = 'impute', escalated = FALSE WHERE id = $4",
       [i.unit_id ?? null, i.assignee_id ?? null, i.due_on ?? null, id],
@@ -141,23 +144,27 @@ export class Registers {
   async closeMail(actorId: string, id: string, i: { response_ref?: string }) {
     const { m, manager } = await this.mailReadable(actorId, id);
     if (!manager && m.assignee_id !== actorId) await this.svc.requirePerm(actorId, m.org_id, "correspondence.manage");
-    await this.svc.db.query(
-      "UPDATE correspondence SET status = 'traite', response_ref = $1, closed_at = now() WHERE id = $2",
+    // Une clôture est un fait du registre : elle ne s'écrase pas
+    const closed = await this.svc.db.one(
+      "UPDATE correspondence SET status = 'traite', response_ref = $1, closed_at = now() WHERE id = $2 AND status <> 'traite' RETURNING id",
       [i.response_ref ?? "", id],
     );
+    if (!closed) throw new HttpError(409, "Ce courrier est déjà traité");
     await this.svc.log(actorId, "correspondence.closed", { orgId: m.org_id, data: { id } });
     const r = await this.mail(id);
     return { ...r, reference: mailRef(r) };
   }
   /** Un courrier en retard remonte une seule fois au responsable de l'entité. */
   async sweep(now = day()) {
-    const late = await this.svc.db.query<Mail & { manager_id: string | null }>(
+    const late = await this.svc.db.query<Mail & { manager_id: string | null; created_by: string | null }>(
       "SELECT c.*, ou.manager_id FROM correspondence c LEFT JOIN org_units ou ON ou.id = c.unit_id WHERE c.status <> 'traite' AND NOT c.escalated AND c.due_on < $1::date",
       [now],
     );
     for (const m of late) {
-      if (m.manager_id)
-        await this.svc.notify(m.manager_id, m.org_id, {
+      // Responsable de l'entité d'abord ; à défaut la personne imputée, puis le bureau d'ordre qui a enregistré
+      const to = m.manager_id ?? m.assignee_id ?? m.created_by;
+      if (to)
+        await this.svc.notify(to, m.org_id, {
           kind: "correspondence.late",
           title: `Courrier en retard : ${m.subject}`,
           body: mailRef(m),

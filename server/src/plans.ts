@@ -258,6 +258,16 @@ export class Plans {
       [actorId, id],
     );
     await this.svc.log(actorId, "plan.submitted", { orgId: p.org_id, data: { id } });
+    // Ceux qui peuvent approuver en sont prévenus ; l'auteur de la soumission, qui ne peut pas approuver, ne l'est pas
+    for (const u of await this.svc.usersOf(p.org_id)) {
+      if (u.is_ai || u.id === actorId) continue;
+      if (!(await this.svc.permissionsOf(u.id, p.org_id)).includes("plans.approve")) continue;
+      await this.svc.notify(u.id, p.org_id, {
+        kind: "plan.submitted",
+        title: `Plan à approuver : ${p.title}`,
+        body: "Le plan de travail attend votre approbation ou ses corrections.",
+      });
+    }
     return this.get(actorId, id);
   }
 

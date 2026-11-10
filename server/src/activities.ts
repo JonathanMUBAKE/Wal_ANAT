@@ -174,7 +174,18 @@ export class Activities {
 
   async update(actorId: string, id: string, patch: ActivityInput) {
     const a = await this.readable(actorId, id);
-    if (a.lead_id !== actorId) await this.svc.requirePerm(actorId, a.org_id, "agenda.manage");
+    const manager = await this.canManage(actorId, a.org_id);
+    if (a.lead_id !== actorId && !manager) await this.svc.requirePerm(actorId, a.org_id, "agenda.manage");
+    // Le responsable rend compte ; confier l'activité à un autre ou lever sa confidentialité revient aux gestionnaires
+    const leadChanged = patch.lead_id !== undefined && (patch.lead_id ?? null) !== a.lead_id;
+    const secrecyChanged = patch.confidential !== undefined && patch.confidential !== a.confidential;
+    if (!manager && (leadChanged || secrecyChanged))
+      throw forbidden("Seul un gestionnaire change le responsable ou la confidentialité d'une activité");
+    // Les dates se contrôlent avec celles déjà enregistrées, pas seulement entre elles
+    const start = patch.start_on === undefined ? a.start_on : patch.start_on;
+    const end = patch.end_on === undefined ? a.end_on : patch.end_on;
+    if (start && end && String(end).slice(0, 10) < String(start).slice(0, 10))
+      throw badRequest("La fin précède le début");
     await this.assertRefs(a.org_id, patch);
     const sets: string[] = [];
     const vals: unknown[] = [];

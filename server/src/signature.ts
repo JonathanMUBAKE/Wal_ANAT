@@ -82,8 +82,11 @@ export class Signature {
       throw badRequest("La dernière étape du circuit doit être une signature");
     for (const s of i.steps) {
       if (s.actor_id === actorId) throw badRequest("L'auteur d'un document ne peut pas figurer dans son circuit");
-      if (!(await this.svc.orgRole(s.actor_id, orgId)))
-        throw badRequest("Chaque intervenant doit être membre de l'organisation");
+      const role = await this.svc.orgRole(s.actor_id, orgId);
+      if (!role) throw badRequest("Chaque intervenant doit être membre de l'organisation");
+      // Sans accès au parapheur, l'intervenant ne pourrait jamais agir : le document resterait bloqué à son étape
+      if (role === "guest" || !(await this.svc.permissionsOf(s.actor_id, orgId)).includes("signature.use"))
+        throw badRequest("Chaque intervenant doit avoir accès au parapheur");
     }
     if (i.due_on && !isRealDate(i.due_on)) throw badRequest(`Date invalide : ${i.due_on}`);
     if (
@@ -310,8 +313,10 @@ export class Signature {
     if (i.to_user === actorId) throw badRequest("On ne se délègue pas à soi-même");
     for (const d of [i.start_on, i.end_on]) if (!isRealDate(d)) throw badRequest(`Date invalide : ${d}`);
     if (i.end_on < i.start_on) throw badRequest("La fin de délégation précède son début");
-    if (!(await this.svc.orgRole(i.to_user, orgId)))
-      throw badRequest("Le délégataire doit être membre de l'organisation");
+    const role = await this.svc.orgRole(i.to_user, orgId);
+    if (!role) throw badRequest("Le délégataire doit être membre de l'organisation");
+    if (role === "guest" || !(await this.svc.permissionsOf(i.to_user, orgId)).includes("signature.use"))
+      throw badRequest("Le délégataire doit avoir accès au parapheur : un invité ne peut pas recevoir de délégation");
     const id = uid("dlg");
     await this.svc.db.query(
       "INSERT INTO delegations (id, org_id, from_user, to_user, start_on, end_on) VALUES ($1,$2,$3,$4,$5,$6)",

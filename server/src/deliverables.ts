@@ -89,14 +89,18 @@ export class Deliverables {
       !(await this.svc.db.one("SELECT 1 FROM plan_activities WHERE org_id = $1 AND id = $2", [orgId, i.activity_id]))
     )
       throw badRequest("Activité du plan inconnue");
-    if (
-      i.contract_id &&
-      !(await this.svc.db.one("SELECT 1 FROM consultant_contracts WHERE org_id = $1 AND id = $2", [
-        orgId,
-        i.contract_id,
-      ]))
-    )
-      throw badRequest("Mission inconnue");
+    if (i.contract_id) {
+      const c = await this.svc.db.one<{ status: string; end_on: string }>(
+        "SELECT status, end_on::text AS end_on FROM consultant_contracts WHERE org_id = $1 AND id = $2",
+        [orgId, i.contract_id],
+      );
+      if (!c) throw badRequest("Mission inconnue");
+      // Un livrable de mission s'inscrit dans la durée de la mission
+      if (c.status === "ended" || c.end_on < day())
+        throw badRequest("Cette mission est terminée : aucun livrable ne peut plus y être rattaché");
+      if (i.due_on && i.due_on > c.end_on)
+        throw badRequest(`L'échéance dépasse la fin de la mission (${c.end_on})`);
+    }
   }
 
   async list(actorId: string, orgId: string, f: { mine?: boolean }) {
@@ -271,11 +275,13 @@ export class Deliverables {
         });
       return this.get(actorId, id);
     }
+    // Numérotation annuelle des procès-verbaux : elle repart à 1 chaque année
+    const pvYear = day().slice(0, 4);
     const seq = await this.svc.db.one<{ n: number }>(
-      "SELECT count(*)::int + 1 AS n FROM deliverables WHERE org_id = $1 AND reception_ref IS NOT NULL",
-      [d.org_id],
+      "SELECT COALESCE(max(substring(reception_ref FROM 9)::int), 0) + 1 AS n FROM deliverables WHERE org_id = $1 AND reception_ref LIKE $2",
+      [d.org_id, `PV-${pvYear}-%`],
     );
-    const ref = d.contract_id ? `PV-${day().slice(0, 4)}-${String(seq?.n ?? 1).padStart(4, "0")}` : null;
+    const ref = d.contract_id ? `PV-${pvYear}-${String(seq?.n ?? 1).padStart(4, "0")}` : null;
     await this.move(actorId, d, "valide", i.comment?.trim() ?? "", {
       set: ", validated_by = $5, validated_at = now(), to_pay = $6, reception_ref = $7",
       values: [actorId, !!d.contract_id, ref],
@@ -289,6 +295,28 @@ export class Deliverables {
           body: `Procès-verbal ${ref}`,
         });
     }
+    return this.get(actorId, id);
+  }
+
+  /** Le paiement d'un livrable reçu se constate une fois : la date et l'auteur restent dans l'historique. */
+  async markPaid(actorId: string, id: string) {
+    const d = await this.row(id);
+    await this.svc.requirePerm(actorId, d.org_id, "consultants.manage");
+    if (!d.to_pay) throw new HttpError(409, "Ce livrable n'attend aucun paiement");
+    const done = await this.svc.db.tx(async (q) => {
+      const r = await q.query(
+        "UPDATE deliverables SET to_pay = FALSE, paid_at = now(), paid_by = $1 WHERE id = $2 AND to_pay RETURNING id",
+        [actorId, id],
+      );
+      if (!r.length) return false;
+      await q.query(
+        "INSERT INTO deliverable_events (id, org_id, deliverable_id, actor_id, from_status, to_status, comment) VALUES ($1,$2,$3,$4,$5,$5,$6)",
+        [uid("lev"), d.org_id, id, actorId, d.status, `Paiement constaté (${d.reception_ref ?? "sans procès-verbal"})`],
+      );
+      return true;
+    });
+    if (!done) throw new HttpError(409, "Ce livrable n'attend aucun paiement");
+    await this.svc.log(actorId, "deliverable.paid", { orgId: d.org_id, data: { id, reception: d.reception_ref } });
     return this.get(actorId, id);
   }
 

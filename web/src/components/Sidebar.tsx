@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
   CalendarDays,
+  CalendarRange,
+  Gauge,
   Check,
   CheckCircle2,
   ChevronsUpDown,
@@ -226,10 +228,12 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="space-y-0.5 px-3">
+        {can("pilotage.view") && link("/pilotage", <Gauge className="size-4" />, "Tableau de bord DG")}
         {link("/", <House className="size-4" />, "Accueil")}
         {link("/my-tasks", <CheckCircle2 className="size-4" />, "Mes tâches")}
         {link("/inbox", <Inbox className="size-4" />, "Boîte de réception", unread)}
         {link("/ai", <Sparkles className="size-4" />, "Coéquipiers IA", approvals?.length, true)}
+        {can("agenda.view") && link("/activites", <CalendarRange className="size-4" />, "Activités")}
         {can("meetings.view") && link("/reunions", <CalendarDays className="size-4" />, "Réunions")}
         {link("/teams", <Users className="size-4" />, "Équipes")}
         {link("/org", <Network className="size-4" />, "Organisation")}

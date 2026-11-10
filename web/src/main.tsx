@@ -24,6 +24,8 @@ import { ActivationPage, ResetPage } from "./pages/AccountLinks";
 import { AccountPage } from "./pages/Account";
 import { AdminPage } from "./pages/Admin";
 import { MeetingPage, MeetingsPage } from "./pages/Meetings";
+import { PilotagePage } from "./pages/Pilotage";
+import { ActivitiesPage, ActivityPage } from "./pages/Activities";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -44,6 +46,9 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="org" element={<OrganizationPage />} />
                   <Route path="account" element={<AccountPage />} />
                   <Route path="admin" element={<AdminPage />} />
+                  <Route path="pilotage" element={<PilotagePage />} />
+                  <Route path="activites" element={<ActivitiesPage />} />
+                  <Route path="activites/:id" element={<ActivityPage />} />
                   <Route path="reunions" element={<MeetingsPage />} />
                   <Route path="reunions/:id" element={<MeetingPage />} />
                   <Route path="teams" element={<TeamsPage />} />

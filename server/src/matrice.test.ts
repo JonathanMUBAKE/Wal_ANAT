@@ -164,6 +164,11 @@ async function boot(kind: Kind) {
         })
       ).body;
     },
+    activity: async () => (await inj(a, "POST", "/api/activities", { kind: "commission", title: u("A") })).body,
+    followup: async () => {
+      const x = await X.activity();
+      return (await inj(a, "POST", `/api/activities/${x.id}/followups`, { text: "x" })).body.followups[0].id;
+    },
     domain: async () => (await inj(a, "POST", "/api/domains", { name: u("Domaine") })).body,
     sheet: async () => {
       const d = await X.domain();
@@ -372,6 +377,32 @@ const TABLE = [
   })),
   R_("DELETE", "/api/projects/:id/ai/rules/:ruleId", async (X) => ({
     url: `/api/projects/${X.app}/ai/rules/${(await X.rule()).id}`,
+  })),
+  R_("GET", "/api/pilotage"),
+  R_("GET", "/api/activities"),
+  R_("POST", "/api/activities", () => ({ body: { kind: "commission", title: "Commission" } })),
+  R_("GET", "/api/activities/:id", async (X) => ({ url: `/api/activities/${(await X.activity()).id}` })),
+  R_("PATCH", "/api/activities/:id", async (X) => ({
+    url: `/api/activities/${(await X.activity()).id}`,
+    body: { outcome: "x" },
+  })),
+  R_("DELETE", "/api/activities/:id", async (X) => ({ url: `/api/activities/${(await X.activity()).id}` })),
+  R_("POST", "/api/activities/:id/followups", async (X) => ({
+    url: `/api/activities/${(await X.activity()).id}/followups`,
+    body: { text: "x" },
+  })),
+  R_("PATCH", "/api/activity-followups/:id", async (X) => ({
+    url: `/api/activity-followups/${await X.followup()}`,
+    body: { done: true },
+  })),
+  R_("GET", "/api/projects/:id/governance", (X) => ({ url: `/api/projects/${X.app}/governance` })),
+  R_("PUT", "/api/projects/:id/governance", (X) => ({
+    url: `/api/projects/${X.app}/governance`,
+    body: { sponsor: "x" },
+  })),
+  R_("PUT", "/api/projects/:id/team/:userId", (X) => ({
+    url: `/api/projects/${X.app}/team/u_karim`,
+    body: { function_label: "Chef" },
   })),
   R_("GET", "/api/domains"),
   R_("POST", "/api/domains", () => ({ body: { name: u("Domaine") } })),

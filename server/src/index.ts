@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { buildApp } from "./app.js";
+import { seedGovDemo } from "./gov-demo.js";
 import { loadLocalSecret, startupProblems } from "./secrets.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -22,7 +23,7 @@ if (dataDir) loadLocalSecret(dataDir);
 
 const demo = process.env.CADENCE_DEMO === "1";
 const publicUrl = process.env.PUBLIC_URL?.replace(/\/$/, "") ?? `http://localhost:${port}`;
-const { app, provider, db, provisioning } = await buildApp({
+const { app, provider, db, provisioning, svc } = await buildApp({
   databaseUrl,
   dataDir,
   demoLogin: demo,
@@ -32,6 +33,7 @@ const { app, provider, db, provisioning } = await buildApp({
   logger: process.env.NODE_ENV !== "test",
 });
 
+if (demo && process.env.ANAT_DEMO === "1") await seedGovDemo(svc);
 await app.listen({ port, host });
 const setup = demo ? null : await provisioning.bootstrapLink();
 console.log(`\n  Cadence → http://localhost:${port}`);

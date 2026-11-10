@@ -1,0 +1,209 @@
+import { meetingReference } from "./meetings.js";
+import type { Services } from "./services.js";
+
+export type Form = "projet_interne" | "projet_confie" | "commission" | "conference" | "rendez_vous" | "interne";
+export interface PilotageItem {
+  id: string;
+  form: Form;
+  title: string;
+  lead_name: string | null;
+  unit_name: string | null;
+  health: "on_track" | "at_risk" | "off_track" | "done";
+  progress: number | null;
+  next_due: string | null;
+  overdue: number;
+  decision_needed: string;
+  href: string;
+}
+const day = (offset = 0) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
+
+/** Le grand tableau de bord : une seule lecture de toutes les formes d'activité auxquelles la personne a accès. */
+export class Pilotage {
+  constructor(private svc: Services) {}
+
+  async overview(actorId: string, orgId: string) {
+    await this.svc.requirePerm(actorId, orgId, "pilotage.view");
+    const db = this.svc.db;
+    const today = day();
+    const projects = await this.svc.listProjects(actorId, orgId);
+    const ids = projects.map((p) => p.id);
+    const gov = new Map(
+      (
+        await db.query<{
+          id: string;
+          origin: string;
+          decision_needed: string;
+          lead_name: string | null;
+          unit_name: string | null;
+        }>(
+          "SELECT p.id, p.origin, p.decision_needed, COALESCE(l.name, o.name) AS lead_name, ou.name AS unit_name FROM projects p LEFT JOIN users l ON l.id = p.lead_id LEFT JOIN users o ON o.id = p.owner_id LEFT JOIN org_units ou ON ou.id = p.unit_id WHERE p.id = ANY($1)",
+          [ids],
+        )
+      ).map((g) => [g.id, g]),
+    );
+    const nextDue = new Map(
+      (
+        await db.query<{ project_id: string; d: string }>(
+          "SELECT project_id, min(due_on) AS d FROM tasks WHERE project_id = ANY($1) AND NOT completed AND due_on >= $2::date GROUP BY project_id",
+          [ids, today],
+        )
+      ).map((r) => [r.project_id, r.d]),
+    );
+    const activities = await db.query<{
+      id: string;
+      kind: Form;
+      title: string;
+      lead_name: string | null;
+      unit_name: string | null;
+      health: PilotageItem["health"];
+      progress: number;
+      next_due_on: string | null;
+      start_on: string | null;
+      decision_needed: string;
+      overdue: number;
+    }>(
+      `SELECT a.id, a.kind, a.title, u.name AS lead_name, ou.name AS unit_name, a.health, a.progress, a.next_due_on, a.start_on, a.decision_needed,
+        (SELECT count(*)::int FROM activity_followups f WHERE f.activity_id = a.id AND NOT f.done AND f.due_on < $2::date) AS overdue
+       FROM agency_activities a LEFT JOIN users u ON u.id = a.lead_id LEFT JOIN org_units ou ON ou.id = a.unit_id WHERE a.org_id = $1`,
+      [orgId, today],
+    );
+    const items: PilotageItem[] = [
+      ...projects.map((p) => {
+        const g = gov.get(p.id);
+        return {
+          id: p.id,
+          form: (g?.origin === "confie" ? "projet_confie" : "projet_interne") as Form,
+          title: p.name,
+          lead_name: g?.lead_name ?? null,
+          unit_name: g?.unit_name ?? p.team_name,
+          health: p.status,
+          progress: p.task_count ? Math.round((p.done_count / p.task_count) * 100) : 0,
+          next_due: nextDue.get(p.id) ?? p.due_on,
+          overdue: p.overdue_count,
+          decision_needed: g?.decision_needed ?? "",
+          href: `/projects/${p.id}/dashboard`,
+        };
+      }),
+      ...activities.map((a) => ({
+        id: a.id,
+        form: a.kind,
+        title: a.title,
+        lead_name: a.lead_name,
+        unit_name: a.unit_name,
+        health: a.health,
+        progress: a.kind === "interne" ? a.progress : null,
+        next_due: a.next_due_on ?? a.start_on,
+        overdue: a.overdue,
+        decision_needed: a.decision_needed,
+        href: `/activites/${a.id}`,
+      })),
+    ];
+    const count = (f: Form) => items.filter((i) => i.form === f).length;
+    const health = { on_track: 0, at_risk: 0, off_track: 0, done: 0 };
+    for (const i of items) health[i.health]++;
+
+    const horizon = day(7);
+    const agendaActivities = activities
+      .filter((a) => a.start_on && a.start_on >= today && a.start_on <= horizon)
+      .map((a) => ({
+        id: a.id,
+        form: a.kind as string,
+        title: a.title,
+        date: a.start_on as string,
+        href: `/activites/${a.id}`,
+      }));
+    const meetings = await db.query<{
+      id: string;
+      meeting_type: string;
+      meeting_date: string;
+      start_time: string | null;
+      location: string;
+    }>(
+      "SELECT id, meeting_type, meeting_date, start_time, location FROM meetings WHERE org_id = $1 AND status <> 'cancelled' AND NOT confidential AND meeting_date BETWEEN $2::date AND $3::date ORDER BY meeting_date",
+      [orgId, today, horizon],
+    );
+    const agenda = [
+      ...agendaActivities,
+      ...meetings.map((m) => ({
+        id: m.id,
+        form: "reunion",
+        title: m.meeting_type,
+        date: m.meeting_date,
+        href: `/reunions/${m.id}`,
+      })),
+    ].sort((a, b) => a.date.localeCompare(b.date));
+
+    const recs = await db.one<{ open: number; late: number; done: number }>(
+      `SELECT count(*) FILTER (WHERE a.status NOT IN ('realise','annule'))::int AS open,
+        count(*) FILTER (WHERE a.status NOT IN ('realise','annule') AND a.due_on < $2::date)::int AS late,
+        count(*) FILTER (WHERE a.status = 'realise')::int AS done
+       FROM meeting_actions a JOIN meetings m ON m.id = a.meeting_id WHERE a.org_id = $1 AND NOT m.confidential`,
+      [orgId, today],
+    );
+    const lateRecs = await db.query<{
+      id: string;
+      text: string;
+      responsible_name: string;
+      due_on: string;
+      meeting_id: string;
+      seq: number;
+      service_code: string;
+      writer_initials: string;
+      meeting_date: string;
+    }>(
+      `SELECT a.id, a.text, a.responsible_name, a.due_on, a.meeting_id, m.seq, m.service_code, m.writer_initials, m.meeting_date
+       FROM meeting_actions a JOIN meetings m ON m.id = a.meeting_id
+       WHERE a.org_id = $1 AND NOT m.confidential AND a.status NOT IN ('realise','annule') AND a.due_on < $2::date ORDER BY a.due_on LIMIT 6`,
+      [orgId, today],
+    );
+    const decisions = items.filter((i) => i.decision_needed.trim() && i.health !== "done");
+    const critical = items.filter((i) => i.health === "off_track");
+    const overdueTasks = items.filter((i) => i.overdue > 0).reduce((s, i) => s + i.overdue, 0);
+    const counters = {
+      projets: count("projet_interne") + count("projet_confie"),
+      projets_internes: count("projet_interne"),
+      projets_confies: count("projet_confie"),
+      commissions: count("commission"),
+      conferences: count("conference"),
+      rendez_vous: count("rendez_vous"),
+      activites_internes: count("interne"),
+      decisions: decisions.length,
+      retards: overdueTasks + (recs?.late ?? 0),
+    };
+    const brief = [
+      `${plural(items.length, "activité suivie", "activités suivies")}, dont ${plural(critical.length, "en difficulté", "en difficulté")}.`,
+      decisions.length
+        ? `${plural(decisions.length, "décision attend", "décisions attendent")} votre arbitrage.`
+        : "Aucune décision en attente.",
+      recs?.late
+        ? `${plural(recs.late, "recommandation est", "recommandations sont")} en retard d'exécution.`
+        : "Aucune recommandation en retard.",
+      agenda.length
+        ? `${plural(agenda.length, "rendez-vous ou séance", "rendez-vous ou séances")} dans les 7 prochains jours.`
+        : "Agenda libre sur les 7 prochains jours.",
+    ];
+    return {
+      today,
+      counters,
+      health,
+      items,
+      decisions,
+      agenda,
+      recommendations: {
+        open: recs?.open ?? 0,
+        late: recs?.late ?? 0,
+        done: recs?.done ?? 0,
+        late_list: lateRecs.map((r) => ({
+          id: r.id,
+          text: r.text,
+          responsible_name: r.responsible_name,
+          due_on: r.due_on,
+          meeting_id: r.meeting_id,
+          reference: meetingReference(r),
+        })),
+      },
+      brief,
+    };
+  }
+}

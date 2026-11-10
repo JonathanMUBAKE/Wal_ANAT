@@ -33,6 +33,7 @@ import {
   isLate,
   type Tone,
 } from "@/components/gov";
+import { MeetingsOverview } from "@/components/MeetingsOverview";
 import { api } from "@/lib/api";
 import { useCan, useMe, useUsers } from "@/lib/hooks";
 
@@ -74,9 +75,9 @@ interface MeetingRow {
   open_actions: number;
   action_count: number;
   writer_name: string;
+  start_time: string | null;
 }
 interface MeetingDetail extends MeetingRow {
-  start_time: string | null;
   end_time: string | null;
   convened_by: string;
   facilitator: string;
@@ -134,6 +135,8 @@ export function MeetingsPage() {
           )
         }
       />
+      {isLoading ? <LoadingRows /> : <MeetingsOverview rows={data ?? []} />}
+      <div className="h-3" />
       <Tabs
         value={tab}
         onChange={setTab}

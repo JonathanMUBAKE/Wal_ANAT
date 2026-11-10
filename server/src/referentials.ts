@@ -1,0 +1,282 @@
+import { uid } from "./db.js";
+import { HttpError, badRequest, forbidden, notFound, type Services } from "./services.js";
+
+/** Listes paramétrables de l'institution (docs/PARAMETRAGE.md). Les autres listes restent fixes : des règles en dépendent. */
+export const LISTS = ["activity_type", "unit_type"] as const;
+export type List = (typeof LISTS)[number];
+/** Teintes du système de design, lisibles en clair et en sombre. */
+export const COLORS = ["blue", "teal", "green", "ochre", "terracotta", "indigo", "violet", "slate"] as const;
+export const ICONS = [
+  "landmark",
+  "mic",
+  "handshake",
+  "calendar-clock",
+  "briefcase",
+  "map",
+  "users",
+  "flag",
+  "building",
+  "globe",
+  "file-text",
+  "graduation-cap",
+  "scale",
+  "map-pin",
+  "network",
+  "circle",
+] as const;
+/** Propriétés admises par liste : elles portent les règles qui dépendaient autrefois d'une valeur figée. */
+const PROPS: Record<List, Record<string, "boolean" | "string">> = {
+  activity_type: { confidential_default: "boolean", tracks_progress: "boolean", counterpart_label: "string" },
+  unit_type: { provincial: "boolean" },
+};
+
+export interface RefValue {
+  id: string;
+  org_id: string;
+  list: List;
+  code: string;
+  label: string;
+  plural: string;
+  color: string;
+  icon: string;
+  position: number;
+  archived: boolean;
+  props: Record<string, unknown>;
+}
+type Seed = Pick<RefValue, "code" | "label" | "plural" | "color" | "icon" | "props">;
+/** Valeurs de départ : elles reproduisent les listes figées d'avant le paramétrage. */
+const DEFAULTS: Record<List, Seed[]> = {
+  activity_type: [
+    {
+      code: "commission",
+      label: "Commission",
+      plural: "Commissions",
+      color: "ochre",
+      icon: "landmark",
+      props: { counterpart_label: "Instance" },
+    },
+    {
+      code: "conference",
+      label: "Conférence",
+      plural: "Conférences",
+      color: "terracotta",
+      icon: "mic",
+      props: { counterpart_label: "Organisateur" },
+    },
+    {
+      code: "rendez_vous",
+      label: "Rendez-vous",
+      plural: "Rendez-vous",
+      color: "indigo",
+      icon: "handshake",
+      props: { counterpart_label: "Interlocuteur", confidential_default: true },
+    },
+    {
+      code: "interne",
+      label: "Activité interne",
+      plural: "Activités internes",
+      color: "slate",
+      icon: "calendar-clock",
+      props: { counterpart_label: "Partenaire", tracks_progress: true },
+    },
+  ],
+  unit_type: [
+    { code: "organisation", label: "Institution", plural: "Institution", color: "blue", icon: "landmark", props: {} },
+    {
+      code: "direction_generale",
+      label: "Direction générale",
+      plural: "Directions générales",
+      color: "blue",
+      icon: "building",
+      props: {},
+    },
+    { code: "direction", label: "Direction", plural: "Directions", color: "blue", icon: "building", props: {} },
+    { code: "departement", label: "Département", plural: "Départements", color: "teal", icon: "network", props: {} },
+    { code: "service", label: "Service", plural: "Services", color: "slate", icon: "briefcase", props: {} },
+    { code: "cellule", label: "Cellule", plural: "Cellules", color: "slate", icon: "users", props: {} },
+    {
+      code: "representation_provinciale",
+      label: "Représentation provinciale",
+      plural: "Représentations provinciales",
+      color: "green",
+      icon: "map-pin",
+      props: { provincial: true },
+    },
+    { code: "antenne", label: "Antenne", plural: "Antennes", color: "green", icon: "map", props: { provincial: true } },
+  ],
+};
+
+export const slug = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 50);
+
+export interface RefInput {
+  label?: string;
+  plural?: string;
+  color?: string;
+  icon?: string;
+  position?: number;
+  archived?: boolean;
+  props?: Record<string, unknown>;
+}
+
+const seeded = new WeakMap<Services, Set<string>>();
+
+export class Referentials {
+  constructor(private svc: Services) {}
+
+  /** Installe une fois par organisation les valeurs de départ manquantes ; une valeur existante n'est jamais modifiée. */
+  async ensure(orgId: string) {
+    let done = seeded.get(this.svc);
+    if (!done) seeded.set(this.svc, (done = new Set()));
+    if (done.has(orgId)) return;
+    for (const list of LISTS)
+      for (const [i, v] of DEFAULTS[list].entries())
+        await this.svc.db.query(
+          `INSERT INTO ref_values (id, org_id, list, code, label, plural, color, icon, position, props)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (org_id, list, code) DO NOTHING`,
+          [uid("ref"), orgId, list, v.code, v.label, v.plural, v.color, v.icon, (i + 1) * 10, JSON.stringify(v.props)],
+        );
+    done.add(orgId);
+  }
+
+  async values(orgId: string, list: List) {
+    await this.ensure(orgId);
+    return this.svc.db.query<RefValue>(
+      "SELECT * FROM ref_values WHERE org_id = $1 AND list = $2 ORDER BY position, created_at",
+      [orgId, list],
+    );
+  }
+
+  /** Lecture pour tous : les écrans en ont besoin pour afficher libellés, couleurs et icônes. */
+  async all(actorId: string, orgId: string) {
+    if (!(await this.svc.orgRole(actorId, orgId))) throw forbidden("Réservé aux membres de l'institution");
+    const out: Record<string, RefValue[]> = {};
+    for (const list of LISTS) out[list] = await this.values(orgId, list);
+    return out;
+  }
+
+  /**
+   * Valeur utilisable pour un nouveau dossier : active, connue par son code ou, pour la compatibilité, par son libellé.
+   * Une valeur archivée reste acceptée si le dossier la porte déjà (`current`).
+   */
+  async resolve(orgId: string, list: List, input: string, current?: string) {
+    const all = await this.values(orgId, list);
+    const key = input.trim();
+    const v = all.find((x) => x.code === key) ?? all.find((x) => x.label.toLowerCase() === key.toLowerCase());
+    const name = list === "activity_type" ? "Type d'activité" : "Type d'entité";
+    if (!v) throw badRequest(`${name} inconnu : ${key}`);
+    if (v.archived && v.code !== current) throw badRequest(`${name} archivé : ${v.label}`);
+    return v;
+  }
+
+  private async requireSystemAdmin(actorId: string) {
+    if (
+      !(await this.svc.db.one(
+        "SELECT 1 FROM users WHERE id = $1 AND platform_role = 'super_admin' AND status = 'active'",
+        [actorId],
+      ))
+    )
+      throw forbidden("Réservé à l'administrateur système");
+    await this.svc.assertAdminMfa(actorId);
+  }
+
+  private check(list: List, i: RefInput) {
+    if (i.color !== undefined && !(COLORS as readonly string[]).includes(i.color))
+      throw badRequest(`Couleur inconnue : ${i.color}`);
+    if (i.icon !== undefined && !(ICONS as readonly string[]).includes(i.icon))
+      throw badRequest(`Icône inconnue : ${i.icon}`);
+    for (const [k, v] of Object.entries(i.props ?? {})) {
+      const type = PROPS[list][k];
+      if (!type) throw badRequest(`Propriété inconnue pour cette liste : ${k}`);
+      if (typeof v !== type) throw badRequest(`Valeur invalide pour la propriété ${k}`);
+    }
+  }
+
+  private async assertUniqueLabel(orgId: string, list: List, label: string, except?: string) {
+    const clash = (await this.values(orgId, list)).find(
+      (v) => v.id !== except && v.label.trim().toLowerCase() === label.trim().toLowerCase(),
+    );
+    if (clash) throw badRequest(`Le libellé « ${label.trim()} » existe déjà dans cette liste`);
+  }
+
+  async create(actorId: string, orgId: string, list: string, i: RefInput & { label: string }) {
+    await this.requireSystemAdmin(actorId);
+    if (!(LISTS as readonly string[]).includes(list)) throw badRequest(`Liste inconnue : ${list}`);
+    const l = list as List;
+    if (!i.label.trim()) throw badRequest("Le libellé est obligatoire");
+    this.check(l, i);
+    await this.assertUniqueLabel(orgId, l, i.label);
+    const all = await this.values(orgId, l);
+    // Le code est dérivé du libellé, une fois pour toutes ; un suffixe le rend unique
+    const base = slug(i.label) || "valeur";
+    let code = base;
+    for (let n = 2; all.some((v) => v.code === code); n++) code = `${base}_${n}`;
+    const id = uid("ref");
+    await this.svc.db.query(
+      `INSERT INTO ref_values (id, org_id, list, code, label, plural, color, icon, position, props)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [
+        id,
+        orgId,
+        l,
+        code,
+        i.label.trim(),
+        i.plural?.trim() || i.label.trim(),
+        i.color ?? "slate",
+        i.icon ?? "circle",
+        i.position ?? Math.max(0, ...all.map((v) => v.position)) + 10,
+        JSON.stringify(i.props ?? {}),
+      ],
+    );
+    await this.svc.log(actorId, "referential.created", { orgId, data: { id, list: l, code, label: i.label.trim() } });
+    return this.svc.db.one<RefValue>("SELECT * FROM ref_values WHERE id = $1", [id]);
+  }
+
+  async update(actorId: string, orgId: string, id: string, i: RefInput) {
+    await this.requireSystemAdmin(actorId);
+    const v = await this.svc.db.one<RefValue>("SELECT * FROM ref_values WHERE id = $1 AND org_id = $2", [id, orgId]);
+    if (!v) throw notFound("Valeur introuvable");
+    this.check(v.list, i);
+    if (i.label !== undefined) {
+      if (!i.label.trim()) throw badRequest("Le libellé est obligatoire");
+      await this.assertUniqueLabel(orgId, v.list, i.label, v.id);
+    }
+    if (i.archived && !v.archived) {
+      const active = (await this.values(orgId, v.list)).filter((x) => !x.archived);
+      if (active.length <= 1)
+        throw new HttpError(409, "La dernière valeur active d'une liste ne peut pas être archivée");
+    }
+    const props = i.props ? { ...v.props, ...i.props } : v.props;
+    await this.svc.db.query(
+      `UPDATE ref_values SET label = $1, plural = $2, color = $3, icon = $4, position = $5, archived = $6, props = $7, updated_at = now()
+       WHERE id = $8`,
+      [
+        i.label?.trim() ?? v.label,
+        i.plural?.trim() ?? v.plural,
+        i.color ?? v.color,
+        i.icon ?? v.icon,
+        i.position ?? v.position,
+        i.archived ?? v.archived,
+        JSON.stringify(props),
+        id,
+      ],
+    );
+    await this.svc.log(actorId, "referential.updated", {
+      orgId,
+      data: {
+        id,
+        list: v.list,
+        code: v.code,
+        before: { label: v.label, archived: v.archived },
+        changes: i as Record<string, unknown>,
+      },
+    });
+    return this.svc.db.one<RefValue>("SELECT * FROM ref_values WHERE id = $1", [id]);
+  }
+}

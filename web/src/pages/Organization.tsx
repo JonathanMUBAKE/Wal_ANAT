@@ -4,7 +4,8 @@ import { PageHeader, Status, Tabs } from "@/components/gov";
 import { Domains, Gaps, SheetDialog, Sheets, useSheetRows } from "./Attributions";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AtSign, ChevronRight, Network, Plus, Trash2, Users } from "lucide-react";
+import { AtSign, ChevronRight, MapPin, Network, Plus, Trash2, Users } from "lucide-react";
+import { useReferentials, useUnitTypes } from "@/lib/referentials";
 import { Avatar, Button, ConfirmDialog, Empty, Spinner, cn } from "@/components/ui";
 import { AssigneePicker } from "@/components/pickers";
 import { AvatarUpload } from "@/components/AvatarUpload";
@@ -15,7 +16,22 @@ import { InvitationsPanel, MemberAccessButton, ProfilesPanel, useProfiles } from
 import { api } from "@/lib/api";
 import type { OrgUnit } from "@/lib/types";
 
-const KINDS = ["Organisation", "Filiale", "Direction", "Département", "Pôle", "Service", "Site"];
+/** Type d'entité : libellé du référentiel et repère « Province » pour les représentations en province. */
+function UnitKind({ code }: { code: string }) {
+  const unitType = useUnitTypes();
+  const t = unitType(code);
+  return (
+    <>
+      {t.label}
+      {t.value?.props.provincial && (
+        <span className="ml-1.5 inline-flex items-center gap-0.5 rounded bg-success-soft px-1 text-[10.5px] font-medium text-success">
+          <MapPin className="size-2.5" />
+          Province
+        </span>
+      )}
+    </>
+  );
+}
 
 export function OrganizationPage() {
   const { data: me } = useMe();
@@ -146,7 +162,7 @@ function Tree({ units, isAdmin }: { units: OrgUnit[]; isAdmin: boolean }) {
                       {u.name}
                     </span>
                     <span className="block truncate text-[11.5px] text-faint">
-                      {u.kind}
+                      <UnitKind code={u.kind} />
                       {u.team_count ? ` · ${u.team_count} équipe(s)` : ""}
                       {u.member_count ? ` · ${u.member_count} pers.` : ""}
                     </span>
@@ -182,6 +198,7 @@ function UnitDetail({
   const users = useUserMap();
   const { data: people } = useUsers();
   const { data: teams } = useTeams();
+  const { data: refs } = useReferentials();
   const [name, setName] = useState(unit.name);
   const [child, setChild] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -199,7 +216,7 @@ function UnitDetail({
   const createChild = () => {
     const name = child.trim();
     if (!name) return;
-    api.post<{ id: string }>("/api/org/units", { name, parent_id: unit.id, kind: "Service" }).then(
+    api.post<{ id: string }>("/api/org/units", { name, parent_id: unit.id, kind: "service" }).then(
       (r) => {
         setChild("");
         refresh();
@@ -268,9 +285,14 @@ function UnitDetail({
               onChange={(e) => patch({ kind: e.target.value })}
               className={cn(field, "mt-1")}
             >
-              {[...new Set([...KINDS, unit.kind])].map((k) => (
-                <option key={k}>{k}</option>
-              ))}
+              {(refs?.unit_type ?? [])
+                .filter((t) => !t.archived || t.code === unit.kind)
+                .map((t) => (
+                  <option key={t.code} value={t.code}>
+                    {t.label}
+                    {t.props.provincial ? " (province)" : ""}
+                  </option>
+                ))}
             </select>
           </label>
           <label className="text-[12px] text-muted">
@@ -355,7 +377,9 @@ function UnitDetail({
             className="flex h-8 w-full items-center justify-between rounded-md px-2 text-left text-[13px] hover:bg-hover"
           >
             <span>{u.name}</span>
-            <span className="text-[11.5px] text-faint">{u.kind}</span>
+            <span className="text-[11.5px] text-faint">
+              <UnitKind code={u.kind} />
+            </span>
           </button>
         ))}
         {isAdmin && (

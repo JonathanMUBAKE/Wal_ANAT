@@ -9,6 +9,8 @@ import { ago } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { AdminOrg, AdminUser, InviteResult, SecurityEvent } from "@/lib/types";
 import { LinkResult } from "./OrgAccess";
+import { PageHeader, Tabs } from "@/components/gov";
+import { InstitutionSettings } from "./AdminReferentials";
 
 const STATUS: Record<
   AdminUser["status"],
@@ -55,42 +57,43 @@ const EVENT: Record<string, string> = {
 /** Console de l'administrateur système : tous les comptes, inscriptions et journal de sécurité. */
 export function AdminPage() {
   const { data: me } = useMe();
-  const [tab, setTab] = useState<"users" | "settings" | "events">("users");
+  const [tab, setTab] = useState<"institution" | "users" | "settings" | "events">("institution");
   if (me && !me.platform_role) return <Navigate to="/" replace />;
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-16 pt-8 sm:px-8">
-      <p className="flex items-center gap-1.5 text-[13px] text-muted">
-        <ShieldCheck className="size-4" />
-        Plateforme
-      </p>
-      <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.02em]">Administration système</h1>
-      {me && !me.mfa_enabled && (
-        <p className="mt-3 flex items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-[13px] text-warning">
-          <AlertTriangle className="size-4 shrink-0" />
-          Ce compte contrôle toute la plateforme : activez la double authentification dans « Sécurité du compte ».
-        </p>
-      )}
-      <div className="mb-5 mt-5 flex gap-1 border-b border-line">
-        {(
-          [
-            ["users", "Comptes"],
-            ["settings", "Inscriptions"],
-            ["events", "Journal de sécurité"],
-          ] as const
-        ).map(([k, l]) => (
-          <button
-            key={k}
-            onClick={() => setTab(k)}
-            className={cn(
-              "-mb-px border-b-2 px-2.5 pb-2.5 text-[13.5px]",
-              tab === k ? "border-fg font-medium text-fg" : "border-transparent text-muted hover:text-fg",
-            )}
-          >
-            {l}
-          </button>
-        ))}
+    <div className="min-h-full">
+      <PageHeader
+        Icon={ShieldCheck}
+        crumbs={["Administration système"]}
+        title="Administration système"
+        subtitle="Réservée à l'administrateur système : paramètres de l'institution, comptes, inscriptions et journal de sécurité."
+      />
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: "institution", label: "Paramètres de l'institution" },
+          { id: "users", label: "Comptes" },
+          { id: "settings", label: "Inscriptions" },
+          { id: "events", label: "Journal de sécurité" },
+        ]}
+      />
+      <div className="mx-auto max-w-[1240px] px-4 pb-16 pt-5 sm:px-8">
+        {me && !me.mfa_enabled && (
+          <p className="mb-4 flex items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-[13px] text-warning">
+            <AlertTriangle className="size-4 shrink-0" />
+            Ce compte contrôle toute l'institution : activez la double authentification dans « Sécurité du compte ».
+          </p>
+        )}
+        {tab === "institution" ? (
+          <InstitutionSettings />
+        ) : tab === "users" ? (
+          <Users meId={me?.id} />
+        ) : tab === "settings" ? (
+          <Settings />
+        ) : (
+          <Events />
+        )}
       </div>
-      {tab === "users" ? <Users meId={me?.id} /> : tab === "settings" ? <Settings /> : <Events />}
     </div>
   );
 }

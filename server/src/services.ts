@@ -7,6 +7,7 @@ import {
   type BaseRole,
   type Permission,
 } from "./permissions.js";
+import { Referentials } from "./referentials.js";
 
 // ---------------------------------------------------------------------------
 // Types exposés par l'API
@@ -494,7 +495,7 @@ export class Services {
         JSON.stringify(input.domains ?? []),
       ]);
       const root = uid("unt");
-      await q.query("INSERT INTO org_units (id, org_id, name, kind, manager_id) VALUES ($1,$2,$3,'Organisation',$4)", [
+      await q.query("INSERT INTO org_units (id, org_id, name, kind, manager_id) VALUES ($1,$2,$3,'organisation',$4)", [
         root,
         id,
         name,
@@ -604,7 +605,7 @@ export class Services {
     ).map((u) => ({ ...u, position: Number(u.position), depth: Number(u.depth) }));
   }
   private async unitRow(id: string) {
-    const u = await this.db.one<{ id: string; org_id: string; parent_id: string | null; name: string }>(
+    const u = await this.db.one<{ id: string; org_id: string; parent_id: string | null; name: string; kind: string }>(
       "SELECT * FROM org_units WHERE id = $1",
       [id],
     );
@@ -624,6 +625,8 @@ export class Services {
     }
     if (input.manager_id && !(await this.orgRole(input.manager_id, orgId)))
       throw badRequest("Le responsable doit être membre de l'organisation");
+    // Le type d'entité vient du référentiel de l'institution (provinces comprises) ; on garde son code stable
+    const kind = (await new Referentials(this).resolve(orgId, "unit_type", input.kind?.trim() || "service")).code;
     const id = uid("unt");
     const pos =
       (
@@ -639,7 +642,7 @@ export class Services {
         orgId,
         input.parent_id ?? null,
         input.name.trim(),
-        input.kind?.trim() || "Service",
+        kind,
         input.manager_id ?? null,
         Number(pos) + 1024,
       ],
@@ -676,6 +679,8 @@ export class Services {
     }
     if (patch.manager_id && !(await this.orgRole(patch.manager_id, u.org_id)))
       throw badRequest("Le responsable doit être membre de l'organisation");
+    if (patch.kind !== undefined)
+      patch = { ...patch, kind: (await new Referentials(this).resolve(u.org_id, "unit_type", patch.kind, u.kind)).code };
     const sets: string[] = [];
     const vals: unknown[] = [];
     for (const k of ["name", "kind", "parent_id", "manager_id"] as const)

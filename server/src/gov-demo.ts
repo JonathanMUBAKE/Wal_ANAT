@@ -21,6 +21,16 @@ export async function seedGovDemo(svc: Services) {
   const m = new Meetings(svc);
   const at = new Attributions(svc);
 
+  // Démonstration : Alice est aussi administratrice système (paramètres de l'institution), et l'institution a des provinces
+  await db.query("UPDATE users SET platform_role = 'super_admin' WHERE id = $1", [me]);
+  const root = await db.one<{ id: string }>("SELECT id FROM org_units WHERE org_id = $1 AND parent_id IS NULL", [org]);
+  if (root)
+    for (const [name, kind] of [
+      ["Représentation provinciale Nord (exemple)", "representation_provinciale"],
+      ["Antenne Sud (exemple)", "antenne"],
+    ])
+      await svc.createUnit(me, org, { name, kind, parent_id: root.id, manager_id: "u_karim" });
+
   await a.create(me, org, {
     kind: "commission",
     title: "Commission interministérielle d'aménagement",

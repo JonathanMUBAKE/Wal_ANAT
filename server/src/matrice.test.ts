@@ -202,6 +202,8 @@ async function boot(kind: Kind) {
       await ctx.db.query("UPDATE deliverables SET status = $1 WHERE id = $2", [status, d.id]);
       return d.id;
     },
+    referential: async () =>
+      ((await inj(a, "GET", "/api/referentials")).body.activity_type as Any[]).find((v) => v.code === "commission"),
     decision: async () =>
       (
         await inj(a, "POST", "/api/decisions", {
@@ -581,6 +583,12 @@ const TABLE = [
     body: { evaluation: "Bien", rating: 4 },
   })),
   R_("GET", "/api/pilotage"),
+  R_("GET", "/api/referentials"),
+  R_("POST", "/api/admin/referentials", () => ({ body: { list: "activity_type", label: u("Type") } })),
+  R_("PATCH", "/api/admin/referentials/:id", async (X) => ({
+    url: `/api/admin/referentials/${(await X.referential()).id}`,
+    body: { plural: "x" },
+  })),
   R_("GET", "/api/decisions"),
   R_("POST", "/api/decisions", () => ({ body: { title: "D", content: "Texte", decided_on: "2026-03-02" } })),
   R_("GET", "/api/decisions/:id", async (X) => ({ url: `/api/decisions/${(await X.decision()).id}` })),

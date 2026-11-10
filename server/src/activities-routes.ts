@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { ACTIVITY_KINDS, type Activities, HEALTHS } from "./activities.js";
+import { type Activities, HEALTHS } from "./activities.js";
 import type { Pilotage } from "./pilotage.js";
 
 type Id = { Params: { id: string } };
@@ -29,7 +29,9 @@ const Fields = z.object({
   confidential: z.boolean().optional(),
 });
 const title = z.string().trim().min(1).max(300);
-const Create = Fields.extend({ kind: z.enum(ACTIVITY_KINDS), title });
+// Le type est contrôlé par le service contre le référentiel de l'institution
+const kind = z.string().trim().min(1).max(60);
+const Create = Fields.extend({ kind, title });
 const Patch = Fields.extend({ title: title.optional() });
 const Followup = z.object({
   text: z.string().trim().min(1).max(2000),
@@ -52,7 +54,7 @@ const Governance = z.object({
 export function activityRoutes(r: FastifyInstance, a: Activities, p: Pilotage) {
   r.get("/api/pilotage", async (req) => p.overview(req.userId, req.orgId));
   r.get("/api/activities", async (req) =>
-    a.list(req.userId, req.orgId, z.object({ kind: z.enum(ACTIVITY_KINDS).optional() }).parse(req.query)),
+    a.list(req.userId, req.orgId, z.object({ kind: kind.optional() }).parse(req.query)),
   );
   r.post("/api/activities", async (req) => a.create(req.userId, req.orgId, Create.parse(req.body)));
   r.get<Id>("/api/activities/:id", async (req) => a.get(req.userId, req.params.id));

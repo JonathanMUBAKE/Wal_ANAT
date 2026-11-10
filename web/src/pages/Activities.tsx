@@ -26,9 +26,11 @@ import {
 } from "@/components/gov";
 import { api } from "@/lib/api";
 import { useCan, useProjects, useUnits, useUsers } from "@/lib/hooks";
-import { FORMS, HEALTH } from "./Pilotage";
+import { type RefValue, useForms, useReferentials } from "@/lib/referentials";
+import { HEALTH } from "./Pilotage";
 
-type Kind = "commission" | "conference" | "rendez_vous" | "interne";
+/** Code d'un type d'activité du référentiel de l'institution. */
+type Kind = string;
 type Health = keyof typeof HEALTH;
 interface Activity {
   id: string;
@@ -59,14 +61,9 @@ interface Detail extends Activity {
   followups: { id: string; text: string; responsible_name: string | null; due_on: string | null; done: boolean }[];
   can: { edit: boolean; remove: boolean };
 }
-const KINDS: Kind[] = ["commission", "conference", "rendez_vous", "interne"];
 const fail = (e: unknown) => toast.error((e as Error).message);
-const COUNTERPART: Record<Kind, string> = {
-  commission: "Institution organisatrice",
-  conference: "Organisateur",
-  rendez_vous: "Interlocuteur",
-  interne: "Bénéficiaire",
-};
+/** Libellé du champ interlocuteur : propriété du type, paramétrée par l'administrateur système. */
+const counterpartOf = (v: RefValue | undefined) => v?.props.counterpart_label?.trim() || "Interlocuteur";
 
 export function ActivitiesPage() {
   const can = useCan();
@@ -79,6 +76,11 @@ export function ActivitiesPage() {
     queryFn: () => api.get<Activity[]>("/api/activities"),
   });
   const { data: projects } = useProjects();
+  const { data: refs } = useReferentials();
+  const form = useForms();
+  // Un onglet par type actif, plus les types archivés qui portent encore des activités
+  const types = (refs?.activity_type ?? []).filter((t) => !t.archived || data?.some((a) => a.kind === t.code));
+  const firstActive = refs?.activity_type.find((t) => !t.archived)?.code ?? "";
   const rows = data?.filter((a) => tab === "all" || a.kind === tab) ?? [];
   // Le portefeuille de la DG : projets et activités au même endroit (docs/ARCHITECTURE-INFORMATION.md)
   return (
@@ -108,7 +110,11 @@ export function ActivitiesPage() {
         items={[
           { id: "all" as const, label: "Toutes les activités" },
           { id: "projects" as const, label: "Projets", badge: projects?.length },
-          ...KINDS.map((k) => ({ id: k, label: FORMS[k].plural, badge: data?.filter((a) => a.kind === k).length })),
+          ...types.map((t) => ({
+            id: t.code,
+            label: t.plural || t.label,
+            badge: data?.filter((a) => a.kind === t.code).length,
+          })),
         ]}
       />
       <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
@@ -128,7 +134,7 @@ export function ActivitiesPage() {
                       <Lock aria-label="Confidentielle" className="ml-1.5 inline size-3 text-warning" />
                     )}
                   </Td>
-                  <Td>{FORMS[a.kind].label}</Td>
+                  <Td>{form(a.kind).label}</Td>
                   <Td>{a.lead_name ?? "—"}</Td>
                   <Td className="tabular">{frDate(a.start_on)}</Td>
                   <Td>
@@ -148,7 +154,11 @@ export function ActivitiesPage() {
       </div>
       {creating && (
         <NewActivity
-          defaultKind={tab === "all" || tab === "projects" ? "commission" : tab}
+          defaultKind={
+            tab !== "all" && tab !== "projects" && refs?.activity_type.some((t) => t.code === tab && !t.archived)
+              ? tab
+              : firstActive
+          }
           onClose={() => setCreating(false)}
         />
       )}
@@ -208,6 +218,7 @@ function NewActivity({ defaultKind, onClose }: { defaultKind: Kind; onClose: () 
   const nav = useNavigate();
   const qc = useQueryClient();
   const { data: users } = useUsers();
+  const { data: refs } = useReferentials();
   const [f, setF] = useState({
     kind: defaultKind,
     title: "",
@@ -218,6 +229,8 @@ function NewActivity({ defaultKind, onClose }: { defaultKind: Kind; onClose: () 
     counterpart: "",
   });
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
+  const choices = refs?.activity_type.filter((t) => !t.archived) ?? [];
+  const type = choices.find((t) => t.code === f.kind);
   const create = useMutation({
     mutationFn: () =>
       api.post<Detail>("/api/activities", {
@@ -239,14 +252,16 @@ function NewActivity({ defaultKind, onClose }: { defaultKind: Kind; onClose: () 
       onOpenChange={onClose}
       title="Nouvelle activité"
       width={560}
-      description={f.kind === "rendez_vous" ? "Un rendez-vous reste confidentiel par défaut." : undefined}
+      description={
+        type?.props.confidential_default ? `Une activité « ${type.label} » est confidentielle par défaut.` : undefined
+      }
       footer={
         <>
           <Button onClick={onClose}>Annuler</Button>
           <Button
             variant="primary"
             loading={create.isPending}
-            disabled={!f.title.trim()}
+            disabled={!f.title.trim() || !type}
             onClick={() => create.mutate()}
           >
             Créer
@@ -258,9 +273,9 @@ function NewActivity({ defaultKind, onClose }: { defaultKind: Kind; onClose: () 
         <Field label="Nature" required>
           {(a) => (
             <Select {...a} value={f.kind} onChange={set("kind")}>
-              {KINDS.map((k) => (
-                <option key={k} value={k}>
-                  {FORMS[k].label}
+              {choices.map((t) => (
+                <option key={t.code} value={t.code}>
+                  {t.label}
                 </option>
               ))}
             </Select>
@@ -288,7 +303,7 @@ function NewActivity({ defaultKind, onClose }: { defaultKind: Kind; onClose: () 
           {(a) => <Input {...a} type="time" value={f.start_time} onChange={set("start_time")} />}
         </Field>
         <Field label="Lieu">{(a) => <Input {...a} value={f.location} onChange={set("location")} />}</Field>
-        <Field label={COUNTERPART[f.kind]}>
+        <Field label={counterpartOf(type)}>
           {(a) => <Input {...a} value={f.counterpart} onChange={set("counterpart")} />}
         </Field>
       </div>
@@ -302,6 +317,8 @@ export function ActivityPage() {
   const nav = useNavigate();
   const { data: users } = useUsers();
   const { data: units } = useUnits();
+  const { data: refs } = useReferentials();
+  const form = useForms();
   const {
     data: a,
     isLoading,
@@ -396,6 +413,7 @@ export function ActivityPage() {
     onChange: (e: { target: { value: string } }) => patch({ [k]: e.target.value }),
   });
   const people = users?.filter((u) => !u.is_ai) ?? [];
+  const type = refs?.activity_type.find((t) => t.code === d.kind);
   return (
     <div className="min-h-full pb-10">
       <PageHeader
@@ -407,7 +425,7 @@ export function ActivityPage() {
             {d.title}
           </span>
         }
-        subtitle={FORMS[d.kind].label}
+        subtitle={form(d.kind).label}
         actions={
           <>
             <Status label={HEALTH[d.health].label} tone={HEALTH[d.health].tone} />
@@ -505,13 +523,13 @@ export function ActivityPage() {
                 )}
               </Field>
               <Field label="Lieu">{(a) => <Input {...a} {...text("location")} />}</Field>
-              <Field label={COUNTERPART[d.kind]}>{(a) => <Input {...a} {...text("counterpart")} />}</Field>
-              {d.kind === "commission" && (
+              <Field label={counterpartOf(type)}>{(a) => <Input {...a} {...text("counterpart")} />}</Field>
+              {(d.kind === "commission" || !!d.mandate) && (
                 <Field label="Mandat de l'Agence" className="sm:col-span-2" hint="La position que l'Agence y défend.">
                   {(a) => <Textarea {...a} {...area("mandate")} />}
                 </Field>
               )}
-              {d.kind === "conference" && (
+              {(d.kind === "conference" || !!d.delegation) && (
                 <Field label="Délégation" className="sm:col-span-2">
                   {(a) => <Input {...a} {...text("delegation")} />}
                 </Field>
@@ -544,7 +562,7 @@ export function ActivityPage() {
                   </Select>
                 )}
               </Field>
-              {d.kind === "interne" && (
+              {type?.props.tracks_progress && (
                 <Field label={`Avancement : ${d.progress} %`}>
                   {(a) => (
                     <input

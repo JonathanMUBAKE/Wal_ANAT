@@ -46,6 +46,15 @@
   --form-conference: #B4553A;
   --form-rendez_vous: #4A5FC1;
   --form-interne: #56677F;
+  /* Teintes des référentiels paramétrables (types d'activités, d'entités), toujours avec icône et libellé */
+  --hue-blue: #007BC4;
+  --hue-teal: #0B8580;
+  --hue-green: #2F7D3B;
+  --hue-ochre: #9A7420;
+  --hue-terracotta: #B4553A;
+  --hue-indigo: #4A5FC1;
+  --hue-violet: #7A4FC1;
+  --hue-slate: #56677F;
   color-scheme: light;
 }
 
@@ -90,6 +99,14 @@
   --form-conference: #F08A6C;
   --form-rendez_vous: #8C9CF2;
   --form-interne: #A3B1C6;
+  --hue-blue: #4FB0EC;
+  --hue-teal: #3CC4BD;
+  --hue-green: #5FCB76;
+  --hue-ochre: #D9B45A;
+  --hue-terracotta: #F08A6C;
+  --hue-indigo: #8C9CF2;
+  --hue-violet: #B39BF5;
+  --hue-slate: #A3B1C6;
   color-scheme: dark;
 }
 

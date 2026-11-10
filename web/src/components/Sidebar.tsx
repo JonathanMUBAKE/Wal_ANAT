@@ -1,14 +1,11 @@
 import { useState } from "react";
-import { toast } from "sonner";
 import { NavLink, useNavigate } from "react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
   Scale,
-  Building2,
   CalendarDays,
   Briefcase,
-  Check,
   CheckCircle2,
   ChevronDown,
   CircleUser,
@@ -24,7 +21,6 @@ import {
   Menu as MenuIcon,
   Moon,
   Network,
-  Plus,
   Search,
   ShieldCheck,
   Sparkles,
@@ -39,7 +35,6 @@ import {
   Menu,
   MenuContent,
   MenuItem,
-  MenuLabel,
   MenuSeparator,
   MenuTrigger,
   cn,
@@ -194,7 +189,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <NavSection title="Organisation">
           {link("/org", Network, "Structure")}
           {link("/teams", Users, "Équipes")}
-          {me?.platform_role && link("/admin", ShieldCheck, "Administration")}
+          {me?.platform_role && link("/admin", ShieldCheck, "Administration système")}
         </NavSection>
       </div>
 
@@ -269,28 +264,8 @@ function AccountMenu() {
   const shell = useShell();
   const nav = useNavigate();
   const qc = useQueryClient();
-  const { data: config } = useQuery({
-    queryKey: ["auth-config"],
-    queryFn: () => api.get<{ demo: boolean }>("/api/auth/config"),
-    staleTime: Infinity,
-  });
-  const [creating, setCreating] = useState(false);
-  const [orgName, setOrgName] = useState("");
   const [profile, setProfile] = useState(false);
   const currentOrg = me?.orgs.find((o) => o.id === me.org_id);
-  // Rechargement complet : aucune donnée (cache, temps réel) de l'organisation précédente ne doit survivre
-  const switchOrg = async (id: string) => {
-    await api.post(`/api/orgs/${id}/switch`);
-    window.location.assign("/");
-  };
-  const createOrg = async () => {
-    try {
-      await api.post("/api/orgs", { name: orgName });
-      window.location.assign("/org");
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  };
   return (
     <>
       <Menu>
@@ -321,23 +296,12 @@ function AccountMenu() {
           <MenuItem icon={<KeyRound className="size-3.5" />} onSelect={() => nav("/account")}>
             Sécurité du compte
           </MenuItem>
-          <MenuSeparator />
-          <MenuLabel>Organisations</MenuLabel>
-          {me?.orgs.map((o) => (
-            <MenuItem
-              key={o.id}
-              icon={<Building2 className="size-3.5" />}
-              right={o.id === me.org_id ? <Check className="size-3.5" /> : undefined}
-              onSelect={() => o.id !== me.org_id && switchOrg(o.id)}
-            >
-              {o.name}
-            </MenuItem>
-          ))}
-          {(me?.platform_role || config?.demo) && (
-            <MenuItem icon={<Plus className="size-3.5" />} onSelect={() => setCreating(true)}>
-              Créer une organisation
+          {me?.platform_role && (
+            <MenuItem icon={<ShieldCheck className="size-3.5" />} onSelect={() => nav("/admin")}>
+              Administration système
             </MenuItem>
           )}
+          {/* Version ANAT : une seule institution, pas de changement ni de création d'organisation (docs/PARAMETRAGE.md) */}
           <MenuSeparator />
           <MenuItem
             icon={shell.theme === "dark" ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
@@ -358,30 +322,6 @@ function AccountMenu() {
         </MenuContent>
       </Menu>
 
-      <Dialog
-        open={creating}
-        onOpenChange={setCreating}
-        title="Créer une organisation"
-        width={460}
-        description="Un espace étanche, avec ses propres membres, équipes, projets et réglages. Vous en serez propriétaire."
-        footer={
-          <>
-            <Button onClick={() => setCreating(false)}>Annuler</Button>
-            <Button variant="primary" disabled={!orgName.trim()} onClick={createOrg}>
-              Créer
-            </Button>
-          </>
-        }
-      >
-        <input
-          autoFocus
-          value={orgName}
-          onChange={(e) => setOrgName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && orgName.trim() && createOrg()}
-          placeholder="Nom de l'organisation"
-          className="h-10 w-full rounded-[10px] border border-line-strong bg-panel px-3 text-[14px] outline-none focus:border-primary"
-        />
-      </Dialog>
 
       <Dialog
         open={profile}

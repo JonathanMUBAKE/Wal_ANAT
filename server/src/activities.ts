@@ -1,9 +1,10 @@
 import { uid } from "./db.js";
+import { Referentials } from "./referentials.js";
 import { badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
 
-export const ACTIVITY_KINDS = ["commission", "conference", "rendez_vous", "interne"] as const;
 export const HEALTHS = ["on_track", "at_risk", "off_track", "done"] as const;
-export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
+/** Code d'une valeur du référentiel « types d'activités » de l'institution (docs/PARAMETRAGE.md). */
+export type ActivityKind = string;
 export type Health = (typeof HEALTHS)[number];
 
 export interface Activity {
@@ -140,6 +141,8 @@ export class Activities {
   async create(actorId: string, orgId: string, i: ActivityInput & { kind: ActivityKind; title: string }) {
     await this.svc.requirePerm(actorId, orgId, "agenda.manage");
     await this.assertRefs(orgId, i);
+    // Le type vient du référentiel : ses propriétés portent les règles (confidentialité par défaut…)
+    const type = await new Referentials(this.svc).resolve(orgId, "activity_type", i.kind);
     const id = uid("act");
     await this.svc.db.query(
       `INSERT INTO agency_activities (id, org_id, kind, title, description, lead_id, unit_id, domain_id, start_on, start_time, end_on, location, counterpart, mandate, delegation, decision_needed, progress, next_due_on, health, confidential, created_by)
@@ -147,7 +150,7 @@ export class Activities {
       [
         id,
         orgId,
-        i.kind,
+        type.code,
         i.title.trim(),
         i.description ?? "",
         i.lead_id ?? actorId,
@@ -164,7 +167,7 @@ export class Activities {
         i.progress ?? 0,
         i.next_due_on ?? null,
         i.health ?? "on_track",
-        i.confidential ?? i.kind === "rendez_vous",
+        i.confidential ?? type.props.confidential_default === true,
         actorId,
       ],
     );

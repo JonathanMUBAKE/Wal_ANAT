@@ -1,8 +1,10 @@
 import { Decisions } from "./decisions.js";
 import { meetingReference } from "./meetings.js";
+import { Referentials } from "./referentials.js";
 import type { Services } from "./services.js";
 
-export type Form = "projet_interne" | "projet_confie" | "commission" | "conference" | "rendez_vous" | "interne";
+/** « projet_interne », « projet_confie », ou le code d'un type d'activité du référentiel. */
+export type Form = string;
 export interface PilotageItem {
   id: string;
   form: Form;
@@ -73,6 +75,8 @@ export class Pilotage {
       [orgId, today, perms.includes("agenda.manage"), actorId],
     );
     // L'état affiché tient compte des retards : une activité en retard n'est jamais « dans les temps »
+    const types = await new Referentials(this.svc).values(orgId, "activity_type");
+    const tracked = new Set(types.filter((t) => t.props.tracks_progress === true).map((t) => t.code));
     const effective = (h: PilotageItem["health"], overdue: number) =>
       h === "on_track" && overdue > 0 ? "at_risk" : h;
     const items: PilotageItem[] = [
@@ -99,7 +103,7 @@ export class Pilotage {
         lead_name: a.lead_name,
         unit_name: a.unit_name,
         health: effective(a.health, a.overdue),
-        progress: a.kind === "interne" ? a.progress : null,
+        progress: tracked.has(a.kind) ? a.progress : null,
         next_due: a.next_due_on ?? a.start_on,
         overdue: a.overdue,
         decision_needed: a.decision_needed,
@@ -107,6 +111,18 @@ export class Pilotage {
       })),
     ];
     const count = (f: Form) => items.filter((i) => i.form === f).length;
+    // Un compteur par type d'activité du référentiel (types archivés comptés s'ils portent encore des dossiers)
+    const byType = types
+      .map((t) => ({
+        code: t.code,
+        label: t.label,
+        plural: t.plural,
+        color: t.color,
+        icon: t.icon,
+        count: activities.filter((a) => a.kind === t.code).length,
+        archived: t.archived,
+      }))
+      .filter((t) => !t.archived || t.count > 0);
     const health = { on_track: 0, at_risk: 0, off_track: 0, done: 0 };
     for (const i of items) health[i.health]++;
 
@@ -185,6 +201,7 @@ export class Pilotage {
       conferences: count("conference"),
       rendez_vous: count("rendez_vous"),
       activites_internes: count("interne"),
+      by_type: byType,
       decisions: decisions.length,
       retards:
         overdueTasks +

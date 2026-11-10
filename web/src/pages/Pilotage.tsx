@@ -10,13 +10,9 @@ import {
   CheckCircle2,
   ArrowUpRight,
   Briefcase,
-  CalendarClock,
   ChevronRight,
   FileSignature,
   Gauge,
-  Handshake,
-  Landmark,
-  Mic2,
   Plus,
   Scale,
   ShieldAlert,
@@ -39,11 +35,13 @@ import { CollectionHeader } from "@/components/collection";
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 import { api } from "@/lib/api";
 import { useCan, useMe } from "@/lib/hooks";
+import { useForms } from "@/lib/referentials";
 import { DecisionDialog, type DecisionSource } from "./Decisions";
 import { useShell } from "@/lib/shell";
 import { firstName, greeting } from "@/lib/format";
 
-type Form = "projet_interne" | "projet_confie" | "commission" | "conference" | "rendez_vous" | "interne";
+/** « projet_interne », « projet_confie » ou le code d'un type d'activité du référentiel. */
+type Form = string;
 type Health = "on_track" | "at_risk" | "off_track" | "done";
 interface Item {
   id: string;
@@ -96,52 +94,17 @@ interface Overview {
   plans: { total: number; approved: number };
 }
 
-export const FORMS: Record<
-  Form,
-  { label: string; plural: string; short: string; Icon: LucideIcon; counter: string }
-> = {
-  projet_interne: {
-    label: "Projet interne",
-    plural: "Projets internes",
-    short: "Internes",
-    Icon: Briefcase,
-    counter: "projets_internes",
-  },
-  projet_confie: {
-    label: "Projet confié",
-    plural: "Projets confiés",
-    short: "Confiés",
-    Icon: FileSignature,
-    counter: "projets_confies",
-  },
-  commission: { label: "Commission", plural: "Commissions", short: "Commiss.", Icon: Landmark, counter: "commissions" },
-  conference: { label: "Conférence", plural: "Conférences", short: "Confér.", Icon: Mic2, counter: "conferences" },
-  rendez_vous: { label: "Rendez-vous", plural: "Rendez-vous", short: "RDV", Icon: Handshake, counter: "rendez_vous" },
-  interne: {
-    label: "Activité interne",
-    plural: "Activités internes",
-    short: "Activités",
-    Icon: CalendarClock,
-    counter: "activites_internes",
-  },
-};
 export const HEALTH: Record<Health, { label: string; tone: Tone; color: string }> = {
   on_track: { label: "Dans les temps", tone: "success", color: "var(--success)" },
   at_risk: { label: "À surveiller", tone: "warning", color: "var(--warning)" },
   off_track: { label: "En difficulté", tone: "danger", color: "var(--danger)" },
   done: { label: "Terminé", tone: "info", color: "var(--primary)" },
 };
-const AGENDA_LABEL: Record<string, string> = {
-  reunion: "Réunion",
-  commission: "Commission",
-  conference: "Conférence",
-  rendez_vous: "Rendez-vous",
-  interne: "Activité",
-};
 
 export function PilotagePage() {
   const { data: me } = useMe();
   const shell = useShell();
+  const form = useForms();
   const can = useCan();
   const [day, setDay] = useState<string | null>(null);
   const [arbitrating, setArbitrating] = useState<DecisionSource | null>(null);
@@ -308,7 +271,8 @@ export function PilotagePage() {
           {o.decisions.length ? (
             <ul className="space-y-2 px-4 pb-4 pt-1">
               {o.decisions.slice(0, 4).map((d) => {
-                const I = FORMS[d.form].Icon;
+                const F = form(d.form);
+                const I = F.Icon;
                 return (
                   <li
                     key={d.id}
@@ -318,8 +282,8 @@ export function PilotagePage() {
                       <span
                         className="flex size-9 shrink-0 items-center justify-center rounded-[10px]"
                         style={{
-                          color: `var(--form-${d.form})`,
-                          background: `color-mix(in oklab, var(--form-${d.form}) 12%, transparent)`,
+                          color: F.color,
+                          background: `color-mix(in oklab, ${F.color} 12%, transparent)`,
                         }}
                       >
                         <I className="size-4" />
@@ -461,7 +425,7 @@ export function PilotagePage() {
                       </span>
                       <span className="min-w-0">
                         <span className="block truncate text-[12.5px] font-medium">{a.title}</span>
-                        <span className="text-[11.5px] text-muted">{AGENDA_LABEL[a.form]}</span>
+                        <span className="text-[11.5px] text-muted">{a.form === "reunion" ? "Réunion" : form(a.form).label}</span>
                       </span>
                     </Link>
                   </li>
@@ -500,7 +464,7 @@ export function PilotagePage() {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] font-medium">{i.title}</span>
                       <span className="block truncate text-[11.5px] text-muted">
-                        {HEALTH[i.health].label} · {FORMS[i.form].label}
+                        {HEALTH[i.health].label} · {form(i.form).label}
                       </span>
                     </span>
                     <span className={cn("text-[12px] tabular", late ? "font-medium text-danger" : "text-muted")}>

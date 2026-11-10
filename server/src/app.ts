@@ -24,7 +24,14 @@ import { cookieSecret, trustProxySetting } from "./secrets.js";
 import { DEFAULT_LIMITS, HOUR, MINUTE, RateLimiter, type Limits } from "./limits.js";
 import { Activities } from "./activities.js";
 import { activityRoutes } from "./activities-routes.js";
+import { Deliverables } from "./deliverables.js";
+import { Gaps } from "./gaps.js";
+import { Registers } from "./registers.js";
+import { registerRoutes } from "./registers-routes.js";
+import { Signature } from "./signature.js";
 import { Pilotage } from "./pilotage.js";
+import { Plans } from "./plans.js";
+import { planRoutes } from "./plans-routes.js";
 import { Attributions } from "./attributions.js";
 import { attributionRoutes } from "./attributions-routes.js";
 import { Meetings } from "./meetings.js";
@@ -282,6 +289,8 @@ export async function buildApp(opts: AppOptions = {}) {
     meetingRoutes(r, new Meetings(svc));
     attributionRoutes(r, new Attributions(svc));
     activityRoutes(r, new Activities(svc), new Pilotage(svc));
+    planRoutes(r, new Plans(svc), new Deliverables(svc));
+    registerRoutes(r, new Signature(svc), new Registers(svc), new Gaps(svc));
     r.get("/api/me", async (req) => {
       const security = await db.one<{ platform_role: string | null; totp_enabled: boolean }>(
         "SELECT platform_role, totp_enabled FROM users WHERE id = $1",

@@ -164,6 +164,86 @@ async function boot(kind: Kind) {
         })
       ).body;
     },
+    plan: async () => {
+      X.planCount = (X.planCount ?? 0) + 1;
+      const y = 2030 + X.planCount;
+      return (await inj(a, "POST", "/api/plans", { unit_id: (await X.unit()).id, year: y, title: u("Plan") })).body;
+    },
+    fullPlan: async () => {
+      const p = await X.plan();
+      return (
+        await inj(a, "POST", `/api/plans/${p.id}/activities`, {
+          title: "A",
+          responsible_id: "u_karim",
+          target_value: 1,
+          end_on: "2027-01-01",
+        })
+      ).body;
+    },
+    submittedByKarim: async () => {
+      const p = await X.fullPlan();
+      await ctx.db.query("UPDATE work_plans SET status = 'submitted', submitted_by = 'u_karim' WHERE id = $1", [p.id]);
+      return p;
+    },
+    approvedPlan: async () => {
+      const p = await X.submittedByKarim();
+      return (await inj(a, "POST", `/api/plans/${p.id}/approve`)).body;
+    },
+    deliverable: async (responsible: string, validator = responsible === "u_alice" ? "u_karim" : "u_alice") =>
+      (
+        await inj(a, "POST", "/api/deliverables", {
+          title: u("L"),
+          responsible_id: responsible,
+          validator_id: validator,
+        })
+      ).body,
+    deliverableAt: async (status: string, responsible = "u_karim") => {
+      const d = await X.deliverable(responsible);
+      await ctx.db.query("UPDATE deliverables SET status = $1 WHERE id = $2", [status, d.id]);
+      return d.id;
+    },
+    contract: async () =>
+      (
+        await inj(a, "POST", "/api/contracts", {
+          consultant_name: "C",
+          title: "M",
+          start_on: "2026-01-01",
+          end_on: "2026-12-31",
+          supervisor_id: "u_alice",
+        })
+      ).body,
+    doc: async () =>
+      (await inj(a, "POST", "/api/signature", { title: u("D"), steps: [{ actor_id: "u_karim", action: "signature" }] }))
+        .body,
+    docForAlice: async () => {
+      const d = (
+        await inj("u_karim", "POST", "/api/signature", { title: u("D"), steps: [{ actor_id: a, action: "signature" }] })
+      ).body;
+      await inj("u_karim", "POST", `/api/signature/${d.id}/start`);
+      return d.id;
+    },
+    delegation: async () =>
+      (await inj(a, "POST", "/api/delegations", { to_user: "u_karim", start_on: "2026-01-01", end_on: "2026-01-02" }))
+        .body,
+    mail: async () =>
+      (
+        await inj(a, "POST", "/api/correspondence", {
+          direction: "entrant",
+          subject: u("S"),
+          correspondent: "C",
+          received_on: "2026-03-02",
+        })
+      ).body,
+    risk: async () => (await inj(a, "POST", "/api/risks", { title: u("R"), probability: 2, impact: 3 })).body,
+    indicator: async () => (await inj(a, "POST", "/api/indicators", { name: u("I"), target: 3 })).body,
+    gap: async () => {
+      const id = u("gap_");
+      await ctx.db.query(
+        "INSERT INTO participation_gaps (id, org_id, fingerprint, kind, summary) VALUES ($1,$2,$3,'absence','x')",
+        [id, org, id],
+      );
+      return id;
+    },
     activity: async () => (await inj(a, "POST", "/api/activities", { kind: "commission", title: u("A") })).body,
     followup: async () => {
       const x = await X.activity();
@@ -377,6 +457,113 @@ const TABLE = [
   })),
   R_("DELETE", "/api/projects/:id/ai/rules/:ruleId", async (X) => ({
     url: `/api/projects/${X.app}/ai/rules/${(await X.rule()).id}`,
+  })),
+  R_("GET", "/api/signature"),
+  R_("POST", "/api/signature", () => ({ body: { title: "D", steps: [{ actor_id: "u_karim", action: "signature" }] } })),
+  R_("GET", "/api/signature/:id", async (X) => ({ url: `/api/signature/${(await X.doc()).id}` })),
+  R_("PUT", "/api/signature/:id", async (X) => ({
+    url: `/api/signature/${(await X.doc()).id}`,
+    body: { title: "E", steps: [{ actor_id: "u_karim", action: "signature" }] },
+  })),
+  R_("DELETE", "/api/signature/:id", async (X) => ({ url: `/api/signature/${(await X.doc()).id}` })),
+  R_("POST", "/api/signature/:id/start", async (X) => ({ url: `/api/signature/${(await X.doc()).id}/start` })),
+  R_("POST", "/api/signature/:id/decide", async (X) => ({
+    url: `/api/signature/${await X.docForAlice()}/decide`,
+    body: { decision: "approve" },
+  })),
+  R_("GET", "/api/delegations"),
+  R_("POST", "/api/delegations", () => ({
+    body: { to_user: "u_karim", start_on: "2026-01-01", end_on: "2026-01-02" },
+  })),
+  R_("DELETE", "/api/delegations/:id", async (X) => ({ url: `/api/delegations/${(await X.delegation()).id}` })),
+  R_("GET", "/api/correspondence"),
+  R_("POST", "/api/correspondence", () => ({
+    body: { direction: "entrant", subject: "S", correspondent: "C", received_on: "2026-03-02" },
+  })),
+  R_("POST", "/api/correspondence/:id/assign", async (X) => ({
+    url: `/api/correspondence/${(await X.mail()).id}/assign`,
+    body: { assignee_id: "u_karim" },
+  })),
+  R_("POST", "/api/correspondence/:id/close", async (X) => ({
+    url: `/api/correspondence/${(await X.mail()).id}/close`,
+    body: {},
+  })),
+  R_("GET", "/api/risks"),
+  R_("POST", "/api/risks", () => ({ body: { title: "R", probability: 2, impact: 3 } })),
+  R_("PATCH", "/api/risks/:id", async (X) => ({ url: `/api/risks/${(await X.risk()).id}`, body: { mitigation: "x" } })),
+  R_("GET", "/api/indicators"),
+  R_("POST", "/api/indicators", () => ({ body: { name: "I", target: 3 } })),
+  R_("PATCH", "/api/indicators/:id", async (X) => ({
+    url: `/api/indicators/${(await X.indicator()).id}`,
+    body: { result: 1 },
+  })),
+  R_("GET", "/api/gaps"),
+  R_("POST", "/api/gaps/detect", () => ({ body: {} })),
+  R_("PATCH", "/api/gaps/:id", async (X) => ({
+    url: `/api/gaps/${await X.gap()}`,
+    body: { status: "justified", note: "x" },
+  })),
+  R_("GET", "/api/plans"),
+  R_("POST", "/api/plans", async (X) => ({ body: { unit_id: (await X.unit()).id, year: 2027, title: "Plan" } })),
+  R_("GET", "/api/plans/:id", async (X) => ({ url: `/api/plans/${(await X.plan()).id}` })),
+  R_("DELETE", "/api/plans/:id", async (X) => ({ url: `/api/plans/${(await X.plan()).id}` })),
+  R_("POST", "/api/plans/:id/activities", async (X) => ({
+    url: `/api/plans/${(await X.plan()).id}/activities`,
+    body: { title: "A" },
+  })),
+  R_("POST", "/api/plans/:id/submit", async (X) => ({ url: `/api/plans/${(await X.fullPlan()).id}/submit` })),
+  R_("POST", "/api/plans/:id/approve", async (X) => ({ url: `/api/plans/${(await X.submittedByKarim()).id}/approve` })),
+  R_("POST", "/api/plans/:id/return", async (X) => ({
+    url: `/api/plans/${(await X.submittedByKarim()).id}/return`,
+    body: { comment: "x" },
+  })),
+  R_("PATCH", "/api/plan-activities/:id", async (X) => ({
+    url: `/api/plan-activities/${(await X.fullPlan()).activities[0].id}`,
+    body: { title: "B" },
+  })),
+  R_("DELETE", "/api/plan-activities/:id", async (X) => ({
+    url: `/api/plan-activities/${(await X.fullPlan()).activities[0].id}`,
+  })),
+  R_("PATCH", "/api/plan-activities/:id/progress", async (X) => ({
+    url: `/api/plan-activities/${(await X.approvedPlan()).activities[0].id}/progress`,
+    body: { progress: 10 },
+  })),
+  R_("POST", "/api/plan-activities/:id/revise", async (X) => ({
+    url: `/api/plan-activities/${(await X.approvedPlan()).activities[0].id}/revise`,
+    body: { changes: { title: "C" }, reason: "x" },
+  })),
+  R_("GET", "/api/deliverables"),
+  R_("POST", "/api/deliverables", () => ({ body: { title: "L", responsible_id: "u_karim", validator_id: "u_alice" } })),
+  R_("GET", "/api/deliverables/:id", async (X) => ({
+    url: `/api/deliverables/${(await X.deliverable("u_karim")).id}`,
+  })),
+  R_("PATCH", "/api/deliverables/:id", async (X) => ({
+    url: `/api/deliverables/${(await X.deliverable("u_karim")).id}`,
+    body: { title: "M" },
+  })),
+  R_("DELETE", "/api/deliverables/:id", async (X) => ({
+    url: `/api/deliverables/${(await X.deliverable("u_karim")).id}`,
+  })),
+  R_("POST", "/api/deliverables/:id/start", async (X) => ({
+    url: `/api/deliverables/${(await X.deliverable("u_alice", "u_karim")).id}/start`,
+  })),
+  R_("POST", "/api/deliverables/:id/submit", async (X) => ({
+    url: `/api/deliverables/${await X.deliverableAt("en_cours", "u_alice")}/submit`,
+  })),
+  R_("POST", "/api/deliverables/:id/review", async (X) => ({
+    url: `/api/deliverables/${await X.deliverableAt("soumis")}/review`,
+  })),
+  R_("POST", "/api/deliverables/:id/decide", async (X) => ({
+    url: `/api/deliverables/${await X.deliverableAt("en_revue")}/decide`,
+    body: { decision: "valide" },
+  })),
+  R_("GET", "/api/contracts"),
+  R_("POST", "/api/contracts", () => ({
+    body: { consultant_name: "C", title: "M", start_on: "2026-01-01", end_on: "2026-12-31", supervisor_id: "u_alice" },
+  })),
+  R_("POST", "/api/contracts/:id/evaluate", async (X) => ({
+    url: `/api/contracts/${(await X.contract()).id}/evaluate`,
+    body: { evaluation: "Bien", rating: 4 },
   })),
   R_("GET", "/api/pilotage"),
   R_("GET", "/api/activities"),

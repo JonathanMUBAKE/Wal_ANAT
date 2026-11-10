@@ -1,7 +1,9 @@
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { buildApp } from "./app.js";
+import { Deliverables } from "./deliverables.js";
 import { seedGovDemo } from "./gov-demo.js";
+import { Registers } from "./registers.js";
 import { loadLocalSecret, startupProblems } from "./secrets.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -34,6 +36,12 @@ const { app, provider, db, provisioning, svc } = await buildApp({
 });
 
 if (demo && process.env.ANAT_DEMO === "1") await seedGovDemo(svc);
+// Fins de mission : alerte préalable, puis fermeture de l'accès des consultants invités
+const contracts = new Deliverables(svc);
+const mailRegister = new Registers(svc);
+const sweepContracts = () => Promise.all([contracts.sweep(), mailRegister.sweep()]).catch((e) => app.log.error(e));
+void sweepContracts();
+setInterval(sweepContracts, 60 * 60 * 1000).unref();
 await app.listen({ port, host });
 const setup = demo ? null : await provisioning.bootstrapLink();
 console.log(`\n  Cadence → http://localhost:${port}`);

@@ -50,6 +50,7 @@ const Content = z.object({
       z.object({
         id: z.string().max(100).optional(),
         subject: z.string().trim().min(1).max(500),
+        domain_id: z.string().max(100).nullable().optional(),
         speakers: short.optional(),
         notes: long.optional(),
         actions: z

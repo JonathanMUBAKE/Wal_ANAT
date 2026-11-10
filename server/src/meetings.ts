@@ -115,6 +115,7 @@ export interface ContentInput {
     subject: string;
     speakers?: string;
     notes?: string;
+    domain_id?: string | null;
     actions?: {
       id?: string;
       text: string;
@@ -220,7 +221,7 @@ export class Meetings {
   ): Promise<MeetingDetail> {
     const db = this.svc.db;
     const items = await db.query<Omit<AgendaItem, "actions">>(
-      "SELECT id, position, subject, speakers, notes FROM meeting_agenda_items WHERE meeting_id = $1 ORDER BY position",
+      "SELECT id, position, subject, speakers, notes, domain_id FROM meeting_agenda_items WHERE meeting_id = $1 ORDER BY position",
       [m.id],
     );
     const actions = await db.query<MeetingAction>(
@@ -384,7 +385,13 @@ export class Meetings {
       (await db.query<{ id: string }>("SELECT id FROM meeting_actions WHERE meeting_id = $1", [id])).map((r) => r.id),
     );
     const people = new Map((await this.svc.usersOf(m.org_id)).map((u) => [u.id, u.name]));
+    const domains = new Set(
+      (await db.query<{ id: string }>("SELECT id FROM activity_domains WHERE org_id = $1", [m.org_id])).map(
+        (r) => r.id,
+      ),
+    );
     for (const item of input.agenda) {
+      if (item.domain_id && !domains.has(item.domain_id)) throw badRequest("Domaine inconnu du catalogue");
       if (item.id && !knownItems.has(item.id)) throw badRequest("Point de l'ordre du jour inconnu pour cette réunion");
       for (const a of item.actions ?? []) {
         if (a.id && !knownActions.has(a.id)) throw badRequest("Recommandation inconnue pour cette réunion");
@@ -434,9 +441,18 @@ export class Meetings {
   ) {
     const itemId = item.id ?? uid("agd");
     await q.query(
-      `INSERT INTO meeting_agenda_items (id, org_id, meeting_id, position, subject, speakers, notes) VALUES ($1,$2,$3,$4,$5,$6,$7)
-       ON CONFLICT (id) DO UPDATE SET position = EXCLUDED.position, subject = EXCLUDED.subject, speakers = EXCLUDED.speakers, notes = EXCLUDED.notes`,
-      [itemId, m.org_id, m.id, position, item.subject.trim(), item.speakers ?? "", item.notes ?? ""],
+      `INSERT INTO meeting_agenda_items (id, org_id, meeting_id, position, subject, speakers, notes, domain_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       ON CONFLICT (id) DO UPDATE SET position = EXCLUDED.position, subject = EXCLUDED.subject, speakers = EXCLUDED.speakers, notes = EXCLUDED.notes, domain_id = EXCLUDED.domain_id`,
+      [
+        itemId,
+        m.org_id,
+        m.id,
+        position,
+        item.subject.trim(),
+        item.speakers ?? "",
+        item.notes ?? "",
+        item.domain_id ?? null,
+      ],
     );
     for (const [i, a] of (item.actions ?? []).entries()) {
       const name = a.responsible_name?.trim() || (a.responsible_id ? (people.get(a.responsible_id) ?? "") : "");

@@ -29,6 +29,9 @@
 | **Types de partenaires** (institution publique, entreprise privée, établissement public…) | Nouveau | **Paramétrable — lot PA1** | Nature juridique, un seul par fiche (`docs/CONCEPTION.md` § 4.3) |
 | **Catégories de partenaires** (PTF, partenaire technique, prestataire…) | Nouveau | **Paramétrable — lot PA1** | Rôle dans la relation, plusieurs par fiche |
 | États d'un partenaire (identifié, en discussion, actif, suspendu, clos) | Nouveau | **Reste fixe** | Le cycle et les droits du point focal en dépendent |
+| **Types d'accords** (convention de partenariat, protocole d'accord, accord de financement…) | Nouveau | **Paramétrable — lot PA2** | Propriétés `binding`, `financial` |
+| **Natures de pièces de collaboration** (convention signée, avenant, rapport…) | Nouveau | **Paramétrable — lot PA2** | Propriété `official` |
+| États d'un accord (en préparation, au parapheur, en vigueur, résilié ; échu calculé) | Nouveau | **Reste fixe** | Numérotation, gel du texte et circuit en dépendent |
 | Types de réunions (comité de direction, hebdomadaire…) | Texte libre | Paramétrable — lot suivant | Aucune règle n'en dépend |
 | Natures de documents du parapheur (note, lettre, arrêté…) | Texte libre | Paramétrable — lot suivant | Aucune règle n'en dépend |
 | Unités des indicateurs, sources | Texte libre | Paramétrable — lot suivant | Homogénéiser les tableaux |
@@ -49,6 +52,9 @@
 | Type de partenaire | `public` | Le partenaire relève de l'État ou d'une collectivité (statistiques de l'annuaire) |
 | Catégorie de partenaire | `financial` | Peut porter des engagements financiers (lot PA4) |
 | Catégorie de partenaire | `supplier` | Peut être choisi comme prestataire d'un contrat de projet (lot PA3) |
+| Type d'accord | `binding` | N'entre en vigueur que par la signature au parapheur, ou en joignant l'exemplaire signé (gestionnaire) |
+| Type d'accord | `financial` | Porte des engagements financiers (lot PA4) |
+| Nature de pièce | `official` | La pièce reste au dossier : elle ne se supprime jamais |
 
 Chaque valeur a aussi un **libellé**, un **pluriel**, une **couleur** (parmi une palette de huit teintes du système
 de design, lisibles en clair et en sombre) et une **icône** (parmi une liste fermée).

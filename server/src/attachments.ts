@@ -19,7 +19,7 @@ export interface Attachment {
   created_at: string;
 }
 
-const cleanName = (name: string) =>
+export const cleanName = (name: string) =>
   name
     .replace(/[\u0000-\u001f\u007f]/g, "")
     .split(/[\\/]/)

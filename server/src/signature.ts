@@ -38,6 +38,20 @@ export interface SignInput {
 }
 const today = () => new Date().toISOString().slice(0, 10);
 const reference = (d: Pick<SignDoc, "year" | "seq">) => `PAR/${d.year}/${String(d.seq).padStart(4, "0")}`;
+export const signReference = reference;
+
+/**
+ * Suites données à la fin d'un circuit par les modules qui passent par le parapheur (ex. un accord avec un
+ * partenaire entre en vigueur à sa signature). Elles s'exécutent après l'enregistrement de la décision.
+ */
+export type SignatureHook = (
+  svc: Services,
+  doc: SignDoc,
+  outcome: "signed" | "rejected",
+  actorId: string,
+  comment: string,
+) => Promise<void>;
+export const signatureHooks: SignatureHook[] = [];
 const hashOf = (d: Pick<SignDoc, "title" | "body">) =>
   createHash("sha256")
     .update(JSON.stringify([d.title, d.body]))
@@ -279,6 +293,9 @@ export class Signature {
       return true;
     });
     if (!moved) throw new HttpError(409, "Cette étape vient d'être traitée : rechargez la page");
+    if (i.decision === "reject" || !next)
+      for (const hook of signatureHooks)
+        await hook(this.svc, d, i.decision === "reject" ? "rejected" : "signed", actorId, i.comment?.trim() ?? "");
     await this.svc.log(actorId, `signature.${i.decision}`, {
       orgId: d.org_id,
       data: { id, step: pending.position, for: pending.actor_id },

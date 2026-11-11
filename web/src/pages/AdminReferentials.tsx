@@ -41,6 +41,16 @@ const LISTS: { id: RefList; label: string; hint: string }[] = [
     label: "Catégories de partenaires",
     hint: "Le rôle d'un partenaire dans la relation (PTF, partenaire technique, prestataire…) : plusieurs par fiche.",
   },
+  {
+    id: "agreement_type",
+    label: "Types d'accords",
+    hint: "Les actes qui encadrent une collaboration ; un type contraignant n'entre en vigueur que signé.",
+  },
+  {
+    id: "partner_doc_nature",
+    label: "Natures de pièces",
+    hint: "Les natures des pièces de collaboration ; une pièce officielle ne se supprime jamais.",
+  },
 ];
 const fail = (e: unknown) => toast.error((e as Error).message);
 
@@ -70,7 +80,10 @@ export function InstitutionSettings() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div role="tablist" className="inline-flex rounded-[10px] border border-line bg-panel p-0.5">
+        <div
+          role="tablist"
+          className="inline-flex max-w-full flex-wrap rounded-[10px] border border-line bg-panel p-0.5"
+        >
           {LISTS.map((l) => (
             <button
               key={l.id}
@@ -154,6 +167,16 @@ export function InstitutionSettings() {
                           <Banknote className="size-3" /> Engagements financiers
                         </span>
                       )}
+                      {v.props.binding && (
+                        <span className="inline-flex items-center gap-1">
+                          <Lock className="size-3" /> Signature exigée
+                        </span>
+                      )}
+                      {v.props.official && (
+                        <span className="inline-flex items-center gap-1">
+                          <Lock className="size-3" /> Pièce officielle
+                        </span>
+                      )}
                       {v.props.supplier && (
                         <span className="inline-flex items-center gap-1">
                           <Briefcase className="size-3" /> Prestataire de contrats
@@ -209,6 +232,8 @@ function ValueDialog({ list, value, onClose }: { list: RefList; value: RefValue 
     public: !!value?.props.public,
     financial: !!value?.props.financial,
     supplier: !!value?.props.supplier,
+    binding: !!value?.props.binding,
+    official: !!value?.props.official,
   });
   const props =
     list === "activity_type"
@@ -221,7 +246,11 @@ function ValueDialog({ list, value, onClose }: { list: RefList; value: RefValue 
         ? { provincial: f.provincial }
         : list === "partner_type"
           ? { public: f.public }
-          : { financial: f.financial, supplier: f.supplier };
+          : list === "agreement_type"
+            ? { binding: f.binding, financial: f.financial }
+            : list === "partner_doc_nature"
+              ? { official: f.official }
+              : { financial: f.financial, supplier: f.supplier };
   const body = { label: f.label, plural: f.plural || f.label, color: f.color, icon: f.icon, props };
   const save = useMutation({
     mutationFn: () =>
@@ -361,6 +390,28 @@ function ValueDialog({ list, value, onClose }: { list: RefList; value: RefValue 
               onChange={(v) => setF({ ...f, public: v })}
               label="Secteur public"
               hint="Le partenaire relève de l'État ou d'une collectivité : utile aux statistiques de l'annuaire."
+            />
+          ) : list === "agreement_type" ? (
+            <>
+              <Toggle
+                checked={f.binding}
+                onChange={(v) => setF({ ...f, binding: v })}
+                label="Juridiquement contraignant"
+                hint="L'accord n'entre en vigueur que par la signature au parapheur, ou en joignant l'exemplaire signé."
+              />
+              <Toggle
+                checked={f.financial}
+                onChange={(v) => setF({ ...f, financial: v })}
+                label="Porte des engagements financiers"
+                hint="Les engagements et décaissements des partenaires s'y rattachent (lot PA4)."
+              />
+            </>
+          ) : list === "partner_doc_nature" ? (
+            <Toggle
+              checked={f.official}
+              onChange={(v) => setF({ ...f, official: v })}
+              label="Pièce officielle"
+              hint="Une pièce de cette nature reste au dossier : elle ne se supprime jamais."
             />
           ) : (
             <>

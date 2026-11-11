@@ -53,6 +53,7 @@ import {
   type Tone,
 } from "@/components/gov";
 import { ApiError, api } from "@/lib/api";
+import { type AgreementRow, DocumentsPanel, PartnerAgreements, type PartnerDocument } from "./Agreements";
 import { useCan, useUnits, useUsers } from "@/lib/hooks";
 import { HUES, REF_ICONS, type RefValue, useReferentials } from "@/lib/referentials";
 
@@ -116,7 +117,7 @@ interface Contact {
 }
 interface HistoryItem {
   id: string;
-  kind: "created" | "state" | "note" | "merged" | "absorbed" | "contact" | "updated";
+  kind: "created" | "state" | "note" | "merged" | "absorbed" | "contact" | "updated" | "agreement" | "document";
   body: string;
   happened_on: string;
   data: { from?: PartnerState; to?: PartnerState };
@@ -125,6 +126,8 @@ interface HistoryItem {
 }
 interface Detail extends Partner {
   focals: { id: string; name: string }[];
+  agreements: (AgreementRow & { lead: boolean })[];
+  documents: PartnerDocument[];
   contacts: Contact[];
   notes: HistoryItem[];
   history: HistoryItem[];
@@ -499,7 +502,7 @@ function NewPartner({ onClose }: { onClose: () => void }) {
 }
 
 // ------------------------------------------------------------------ fiche
-type DetailTab = "overview" | "contacts" | "history";
+type DetailTab = "overview" | "agreements" | "contacts" | "documents" | "history";
 
 export function PartnerPage() {
   const { id } = useParams();
@@ -668,7 +671,9 @@ export function PartnerPage() {
         onChange={setTab}
         items={[
           { id: "overview" as const, label: "Vue d'ensemble" },
+          { id: "agreements" as const, label: "Accords", badge: d.agreements.length },
           { id: "contacts" as const, label: "Contacts", badge: d.contacts.filter((c) => !c.archived).length },
+          { id: "documents" as const, label: "Documents", badge: d.documents.length },
           { id: "history" as const, label: "Historique", badge: d.notes.length },
         ]}
       />
@@ -767,6 +772,22 @@ export function PartnerPage() {
           )}
           {tab === "contacts" && <ContactsTab partner={d} onChange={refresh} />}
           {tab === "history" && <HistoryTab partner={d} onChange={refresh} />}
+          {tab === "agreements" && (
+            <PartnerAgreements
+              partner={d}
+              agreements={d.agreements}
+              canCreate={d.can.edit && d.state !== "suspendu" && d.state !== "clos"}
+            />
+          )}
+          {tab === "documents" && (
+            <DocumentsPanel
+              partnerId={d.id}
+              documents={d.documents}
+              agreements={d.agreements}
+              canAdd={d.can.edit}
+              onChange={() => qc.invalidateQueries({ queryKey: ["partner", id] })}
+            />
+          )}
         </div>
         <aside className="space-y-4">
           <Section title="Suivi de la relation">
@@ -820,8 +841,7 @@ export function PartnerPage() {
             </dl>
           </Section>
           <p className="px-1 text-[12px] text-faint">
-            Accords, engagements, réunions, courrier et documents de collaboration rejoindront cette fiche dans les
-            prochains lots.
+            Engagements, réunions, courrier et dossiers liés rejoindront cette fiche dans les prochains lots.
           </p>
         </aside>
       </div>
@@ -1145,6 +1165,8 @@ const EVENT: Record<HistoryItem["kind"], { label: string; Icon: typeof History }
   absorbed: { label: "Fusion", Icon: ArrowRightLeft },
   contact: { label: "Contacts", Icon: Users },
   updated: { label: "Modification", Icon: Globe },
+  agreement: { label: "Accord", Icon: Handshake },
+  document: { label: "Pièce jointe", Icon: Mail },
 };
 
 function HistoryTab({ partner, onChange }: { partner: Detail; onChange: (r: Detail) => void }) {

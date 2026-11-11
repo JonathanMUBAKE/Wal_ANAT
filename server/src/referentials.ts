@@ -2,7 +2,14 @@ import { uid } from "./db.js";
 import { HttpError, badRequest, forbidden, notFound, type Services } from "./services.js";
 
 /** Listes paramétrables de l'institution (docs/PARAMETRAGE.md). Les autres listes restent fixes : des règles en dépendent. */
-export const LISTS = ["activity_type", "unit_type", "partner_type", "partner_category"] as const;
+export const LISTS = [
+  "activity_type",
+  "unit_type",
+  "partner_type",
+  "partner_category",
+  "agreement_type",
+  "partner_doc_nature",
+] as const;
 export type List = (typeof LISTS)[number];
 /** Teintes du système de design, lisibles en clair et en sombre. */
 export const COLORS = ["blue", "teal", "green", "ochre", "terracotta", "indigo", "violet", "slate"] as const;
@@ -30,12 +37,16 @@ const PROPS: Record<List, Record<string, "boolean" | "string">> = {
   unit_type: { provincial: "boolean" },
   partner_type: { public: "boolean" },
   partner_category: { financial: "boolean", supplier: "boolean" },
+  agreement_type: { binding: "boolean", financial: "boolean" },
+  partner_doc_nature: { official: "boolean" },
 };
 const LIST_NAME: Record<List, string> = {
   activity_type: "Type d'activité",
   unit_type: "Type d'entité",
   partner_type: "Type de partenaire",
   partner_category: "Catégorie de partenaire",
+  agreement_type: "Type d'accord",
+  partner_doc_nature: "Nature de pièce",
 };
 
 export interface RefValue {
@@ -230,6 +241,125 @@ const DEFAULTS: Record<List, Seed[]> = {
       icon: "flag",
       props: { financial: true, supplier: false },
     },
+  ],
+  // Acte qui encadre une collaboration ; « contraignant » : il n'entre en vigueur que signé (docs/CONCEPTION.md § 4.4)
+  agreement_type: [
+    {
+      code: "convention_partenariat",
+      label: "Convention de partenariat",
+      plural: "Conventions de partenariat",
+      color: "blue",
+      icon: "handshake",
+      props: { binding: true, financial: false },
+    },
+    {
+      code: "protocole_accord",
+      label: "Protocole d'accord",
+      plural: "Protocoles d'accord",
+      color: "teal",
+      icon: "file-text",
+      props: { binding: false, financial: false },
+    },
+    {
+      code: "accord_financement",
+      label: "Accord de financement",
+      plural: "Accords de financement",
+      color: "indigo",
+      icon: "landmark",
+      props: { binding: true, financial: true },
+    },
+    {
+      code: "convention_subvention",
+      label: "Convention de subvention",
+      plural: "Conventions de subvention",
+      color: "violet",
+      icon: "scale",
+      props: { binding: true, financial: true },
+    },
+    {
+      code: "contrat_cadre",
+      label: "Contrat-cadre",
+      plural: "Contrats-cadres",
+      color: "ochre",
+      icon: "briefcase",
+      props: { binding: true, financial: false },
+    },
+    {
+      code: "lettre_intention",
+      label: "Lettre d'intention",
+      plural: "Lettres d'intention",
+      color: "slate",
+      icon: "flag",
+      props: { binding: false, financial: false },
+    },
+  ],
+  // Nature des pièces de collaboration ; une pièce « officielle » ne se supprime pas
+  partner_doc_nature: [
+    {
+      code: "convention_signee",
+      label: "Convention signée",
+      plural: "Conventions signées",
+      color: "blue",
+      icon: "file-text",
+      props: { official: true },
+    },
+    {
+      code: "avenant",
+      label: "Avenant",
+      plural: "Avenants",
+      color: "indigo",
+      icon: "file-text",
+      props: { official: true },
+    },
+    {
+      code: "lettre_intention",
+      label: "Lettre d'intention",
+      plural: "Lettres d'intention",
+      color: "teal",
+      icon: "flag",
+      props: { official: true },
+    },
+    {
+      code: "rapport_activite",
+      label: "Rapport d'activité",
+      plural: "Rapports d'activité",
+      color: "green",
+      icon: "file-text",
+      props: { official: false },
+    },
+    {
+      code: "rapport_financier",
+      label: "Rapport financier",
+      plural: "Rapports financiers",
+      color: "ochre",
+      icon: "file-text",
+      props: { official: false },
+    },
+    {
+      code: "compte_rendu",
+      label: "Compte rendu",
+      plural: "Comptes rendus",
+      color: "slate",
+      icon: "file-text",
+      props: { official: false },
+    },
+    {
+      code: "correspondance",
+      label: "Correspondance",
+      plural: "Correspondances",
+      color: "slate",
+      icon: "file-text",
+      props: { official: false },
+    },
+    {
+      code: "presentation",
+      label: "Fiche de présentation",
+      plural: "Fiches de présentation",
+      color: "slate",
+      icon: "file-text",
+      props: { official: false },
+    },
+    { code: "autre", label: "Autre", plural: "Autres", color: "slate", icon: "circle", props: { official: false } },
   ],
 };
 

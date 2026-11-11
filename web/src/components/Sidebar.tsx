@@ -21,6 +21,7 @@ import {
   Menu as MenuIcon,
   Moon,
   Network,
+  ScrollText,
   Search,
   ShieldCheck,
   Sparkles,
@@ -169,7 +170,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         )}
 
         {can("partners.view") && (
-          <NavSection title="Partenariats">{link("/partenaires", Handshake, "Partenaires")}</NavSection>
+          <NavSection title="Partenariats">
+            {link("/partenaires", Handshake, "Partenaires")}
+            {link("/conventions", ScrollText, "Conventions")}
+          </NavSection>
         )}
 
         {(can("signature.use") || can("correspondence.view")) && (

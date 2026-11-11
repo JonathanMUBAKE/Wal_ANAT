@@ -36,6 +36,20 @@ export const partnerKey = (s: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "");
 
+/** Numéro du registre des conventions, attribué à l'entrée en vigueur. */
+export const agreementRef = (a: { year: number | null; seq: number | null }) =>
+  a.year && a.seq ? `CONV/${a.year}/${String(a.seq).padStart(4, "0")}` : null;
+/** Un accord en vigueur dont l'échéance est passée se lit « échu », sauf reconduction tacite. */
+export const agreementState = (
+  a: { state: string; end_on: string | null; tacit_renewal: boolean },
+  now = today(),
+): "preparation" | "signature" | "vigueur" | "resilie" | "echu" =>
+  a.state === "vigueur" && a.end_on && a.end_on < now && !a.tacit_renewal
+    ? "echu"
+    : (a.state as "preparation" | "signature" | "vigueur" | "resilie");
+/** Accord qui lie encore un partenaire : en vigueur et non échu. */
+export const LIVE_AGREEMENT = `a.state = 'vigueur' AND (a.end_on IS NULL OR a.end_on >= CURRENT_DATE OR a.tacit_renewal)`;
+
 const REGIONS = new Intl.DisplayNames(["fr"], { type: "region" });
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -152,6 +166,12 @@ export class Partners {
     return { p, manager };
   }
 
+  /** Accès à une fiche pour les modules qui s'y rattachent (accords, pièces). */
+  async access(actorId: string, id: string) {
+    const r = await this.readable(actorId, id);
+    return { ...r, focal: this.focal(r.p, actorId) };
+  }
+
   /** Écrire sur une fiche : la fiche est vivante, l'auteur est une personne gestionnaire ou point focal. */
   private async writable(actorId: string, id: string) {
     await this.human(actorId);
@@ -227,9 +247,43 @@ export class Partners {
           [p.focal_ids],
         )
       : [];
+    // Accords du partenaire : un accord confidentiel n'apparaît qu'aux gestionnaires et à ses points focaux
+    const agreements = (
+      await db.query<{
+        id: string;
+        type_code: string;
+        title: string;
+        state: string;
+        year: number | null;
+        seq: number | null;
+        signed_on: string | null;
+        end_on: string | null;
+        tacit_renewal: boolean;
+        parent_id: string | null;
+        amendment_no: number | null;
+        confidential: boolean;
+        lead: boolean;
+      }>(
+        `SELECT a.id, a.type_code, a.title, a.state, a.year, a.seq, a.signed_on::text AS signed_on, a.end_on::text AS end_on,
+          a.tacit_renewal, a.parent_id, a.amendment_no, a.confidential, ap.lead
+         FROM agreements a JOIN agreement_parties ap ON ap.agreement_id = a.id
+         WHERE ap.partner_id = $1 AND (NOT a.confidential OR $2 OR $3 OR a.focal_id = $4 OR a.created_by = $4)
+         ORDER BY a.year DESC NULLS FIRST, a.seq DESC NULLS FIRST, a.created_at DESC`,
+        [id, manager, focal, actorId],
+      )
+    ).map((a) => ({ ...a, reference: agreementRef(a), state: agreementState(a) }));
+    const documents = await db.query(
+      `SELECT d.id, d.agreement_id, d.nature_code, d.official, d.filename, d.mime, d.size, d.created_at, d.uploader_id,
+        u.name AS uploader_name FROM partner_documents d LEFT JOIN users u ON u.id = d.uploader_id
+       WHERE d.partner_id = $1 AND (d.agreement_id IS NULL OR d.agreement_id = ANY($2::text[]))
+       ORDER BY d.created_at DESC`,
+      [id, agreements.map((a) => a.id)],
+    );
     return {
       ...this.view(p),
       focals,
+      agreements,
+      documents,
       contacts,
       notes,
       history,
@@ -536,6 +590,15 @@ export class Partners {
     const { p, manager } = await this.readable(actorId, id);
     if (p.merged_into) throw new HttpError(409, "Cette fiche a été fusionnée avec une autre");
     if (p.state === i.state) throw new HttpError(409, `Le partenaire est déjà « ${LABEL[i.state]} »`);
+    if (
+      i.state === "clos" &&
+      (await this.svc.db.one(
+        `SELECT 1 FROM agreements a JOIN agreement_parties ap ON ap.agreement_id = a.id
+         WHERE ap.partner_id = $1 AND ${LIVE_AGREEMENT} LIMIT 1`,
+        [id],
+      ))
+    )
+      throw new HttpError(409, "Un accord en vigueur lie encore ce partenaire : résiliez-le ou attendez son échéance");
     if (!NEXT[p.state].includes(i.state))
       throw new HttpError(409, `Un partenaire « ${LABEL[p.state]} » ne passe pas directement à « ${LABEL[i.state]} »`);
     if (!manager && !(this.focal(p, actorId) && FOCAL_MOVES.has(`${p.state}>${i.state}`)))
@@ -586,7 +649,10 @@ export class Partners {
       p.engaged ||
       p.merged_into ||
       (await this.svc.db.one(
-        "SELECT 1 FROM partner_history WHERE partner_id = $1 AND kind = 'note' UNION ALL SELECT 1 FROM partners WHERE merged_into = $1 LIMIT 1",
+        `SELECT 1 FROM partner_history WHERE partner_id = $1 AND kind = 'note'
+         UNION ALL SELECT 1 FROM partners WHERE merged_into = $1
+         UNION ALL SELECT 1 FROM agreement_parties WHERE partner_id = $1
+         UNION ALL SELECT 1 FROM partner_documents WHERE partner_id = $1 LIMIT 1`,
         [id],
       ));
     if (lived)
@@ -629,6 +695,20 @@ export class Partners {
       )
         await q.query("UPDATE partner_contacts SET principal = FALSE WHERE partner_id = $1", [id]);
       await q.query("UPDATE partner_contacts SET partner_id = $1 WHERE partner_id = $2", [intoId, id]);
+      // Accords et pièces suivent : un accord qui liait déjà les deux fiches garde la fiche conservée, chef de file compris
+      const shared = await q.query<{ agreement_id: string; lead: boolean }>(
+        `DELETE FROM agreement_parties d WHERE d.partner_id = $2
+         AND EXISTS (SELECT 1 FROM agreement_parties k WHERE k.partner_id = $1 AND k.agreement_id = d.agreement_id)
+         RETURNING d.agreement_id, d.lead`,
+        [intoId, id],
+      );
+      for (const s of shared.filter((x) => x.lead))
+        await q.query("UPDATE agreement_parties SET lead = TRUE WHERE agreement_id = $1 AND partner_id = $2", [
+          s.agreement_id,
+          intoId,
+        ]);
+      await q.query("UPDATE agreement_parties SET partner_id = $1 WHERE partner_id = $2", [intoId, id]);
+      await q.query("UPDATE partner_documents SET partner_id = $1 WHERE partner_id = $2", [intoId, id]);
       await q.query(
         "UPDATE partner_history SET partner_id = $1 WHERE partner_id = $2 AND kind IN ('note', 'contact')",
         [intoId, id],

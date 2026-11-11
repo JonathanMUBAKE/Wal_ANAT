@@ -127,7 +127,7 @@ Chaque module dit : **son rôle**, **ses objets**, **ses fonctionnalités** avec
 | Types d'activités, types d'entités (dont « représentation provinciale ») | ✅ |
 | Types de réunions, natures de documents du parapheur, unités des indicateurs | ⬜ |
 | **Types et catégories de partenaires** (partie 4, lot PA1) | ✅ |
-| Types d'accords, natures de pièces de collaboration (lot PA2) | ⬜ |
+| Types d'accords, natures de pièces de collaboration (lot PA2) | ✅ |
 | Délais administratifs en paramètres : convocation, compte rendu, réponse au courrier, mission (P5) | ⬜ |
 
 ### 3.3 Organisation
@@ -227,7 +227,7 @@ l'**activité** (une représentation ou un engagement ponctuel).
 | Circuit avis → visa → signature, délégations | ✅ |
 | Document signé rattaché au projet | 🟡 |
 | Un document signé alimente le courrier sortant | ⬜ |
-| **Une convention signée au parapheur passe « en vigueur » dans le module Partenaires** (partie 4) | ⬜ |
+| **Une convention signée au parapheur passe « en vigueur » dans le module Partenaires** (partie 4, lot PA2) | ✅ |
 
 ### 3.11 Secrétariat — Courrier
 
@@ -348,7 +348,7 @@ Une fiche créée par erreur et jamais citée peut être supprimée par un gesti
 
 | État | Règle |
 | --- | --- |
-| **En préparation / En négociation** | Le texte et les engagements se modifient librement |
+| **En préparation / En négociation** | Le texte et les engagements se modifient librement. *Construit (PA2) : un seul état « En préparation » couvre les deux ; la création d'un accord fait passer ses partenaires « En discussion ».* |
 | **En signature** | Le texte est soumis au parapheur (si le type est `binding`) ; plus modifiable sauf retour du circuit |
 | **En vigueur** | Atteint à la signature (ou à la saisie de la date de signature pour un accord non contraignant). Numéro `CONV/AAAA/NNNN` attribué, **texte et pièce signée figés** |
 | **Échu** | Calculé à la date de fin si rien n'est fait ; alerte au point focal **90, 30 et 7 jours** avant (délais paramétrables, P5) |
@@ -511,7 +511,7 @@ Cas fictif : un bailleur propose d'appuyer l'élaboration des schémas provincia
 | Lot | Contenu | Dépend de |
 | --- | --- | --- |
 | **PA1. L'annuaire** ✅ | Référentiels (types, catégories), fiche partenaire, états et cycle, contacts, points focaux, doublons et fusion, notes d'échange, liste filtrable (type, catégorie, état, recherche), droits, journal, matrice | — |
-| **PA2. Accords et pièces** | Types d'accords, fiche accord multi-parties, cycle de vie, registre `CONV/AAAA/NNNN`, avenants, pièces de collaboration par nature, passage au parapheur, alertes d'échéance | PA1 |
+| **PA2. Accords et pièces** ✅ | Types d'accords, fiche accord multi-parties, cycle de vie, registre `CONV/AAAA/NNNN`, avenants, pièces de collaboration par nature, passage au parapheur, alertes d'échéance | PA1 |
 | **PA3. Les liens** | Partenaire choisi dans projets, activités, courrier, contrats, réunions (programmer depuis la fiche, contacts convoqués) ; onglets Dossiers, Réunions, Courrier, Historique ; écran de rapprochement de l'existant | PA1 |
 | **PA4. Engagements et financement** | Engagements, décaissements, financement des projets par source, lien au plan, cartes du tableau de bord DG | PA2 |
 | **PA5. IA** | Note de préparation, résumé de la relation, proposition d'accord à partir d'un scan, veille | PA2, Lot D souhaitable |

@@ -22,7 +22,13 @@ import {
 import { api } from "./api";
 
 /** Référentiels de l'institution, paramétrés par l'administrateur système (docs/PARAMETRAGE.md). */
-export type RefList = "activity_type" | "unit_type" | "partner_type" | "partner_category";
+export type RefList =
+  | "activity_type"
+  | "unit_type"
+  | "partner_type"
+  | "partner_category"
+  | "agreement_type"
+  | "partner_doc_nature";
 export interface RefValue {
   id: string;
   list: RefList;
@@ -41,6 +47,8 @@ export interface RefValue {
     public?: boolean;
     financial?: boolean;
     supplier?: boolean;
+    binding?: boolean;
+    official?: boolean;
   };
 }
 export type Referentials = Record<RefList, RefValue[]>;

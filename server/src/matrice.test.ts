@@ -208,6 +208,31 @@ async function boot(kind: Kind) {
     partner: async () => (await inj(a, "POST", "/api/partners", { name: u("Partenaire"), type_code: "autre" })).body,
     partnerContact: async () =>
       (await inj(a, "POST", `/api/partners/${(await X.partner()).id}/contacts`, { name: "Contact" })).body,
+    agreement: async () =>
+      (
+        await inj(a, "POST", "/api/agreements", {
+          type_code: "protocole_accord",
+          title: u("Accord"),
+          content: "Texte",
+          partner_ids: [(await X.partner()).id],
+        })
+      ).body,
+    agreementInForce: async () => {
+      const ag = await X.agreement();
+      await inj(a, "POST", `/api/agreements/${ag.id}/activate`, { signed_on: "2026-03-02" });
+      return ag;
+    },
+    pdoc: async () =>
+      JSON.parse(
+        (
+          await ctx.app.inject({
+            method: "POST",
+            url: `/api/partners/${(await X.partner()).id}/documents?name=a.txt&nature=autre`,
+            payload: Buffer.from("texte"),
+            headers: { cookie: c[a], "content-type": "application/octet-stream" },
+          })
+        ).body,
+      ),
     decision: async () =>
       (
         await inj(a, "POST", "/api/decisions", {
@@ -669,6 +694,38 @@ const TABLE = [
     url: `/api/partners/${(await X.partner()).id}/notes`,
     body: { body: "Échange téléphonique" },
   })),
+  R_("GET", "/api/agreements"),
+  R_("POST", "/api/agreements", async (X) => ({
+    body: { type_code: "protocole_accord", title: "Accord", partner_ids: [(await X.partner()).id] },
+  })),
+  R_("GET", "/api/agreements/:id", async (X) => ({ url: `/api/agreements/${(await X.agreement()).id}` })),
+  R_("PATCH", "/api/agreements/:id", async (X) => ({
+    url: `/api/agreements/${(await X.agreement()).id}`,
+    body: { content: "Texte revu" },
+  })),
+  R_("DELETE", "/api/agreements/:id", async (X) => ({ url: `/api/agreements/${(await X.agreement()).id}` })),
+  R_("POST", "/api/agreements/:id/sign", async (X) => ({
+    url: `/api/agreements/${(await X.agreement()).id}/sign`,
+    body: { steps: [{ actor_id: "u_karim", action: "signature" }] },
+  })),
+  R_("POST", "/api/agreements/:id/activate", async (X) => ({
+    url: `/api/agreements/${(await X.agreement()).id}/activate`,
+    body: { signed_on: "2026-03-02" },
+  })),
+  R_("POST", "/api/agreements/:id/amend", async (X) => ({
+    url: `/api/agreements/${(await X.agreementInForce()).id}/amend`,
+    body: { title: "Avenant", content: "Texte" },
+  })),
+  R_("POST", "/api/agreements/:id/terminate", async (X) => ({
+    url: `/api/agreements/${(await X.agreementInForce()).id}/terminate`,
+    body: { reason: "Fin", ended_on: "2026-03-03" },
+  })),
+  R_("POST", "/api/partners/:id/documents", async (X) => ({
+    url: `/api/partners/${(await X.partner()).id}/documents?name=a.txt&nature=autre`,
+    bin: "texte",
+  })),
+  R_("GET", "/api/partner-documents/:id", async (X) => ({ url: `/api/partner-documents/${(await X.pdoc()).id}` })),
+  R_("DELETE", "/api/partner-documents/:id", async (X) => ({ url: `/api/partner-documents/${(await X.pdoc()).id}` })),
   R_("GET", "/api/decisions"),
   R_("POST", "/api/decisions", () => ({ body: { title: "D", content: "Texte", decided_on: "2026-03-02" } })),
   R_("GET", "/api/decisions/:id", async (X) => ({ url: `/api/decisions/${(await X.decision()).id}` })),

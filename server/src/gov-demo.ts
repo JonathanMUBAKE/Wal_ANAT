@@ -1,4 +1,5 @@
 import { Activities } from "./activities.js";
+import { Agreements } from "./agreements.js";
 import { Attributions } from "./attributions.js";
 import { Decisions } from "./decisions.js";
 import { Deliverables } from "./deliverables.js";
@@ -19,7 +20,10 @@ export async function seedGovDemo(svc: Services) {
   if (!org) return;
   const me = "u_alice";
   // Une base déjà illustrée reçoit seulement les lots ajoutés depuis (ici, l'annuaire des partenaires)
-  if (await db.one("SELECT 1 FROM agency_activities WHERE org_id = $1", [org])) return seedPartners(svc, org, me);
+  if (await db.one("SELECT 1 FROM agency_activities WHERE org_id = $1", [org])) {
+    await seedPartners(svc, org, me);
+    return seedAgreements(svc, org, me);
+  }
   const a = new Activities(svc);
   const m = new Meetings(svc);
   const at = new Attributions(svc);
@@ -405,6 +409,62 @@ export async function seedGovDemo(svc: Services) {
 
   await new Gaps(svc).detect(me, org);
   await seedPartners(svc, org, me);
+  await seedAgreements(svc, org, me);
+}
+
+/** Accords fictifs (lot PA2) : en vigueur, à l'échéance proche, en préparation, au parapheur, avec un avenant. */
+async function seedAgreements(svc: Services, org: string, me: string) {
+  if (await svc.db.one("SELECT 1 FROM agreements WHERE org_id = $1", [org])) return;
+  const byName = async (acronym: string) =>
+    (await svc.db.one<{ id: string }>("SELECT id FROM partners WHERE org_id = $1 AND acronym = $2", [org, acronym]))
+      ?.id;
+  const ffdt = await byName("FFDT");
+  const mfuh = await byName("MFUH");
+  const ufgl = await byName("UFGL");
+  if (!ffdt || !mfuh || !ufgl) return;
+  const ag = new Agreements(svc);
+  const prog = await ag.create(me, org, {
+    type_code: "protocole_accord",
+    title: "Appui à l'élaboration des schémas provinciaux d'aménagement",
+    content:
+      "Article 1 — Objet. Les parties conviennent de coopérer à l'élaboration de schémas provinciaux d'aménagement dans trois provinces pilotes.\n\n" +
+      "Article 2 — Engagements. Le partenaire apporte une assistance technique et un appui financier ; l'Agence assure la maîtrise d'ouvrage.\n\n" +
+      "Article 3 — Durée. Le présent protocole est conclu pour deux ans.",
+    partner_ids: [ffdt, mfuh],
+    lead_partner_id: ffdt,
+    partner_ref: "FFDT/PRG/2025-014",
+    end_on: day(55),
+    focal_id: "u_karim",
+  });
+  await ag.activate(me, prog.id, { signed_on: day(-675) });
+  await ag.addDocument(me, ffdt, "rapport-semestriel.txt", Buffer.from("Rapport semestriel fictif du programme."), {
+    nature: "rapport_activite",
+    agreement_id: prog.id,
+  });
+  await ag.amend(me, prog.id, {
+    title: "Prolongation d'un an et extension à une quatrième province",
+    content:
+      "Article unique — L'échéance du protocole est prorogée d'un an ; une quatrième province pilote est ajoutée.",
+    new_end_on: day(420),
+  });
+  const conv = await ag.create(me, org, {
+    type_code: "convention_partenariat",
+    title: "Partage des données cartographiques et formation des cadres provinciaux",
+    content:
+      "Article 1 — Objet. L'Université met à disposition ses données géographiques ; l'Agence accueille des stagiaires.\n\n" +
+      "Article 2 — Durée. Trois ans, renouvelable par tacite reconduction.",
+    partner_ids: [ufgl],
+    end_on: day(1100),
+    tacit_renewal: true,
+  });
+  await ag.sign(me, conv.id, [{ actor_id: "u_karim", action: "signature" }]);
+  await ag.create(me, org, {
+    type_code: "convention_partenariat",
+    title: "Comité conjoint de suivi des plans d'urbanisme",
+    content: "Projet de convention en cours de rédaction avec le ministère.",
+    partner_ids: [mfuh],
+    focal_id: me,
+  });
 }
 
 /** Annuaire des partenaires (lot PA1) : organisations fictives, aucune ne désigne un partenaire réel de l'Agence. */

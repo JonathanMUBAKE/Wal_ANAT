@@ -24,7 +24,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
 
 /** Envoi d'un fichier brut : le nom passe dans l'adresse, le corps reste binaire. */
 async function upload<T>(url: string, file: File): Promise<T> {
-  const res = await fetch(`${url}?name=${encodeURIComponent(file.name)}`, {
+  const res = await fetch(`${url}${url.includes("?") ? "&" : "?"}name=${encodeURIComponent(file.name)}`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/octet-stream" },

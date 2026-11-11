@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import { buildApp } from "./app.js";
 import { Deliverables } from "./deliverables.js";
 import { seedGovDemo } from "./gov-demo.js";
+import { Agreements } from "./agreements.js";
 import { Registers } from "./registers.js";
 import { loadLocalSecret, startupProblems } from "./secrets.js";
 
@@ -39,7 +40,10 @@ if (demo && process.env.ANAT_DEMO === "1") await seedGovDemo(svc);
 // Fins de mission : alerte préalable, puis fermeture de l'accès des consultants invités
 const contracts = new Deliverables(svc);
 const mailRegister = new Registers(svc);
-const sweepContracts = () => Promise.all([contracts.sweep(), mailRegister.sweep()]).catch((e) => app.log.error(e));
+// Échéances des accords avec les partenaires : alertes à 90, 30 et 7 jours
+const agreements = new Agreements(svc);
+const sweepContracts = () =>
+  Promise.all([contracts.sweep(), mailRegister.sweep(), agreements.sweep()]).catch((e) => app.log.error(e));
 void sweepContracts();
 setInterval(sweepContracts, 60 * 60 * 1000).unref();
 await app.listen({ port, host });

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Scale, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, cn } from "./ui";
-import { DomainSelect, Field, Input, ProgressBar, Section, Select, Status, frDate } from "./gov";
+import { DomainSelect, Field, Input, PlanActivitySelect, ProgressBar, Section, Select, Status, frDate } from "./gov";
 import { api } from "@/lib/api";
 import { useUnits, useUsers } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
@@ -20,6 +20,8 @@ interface Gov {
   budget_planned: number | null;
   budget_spent: number | null;
   decision_needed: string;
+  plan_activity_id: string | null;
+  plan_activity_label: string | null;
   team: {
     user_id: string;
     name: string;
@@ -91,6 +93,7 @@ export function ProjectGovernance({ projectId, canEdit }: { projectId: string; c
               <Row label="Entité" value={g.unit_name} />
               {g.origin === "confie" && <Row label="Commanditaire" value={g.sponsor} />}
               {g.origin === "confie" && <Row label="Convention" value={g.convention_ref} />}
+              <Row label="Plan de travail" value={g.plan_activity_label ?? "Hors plan"} />
             </dl>
           </div>
           <div>
@@ -198,6 +201,7 @@ function EditGovernance({ g, projectId, onClose }: { g: Gov; projectId: string; 
     budget_planned: g.budget_planned?.toString() ?? "",
     budget_spent: g.budget_spent?.toString() ?? "",
     decision_needed: g.decision_needed,
+    plan_activity_id: g.plan_activity_id ?? "",
   });
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   const num = (s: string) => (s.trim() === "" ? null : Number(s.replace(/\s/g, "").replace(",", ".")));
@@ -210,10 +214,12 @@ function EditGovernance({ g, projectId, onClose }: { g: Gov; projectId: string; 
         domain_id: f.domain_id || null,
         budget_planned: num(f.budget_planned),
         budget_spent: num(f.budget_spent),
+        plan_activity_id: f.plan_activity_id || null,
       }),
     onSuccess: (r) => {
       qc.setQueryData(["governance", projectId], r);
       qc.invalidateQueries({ queryKey: ["pilotage"] });
+      qc.invalidateQueries({ queryKey: ["plans"] });
       onClose();
     },
     onError: fail,
@@ -286,6 +292,19 @@ function EditGovernance({ g, projectId, onClose }: { g: Gov; projectId: string; 
         </Field>
         <Field label="Budget dépensé">
           {(a) => <Input {...a} inputMode="decimal" value={f.budget_spent} onChange={set("budget_spent")} />}
+        </Field>
+        <Field
+          label="Activité du plan de travail réalisée"
+          className="sm:col-span-2"
+          hint="L'avancement du projet remontera à cette activité du plan."
+        >
+          {(a) => (
+            <PlanActivitySelect
+              {...a}
+              value={f.plan_activity_id}
+              onChange={(v) => setF({ ...f, plan_activity_id: v })}
+            />
+          )}
         </Field>
         <Field label="Décision attendue de la DG" className="sm:col-span-2">
           {(a) => <Input {...a} value={f.decision_needed} onChange={set("decision_needed")} />}

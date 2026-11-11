@@ -185,7 +185,16 @@ export class Pilotage {
       `SELECT
         (SELECT count(*)::int FROM deliverables WHERE org_id = $1 AND status <> 'valide' AND due_on < $2::date) AS livrables,
         (SELECT count(*)::int FROM plan_activities a JOIN work_plans p ON p.id = a.plan_id
-          WHERE a.org_id = $1 AND p.status = 'approved' AND a.progress < 100 AND a.end_on < $2::date) AS activites_plan,
+          LEFT JOIN LATERAL (
+            SELECT round(avg(x.progress))::int AS progress FROM (
+              SELECT CASE WHEN count(t.id) > 0 THEN 100.0 * count(t.id) FILTER (WHERE t.completed) / count(t.id) ELSE 0 END AS progress
+               FROM projects pj LEFT JOIN tasks t ON t.project_id = pj.id AND t.parent_id IS NULL
+               WHERE pj.plan_activity_id = a.id GROUP BY pj.id
+              UNION ALL
+              SELECT aa.progress::numeric FROM agency_activities aa WHERE aa.plan_activity_id = a.id
+            ) x
+          ) eff ON TRUE
+          WHERE a.org_id = $1 AND p.status = 'approved' AND COALESCE(eff.progress, a.progress) < 100 AND a.end_on < $2::date) AS activites_plan,
         (SELECT count(*)::int FROM correspondence WHERE org_id = $1 AND status <> 'traite' AND NOT confidential AND due_on < $2::date) AS courrier`,
       [orgId, today],
     );

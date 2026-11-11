@@ -129,6 +129,71 @@ describe("décisions de séance → registre des décisions", () => {
   });
 });
 
+describe("lot P3c — l'avancement des dossiers remonte au plan", () => {
+  /** Un plan approuvé avec une activité, prête à être réalisée par des dossiers. */
+  const approvedPlanActivity = async () => {
+    const [unit] = await g.units(1);
+    await g.promote("u_karim");
+    const p = (await g.api("u_alice", "POST", "/api/plans", { unit_id: unit, year: 2027, title: "Plan 2027" })).body;
+    await g.api("u_alice", "POST", `/api/plans/${p.id}/activities`, {
+      title: "Révision du schéma provincial",
+      responsible_id: "u_karim",
+      target_value: 1,
+      end_on: "2027-06-30",
+    });
+    await g.api("u_alice", "POST", `/api/plans/${p.id}/submit`);
+    const approved = (await g.api("u_karim", "POST", `/api/plans/${p.id}/approve`)).body;
+    return { planId: p.id as string, activityId: approved.activities[0].id as string };
+  };
+
+  it("un projet et une activité rattachés font remonter leur avancement ; la saisie manuelle est refusée", async () => {
+    const { planId, activityId } = await approvedPlanActivity();
+    // Un projet à deux tâches dont une terminée : 50 %
+    await g.api("u_alice", "PUT", `/api/projects/${prj}/governance`, { plan_activity_id: activityId });
+    const t1 = (await g.api("u_alice", "POST", "/api/tasks", { project_id: prj, title: "Diagnostic" })).body;
+    await g.api("u_alice", "POST", "/api/tasks", { project_id: prj, title: "Restitution" });
+    await g.api("u_alice", "PATCH", `/api/tasks/${t1.id}`, { completed: true });
+    // Une activité interne à 100 %
+    const act = (
+      await g.api("u_alice", "POST", "/api/activities", {
+        kind: "interne",
+        title: "Ateliers de concertation",
+        plan_activity_id: activityId,
+        progress: 100,
+      })
+    ).body;
+    const plan = (await g.api("u_alice", "GET", `/api/plans/${planId}`)).body;
+    const a = plan.activities[0];
+    expect(a.dossiers).toHaveLength(2);
+    expect(a.progress_effective).toBe(75);
+    expect(a.dossiers.map((d: { id: string }) => d.id).sort()).toEqual([prj, act.id].sort());
+    const refused = await g.api("u_alice", "PATCH", `/api/plan-activities/${activityId}/progress`, { progress: 10 });
+    expect(refused.status).toBe(400);
+    expect(refused.body.error).toMatch(/remonte/);
+    // Le budget, lui, se saisit toujours
+    expect(
+      (await g.api("u_alice", "PATCH", `/api/plan-activities/${activityId}/progress`, { budget_spent: 500 })).status,
+    ).toBe(200);
+  });
+
+  it("le catalogue des activités du plan sert au rattachement ; un gestionnaire seul rattache une activité", async () => {
+    const { activityId } = await approvedPlanActivity();
+    const catalog = (await g.api("u_alice", "GET", "/api/plan-activities")).body as { id: string; unit_name: string }[];
+    expect(catalog.some((x) => x.id === activityId)).toBe(true);
+    const act = (
+      await g.api("u_alice", "POST", "/api/activities", { kind: "interne", title: "Suivi", lead_id: "u_hugo" })
+    ).body;
+    const refused = await g.api("u_hugo", "PATCH", `/api/activities/${act.id}`, { plan_activity_id: activityId });
+    expect(refused.status).toBe(403);
+    expect(
+      (await g.api("u_alice", "PATCH", `/api/activities/${act.id}`, { plan_activity_id: activityId })).status,
+    ).toBe(200);
+    expect(
+      (await g.api("u_alice", "PUT", `/api/projects/${prj}/governance`, { plan_activity_id: "pla_x" })).status,
+    ).toBe(400);
+  });
+});
+
 describe("recommandations → tâches du projet", () => {
   it("à la validation, chaque recommandation ouverte devient une tâche assignée du projet", async () => {
     const id = await held({

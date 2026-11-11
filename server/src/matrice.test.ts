@@ -558,6 +558,7 @@ const TABLE = [
     url: `/api/gaps/${await X.gap()}`,
     body: { status: "justified", note: "x" },
   })),
+  R_("GET", "/api/plan-activities"),
   R_("GET", "/api/plans"),
   R_("POST", "/api/plans", async (X) => ({ body: { unit_id: (await X.unit()).id, year: 2027, title: "Plan" } })),
   R_("GET", "/api/plans/:id", async (X) => ({ url: `/api/plans/${(await X.plan()).id}` })),

@@ -314,6 +314,14 @@ Restent pour le lot P3 : décisions de séance vers le registre, recommandations
 | L'**imputation** porte une **instruction** (« pour traitement », « pour avis », « pour information ») | Conservée au registre et transmise à l'agent imputé |
 | Un courrier peut être **rattaché à un dossier** (projet ou activité, un seul) | Il se retrouve dans le dossier ; un dossier inconnu est refusé |
 
+### Lot P3c — le plan dit quoi, le dossier dit comment
+
+| Règle | Effet |
+| --- | --- |
+| Un projet ou une activité peut être rattaché à l'**activité du plan** qu'il réalise (catalogue commun) | Rattachement réservé aux gestionnaires ; une activité du plan inconnue est refusée |
+| L'**avancement remonte** : l'activité du plan affiche la moyenne des avancements de ses dossiers (projets : part des tâches terminées ; activités : leur avancement) | Visible dans le plan, sa liste et le tableau de bord (retards) |
+| Dès qu'un dossier réalise l'activité, son avancement **ne se saisit plus à la main** | La saisie du budget et du réalisé reste libre |
+
 ## 7. Questions à trancher
 
 | N° | Question | Proposition par défaut |

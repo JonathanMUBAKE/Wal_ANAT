@@ -318,6 +318,37 @@ export function DomainSelect({
   );
 }
 
+/** L'activité du plan de travail que ce dossier réalise : son avancement y remontera (lot P3c). */
+export function PlanActivitySelect({
+  value,
+  onChange,
+  ...a
+}: { value: string | null | undefined; onChange: (v: string) => void } & Omit<
+  SelectHTMLAttributes<HTMLSelectElement>,
+  "value" | "onChange"
+>) {
+  const { data } = useQuery({
+    queryKey: ["plan-activities"],
+    queryFn: () =>
+      api.get<{ id: string; title: string; year: number; unit_name: string; plan_status: string }[]>(
+        "/api/plan-activities",
+      ),
+    retry: false,
+  });
+  return (
+    <Select {...a} value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
+      <option value="">Hors plan de travail</option>
+      {data
+        ?.filter((p) => p.plan_status === "approved" || p.id === value)
+        .map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.title} — {p.unit_name}, {p.year}
+          </option>
+        ))}
+    </Select>
+  );
+}
+
 export function PeopleSelect({
   value,
   onChange,

@@ -54,6 +54,9 @@ interface PlanActivity {
   budget_spent: number | null;
   progress: number;
   baseline: { end_on?: string } | null;
+  /** Les dossiers (projets, activités) qui réalisent cette activité : leur avancement remonte ici (lot P3c). */
+  dossiers: { kind: "project" | "activity"; id: string; label: string; progress: number; href: string }[];
+  progress_effective: number;
 }
 interface Plan extends PlanRow {
   return_comment: string;
@@ -317,6 +320,15 @@ export function PlanPage() {
                   <Td className="max-w-sm">
                     <span className="font-medium">{a.title}</span>
                     {a.objective && <span className="block text-[12px] text-muted">{a.objective}</span>}
+                    {!!a.dossiers.length && (
+                      <span className="mt-0.5 block space-x-2 text-[12px]">
+                        {a.dossiers.map((x) => (
+                          <Link key={x.id} to={x.href} className="text-primary hover:underline">
+                            {x.label} ({x.progress} %)
+                          </Link>
+                        ))}
+                      </span>
+                    )}
                   </Td>
                   <Td>{a.responsible_name ?? <span className="text-danger">À désigner</span>}</Td>
                   <Td className="whitespace-nowrap tabular">
@@ -325,7 +337,7 @@ export function PlanPage() {
                   </Td>
                   <Td
                     className={
-                      a.progress < 100 && isLate(a.end_on)
+                      a.progress_effective < 100 && isLate(a.end_on)
                         ? "whitespace-nowrap font-medium text-danger tabular"
                         : "whitespace-nowrap tabular"
                     }
@@ -338,9 +350,14 @@ export function PlanPage() {
                     )}
                   </Td>
                   <Td className="min-w-[120px]">
-                    <span className="flex items-center gap-2">
-                      <ProgressBar value={a.progress} />
-                      <span className="tabular shrink-0 whitespace-nowrap text-[12px] text-muted">{a.progress} %</span>
+                    <span
+                      className="flex items-center gap-2"
+                      title={a.dossiers.length ? "Avancement remonté des dossiers" : undefined}
+                    >
+                      <ProgressBar value={a.progress_effective} />
+                      <span className="tabular shrink-0 whitespace-nowrap text-[12px] text-muted">
+                        {a.progress_effective} %
+                      </span>
                     </span>
                   </Td>
                   <Td className="whitespace-nowrap text-right">
@@ -521,13 +538,15 @@ function ActivityDialog({
 }
 
 function Follow({ a, onDone, onClose }: { a: PlanActivity; onDone: (p: Plan) => void; onClose: () => void }) {
+  // Dès qu'un dossier réalise l'activité, l'avancement remonte de lui : il ne se saisit plus à la main (lot P3c)
+  const linked = a.dossiers.length > 0;
   const [progress, setProgress] = useState(a.progress);
   const [actual, setActual] = useState(a.actual_value?.toString() ?? "");
   const [spent, setSpent] = useState(a.budget_spent?.toString() ?? "");
   const save = useMutation({
     mutationFn: () =>
       api.patch<Plan>(`/api/plan-activities/${a.id}/progress`, {
-        progress,
+        ...(linked ? {} : { progress }),
         actual_value: num(actual),
         budget_spent: num(spent),
       }),
@@ -554,20 +573,27 @@ function Follow({ a, onDone, onClose }: { a: PlanActivity; onDone: (p: Plan) => 
       }
     >
       <div className="space-y-3">
-        <Field label={`Avancement : ${progress} %`}>
-          {(f) => (
-            <input
-              {...f}
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              className="w-full accent-[var(--primary)]"
-              value={progress}
-              onChange={(e) => setProgress(Number(e.target.value))}
-            />
-          )}
-        </Field>
+        {linked ? (
+          <p className="rounded-lg border border-line bg-hover/40 px-3 py-2 text-[12.5px] text-muted">
+            Avancement : <b className="font-semibold text-fg">{a.progress_effective} %</b>, remonté de{" "}
+            {a.dossiers.map((d) => d.label).join(", ")}. Il se met à jour depuis les dossiers.
+          </p>
+        ) : (
+          <Field label={`Avancement : ${progress} %`}>
+            {(f) => (
+              <input
+                {...f}
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                className="w-full accent-[var(--primary)]"
+                value={progress}
+                onChange={(e) => setProgress(Number(e.target.value))}
+              />
+            )}
+          </Field>
+        )}
         <Field label={`Réalisé (cible : ${a.target_value ?? "—"} ${a.unit_label})`}>
           {(f) => <Input {...f} inputMode="decimal" value={actual} onChange={(e) => setActual(e.target.value)} />}
         </Field>

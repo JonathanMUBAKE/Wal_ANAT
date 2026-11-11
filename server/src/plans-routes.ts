@@ -46,6 +46,8 @@ const Contract = z.object({
 });
 
 export function planRoutes(r: FastifyInstance, p: Plans, d: Deliverables) {
+  // Catalogue pour rattacher un dossier (projet, activité) à l'activité du plan qu'il réalise (lot P3c)
+  r.get("/api/plan-activities", async (req) => p.catalog(req.userId, req.orgId));
   r.get("/api/plans", async (req) =>
     p.list(req.userId, req.orgId, z.object({ year: z.coerce.number().int().optional() }).parse(req.query)),
   );

@@ -267,6 +267,16 @@ export async function seedGovDemo(svc: Services) {
   for (const u of ["u_karim", "u_hugo"]) await svc.setMember(me, schema.id, u, "editor");
   // Le comité de pilotage appartient au dossier du projet : il apparaît dans son onglet Réunions
   await m.update(me, steering.id, { project_id: schema.id });
+  // Le projet réalise l'activité « Révision du schéma d'aménagement » du plan : son avancement y remonte (lot P3c)
+  const revision = approved.activities.find((x: { title: string }) => x.title.startsWith("Révision du schéma"));
+  if (revision) await a.setGovernance(me, schema.id, { plan_activity_id: revision.id });
+  for (const [title, done] of [
+    ["Cadrage méthodologique", true],
+    ["Diagnostic des provinces pilotes", false],
+  ] as const) {
+    const t = await svc.createTask(me, { project_id: schema.id, title });
+    if (done) await svc.updateTask(me, t.id, { completed: true });
+  }
   const mission = await d.createContract(me, org, {
     project_id: schema.id,
     user_id: "u_hugo",

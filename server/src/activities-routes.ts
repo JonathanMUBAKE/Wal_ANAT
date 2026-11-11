@@ -27,6 +27,7 @@ const Fields = z.object({
   next_due_on: date.nullable().optional(),
   health: z.enum(HEALTHS).optional(),
   confidential: z.boolean().optional(),
+  plan_activity_id: id.nullable().optional(),
 });
 const title = z.string().trim().min(1).max(300);
 // Le type est contrôlé par le service contre le référentiel de l'institution
@@ -49,6 +50,7 @@ const Governance = z.object({
   budget_planned: money,
   budget_spent: money,
   decision_needed: short.optional(),
+  plan_activity_id: id.nullable().optional(),
 });
 
 export function activityRoutes(r: FastifyInstance, a: Activities, p: Pilotage) {

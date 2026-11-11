@@ -30,6 +30,8 @@ export interface Activity {
   health: Health;
   confidential: boolean;
   created_by: string | null;
+  /** L'activité du plan de travail que ce dossier réalise (lot P3c). */
+  plan_activity_id: string | null;
 }
 export type ActivityInput = Partial<Omit<Activity, "id" | "org_id" | "created_by" | "kind">> & {
   kind?: ActivityKind;
@@ -45,6 +47,7 @@ export interface Governance {
   budget_planned?: number | null;
   budget_spent?: number | null;
   decision_needed?: string;
+  plan_activity_id?: string | null;
 }
 
 const FIELDS = [
@@ -66,6 +69,7 @@ const FIELDS = [
   "next_due_on",
   "health",
   "confidential",
+  "plan_activity_id",
 ] as const;
 
 export class Activities {
@@ -105,6 +109,14 @@ export class Activities {
       !(await this.svc.db.one("SELECT 1 FROM activity_domains WHERE org_id = $1 AND id = $2", [orgId, i.domain_id]))
     )
       throw badRequest("Domaine inconnu du catalogue");
+    if (
+      i.plan_activity_id &&
+      !(await this.svc.db.one("SELECT 1 FROM plan_activities WHERE org_id = $1 AND id = $2", [
+        orgId,
+        i.plan_activity_id,
+      ]))
+    )
+      throw badRequest("Activité du plan inconnue");
   }
 
   async list(actorId: string, orgId: string, f: { kind?: ActivityKind }) {
@@ -135,7 +147,18 @@ export class Activities {
       [id],
     );
     const manager = await this.canManage(actorId, a.org_id);
-    return { ...a, followups, can: { edit: manager || a.lead_id === actorId, remove: manager } };
+    const plan = a.plan_activity_id
+      ? await this.svc.db.one<{ title: string; year: number }>(
+          "SELECT a2.title, p.year FROM plan_activities a2 JOIN work_plans p ON p.id = a2.plan_id WHERE a2.id = $1",
+          [a.plan_activity_id],
+        )
+      : null;
+    return {
+      ...a,
+      followups,
+      plan_activity_label: plan ? `${plan.title} (plan ${plan.year})` : null,
+      can: { edit: manager || a.lead_id === actorId, remove: manager },
+    };
   }
 
   async create(actorId: string, orgId: string, i: ActivityInput & { kind: ActivityKind; title: string }) {
@@ -145,8 +168,8 @@ export class Activities {
     const type = await new Referentials(this.svc).resolve(orgId, "activity_type", i.kind);
     const id = uid("act");
     await this.svc.db.query(
-      `INSERT INTO agency_activities (id, org_id, kind, title, description, lead_id, unit_id, domain_id, start_on, start_time, end_on, location, counterpart, mandate, delegation, decision_needed, progress, next_due_on, health, confidential, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
+      `INSERT INTO agency_activities (id, org_id, kind, title, description, lead_id, unit_id, domain_id, start_on, start_time, end_on, location, counterpart, mandate, delegation, decision_needed, progress, next_due_on, health, confidential, created_by, plan_activity_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
       [
         id,
         orgId,
@@ -169,6 +192,7 @@ export class Activities {
         i.health ?? "on_track",
         i.confidential ?? type.props.confidential_default === true,
         actorId,
+        i.plan_activity_id ?? null,
       ],
     );
     await this.svc.log(actorId, "activity.created", { orgId, data: { id, kind: i.kind } });
@@ -179,11 +203,14 @@ export class Activities {
     const a = await this.readable(actorId, id);
     const manager = await this.canManage(actorId, a.org_id);
     if (a.lead_id !== actorId && !manager) await this.svc.requirePerm(actorId, a.org_id, "agenda.manage");
-    // Le responsable rend compte ; confier l'activité à un autre ou lever sa confidentialité revient aux gestionnaires
+    // Le responsable rend compte ; confier l'activité à un autre, lever sa confidentialité ou la rattacher au plan revient aux gestionnaires
     const leadChanged = patch.lead_id !== undefined && (patch.lead_id ?? null) !== a.lead_id;
     const secrecyChanged = patch.confidential !== undefined && patch.confidential !== a.confidential;
-    if (!manager && (leadChanged || secrecyChanged))
-      throw forbidden("Seul un gestionnaire change le responsable ou la confidentialité d'une activité");
+    const planChanged = patch.plan_activity_id !== undefined && (patch.plan_activity_id ?? null) !== a.plan_activity_id;
+    if (!manager && (leadChanged || secrecyChanged || planChanged))
+      throw forbidden(
+        "Seul un gestionnaire change le responsable, la confidentialité ou le rattachement au plan d'une activité",
+      );
     // Les dates se contrôlent avec celles déjà enregistrées, pas seulement entre elles
     const start = patch.start_on === undefined ? a.start_on : patch.start_on;
     const end = patch.end_on === undefined ? a.end_on : patch.end_on;
@@ -256,7 +283,9 @@ export class Activities {
     const p = await this.svc.getProject(actorId, projectId);
     const g = await this.svc.db.one<Governance & { lead_name: string | null; unit_name: string | null }>(
       `SELECT p.origin, p.sponsor, p.convention_ref, p.lead_id, p.unit_id, p.domain_id, p.budget_planned::float8 AS budget_planned, p.budget_spent::float8 AS budget_spent, p.decision_needed,
-        u.name AS lead_name, ou.name AS unit_name FROM projects p LEFT JOIN users u ON u.id = p.lead_id LEFT JOIN org_units ou ON ou.id = p.unit_id WHERE p.id = $1`,
+        p.plan_activity_id, pa.title || ' (plan ' || wp.year || ')' AS plan_activity_label,
+        u.name AS lead_name, ou.name AS unit_name FROM projects p LEFT JOIN users u ON u.id = p.lead_id LEFT JOIN org_units ou ON ou.id = p.unit_id
+        LEFT JOIN plan_activities pa ON pa.id = p.plan_activity_id LEFT JOIN work_plans wp ON wp.id = pa.plan_id WHERE p.id = $1`,
       [projectId],
     );
     const ids = p.members.map((m: { user_id: string }) => m.user_id);
@@ -296,7 +325,12 @@ export class Activities {
     await this.svc.require(actorId, projectId, "admin");
     const orgId = await this.svc.orgOfProject(projectId);
     await this.svc.requirePerm(actorId, orgId, "projects.edit");
-    await this.assertRefs(orgId, { lead_id: g.lead_id, unit_id: g.unit_id, domain_id: g.domain_id });
+    await this.assertRefs(orgId, {
+      lead_id: g.lead_id,
+      unit_id: g.unit_id,
+      domain_id: g.domain_id,
+      plan_activity_id: g.plan_activity_id,
+    });
     if ((g.budget_planned ?? 0) < 0 || (g.budget_spent ?? 0) < 0)
       throw badRequest("Un montant ne peut pas être négatif");
     const sets: string[] = [];
@@ -311,6 +345,7 @@ export class Activities {
       "budget_planned",
       "budget_spent",
       "decision_needed",
+      "plan_activity_id",
     ] as const) {
       if (g[k] === undefined) continue;
       vals.push(g[k]);

@@ -12,6 +12,7 @@ import {
   Input,
   LoadingRows,
   PageHeader,
+  PlanActivitySelect,
   ProgressBar,
   Section,
   Select,
@@ -60,6 +61,8 @@ interface Activity {
 }
 interface Detail extends Activity {
   followups: { id: string; text: string; responsible_name: string | null; due_on: string | null; done: boolean }[];
+  plan_activity_id: string | null;
+  plan_activity_label: string | null;
   can: { edit: boolean; remove: boolean };
 }
 const fail = (e: unknown) => toast.error((e as Error).message);
@@ -126,35 +129,35 @@ export function ActivitiesPage() {
         ) : tab === "projects" ? (
           <ProjectsList projects={projects} />
         ) : (
-        <Section>
-          {isLoading ? (
-            <LoadingRows />
-          ) : rows.length ? (
-            <Table head={["Activité", "Nature", "Responsable", "Date", "État", "Suites ouvertes"]}>
-              {rows.map((a) => (
-                <Tr key={a.id} onClick={() => nav(`/activites/${a.id}`)}>
-                  <Td className="font-medium">
-                    {a.title}
-                    {a.confidential && (
-                      <Lock aria-label="Confidentielle" className="ml-1.5 inline size-3 text-warning" />
-                    )}
-                  </Td>
-                  <Td>{form(a.kind).label}</Td>
-                  <Td>{a.lead_name ?? "—"}</Td>
-                  <Td className="tabular">{frDate(a.start_on)}</Td>
-                  <Td>
-                    <Status label={HEALTH[a.health].label} tone={HEALTH[a.health].tone} />
-                  </Td>
-                  <Td className="tabular">{a.open_followups || "—"}</Td>
-                </Tr>
-              ))}
-            </Table>
-          ) : (
-            <Empty icon={<CalendarRange className="size-6" />} title="Aucune activité">
-              Enregistrez une commission, une conférence, un rendez-vous ou une activité interne.
-            </Empty>
-          )}
-        </Section>
+          <Section>
+            {isLoading ? (
+              <LoadingRows />
+            ) : rows.length ? (
+              <Table head={["Activité", "Nature", "Responsable", "Date", "État", "Suites ouvertes"]}>
+                {rows.map((a) => (
+                  <Tr key={a.id} onClick={() => nav(`/activites/${a.id}`)}>
+                    <Td className="font-medium">
+                      {a.title}
+                      {a.confidential && (
+                        <Lock aria-label="Confidentielle" className="ml-1.5 inline size-3 text-warning" />
+                      )}
+                    </Td>
+                    <Td>{form(a.kind).label}</Td>
+                    <Td>{a.lead_name ?? "—"}</Td>
+                    <Td className="tabular">{frDate(a.start_on)}</Td>
+                    <Td>
+                      <Status label={HEALTH[a.health].label} tone={HEALTH[a.health].tone} />
+                    </Td>
+                    <Td className="tabular">{a.open_followups || "—"}</Td>
+                  </Tr>
+                ))}
+              </Table>
+            ) : (
+              <Empty icon={<CalendarRange className="size-6" />} title="Aucune activité">
+                Enregistrez une commission, une conférence, un rendez-vous ou une activité interne.
+              </Empty>
+            )}
+          </Section>
         )}
       </div>
       {creating && (
@@ -207,7 +210,9 @@ function ProjectsList({ projects }: { projects: ProjectSummary[] | undefined }) 
                   <span className="w-9 text-right text-[12px] tabular text-muted">{pct}%</span>
                 </span>
               </Td>
-              <Td className={cn("tabular", isLate(p.due_on, today) && "font-medium text-danger")}>{frDate(p.due_on)}</Td>
+              <Td className={cn("tabular", isLate(p.due_on, today) && "font-medium text-danger")}>
+                {frDate(p.due_on)}
+              </Td>
               <Td className={cn("tabular", p.overdue_count > 0 && "font-semibold text-danger")}>
                 {p.overdue_count || "—"}
               </Td>
@@ -368,6 +373,7 @@ export function ActivityPage() {
         next_due_on: d!.next_due_on || null,
         health: d!.health,
         confidential: d!.confidential,
+        plan_activity_id: d!.plan_activity_id,
       }),
     onSuccess: (r) => {
       refresh(r);
@@ -595,6 +601,19 @@ export function ActivityPage() {
                     type="date"
                     value={d.next_due_on ?? ""}
                     onChange={(e) => patch({ next_due_on: e.target.value })}
+                  />
+                )}
+              </Field>
+              <Field
+                label="Activité du plan de travail réalisée"
+                hint={!d.can.remove ? "Seul un gestionnaire change le rattachement au plan." : undefined}
+              >
+                {(a) => (
+                  <PlanActivitySelect
+                    {...a}
+                    disabled={ro || !d.can.remove}
+                    value={d.plan_activity_id}
+                    onChange={(v) => patch({ plan_activity_id: v || null })}
                   />
                 )}
               </Field>

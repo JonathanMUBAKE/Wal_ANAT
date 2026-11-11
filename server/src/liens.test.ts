@@ -166,6 +166,81 @@ describe("recommandations → tâches du projet", () => {
     expect(t.description).toContain("Karim");
   });
 
+  it("lot P3b — la réponse sortante clôt l'entrant et les deux restent liés", async () => {
+    const register = (body: Record<string, unknown> = {}) =>
+      g.api("u_alice", "POST", "/api/correspondence", {
+        direction: "entrant",
+        subject: "Demande d'appui technique",
+        correspondent: "Gouverneur du Nord",
+        received_on: day(-5),
+        ...body,
+      });
+    const inMail = (await register({})).body;
+    const out = (
+      await register({
+        direction: "sortant",
+        subject: "Réponse à la demande d'appui",
+        reply_to_id: inMail.id,
+        received_on: day(0),
+      })
+    ).body;
+    expect(out.reply_to_reference).toBe(inMail.reference);
+    const entrants = (await g.api("u_alice", "GET", "/api/correspondence?direction=entrant")).body as Record<
+      string,
+      unknown
+    >[];
+    const closed = entrants.find((x) => x.id === inMail.id)!;
+    expect(closed).toMatchObject({ status: "traite", response_ref: out.reference, response_reference: out.reference });
+    // Une seconde réponse garde le lien sans écraser la première clôture
+    const again = (
+      await register({ direction: "sortant", subject: "Complément", reply_to_id: inMail.id, received_on: day(1) })
+    ).body;
+    expect(again.reply_to_reference).toBe(inMail.reference);
+    const after = (await g.api("u_alice", "GET", "/api/correspondence?direction=entrant")).body.find(
+      (x: { id: string }) => x.id === inMail.id,
+    );
+    expect(after.response_ref).toBe(out.reference);
+    // Refus : répondre à un sortant, ou répondre depuis un entrant
+    expect((await register({ direction: "sortant", reply_to_id: out.id, received_on: day(1) })).status).toBe(400);
+    expect((await register({ reply_to_id: inMail.id })).status).toBe(400);
+  });
+
+  it("lot P3b — l'instruction d'imputation est conservée et transmise ; le courrier vit dans son dossier", async () => {
+    const inMail = (
+      await g.api("u_alice", "POST", "/api/correspondence", {
+        direction: "entrant",
+        subject: "Plan d'urbanisme provincial",
+        correspondent: "Gouverneur du Nord",
+        received_on: day(-2),
+        project_id: prj,
+      })
+    ).body;
+    await g.api("u_alice", "POST", `/api/correspondence/${inMail.id}/assign`, {
+      assignee_id: "u_karim",
+      due_on: day(10),
+      instruction: "Pour avis",
+    });
+    const list = (await g.api("u_alice", "GET", `/api/correspondence?project_id=${prj}`)).body as Record<
+      string,
+      unknown
+    >[];
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ id: inMail.id, instruction: "Pour avis", project_name: expect.any(String) });
+    const note = (await notes("u_karim")).find((n) => n.kind === "correspondence.assigned") as
+      | (Note & { body?: string })
+      | undefined;
+    expect(note?.body).toContain("Pour avis");
+    // Dossier inconnu ou double dossier : refusé
+    const bad = await g.api("u_alice", "POST", "/api/correspondence", {
+      direction: "entrant",
+      subject: "X",
+      correspondent: "Y",
+      received_on: day(0),
+      project_id: "prj_inconnu",
+    });
+    expect(bad.status).toBe(400);
+  });
+
   it("clore la recommandation termine la tâche ; terminer la tâche soumet la recommandation et prévient le rédacteur", async () => {
     const id = await held({
       project: prj,

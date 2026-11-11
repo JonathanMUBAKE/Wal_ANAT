@@ -73,7 +73,13 @@ export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers,
     reg.listMail(
       req.userId,
       req.orgId,
-      z.object({ direction: z.enum(["entrant", "sortant"]).optional() }).parse(req.query),
+      z
+        .object({
+          direction: z.enum(["entrant", "sortant"]).optional(),
+          project_id: id.optional(),
+          activity_id: id.optional(),
+        })
+        .parse(req.query),
     ),
   );
   r.post("/api/correspondence", async (req) =>
@@ -89,6 +95,9 @@ export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers,
           received_on: date,
           due_on: date.nullable().optional(),
           confidential: z.boolean().optional(),
+          reply_to_id: id.nullable().optional(),
+          project_id: id.nullable().optional(),
+          activity_id: id.nullable().optional(),
         })
         .parse(req.body),
     ),
@@ -102,6 +111,7 @@ export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers,
           unit_id: id.nullable().optional(),
           assignee_id: id.nullable().optional(),
           due_on: date.nullable().optional(),
+          instruction: z.string().max(300).optional(),
         })
         .parse(req.body),
     ),

@@ -24,7 +24,7 @@ import {
   type Tone,
 } from "@/components/gov";
 import { api } from "@/lib/api";
-import { useCan, useMe, useUnits, useUsers } from "@/lib/hooks";
+import { useCan, useMe, useProjects, useUnits, useUsers } from "@/lib/hooks";
 
 type DocStatus = "draft" | "in_circuit" | "signed" | "rejected";
 interface Row {
@@ -530,7 +530,16 @@ interface MailRow {
   status: "enregistre" | "impute" | "traite";
   unit_name: string | null;
   assignee_name: string | null;
+  instruction: string;
+  reply_to_reference: string | null;
+  response_reference: string | null;
+  project_id: string | null;
+  project_name: string | null;
+  activity_id: string | null;
+  activity_title: string | null;
 }
+/** Instructions d'imputation usuelles du bureau d'ordre. */
+const INSTRUCTIONS = ["Pour traitement", "Pour avis", "Pour information"];
 const MAIL: Record<MailRow["status"], { label: string; tone: Tone }> = {
   enregistre: { label: "Enregistré", tone: "neutral" },
   impute: { label: "Imputé", tone: "info" },
@@ -594,10 +603,24 @@ export function CourrierPage() {
               {data.map((m) => (
                 <Tr key={m.id}>
                   <Td className="whitespace-nowrap font-mono text-[12px]">{m.reference}</Td>
-                  <Td className="font-medium">{m.subject}</Td>
+                  <Td className="font-medium">
+                    {m.subject}
+                    {(m.reply_to_reference || m.response_reference || m.project_name || m.activity_title) && (
+                      <span className="mt-0.5 block space-x-2 text-[12px] font-normal text-muted">
+                        {m.reply_to_reference && <span>Répond à {m.reply_to_reference}</span>}
+                        {m.response_reference && <span>Réponse : {m.response_reference}</span>}
+                        {(m.project_name || m.activity_title) && (
+                          <span>Dossier : {m.project_name ?? m.activity_title}</span>
+                        )}
+                      </span>
+                    )}
+                  </Td>
                   <Td>{m.correspondent}</Td>
                   <Td className="tabular">{frDate(m.received_on)}</Td>
-                  <Td>{m.assignee_name ?? m.unit_name ?? "—"}</Td>
+                  <Td>
+                    {m.assignee_name ?? m.unit_name ?? "—"}
+                    {m.instruction && <span className="block text-[12px] text-muted">{m.instruction}</span>}
+                  </Td>
                   <Td
                     className={
                       m.status !== "traite" && isLate(m.due_on) ? "font-medium text-danger tabular" : "tabular"
@@ -637,6 +660,18 @@ export function CourrierPage() {
 }
 function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onClose: () => void }) {
   const qc = useQueryClient();
+  const { data: projects } = useProjects();
+  // Un courrier sortant peut répondre à un courrier entrant : l'entrant sera clos par la réponse (lot P3b)
+  const { data: incoming } = useQuery({
+    queryKey: ["correspondence", "entrant"],
+    queryFn: () => api.get<MailRow[]>("/api/correspondence?direction=entrant"),
+    enabled: direction === "sortant",
+  });
+  const { data: activities } = useQuery({
+    queryKey: ["activities"],
+    queryFn: () => api.get<{ id: string; title: string }[]>("/api/activities"),
+    retry: false,
+  });
   const [f, setF] = useState({
     direction,
     subject: "",
@@ -644,9 +679,22 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
     received_on: new Date().toISOString().slice(0, 10),
     due_on: "",
     confidential: false,
+    reply_to_id: "",
+    dossier: "",
   });
   const save = useMutation({
-    mutationFn: () => api.post("/api/correspondence", { ...f, due_on: f.due_on || null }),
+    mutationFn: () =>
+      api.post("/api/correspondence", {
+        direction: f.direction,
+        subject: f.subject,
+        correspondent: f.correspondent,
+        received_on: f.received_on,
+        due_on: f.due_on || null,
+        confidential: f.confidential,
+        reply_to_id: f.reply_to_id || null,
+        project_id: f.dossier.startsWith("prj:") ? f.dossier.slice(4) : null,
+        activity_id: f.dossier.startsWith("act:") ? f.dossier.slice(4) : null,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["correspondence"] });
       onClose();
@@ -699,6 +747,54 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
             <Input {...a} type="date" value={f.due_on} onChange={(e) => setF({ ...f, due_on: e.target.value })} />
           )}
         </Field>
+        {direction === "sortant" && (
+          <Field
+            label="Répond au courrier entrant"
+            className="sm:col-span-2"
+            hint="L'entrant encore ouvert sera clôturé par cette réponse."
+          >
+            {(a) => (
+              <Select {...a} value={f.reply_to_id} onChange={(e) => setF({ ...f, reply_to_id: e.target.value })}>
+                <option value="">Aucun</option>
+                {incoming?.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.reference} — {m.subject}
+                    {m.status === "traite" ? " (déjà traité)" : ""}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+        )}
+        <Field
+          label="Dossier"
+          className="sm:col-span-2"
+          hint="Le courrier se retrouvera dans ce projet ou cette activité."
+        >
+          {(a) => (
+            <Select {...a} value={f.dossier} onChange={(e) => setF({ ...f, dossier: e.target.value })}>
+              <option value="">Aucun</option>
+              {!!projects?.length && (
+                <optgroup label="Projets">
+                  {projects.map((p) => (
+                    <option key={p.id} value={`prj:${p.id}`}>
+                      {p.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {!!activities?.length && (
+                <optgroup label="Activités">
+                  {activities.map((x) => (
+                    <option key={x.id} value={`act:${x.id}`}>
+                      {x.title}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </Select>
+          )}
+        </Field>
         <label className="flex items-center gap-2 text-[13px] sm:col-span-2">
           <input
             type="checkbox"
@@ -715,13 +811,19 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
   const qc = useQueryClient();
   const { data: units } = useUnits();
   const { data: users } = useUsers();
-  const [f, setF] = useState({ unit_id: "", assignee_id: "", due_on: m.due_on ?? "" });
+  const [f, setF] = useState({
+    unit_id: "",
+    assignee_id: "",
+    due_on: m.due_on ?? "",
+    instruction: m.instruction ?? "",
+  });
   const save = useMutation({
     mutationFn: () =>
       api.post(`/api/correspondence/${m.id}/assign`, {
         unit_id: f.unit_id || null,
         assignee_id: f.assignee_id || null,
         due_on: f.due_on || null,
+        instruction: f.instruction || undefined,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["correspondence"] });
@@ -776,6 +878,16 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
         <Field label="Délai de réponse">
           {(a) => (
             <Input {...a} type="date" value={f.due_on} onChange={(e) => setF({ ...f, due_on: e.target.value })} />
+          )}
+        </Field>
+        <Field label="Instruction" hint="L'annotation du bureau d'ordre, transmise à l'agent imputé.">
+          {(a) => (
+            <Select {...a} value={f.instruction} onChange={(e) => setF({ ...f, instruction: e.target.value })}>
+              <option value="">Aucune</option>
+              {INSTRUCTIONS.map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </Select>
           )}
         </Field>
       </div>

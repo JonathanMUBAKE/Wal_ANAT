@@ -304,6 +304,16 @@ Restent pour le lot P3 : décisions de séance vers le registre, recommandations
 | À la validation d'un compte rendu **rattaché à un projet**, chaque recommandation ouverte devient une **tâche du projet** (titre, responsable, échéance), liée à la recommandation | Si le responsable n'a pas accès au projet, la tâche est créée sans assignation et le nomme |
 | Clore la recommandation (« réalisée ») **termine la tâche liée** ; terminer la tâche **soumet la recommandation** et prévient le rédacteur | Les deux suivis ne divergent jamais |
 
+### Lot P3b — le courrier relié
+
+| Règle | Effet |
+| --- | --- |
+| Un courrier **sortant** peut répondre à un courrier **entrant** de l'institution | L'enregistrement de la réponse **clôt l'entrant** s'il est encore ouvert, avec la référence de la réponse ; les deux restent liés dans les deux sens |
+| On ne répond ni à un courrier sortant, ni depuis un courrier entrant | Refusé |
+| Une seconde réponse au même entrant reste possible | Le lien est gardé ; la clôture et la première référence ne sont pas écrasées |
+| L'**imputation** porte une **instruction** (« pour traitement », « pour avis », « pour information ») | Conservée au registre et transmise à l'agent imputé |
+| Un courrier peut être **rattaché à un dossier** (projet ou activité, un seul) | Il se retrouve dans le dossier ; un dossier inconnu est refusé |
+
 ## 7. Questions à trancher
 
 | N° | Question | Proposition par défaut |

@@ -18,6 +18,10 @@ interface Mail {
   response_ref: string;
   confidential: boolean;
   escalated: boolean;
+  reply_to_id: string | null;
+  instruction: string;
+  project_id: string | null;
+  activity_id: string | null;
 }
 export interface MailInput {
   direction: Mail["direction"];
@@ -27,6 +31,10 @@ export interface MailInput {
   received_on: string;
   due_on?: string | null;
   confidential?: boolean;
+  /** Courrier sortant : l'entrant auquel il répond (lot P3b). */
+  reply_to_id?: string | null;
+  project_id?: string | null;
+  activity_id?: string | null;
 }
 export interface RiskInput {
   title?: string;
@@ -64,28 +72,92 @@ export class Registers {
     if (m.confidential && !manager && m.assignee_id !== actorId) throw notFound("Courrier introuvable");
     return { m, manager };
   }
-  async listMail(actorId: string, orgId: string, f: { direction?: Mail["direction"] }) {
+  async listMail(
+    actorId: string,
+    orgId: string,
+    f: { direction?: Mail["direction"]; project_id?: string; activity_id?: string },
+  ) {
     await this.svc.requirePerm(actorId, orgId, "correspondence.view");
     const manager = (await this.svc.permissionsOf(actorId, orgId)).includes("correspondence.manage");
-    const rows = await this.svc.db.query<Mail & { unit_name: string | null; assignee_name: string | null }>(
-      `SELECT c.*, ou.name AS unit_name, u.name AS assignee_name FROM correspondence c LEFT JOIN org_units ou ON ou.id = c.unit_id LEFT JOIN users u ON u.id = c.assignee_id
-       WHERE c.org_id = $1 AND (NOT c.confidential OR $2 OR c.assignee_id = $3) AND ($4::text IS NULL OR c.direction = $4) ORDER BY c.received_on DESC, c.seq DESC`,
-      [orgId, manager, actorId, f.direction ?? null],
+    const rows = await this.svc.db.query<
+      Mail & {
+        unit_name: string | null;
+        assignee_name: string | null;
+        project_name: string | null;
+        activity_title: string | null;
+        rt_direction: Mail["direction"] | null;
+        rt_year: number | null;
+        rt_seq: number | null;
+        rsp_direction: Mail["direction"] | null;
+        rsp_year: number | null;
+        rsp_seq: number | null;
+      }
+    >(
+      `SELECT c.*, ou.name AS unit_name, u.name AS assignee_name, p.name AS project_name, aa.title AS activity_title,
+        rt.direction AS rt_direction, rt.year AS rt_year, rt.seq AS rt_seq,
+        rsp.direction AS rsp_direction, rsp.year AS rsp_year, rsp.seq AS rsp_seq
+       FROM correspondence c
+       LEFT JOIN org_units ou ON ou.id = c.unit_id
+       LEFT JOIN users u ON u.id = c.assignee_id
+       LEFT JOIN projects p ON p.id = c.project_id
+       LEFT JOIN agency_activities aa ON aa.id = c.activity_id
+       LEFT JOIN correspondence rt ON rt.id = c.reply_to_id
+       LEFT JOIN LATERAL (SELECT r2.direction, r2.year, r2.seq FROM correspondence r2 WHERE r2.reply_to_id = c.id ORDER BY r2.created_at LIMIT 1) rsp ON TRUE
+       WHERE c.org_id = $1 AND (NOT c.confidential OR $2 OR c.assignee_id = $3) AND ($4::text IS NULL OR c.direction = $4)
+         AND ($5::text IS NULL OR c.project_id = $5) AND ($6::text IS NULL OR c.activity_id = $6)
+       ORDER BY c.received_on DESC, c.seq DESC`,
+      [orgId, manager, actorId, f.direction ?? null, f.project_id ?? null, f.activity_id ?? null],
     );
-    return rows.map((m) => ({ ...m, reference: mailRef(m) }));
+    return rows.map(({ rt_direction, rt_year, rt_seq, rsp_direction, rsp_year, rsp_seq, ...m }) => ({
+      ...m,
+      reference: mailRef(m),
+      reply_to_reference: rt_direction
+        ? mailRef({ direction: rt_direction, year: rt_year ?? 0, seq: rt_seq ?? 0 })
+        : null,
+      response_reference: rsp_direction
+        ? mailRef({ direction: rsp_direction, year: rsp_year ?? 0, seq: rsp_seq ?? 0 })
+        : null,
+    }));
+  }
+
+  /** Dossier d'un courrier : un projet ou une activité de l'institution, jamais les deux. */
+  private async assertDossier(orgId: string, i: Pick<MailInput, "project_id" | "activity_id">) {
+    if (i.project_id && i.activity_id) throw badRequest("Un courrier se rattache à un seul dossier");
+    if (
+      i.project_id &&
+      !(await this.svc.db.one("SELECT 1 FROM projects WHERE org_id = $1 AND id = $2", [orgId, i.project_id]))
+    )
+      throw badRequest("Projet inconnu dans cette institution");
+    if (
+      i.activity_id &&
+      !(await this.svc.db.one("SELECT 1 FROM agency_activities WHERE org_id = $1 AND id = $2", [orgId, i.activity_id]))
+    )
+      throw badRequest("Activité inconnue dans cette institution");
   }
   async registerMail(actorId: string, orgId: string, i: MailInput) {
     await this.svc.requirePerm(actorId, orgId, "correspondence.manage");
     for (const d of [i.doc_date, i.received_on, i.due_on])
       if (d && !isRealDate(d)) throw badRequest(`Date invalide : ${d}`);
     if (i.due_on && i.due_on < i.received_on) throw badRequest("Le délai de réponse précède la date de réception");
+    await this.assertDossier(orgId, i);
+    // Une réponse est un courrier sortant lié à un courrier entrant de l'institution (lot P3b)
+    let replied: Mail | undefined;
+    if (i.reply_to_id) {
+      if (i.direction !== "sortant") throw badRequest("Seul un courrier sortant répond à un courrier entrant");
+      replied = await this.svc.db.one<Mail>("SELECT * FROM correspondence WHERE org_id = $1 AND id = $2", [
+        orgId,
+        i.reply_to_id,
+      ]);
+      if (!replied) throw badRequest("Courrier entrant introuvable dans cette institution");
+      if (replied.direction !== "entrant") throw badRequest("On ne répond qu'à un courrier entrant");
+    }
     const id = uid("crr");
     const year = Number(i.received_on.slice(0, 4));
     for (let attempt = 0; ; attempt++) {
       try {
         await this.svc.db.query(
-          `INSERT INTO correspondence (id, org_id, direction, year, seq, subject, correspondent, doc_date, received_on, due_on, confidential, created_by)
-           VALUES ($1,$2,$3,$4,(SELECT COALESCE(max(seq),0)+1 FROM correspondence WHERE org_id = $2 AND direction = $3 AND year = $4),$5,$6,$7,$8,$9,$10,$11)`,
+          `INSERT INTO correspondence (id, org_id, direction, year, seq, subject, correspondent, doc_date, received_on, due_on, confidential, created_by, reply_to_id, project_id, activity_id)
+           VALUES ($1,$2,$3,$4,(SELECT COALESCE(max(seq),0)+1 FROM correspondence WHERE org_id = $2 AND direction = $3 AND year = $4),$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
           [
             id,
             orgId,
@@ -98,6 +170,9 @@ export class Registers {
             i.due_on ?? null,
             i.confidential ?? false,
             actorId,
+            i.reply_to_id ?? null,
+            i.project_id ?? null,
+            i.activity_id ?? null,
           ],
         );
         break;
@@ -105,14 +180,26 @@ export class Registers {
         if ((e as { code?: string }).code !== "23505" || attempt >= 8) throw e;
       }
     }
-    await this.svc.log(actorId, "correspondence.registered", { orgId, data: { id } });
+    await this.svc.log(actorId, "correspondence.registered", { orgId, data: { id, reply_to: i.reply_to_id ?? null } });
     const m = await this.mail(id);
-    return { ...m, reference: mailRef(m) };
+    // La réponse clôt l'entrant encore ouvert ; une clôture déjà faite n'est jamais écrasée
+    if (replied) {
+      const closed = await this.svc.db.one(
+        "UPDATE correspondence SET status = 'traite', response_ref = $1, closed_at = now() WHERE id = $2 AND status <> 'traite' RETURNING id",
+        [mailRef(m), replied.id],
+      );
+      if (closed)
+        await this.svc.log(actorId, "correspondence.closed", {
+          orgId,
+          data: { id: replied.id, by: mailRef(m) },
+        });
+    }
+    return { ...m, reference: mailRef(m), reply_to_reference: replied ? mailRef(replied) : null };
   }
   async assignMail(
     actorId: string,
     id: string,
-    i: { unit_id?: string | null; assignee_id?: string | null; due_on?: string | null },
+    i: { unit_id?: string | null; assignee_id?: string | null; due_on?: string | null; instruction?: string },
   ) {
     const m = await this.mail(id);
     await this.svc.requirePerm(actorId, m.org_id, "correspondence.manage");
@@ -128,14 +215,15 @@ export class Registers {
     if (i.due_on && i.due_on < String(m.received_on).slice(0, 10))
       throw badRequest("Le délai de réponse précède la date de réception");
     await this.svc.db.query(
-      "UPDATE correspondence SET unit_id = COALESCE($1, unit_id), assignee_id = COALESCE($2, assignee_id), due_on = COALESCE($3, due_on), status = 'impute', escalated = FALSE WHERE id = $4",
-      [i.unit_id ?? null, i.assignee_id ?? null, i.due_on ?? null, id],
+      `UPDATE correspondence SET unit_id = COALESCE($1, unit_id), assignee_id = COALESCE($2, assignee_id), due_on = COALESCE($3, due_on),
+        instruction = CASE WHEN $5::text IS NULL THEN instruction ELSE $5 END, status = 'impute', escalated = FALSE WHERE id = $4`,
+      [i.unit_id ?? null, i.assignee_id ?? null, i.due_on ?? null, id, i.instruction?.trim() ?? null],
     );
     if (i.assignee_id)
       await this.svc.notify(i.assignee_id, m.org_id, {
         kind: "correspondence.assigned",
         title: `Courrier imputé : ${m.subject}`,
-        body: mailRef(m),
+        body: `${mailRef(m)}${i.instruction?.trim() ? ` · ${i.instruction.trim()}` : ""}`,
       });
     await this.svc.log(actorId, "correspondence.assigned", { orgId: m.org_id, data: { id } });
     const r = await this.mail(id);

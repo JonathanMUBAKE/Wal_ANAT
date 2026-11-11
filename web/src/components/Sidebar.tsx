@@ -12,6 +12,7 @@ import {
   ClipboardList,
   FileSignature,
   Gauge,
+  Handshake,
   House,
   Inbox,
   KeyRound,
@@ -26,18 +27,7 @@ import {
   Sun,
   Users,
 } from "lucide-react";
-import {
-  Avatar,
-  Button,
-  Dialog,
-  Kbd,
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuSeparator,
-  MenuTrigger,
-  cn,
-} from "./ui";
+import { Avatar, Button, Dialog, Kbd, Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger, cn } from "./ui";
 import { useAiStatus, useApprovals, useCan, useMe, useNotifications } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { AvatarUpload } from "./AvatarUpload";
@@ -178,6 +168,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <NavSection title="Suivi-évaluation">{link("/plans", ClipboardList, "Plans de travail")}</NavSection>
         )}
 
+        {can("partners.view") && (
+          <NavSection title="Partenariats">{link("/partenaires", Handshake, "Partenaires")}</NavSection>
+        )}
+
         {(can("signature.use") || can("correspondence.view")) && (
           <NavSection title="Secrétariat">
             {can("signature.use") && link("/parapheur", FileSignature, "Parapheur")}
@@ -237,10 +231,20 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
         </span>
       </button>
       <div className="ml-auto flex items-center gap-2">
-        <button aria-label="Assistant IA" title="Assistant IA" onClick={() => shell.openAssistant()} className={cn(box, "hidden sm:flex")}>
+        <button
+          aria-label="Assistant IA"
+          title="Assistant IA"
+          onClick={() => shell.openAssistant()}
+          className={cn(box, "hidden sm:flex")}
+        >
           <Sparkles className="size-[18px] text-ai-fg" />
         </button>
-        <button aria-label="Boîte de réception" title="Boîte de réception" onClick={() => nav("/inbox")} className={cn(box, "hidden sm:flex")}>
+        <button
+          aria-label="Boîte de réception"
+          title="Boîte de réception"
+          onClick={() => nav("/inbox")}
+          className={cn(box, "hidden sm:flex")}
+        >
           <Inbox className="size-[18px]" />
         </button>
         <button aria-label="Notifications" title="Notifications" onClick={() => nav("/inbox")} className={box}>
@@ -320,7 +324,6 @@ function AccountMenu() {
           </MenuItem>
         </MenuContent>
       </Menu>
-
 
       <Dialog
         open={profile}

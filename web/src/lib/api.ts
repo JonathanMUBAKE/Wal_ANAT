@@ -2,6 +2,8 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** Précisions renvoyées par le serveur avec l'erreur (ex. la fiche existante d'un doublon). */
+    public data?: Record<string, unknown> | null,
   ) {
     super(message);
   }
@@ -16,7 +18,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
   });
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
-  if (!res.ok) throw new ApiError(res.status, data?.error ?? `Erreur ${res.status}`);
+  if (!res.ok) throw new ApiError(res.status, data?.error ?? `Erreur ${res.status}`, data);
   return data as T;
 }
 

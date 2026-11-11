@@ -150,6 +150,8 @@ export class HttpError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** Précisions renvoyées avec l'erreur (ex. la fiche existante d'un doublon). */
+    public extra?: Record<string, unknown>,
   ) {
     super(message);
   }
@@ -637,15 +639,7 @@ export class Services {
       )?.m ?? 0;
     await this.db.query(
       "INSERT INTO org_units (id, org_id, parent_id, name, kind, manager_id, position) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-      [
-        id,
-        orgId,
-        input.parent_id ?? null,
-        input.name.trim(),
-        kind,
-        input.manager_id ?? null,
-        Number(pos) + 1024,
-      ],
+      [id, orgId, input.parent_id ?? null, input.name.trim(), kind, input.manager_id ?? null, Number(pos) + 1024],
     );
     await this.log(actorId, "unit.created", { orgId, data: { name: input.name } });
     this.bus.emit({ type: "org.changed", actorId, orgId });
@@ -680,7 +674,10 @@ export class Services {
     if (patch.manager_id && !(await this.orgRole(patch.manager_id, u.org_id)))
       throw badRequest("Le responsable doit être membre de l'organisation");
     if (patch.kind !== undefined)
-      patch = { ...patch, kind: (await new Referentials(this).resolve(u.org_id, "unit_type", patch.kind, u.kind)).code };
+      patch = {
+        ...patch,
+        kind: (await new Referentials(this).resolve(u.org_id, "unit_type", patch.kind, u.kind)).code,
+      };
     const sets: string[] = [];
     const vals: unknown[] = [];
     for (const k of ["name", "kind", "parent_id", "manager_id"] as const)
@@ -1215,7 +1212,10 @@ export class Services {
         [projectId],
       )
     )
-      throw new HttpError(409, "Ce projet porte des contrats ou des livrables : archivez-le plutôt que de le supprimer");
+      throw new HttpError(
+        409,
+        "Ce projet porte des contrats ou des livrables : archivez-le plutôt que de le supprimer",
+      );
     const members = await this.readableUsers(projectId);
     await this.db.tx(async (q) => {
       await q.query("DELETE FROM notifications WHERE project_id = $1", [projectId]);

@@ -205,6 +205,9 @@ async function boot(kind: Kind) {
     },
     referential: async () =>
       ((await inj(a, "GET", "/api/referentials")).body.activity_type as Any[]).find((v) => v.code === "commission"),
+    partner: async () => (await inj(a, "POST", "/api/partners", { name: u("Partenaire"), type_code: "autre" })).body,
+    partnerContact: async () =>
+      (await inj(a, "POST", `/api/partners/${(await X.partner()).id}/contacts`, { name: "Contact" })).body,
     decision: async () =>
       (
         await inj(a, "POST", "/api/decisions", {
@@ -638,6 +641,34 @@ const TABLE = [
     url: `/api/admin/referentials/${(await X.referential()).id}`,
     body: { plural: "x" },
   })),
+  R_("GET", "/api/partners"),
+  R_("POST", "/api/partners", () => ({ body: { name: u("Partenaire"), type_code: "autre", categories: ["ptf"] } })),
+  R_("GET", "/api/partners/:id", async (X) => ({ url: `/api/partners/${(await X.partner()).id}` })),
+  R_("PATCH", "/api/partners/:id", async (X) => ({
+    url: `/api/partners/${(await X.partner()).id}`,
+    body: { description: "Présentation" },
+  })),
+  R_("DELETE", "/api/partners/:id", async (X) => ({ url: `/api/partners/${(await X.partner()).id}` })),
+  R_("POST", "/api/partners/:id/state", async (X) => ({
+    url: `/api/partners/${(await X.partner()).id}/state`,
+    body: { state: "en_discussion" },
+  })),
+  R_("POST", "/api/partners/:id/merge", async (X) => ({
+    url: `/api/partners/${(await X.partner()).id}/merge`,
+    body: { into_id: (await X.partner()).id },
+  })),
+  R_("POST", "/api/partners/:id/contacts", async (X) => ({
+    url: `/api/partners/${(await X.partner()).id}/contacts`,
+    body: { name: "Contact" },
+  })),
+  R_("PATCH", "/api/partner-contacts/:id", async (X) => ({
+    url: `/api/partner-contacts/${(await X.partnerContact()).id}`,
+    body: { title: "Chargé de programme" },
+  })),
+  R_("POST", "/api/partners/:id/notes", async (X) => ({
+    url: `/api/partners/${(await X.partner()).id}/notes`,
+    body: { body: "Échange téléphonique" },
+  })),
   R_("GET", "/api/decisions"),
   R_("POST", "/api/decisions", () => ({ body: { title: "D", content: "Texte", decided_on: "2026-03-02" } })),
   R_("GET", "/api/decisions/:id", async (X) => ({ url: `/api/decisions/${(await X.decision()).id}` })),
@@ -728,7 +759,9 @@ const TABLE = [
     url: `/api/meetings/${(await X.submitted()).id}/return`,
     body: { comment: "À compléter" },
   })),
-  R_("POST", "/api/meetings/:id/validate", async (X) => ({ url: `/api/meetings/${(await X.submitted()).id}/validate` })),
+  R_("POST", "/api/meetings/:id/validate", async (X) => ({
+    url: `/api/meetings/${(await X.submitted()).id}/validate`,
+  })),
   R_("POST", "/api/meetings/:id/reopen", async (X) => ({ url: `/api/meetings/${(await X.validated()).id}/reopen` })),
   R_("GET", "/api/meetings/:id/report.docx", async (X) => ({
     url: `/api/meetings/${(await X.filled()).id}/report.docx`,

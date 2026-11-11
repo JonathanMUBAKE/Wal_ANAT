@@ -86,6 +86,13 @@ export const PERMISSION_GROUPS = [
     ],
   },
   {
+    group: "Partenariats",
+    items: [
+      { key: "partners.view", label: "Consulter l'annuaire des partenaires" },
+      { key: "partners.manage", label: "Gérer les partenaires" },
+    ],
+  },
+  {
     group: "Équipes",
     items: [
       { key: "teams.create", label: "Créer des équipes" },
@@ -126,6 +133,7 @@ const GOVERNANCE = new Set<Permission>([
   "correspondence.manage",
   "pilotage.view",
   "decisions.record",
+  "partners.manage",
   "risks.manage",
   "agenda.manage",
 ]);
@@ -138,6 +146,7 @@ const NOT_FOR_GUESTS = new Set<Permission>([
   "signature.use",
   "correspondence.view",
   "decisions.view",
+  "partners.view",
   "agenda.view",
   "projects.create",
   "projects.import",

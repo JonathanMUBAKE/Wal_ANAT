@@ -9,6 +9,17 @@
         "start"
       ],
       "port": 3000
+    },
+    {
+      "name": "demo-anat",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/demo-anat.mjs"
+      ],
+      "env": {
+        "PORT": "4310"
+      },
+      "port": 4310
     }
   ]
 }

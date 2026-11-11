@@ -32,6 +32,8 @@ import { decisionRoutes } from "./decisions-routes.js";
 import { Decisions } from "./decisions.js";
 import { referentialRoutes } from "./referentials-routes.js";
 import { Referentials } from "./referentials.js";
+import { partnerRoutes } from "./partners-routes.js";
+import { Partners } from "./partners.js";
 import { Signature } from "./signature.js";
 import { Pilotage } from "./pilotage.js";
 import { Plans } from "./plans.js";
@@ -123,7 +125,7 @@ export async function buildApp(opts: AppOptions = {}) {
   });
 
   app.setErrorHandler((err, req, reply) => {
-    if (err instanceof HttpError) return reply.status(err.status).send({ error: err.message });
+    if (err instanceof HttpError) return reply.status(err.status).send({ ...err.extra, error: err.message });
     if (err instanceof z.ZodError) return reply.status(400).send({ error: "Requête invalide", details: err.issues });
     const e = err as { statusCode?: number; message: string; code?: string };
     if (e.code === "FST_ERR_CTP_BODY_TOO_LARGE")
@@ -297,6 +299,7 @@ export async function buildApp(opts: AppOptions = {}) {
     registerRoutes(r, new Signature(svc), new Registers(svc), new Gaps(svc));
     decisionRoutes(r, new Decisions(svc));
     referentialRoutes(r, new Referentials(svc));
+    partnerRoutes(r, new Partners(svc));
     r.get("/api/me", async (req) => {
       const security = await db.one<{ platform_role: string | null; totp_enabled: boolean }>(
         "SELECT platform_role, totp_enabled FROM users WHERE id = $1",

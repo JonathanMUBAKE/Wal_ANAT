@@ -1,6 +1,19 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Archive, ArchiveRestore, ArrowDown, ArrowUp, Lock, MapPin, Pencil, Plus, TrendingUp } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowDown,
+  ArrowUp,
+  Banknote,
+  Briefcase,
+  Landmark,
+  Lock,
+  MapPin,
+  Pencil,
+  Plus,
+  TrendingUp,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Empty, IconButton, cn } from "@/components/ui";
 import { Field, Input, LoadingRows } from "@/components/gov";
@@ -17,6 +30,16 @@ const LISTS: { id: RefList; label: string; hint: string }[] = [
     id: "unit_type",
     label: "Types d'entités",
     hint: "Les niveaux de la structure de l'institution, siège et provinces.",
+  },
+  {
+    id: "partner_type",
+    label: "Types de partenaires",
+    hint: "La nature juridique d'un partenaire : un seul type par fiche.",
+  },
+  {
+    id: "partner_category",
+    label: "Catégories de partenaires",
+    hint: "Le rôle d'un partenaire dans la relation (PTF, partenaire technique, prestataire…) : plusieurs par fiche.",
   },
 ];
 const fail = (e: unknown) => toast.error((e as Error).message);
@@ -121,6 +144,21 @@ export function InstitutionSettings() {
                         </span>
                       )}
                       {v.props.counterpart_label && <span>Interlocuteur : « {v.props.counterpart_label} »</span>}
+                      {v.props.public && (
+                        <span className="inline-flex items-center gap-1">
+                          <Landmark className="size-3" /> Secteur public
+                        </span>
+                      )}
+                      {v.props.financial && (
+                        <span className="inline-flex items-center gap-1">
+                          <Banknote className="size-3" /> Engagements financiers
+                        </span>
+                      )}
+                      {v.props.supplier && (
+                        <span className="inline-flex items-center gap-1">
+                          <Briefcase className="size-3" /> Prestataire de contrats
+                        </span>
+                      )}
                     </span>
                   </span>
                   <span className="flex shrink-0 items-center gap-1">
@@ -162,11 +200,15 @@ function ValueDialog({ list, value, onClose }: { list: RefList; value: RefValue 
     label: value?.label ?? "",
     plural: value?.plural ?? "",
     color: value?.color ?? "blue",
-    icon: value?.icon ?? (list === "unit_type" ? "building" : "calendar-clock"),
+    icon:
+      value?.icon ?? (list === "unit_type" ? "building" : list === "activity_type" ? "calendar-clock" : "handshake"),
     confidential_default: !!value?.props.confidential_default,
     tracks_progress: !!value?.props.tracks_progress,
     counterpart_label: value?.props.counterpart_label ?? "",
     provincial: !!value?.props.provincial,
+    public: !!value?.props.public,
+    financial: !!value?.props.financial,
+    supplier: !!value?.props.supplier,
   });
   const props =
     list === "activity_type"
@@ -175,7 +217,11 @@ function ValueDialog({ list, value, onClose }: { list: RefList; value: RefValue 
           tracks_progress: f.tracks_progress,
           counterpart_label: f.counterpart_label.trim(),
         }
-      : { provincial: f.provincial };
+      : list === "unit_type"
+        ? { provincial: f.provincial }
+        : list === "partner_type"
+          ? { public: f.public }
+          : { financial: f.financial, supplier: f.supplier };
   const body = { label: f.label, plural: f.plural || f.label, color: f.color, icon: f.icon, props };
   const save = useMutation({
     mutationFn: () =>
@@ -302,13 +348,35 @@ function ValueDialog({ list, value, onClose }: { list: RefList; value: RefValue 
                 )}
               </Field>
             </>
-          ) : (
+          ) : list === "unit_type" ? (
             <Toggle
               checked={f.provincial}
               onChange={(v) => setF({ ...f, provincial: v })}
               label="Représentation en province"
               hint="Les entités de ce type sont repérées « Province » dans la structure."
             />
+          ) : list === "partner_type" ? (
+            <Toggle
+              checked={f.public}
+              onChange={(v) => setF({ ...f, public: v })}
+              label="Secteur public"
+              hint="Le partenaire relève de l'État ou d'une collectivité : utile aux statistiques de l'annuaire."
+            />
+          ) : (
+            <>
+              <Toggle
+                checked={f.financial}
+                onChange={(v) => setF({ ...f, financial: v })}
+                label="Engagements financiers"
+                hint="Un partenaire de cette catégorie peut porter des engagements financiers (dons, prêts, cofinancements)."
+              />
+              <Toggle
+                checked={f.supplier}
+                onChange={(v) => setF({ ...f, supplier: v })}
+                label="Prestataire de contrats"
+                hint="Un partenaire de cette catégorie peut être choisi comme prestataire d'un contrat de projet."
+              />
+            </>
           )}
         </fieldset>
       </div>

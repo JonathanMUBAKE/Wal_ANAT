@@ -2,7 +2,7 @@ import { uid } from "./db.js";
 import { HttpError, badRequest, forbidden, notFound, type Services } from "./services.js";
 
 /** Listes paramétrables de l'institution (docs/PARAMETRAGE.md). Les autres listes restent fixes : des règles en dépendent. */
-export const LISTS = ["activity_type", "unit_type"] as const;
+export const LISTS = ["activity_type", "unit_type", "partner_type", "partner_category"] as const;
 export type List = (typeof LISTS)[number];
 /** Teintes du système de design, lisibles en clair et en sombre. */
 export const COLORS = ["blue", "teal", "green", "ochre", "terracotta", "indigo", "violet", "slate"] as const;
@@ -28,6 +28,14 @@ export const ICONS = [
 const PROPS: Record<List, Record<string, "boolean" | "string">> = {
   activity_type: { confidential_default: "boolean", tracks_progress: "boolean", counterpart_label: "string" },
   unit_type: { provincial: "boolean" },
+  partner_type: { public: "boolean" },
+  partner_category: { financial: "boolean", supplier: "boolean" },
+};
+const LIST_NAME: Record<List, string> = {
+  activity_type: "Type d'activité",
+  unit_type: "Type d'entité",
+  partner_type: "Type de partenaire",
+  partner_category: "Catégorie de partenaire",
 };
 
 export interface RefValue {
@@ -104,6 +112,125 @@ const DEFAULTS: Record<List, Seed[]> = {
     },
     { code: "antenne", label: "Antenne", plural: "Antennes", color: "green", icon: "map", props: { provincial: true } },
   ],
+  // Nature juridique du partenaire : un seul type par fiche (docs/CONCEPTION.md § 4.3)
+  partner_type: [
+    {
+      code: "institution_publique",
+      label: "Institution publique",
+      plural: "Institutions publiques",
+      color: "blue",
+      icon: "landmark",
+      props: { public: true },
+    },
+    {
+      code: "collectivite",
+      label: "Collectivité territoriale",
+      plural: "Collectivités territoriales",
+      color: "green",
+      icon: "map-pin",
+      props: { public: true },
+    },
+    {
+      code: "etablissement_public",
+      label: "Établissement public",
+      plural: "Établissements publics",
+      color: "teal",
+      icon: "building",
+      props: { public: true },
+    },
+    {
+      code: "entreprise_privee",
+      label: "Entreprise privée",
+      plural: "Entreprises privées",
+      color: "ochre",
+      icon: "briefcase",
+      props: { public: false },
+    },
+    {
+      code: "organisation_internationale",
+      label: "Organisation internationale",
+      plural: "Organisations internationales",
+      color: "indigo",
+      icon: "globe",
+      props: { public: false },
+    },
+    {
+      code: "cooperation_bilaterale",
+      label: "Agence de coopération bilatérale",
+      plural: "Agences de coopération bilatérale",
+      color: "violet",
+      icon: "flag",
+      props: { public: false },
+    },
+    {
+      code: "ong",
+      label: "ONG, association",
+      plural: "ONG et associations",
+      color: "terracotta",
+      icon: "users",
+      props: { public: false },
+    },
+    {
+      code: "universite",
+      label: "Université, centre de recherche",
+      plural: "Universités et centres de recherche",
+      color: "slate",
+      icon: "graduation-cap",
+      props: { public: false },
+    },
+    { code: "autre", label: "Autre", plural: "Autres", color: "slate", icon: "circle", props: { public: false } },
+  ],
+  // Rôle du partenaire dans la relation : plusieurs catégories par fiche
+  partner_category: [
+    {
+      code: "ptf",
+      label: "Partenaire technique et financier",
+      plural: "Partenaires techniques et financiers",
+      color: "indigo",
+      icon: "landmark",
+      props: { financial: true, supplier: false },
+    },
+    {
+      code: "partenaire_technique",
+      label: "Partenaire technique",
+      plural: "Partenaires techniques",
+      color: "teal",
+      icon: "network",
+      props: { financial: false, supplier: false },
+    },
+    {
+      code: "partenaire_institutionnel",
+      label: "Partenaire institutionnel",
+      plural: "Partenaires institutionnels",
+      color: "blue",
+      icon: "scale",
+      props: { financial: false, supplier: false },
+    },
+    {
+      code: "mise_en_oeuvre",
+      label: "Partenaire de mise en œuvre",
+      plural: "Partenaires de mise en œuvre",
+      color: "green",
+      icon: "handshake",
+      props: { financial: false, supplier: false },
+    },
+    {
+      code: "prestataire",
+      label: "Prestataire",
+      plural: "Prestataires",
+      color: "ochre",
+      icon: "briefcase",
+      props: { financial: false, supplier: true },
+    },
+    {
+      code: "mecene",
+      label: "Mécène, sponsor",
+      plural: "Mécènes et sponsors",
+      color: "terracotta",
+      icon: "flag",
+      props: { financial: true, supplier: false },
+    },
+  ],
 };
 
 export const slug = (s: string) =>
@@ -169,7 +296,7 @@ export class Referentials {
     const all = await this.values(orgId, list);
     const key = input.trim();
     const v = all.find((x) => x.code === key) ?? all.find((x) => x.label.toLowerCase() === key.toLowerCase());
-    const name = list === "activity_type" ? "Type d'activité" : "Type d'entité";
+    const name = LIST_NAME[list];
     if (!v) throw badRequest(`${name} inconnu : ${key}`);
     if (v.archived && v.code !== current) throw badRequest(`${name} archivé : ${v.label}`);
     return v;

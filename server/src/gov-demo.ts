@@ -4,6 +4,7 @@ import { Decisions } from "./decisions.js";
 import { Deliverables } from "./deliverables.js";
 import { Gaps } from "./gaps.js";
 import { Meetings } from "./meetings.js";
+import { Partners } from "./partners.js";
 import { Plans } from "./plans.js";
 import { Registers } from "./registers.js";
 import { Signature } from "./signature.js";
@@ -15,8 +16,10 @@ const day = (offset: number) => new Date(Date.now() + offset * 864e5).toISOStrin
 export async function seedGovDemo(svc: Services) {
   const db = svc.db;
   const org = (await db.one<{ id: string }>("SELECT id FROM organizations WHERE name = 'Nova Mobile'"))?.id;
-  if (!org || (await db.one("SELECT 1 FROM agency_activities WHERE org_id = $1", [org]))) return;
+  if (!org) return;
   const me = "u_alice";
+  // Une base déjà illustrée reçoit seulement les lots ajoutés depuis (ici, l'annuaire des partenaires)
+  if (await db.one("SELECT 1 FROM agency_activities WHERE org_id = $1", [org])) return seedPartners(svc, org, me);
   const a = new Activities(svc);
   const m = new Meetings(svc);
   const at = new Attributions(svc);
@@ -401,4 +404,114 @@ export async function seedGovDemo(svc: Services) {
   });
 
   await new Gaps(svc).detect(me, org);
+  await seedPartners(svc, org, me);
+}
+
+/** Annuaire des partenaires (lot PA1) : organisations fictives, aucune ne désigne un partenaire réel de l'Agence. */
+async function seedPartners(svc: Services, org: string, me: string) {
+  if (await svc.db.one("SELECT 1 FROM partners WHERE org_id = $1", [org])) return;
+  const p = new Partners(svc);
+  const units = await svc.db.query<{ id: string }>(
+    "SELECT id FROM org_units WHERE org_id = $1 AND parent_id IS NOT NULL ORDER BY position, name",
+    [org],
+  );
+  const unit = units[0]?.id ?? null;
+  const bank = await p.create(me, org, {
+    name: "Fonds fictif pour le développement territorial",
+    acronym: "FFDT",
+    type_code: "organisation_internationale",
+    categories: ["ptf", "partenaire_technique"],
+    country: "CI",
+    city: "Abidjan",
+    website: "https://ffdt.exemple.test",
+    description:
+      "Bailleur fictif : appui à l'élaboration des schémas provinciaux d'aménagement et au renforcement des capacités.",
+    unit_id: unit,
+    focal_id: "u_karim",
+  });
+  await p.addContact(me, bank.id, {
+    name: "Mme Awa Exemple",
+    title: "Chargée de programme Aménagement",
+    email: "awa.exemple@ffdt.exemple.test",
+    principal: true,
+  });
+  await p.addContact(me, bank.id, { name: "M. Paul Fictif", title: "Responsable financier" });
+  await p.setState(me, bank.id, { state: "en_discussion" });
+  await p.addNote(me, bank.id, {
+    body: "Mission d'identification : intérêt confirmé pour trois provinces pilotes. Note conceptuelle attendue sous un mois.",
+    happened_on: day(-20),
+  });
+  await p.setState(me, bank.id, { state: "actif" });
+  await p.addNote(me, bank.id, {
+    body: "Revue semestrielle du programme : calendrier des décaissements confirmé.",
+    happened_on: day(-3),
+  });
+
+  const ministry = await p.create(me, org, {
+    name: "Ministère fictif de l'Urbanisme et de l'Habitat",
+    acronym: "MFUH",
+    type_code: "institution_publique",
+    categories: ["partenaire_institutionnel"],
+    country: "CD",
+    city: "Kinshasa",
+    description: "Tutelle technique fictive des plans d'urbanisme ; co-préside le comité de suivi des schémas.",
+    focal_id: me,
+  });
+  await p.setState(me, ministry.id, { state: "actif" });
+  await p.addContact(me, ministry.id, {
+    name: "M. le Secrétaire général (fictif)",
+    title: "Secrétaire général",
+    principal: true,
+  });
+
+  const uni = await p.create(me, org, {
+    name: "Université fictive des Grands Lacs",
+    acronym: "UFGL",
+    type_code: "universite",
+    categories: ["partenaire_technique"],
+    country: "CD",
+    city: "Bukavu",
+    description: "Laboratoire de géomatique : données cartographiques et formation des cadres provinciaux.",
+    focal_ids: ["u_karim"],
+  });
+  await p.setState(me, uni.id, { state: "en_discussion" });
+  await p.addNote(me, uni.id, {
+    body: "Premier échange sur une convention de stage et de partage de données.",
+    happened_on: day(-9),
+  });
+
+  await p.create(me, org, {
+    name: "Cabinet fictif Géo-Conseil",
+    type_code: "entreprise_privee",
+    categories: ["prestataire"],
+    country: "CD",
+    city: "Lubumbashi",
+    description: "Bureau d'études fictif en cartographie et en topographie.",
+  });
+
+  const ngo = await p.create(me, org, {
+    name: "Association fictive Terres et Villes",
+    type_code: "ong",
+    categories: ["mise_en_oeuvre"],
+    country: "CD",
+    description: "Accompagnement fictif des concertations communautaires.",
+  });
+  await p.setState(me, ngo.id, { state: "actif" });
+  await p.setState(me, ngo.id, {
+    state: "suspendu",
+    reason: "Rapport d'activité annuel non transmis ; relance faite.",
+  });
+
+  const partner = await p.create(me, org, {
+    name: "Agence fictive de coopération du Nord",
+    acronym: "AFCN",
+    type_code: "cooperation_bilaterale",
+    categories: ["ptf"],
+    confidential: true,
+    description: "Discussions préliminaires confidentielles sur un appui budgétaire.",
+  });
+  await p.addNote(me, partner.id, {
+    body: "Audience de prise de contact avec la Directrice générale.",
+    happened_on: day(-1),
+  });
 }

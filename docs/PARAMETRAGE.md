@@ -26,6 +26,9 @@
 | --- | --- | --- | --- |
 | **Types d'activités** (commission, conférence, rendez-vous, activité interne) | Figée (base, serveur, écrans) | **Paramétrable — ce lot** | Demandé ; les règles deviennent des propriétés |
 | **Types d'entités** (direction, service, représentation provinciale…) | Texte libre | **Paramétrable — ce lot** | Porte la notion de province |
+| **Types de partenaires** (institution publique, entreprise privée, établissement public…) | Nouveau | **Paramétrable — lot PA1** | Nature juridique, un seul par fiche (`docs/CONCEPTION.md` § 4.3) |
+| **Catégories de partenaires** (PTF, partenaire technique, prestataire…) | Nouveau | **Paramétrable — lot PA1** | Rôle dans la relation, plusieurs par fiche |
+| États d'un partenaire (identifié, en discussion, actif, suspendu, clos) | Nouveau | **Reste fixe** | Le cycle et les droits du point focal en dépendent |
 | Types de réunions (comité de direction, hebdomadaire…) | Texte libre | Paramétrable — lot suivant | Aucune règle n'en dépend |
 | Natures de documents du parapheur (note, lettre, arrêté…) | Texte libre | Paramétrable — lot suivant | Aucune règle n'en dépend |
 | Unités des indicateurs, sources | Texte libre | Paramétrable — lot suivant | Homogénéiser les tableaux |
@@ -43,6 +46,9 @@
 | Type d'activité | `tracks_progress` | L'avancement en % est suivi et affiché (était : « activité interne ») |
 | Type d'activité | `counterpart_label` | Libellé du champ interlocuteur (« Instance », « Organisateur », « Interlocuteur »…) |
 | Type d'entité | `provincial` | L'entité est une représentation en province : repérée dans la structure |
+| Type de partenaire | `public` | Le partenaire relève de l'État ou d'une collectivité (statistiques de l'annuaire) |
+| Catégorie de partenaire | `financial` | Peut porter des engagements financiers (lot PA4) |
+| Catégorie de partenaire | `supplier` | Peut être choisi comme prestataire d'un contrat de projet (lot PA3) |
 
 Chaque valeur a aussi un **libellé**, un **pluriel**, une **couleur** (parmi une palette de huit teintes du système
 de design, lisibles en clair et en sombre) et une **icône** (parmi une liste fermée).

@@ -37,7 +37,9 @@ import {
   isLate,
   type Tone,
 } from "@/components/gov";
+import { Seal } from "@/components/collection";
 import { MeetingsBrowser } from "@/components/MeetingViews";
+import { useShell } from "@/lib/shell";
 import { api } from "@/lib/api";
 import { useCan, useMe, useUnits, useUsers } from "@/lib/hooks";
 
@@ -53,6 +55,16 @@ interface MeetingAction {
   meeting_id?: string;
   meeting_reference?: string;
   meeting_type?: string;
+  task_id?: string | null;
+}
+/** Décision annoncée en séance : inscrite au registre des décisions à la validation du compte rendu. */
+interface MeetingDecision {
+  id?: string;
+  text: string;
+  owner_id: string | null;
+  owner_name?: string | null;
+  due_on: string | null;
+  decision_reference?: string | null;
 }
 interface AgendaItem {
   id?: string;
@@ -61,6 +73,7 @@ interface AgendaItem {
   notes: string;
   domain_id?: string | null;
   actions: MeetingAction[];
+  decisions: MeetingDecision[];
 }
 type Response = "pending" | "accepted" | "declined" | "delegated";
 interface Attendee {
@@ -397,6 +410,7 @@ export function NewMeeting({ projectId, onClose }: { projectId?: string; onClose
 function ActionsTracker({ mine }: { mine: boolean }) {
   const can = useCan();
   const { data: me } = useMe();
+  const shell = useShell();
   const qc = useQueryClient();
   const [postponing, setPostponing] = useState<MeetingAction | null>(null);
   const { data, isLoading } = useQuery({
@@ -431,7 +445,18 @@ function ActionsTracker({ mine }: { mine: boolean }) {
           const choices = options(a);
           return (
             <Tr key={a.id}>
-              <Td className="max-w-md">{a.text}</Td>
+              <Td className="max-w-md">
+                {a.text}
+                {a.task_id && (
+                  <button
+                    type="button"
+                    onClick={() => shell.openTask(a.task_id as string)}
+                    className="mt-0.5 block text-[12px] text-primary hover:underline"
+                  >
+                    Voir la tâche du projet liée
+                  </button>
+                )}
+              </Td>
               <Td>
                 <Link to={`/reunions/${a.meeting_id}`} className="font-mono text-[12px] text-primary hover:underline">
                   {a.meeting_reference}
@@ -589,6 +614,12 @@ export function MeetingPage() {
             due_on: a.due_on || null,
             status: a.status,
           })),
+          decisions: i.decisions.map((dd) => ({
+            ...(dd.id ? { id: dd.id } : {}),
+            text: dd.text,
+            owner_id: dd.owner_id,
+            due_on: dd.due_on || null,
+          })),
         })),
         attendees: d.attendees.map((a) => ({ ...a })),
       });
@@ -701,6 +732,8 @@ export function MeetingPage() {
     patch({ agenda: draft.agenda.map((x, n) => (n === i ? { ...x, ...p } : x)) });
   const setAction = (i: number, j: number, p: Partial<MeetingAction>) =>
     setItem(i, { actions: draft.agenda[i].actions.map((x, n) => (n === j ? { ...x, ...p } : x)) });
+  const setDecision = (i: number, j: number, p: Partial<MeetingDecision>) =>
+    setItem(i, { decisions: draft.agenda[i].decisions.map((x, n) => (n === j ? { ...x, ...p } : x)) });
 
   return (
     <div className="min-h-full pb-10">
@@ -765,7 +798,13 @@ export function MeetingPage() {
                 variant="primary"
                 icon={<Save className="size-4" />}
                 disabled={
-                  !dirty || draft.agenda.some((i) => !i.subject.trim() || i.actions.some((a) => !a.text.trim()))
+                  !dirty ||
+                  draft.agenda.some(
+                    (i) =>
+                      !i.subject.trim() ||
+                      i.actions.some((a) => !a.text.trim()) ||
+                      i.decisions.some((dd) => !dd.text.trim()),
+                  )
                 }
                 loading={save.isPending}
                 onClick={() => save.mutate()}
@@ -1146,7 +1185,9 @@ export function MeetingPage() {
                 size="sm"
                 icon={<Plus className="size-3.5" />}
                 onClick={() =>
-                  patch({ agenda: [...draft.agenda, { subject: "", speakers: "", notes: "", actions: [] }] })
+                  patch({
+                    agenda: [...draft.agenda, { subject: "", speakers: "", notes: "", actions: [], decisions: [] }],
+                  })
                 }
               >
                 Ajouter un point
@@ -1289,6 +1330,85 @@ export function MeetingPage() {
                         )}
                       </div>
                     ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <p className="text-[12.5px] font-semibold">Décisions de la séance</p>
+                    {!ro && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon={<Plus className="size-3.5" />}
+                        onClick={() =>
+                          setItem(i, { decisions: [...item.decisions, { text: "", owner_id: null, due_on: null }] })
+                        }
+                      >
+                        Ajouter
+                      </Button>
+                    )}
+                  </div>
+                  {!item.decisions.length && (
+                    <p className="text-[12px] text-muted">
+                      Ce que la présidence tranche en séance : chaque décision sera inscrite au registre des décisions à
+                      la validation du compte rendu.
+                    </p>
+                  )}
+                  <div className="space-y-2">
+                    {item.decisions.map((dd, j) =>
+                      dd.decision_reference ? (
+                        <div
+                          key={dd.id}
+                          className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-hover/40 px-2.5 py-2 text-[13px]"
+                        >
+                          <Seal>{dd.decision_reference}</Seal>
+                          <span className="min-w-0 flex-1">{dd.text}</span>
+                          {dd.owner_name && <span className="text-muted">{dd.owner_name}</span>}
+                          {dd.due_on && <span className="tabular text-muted">{frDate(dd.due_on)}</span>}
+                        </div>
+                      ) : (
+                        <div
+                          key={dd.id ?? `n${j}`}
+                          className="grid items-center gap-2 lg:grid-cols-[1fr_190px_150px_32px]"
+                        >
+                          <Input
+                            aria-label="Décision"
+                            placeholder="Décision prise en séance"
+                            disabled={ro}
+                            value={dd.text}
+                            onChange={(e) => setDecision(i, j, { text: e.target.value })}
+                          />
+                          <Select
+                            aria-label="Chargé d'exécution"
+                            disabled={ro}
+                            value={dd.owner_id ?? ""}
+                            onChange={(e) => setDecision(i, j, { owner_id: e.target.value || null })}
+                          >
+                            <option value="">Chargé d'exécution…</option>
+                            {people.map((u) => (
+                              <option key={u.id} value={u.id}>
+                                {u.name}
+                              </option>
+                            ))}
+                          </Select>
+                          <Input
+                            aria-label="Échéance d'exécution"
+                            type="date"
+                            disabled={ro}
+                            value={dd.due_on ?? ""}
+                            onChange={(e) => setDecision(i, j, { due_on: e.target.value || null })}
+                          />
+                          {!ro && (
+                            <IconButton
+                              label="Retirer"
+                              onClick={() => setItem(i, { decisions: item.decisions.filter((_, n) => n !== j) })}
+                            >
+                              <Trash2 className="size-4" />
+                            </IconButton>
+                          )}
+                        </div>
+                      ),
+                    )}
                   </div>
                 </div>
               </div>

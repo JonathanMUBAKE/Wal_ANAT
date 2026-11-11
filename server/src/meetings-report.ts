@@ -219,6 +219,23 @@ export async function buildMeetingReport(m: MeetingDetail): Promise<Buffer> {
                   value(STATUS[a.status], 1400),
                 ])
               : [[cell([para("Aucune recommandation")], WIDTH, { span: 4 })]]),
+            // Les décisions annoncées en séance, avec leur numéro au registre une fois le compte rendu validé
+            ...(i.decisions.length
+              ? [
+                  [
+                    label("Décisions de la séance", 4200),
+                    label("Chargé d'exécution", 2100),
+                    label("Échéance", 1656),
+                    label("Registre", 1400),
+                  ],
+                  ...i.decisions.map((d) => [
+                    value(d.text, 4200),
+                    value(d.owner_name ?? "", 2100),
+                    value(longDate(d.due_on), 1656),
+                    value(d.decision_reference ?? "À inscrire", 1400),
+                  ]),
+                ]
+              : []),
           ]),
           new Paragraph({ spacing: { after: 120 }, children: [] }),
         ])

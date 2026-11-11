@@ -293,6 +293,17 @@ ORGANISATION        Structure · Équipes
 
 Restent pour le lot P3 : décisions de séance vers le registre, recommandations devenant tâches du projet.
 
+### Lot P3a — la séance alimente le registre et le projet
+
+| Règle | Effet |
+| --- | --- |
+| Chaque point de l'ordre du jour peut porter des **décisions de la séance** (texte, chargé d'exécution, échéance), distinctes des recommandations | Saisies par le rédacteur avec le compte rendu |
+| À la **validation** du compte rendu, chaque décision de séance est **inscrite au registre des décisions** | Numéro annuel, texte figé, rattachée à la réunion ; le chargé d'exécution est prévenu ; l'inscription est un effet de la validation, portée par le valideur |
+| Une décision de séance déjà inscrite ne se modifie plus et ne s'inscrit pas deux fois | Rouvrir puis revalider le compte rendu n'en crée pas de doublon |
+| Le compte rendu d'une réunion **confidentielle** produit des décisions **confidentielles** | Héritage automatique |
+| À la validation d'un compte rendu **rattaché à un projet**, chaque recommandation ouverte devient une **tâche du projet** (titre, responsable, échéance), liée à la recommandation | Si le responsable n'a pas accès au projet, la tâche est créée sans assignation et le nomme |
+| Clore la recommandation (« réalisée ») **termine la tâche liée** ; terminer la tâche **soumet la recommandation** et prévient le rédacteur | Les deux suivis ne divergent jamais |
+
 ## 7. Questions à trancher
 
 | N° | Question | Proposition par défaut |

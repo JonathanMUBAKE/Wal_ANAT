@@ -141,6 +141,13 @@ export async function seedGovDemo(svc: Services) {
           { text: "Transmettre le tableau de suivi budgétaire", responsible_id: "u_karim", due_on: day(-2) },
           { text: "Préparer la note de conjoncture", responsible_id: me, due_on: day(6) },
         ],
+        decisions: [
+          {
+            text: "Le principe du recrutement d'un consultant pour le diagnostic foncier est approuvé (illustration).",
+            owner_id: "u_karim",
+            due_on: day(15),
+          },
+        ],
       },
     ],
     attendees: [

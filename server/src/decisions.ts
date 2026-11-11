@@ -155,11 +155,12 @@ export class Decisions {
     return { label: "", confidential: false };
   }
 
-  async record(actorId: string, orgId: string, i: DecisionInput) {
+  async record(actorId: string, orgId: string, i: DecisionInput, opts: { viaValidation?: boolean } = {}) {
     // L'IA propose, un humain décide : aucun coéquipier IA n'inscrit une décision au registre
     if ((await this.svc.userOrNull(actorId))?.is_ai)
       throw forbidden("Une décision de la DG est enregistrée par une personne, jamais par un coéquipier IA");
-    await this.svc.requirePerm(actorId, orgId, "decisions.record");
+    // L'inscription d'une décision de séance est un effet de la validation du compte rendu, portée par le valideur
+    if (!opts.viaValidation) await this.svc.requirePerm(actorId, orgId, "decisions.record");
     for (const d of [i.decided_on, i.due_on]) if (d && !isRealDate(d)) throw badRequest(`Date invalide : ${d}`);
     if (i.decided_on > day()) throw badRequest("La date de la décision ne peut pas être dans le futur");
     if (i.due_on && i.due_on < i.decided_on) throw badRequest("L'échéance d'exécution précède la date de la décision");

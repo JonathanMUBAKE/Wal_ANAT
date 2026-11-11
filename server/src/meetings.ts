@@ -1,5 +1,6 @@
 import { ATTACHMENT_MAX_BYTES } from "./attachments.js";
 import { uid, type Queryable } from "./db.js";
+import { Decisions, decisionRef } from "./decisions.js";
 import { ALLOWED_FORMATS, detectType } from "./documents/filetypes.js";
 import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
 
@@ -78,6 +79,20 @@ export interface MeetingAction {
   status: ActionStatus;
   closed_by: string | null;
   closed_at: string | null;
+  /** La tâche du projet née de cette recommandation (lot P3a). */
+  task_id: string | null;
+}
+/** Décision annoncée en séance : inscrite au registre des décisions à la validation du compte rendu. */
+export interface MeetingDecision {
+  id: string;
+  agenda_item_id: string;
+  position: number;
+  text: string;
+  owner_id: string | null;
+  owner_name?: string | null;
+  due_on: string | null;
+  decision_id: string | null;
+  decision_reference?: string | null;
 }
 type ActionWithMeeting = MeetingAction & Pick<MeetingRow, "seq" | "service_code" | "writer_initials" | "meeting_date">;
 export interface AgendaItem {
@@ -87,6 +102,7 @@ export interface AgendaItem {
   speakers: string;
   notes: string;
   actions: MeetingAction[];
+  decisions: MeetingDecision[];
 }
 export interface Attendee {
   id: string;
@@ -170,6 +186,7 @@ export interface ContentInput {
       due_on?: string | null;
       status?: ActionStatus;
     }[];
+    decisions?: { id?: string; text: string; owner_id?: string | null; due_on?: string | null }[];
   }[];
   attendees: { user_id?: string | null; name: string; function_label?: string; presence?: string }[];
 }
@@ -278,7 +295,10 @@ export class Meetings {
   /** Dossier rattaché : un projet ou une activité de l'institution, jamais les deux. */
   private async assertDossier(orgId: string, i: { project_id?: string | null; activity_id?: string | null }) {
     if (i.project_id && i.activity_id) throw badRequest("Une réunion se rattache à un seul dossier");
-    if (i.project_id && !(await this.svc.db.one("SELECT 1 FROM projects WHERE org_id = $1 AND id = $2", [orgId, i.project_id])))
+    if (
+      i.project_id &&
+      !(await this.svc.db.one("SELECT 1 FROM projects WHERE org_id = $1 AND id = $2", [orgId, i.project_id]))
+    )
       throw badRequest("Projet inconnu dans cette institution");
     if (
       i.activity_id &&
@@ -305,7 +325,11 @@ export class Meetings {
         const u = await this.svc.user(i.user_id);
         out.set(u.id, { user_id: u.id, name: u.name, function_label: i.function_label ?? u.title ?? "" });
       } else if (i.name?.trim()) {
-        out.set(`n:${i.name.trim().toLowerCase()}`, { user_id: null, name: i.name.trim(), function_label: i.function_label ?? "" });
+        out.set(`n:${i.name.trim().toLowerCase()}`, {
+          user_id: null,
+          name: i.name.trim(),
+          function_label: i.function_label ?? "",
+        });
       }
     }
     return [...out.values()];
@@ -354,11 +378,15 @@ export class Meetings {
     open: { text: string; responsible_name: string; due_on: string | null }[],
   ) {
     if (!open.length) return;
-    if ((await q.query("SELECT 1 FROM meeting_agenda_items WHERE meeting_id = $1 AND subject = $2", [m.id, FOLLOW_UP])).length)
+    if (
+      (await q.query("SELECT 1 FROM meeting_agenda_items WHERE meeting_id = $1 AND subject = $2", [m.id, FOLLOW_UP]))
+        .length
+    )
       return;
     await q.query("UPDATE meeting_agenda_items SET position = position + 1 WHERE meeting_id = $1", [m.id]);
     const lines = open.map(
-      (a) => `- ${a.text}${a.responsible_name ? ` (${a.responsible_name}` : " ("}${a.due_on ? `, échéance ${a.due_on})` : ")"}`,
+      (a) =>
+        `- ${a.text}${a.responsible_name ? ` (${a.responsible_name}` : " ("}${a.due_on ? `, échéance ${a.due_on})` : ")"}`,
     );
     await q.query(
       "INSERT INTO meeting_agenda_items (id, org_id, meeting_id, position, subject, speakers, notes) VALUES ($1,$2,$3,0,$4,'Secrétariat',$5)",
@@ -375,7 +403,12 @@ export class Meetings {
     await this.svc.requirePerm(actorId, orgId, "meetings.view");
     const can = await this.can(actorId, orgId);
     const rows = await this.svc.db.query<
-      MeetingRow & { open_actions: number; action_count: number; my_response: Response | null; chair_name: string | null }
+      MeetingRow & {
+        open_actions: number;
+        action_count: number;
+        my_response: Response | null;
+        chair_name: string | null;
+      }
     >(
       `SELECT m.*, c.name AS chair_name, (SELECT count(*)::int FROM meeting_actions a WHERE a.meeting_id = m.id) AS action_count,
         (SELECT count(*)::int FROM meeting_actions a WHERE a.meeting_id = m.id AND a.status NOT IN ('realise','annule')) AS open_actions,
@@ -399,7 +432,7 @@ export class Meetings {
     can: { manage: boolean; validate: boolean },
   ): Promise<MeetingDetail> {
     const db = this.svc.db;
-    const items = await db.query<Omit<AgendaItem, "actions">>(
+    const items = await db.query<Omit<AgendaItem, "actions" | "decisions">>(
       "SELECT id, position, subject, speakers, notes, domain_id FROM meeting_agenda_items WHERE meeting_id = $1 ORDER BY position",
       [m.id],
     );
@@ -407,6 +440,16 @@ export class Meetings {
       "SELECT * FROM meeting_actions WHERE meeting_id = $1 ORDER BY position",
       [m.id],
     );
+    const decisions = await db.query<MeetingDecision & { reg_year: number | null; reg_seq: number | null }>(
+      `SELECT d.*, u.name AS owner_name, r.year AS reg_year, r.seq AS reg_seq
+       FROM meeting_decisions d LEFT JOIN users u ON u.id = d.owner_id LEFT JOIN dg_decisions r ON r.id = d.decision_id
+       WHERE d.meeting_id = $1 ORDER BY d.position`,
+      [m.id],
+    );
+    const decisionView = (d: MeetingDecision & { reg_year: number | null; reg_seq: number | null }) => {
+      const { reg_year, reg_seq, ...rest } = d;
+      return { ...rest, decision_reference: reg_year ? decisionRef({ year: reg_year, seq: reg_seq ?? 0 }) : null };
+    };
     const previous = m.previous_meeting_id
       ? await db.one<MeetingRow>("SELECT * FROM meetings WHERE id = $1", [m.previous_meeting_id])
       : undefined;
@@ -420,7 +463,9 @@ export class Meetings {
       "SELECT id, user_id, name, function_label, presence, invited, response, delegate_name FROM meeting_attendees WHERE meeting_id = $1 ORDER BY invited DESC, name",
       [m.id],
     );
-    const chair = m.chair_id ? await db.one<{ name: string }>("SELECT name FROM users WHERE id = $1", [m.chair_id]) : null;
+    const chair = m.chair_id
+      ? await db.one<{ name: string }>("SELECT name FROM users WHERE id = $1", [m.chair_id])
+      : null;
     const dossier = m.project_id
       ? await db.one<{ label: string }>("SELECT name AS label FROM projects WHERE id = $1", [m.project_id])
       : m.activity_id
@@ -443,10 +488,19 @@ export class Meetings {
         dossier && (m.project_id || m.activity_id)
           ? m.project_id
             ? { kind: "project", id: m.project_id, label: dossier.label, href: `/projects/${m.project_id}/reunions` }
-            : { kind: "activity", id: m.activity_id as string, label: dossier.label, href: `/activites/${m.activity_id}` }
+            : {
+                kind: "activity",
+                id: m.activity_id as string,
+                label: dossier.label,
+                href: `/activites/${m.activity_id}`,
+              }
           : null,
       documents,
-      agenda: items.map((i) => ({ ...i, actions: actions.filter((a) => a.agenda_item_id === i.id) })),
+      agenda: items.map((i) => ({
+        ...i,
+        actions: actions.filter((a) => a.agenda_item_id === i.id),
+        decisions: decisions.filter((d) => d.agenda_item_id === i.id).map(decisionView),
+      })),
       attendees,
       previous: previous
         ? {
@@ -655,6 +709,9 @@ export class Meetings {
     const knownActions = new Set(
       (await db.query<{ id: string }>("SELECT id FROM meeting_actions WHERE meeting_id = $1", [id])).map((r) => r.id),
     );
+    const knownDecisions = new Set(
+      (await db.query<{ id: string }>("SELECT id FROM meeting_decisions WHERE meeting_id = $1", [id])).map((r) => r.id),
+    );
     const people = new Map((await this.svc.usersOf(m.org_id)).map((u) => [u.id, u.name]));
     const domains = new Set(
       (await db.query<{ id: string }>("SELECT id FROM activity_domains WHERE org_id = $1", [m.org_id])).map(
@@ -670,6 +727,12 @@ export class Meetings {
           throw badRequest("Le responsable doit être membre de l'organisation");
         assertDate(a.due_on);
       }
+      for (const d of item.decisions ?? []) {
+        if (d.id && !knownDecisions.has(d.id)) throw badRequest("Décision de séance inconnue pour cette réunion");
+        if (d.owner_id && !people.has(d.owner_id))
+          throw badRequest("Le chargé d'exécution doit être membre de l'organisation");
+        assertDate(d.due_on);
+      }
     }
     for (const a of input.attendees)
       if (a.user_id && !people.has(a.user_id)) throw badRequest("Le participant doit être membre de l'organisation");
@@ -678,6 +741,12 @@ export class Meetings {
       await q.query("DELETE FROM meeting_agenda_items WHERE meeting_id = $1 AND NOT (id = ANY($2))", [id, keptItems]);
       const keptActions = input.agenda.flatMap((i) => (i.actions ?? []).flatMap((a) => (a.id ? [a.id] : [])));
       await q.query("DELETE FROM meeting_actions WHERE meeting_id = $1 AND NOT (id = ANY($2))", [id, keptActions]);
+      // Une décision déjà inscrite au registre survit à toute sauvegarde : seul le brouillon se retire
+      const keptDecisions = input.agenda.flatMap((i) => (i.decisions ?? []).flatMap((d) => (d.id ? [d.id] : [])));
+      await q.query(
+        "DELETE FROM meeting_decisions WHERE meeting_id = $1 AND decision_id IS NULL AND NOT (id = ANY($2))",
+        [id, keptDecisions],
+      );
       for (const [position, item] of input.agenda.entries()) await this.saveItem(q, m, actorId, position, item, people);
       // Feuille de présence : les convoqués gardent leur convocation et leur réponse, la présence est notée en séance
       const before = await q.query<Attendee>("SELECT * FROM meeting_attendees WHERE meeting_id = $1", [id]);
@@ -771,6 +840,17 @@ export class Meetings {
         ],
       );
     }
+    // Décisions de la séance : une décision déjà inscrite au registre ne se modifie plus
+    for (const [i, d] of (item.decisions ?? []).entries()) {
+      await q.query(
+        `INSERT INTO meeting_decisions (id, org_id, meeting_id, agenda_item_id, position, text, owner_id, due_on)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8::date)
+         ON CONFLICT (id) DO UPDATE SET agenda_item_id = EXCLUDED.agenda_item_id, position = EXCLUDED.position,
+           text = EXCLUDED.text, owner_id = EXCLUDED.owner_id, due_on = EXCLUDED.due_on
+         WHERE meeting_decisions.decision_id IS NULL`,
+        [d.id ?? uid("mdd"), m.org_id, m.id, itemId, i, d.text.trim(), d.owner_id ?? null, d.due_on ?? null],
+      );
+    }
   }
 
   async remove(actorId: string, id: string) {
@@ -798,6 +878,15 @@ export class Meetings {
     if (incomplete.length)
       throw badRequest(
         `Chaque recommandation doit avoir un responsable et une échéance. À compléter : ${incomplete.map((a) => a.text).join(", ")}`,
+      );
+    // Une décision de séance s'inscrira au registre : son échéance ne peut pas précéder la séance
+    const badDecisions = await this.svc.db.query<{ text: string }>(
+      "SELECT text FROM meeting_decisions WHERE meeting_id = $1 AND decision_id IS NULL AND due_on IS NOT NULL AND due_on < $2::date ORDER BY position",
+      [m.id, m.meeting_date],
+    );
+    if (badDecisions.length)
+      throw badRequest(
+        `L'échéance d'exécution d'une décision précède la date de la séance : ${badDecisions.map((d) => d.text).join(", ")}`,
       );
   }
 
@@ -886,6 +975,9 @@ export class Meetings {
     )
       throw locked();
     await this.svc.log(actorId, "meeting.validated", { orgId: m.org_id, data: { reference: meetingReference(m) } });
+    // La séance alimente le registre et le projet (docs/PARCOURS-METIER.md, lot P3a)
+    await this.registerDecisions(actorId, m);
+    await this.createTasksFromActions(actorId, m);
     // Diffusion : chaque participant, la présidence et le rédacteur reçoivent le compte rendu validé
     const readers = await this.svc.db.query<{ user_id: string }>(
       `SELECT DISTINCT user_id FROM (
@@ -914,6 +1006,90 @@ export class Meetings {
         body: `Compte rendu ${meetingReference(m)}`,
       });
     return this.get(actorId, id);
+  }
+
+  /** Chaque décision de séance encore en attente entre au registre, portée par le valideur. */
+  private async registerDecisions(actorId: string, m: MeetingRow) {
+    const pending = await this.svc.db.query<MeetingDecision>(
+      "SELECT * FROM meeting_decisions WHERE meeting_id = $1 AND decision_id IS NULL ORDER BY position",
+      [m.id],
+    );
+    if (!pending.length) return;
+    const registry = new Decisions(this.svc);
+    for (const d of pending) {
+      const reg = await registry.record(
+        actorId,
+        m.org_id,
+        {
+          title: d.text.length > 180 ? `${d.text.slice(0, 179).trimEnd()}…` : d.text,
+          content: d.text,
+          decided_on: m.meeting_date,
+          meeting_id: m.id,
+          owner_id: d.owner_id,
+          due_on: d.due_on,
+          confidential: m.confidential,
+        },
+        { viaValidation: true },
+      );
+      await this.svc.db.query("UPDATE meeting_decisions SET decision_id = $1 WHERE id = $2", [reg.id, d.id]);
+    }
+  }
+
+  /** Un compte rendu rattaché à un projet : chaque recommandation ouverte devient une tâche du projet. */
+  private async createTasksFromActions(actorId: string, m: MeetingRow) {
+    if (!m.project_id) return;
+    const open = await this.svc.db.query<MeetingAction>(
+      "SELECT * FROM meeting_actions WHERE meeting_id = $1 AND task_id IS NULL AND status NOT IN ('realise','annule') ORDER BY position",
+      [m.id],
+    );
+    const reference = meetingReference(m);
+    for (const a of open) {
+      // Un responsable sans accès au projet n'est pas assigné : la tâche le nomme, le dossier reste étanche
+      const assignable = a.responsible_id
+        ? await this.svc.require(a.responsible_id, m.project_id, "viewer").then(
+            () => true,
+            () => false,
+          )
+        : false;
+      const taskId = uid("tsk");
+      await this.svc.db.tx(async (q) => {
+        const [{ task_seq }] = await q.query<{ task_seq: number }>(
+          "UPDATE projects SET task_seq = task_seq + 1 WHERE id = $1 RETURNING task_seq",
+          [m.project_id],
+        );
+        const section = await q.query<{ id: string }>(
+          "SELECT id FROM sections WHERE project_id = $1 ORDER BY position LIMIT 1",
+          [m.project_id],
+        );
+        const pos = await q.query<{ p: number }>(
+          "SELECT COALESCE(max(position), 0) + 1024 AS p FROM tasks WHERE project_id = $1",
+          [m.project_id],
+        );
+        await q.query(
+          `INSERT INTO tasks (id, number, project_id, section_id, title, description, assignee_id, creator_id, due_on, position)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::date,$10)`,
+          [
+            taskId,
+            task_seq,
+            m.project_id,
+            section[0]?.id ?? null,
+            a.text,
+            `Recommandation du compte rendu ${reference}${assignable || !a.responsible_name ? "" : ` — responsable désigné : ${a.responsible_name}`}`,
+            assignable ? a.responsible_id : null,
+            actorId,
+            a.due_on,
+            pos[0]?.p ?? 1024,
+          ],
+        );
+        await q.query("UPDATE meeting_actions SET task_id = $1 WHERE id = $2", [taskId, a.id]);
+      });
+      await this.svc.log(actorId, "task.created", {
+        projectId: m.project_id,
+        taskId,
+        data: { title: a.text, from_meeting: reference },
+      });
+      this.svc.bus.emit({ type: "task.created", actorId, projectId: m.project_id, taskId });
+    }
   }
 
   async reopen(actorId: string, id: string) {
@@ -988,7 +1164,11 @@ export class Meetings {
   }
 
   /** Seul le convoqué répond, jusqu'au jour de la séance : présent, excusé, ou représenté par une personne nommée. */
-  async respond(actorId: string, id: string, i: { response: "accepted" | "declined" | "delegated"; delegate_name?: string }) {
+  async respond(
+    actorId: string,
+    id: string,
+    i: { response: "accepted" | "declined" | "delegated"; delegate_name?: string },
+  ) {
     const m = await this.row(id);
     const row = await this.svc.db.one<{ id: string }>(
       "SELECT id FROM meeting_attendees WHERE meeting_id = $1 AND user_id = $2 AND invited",
@@ -996,7 +1176,8 @@ export class Meetings {
     );
     if (!row) throw forbidden("Seuls les convoqués répondent à cette convocation");
     if (!m.convened_at) throw badRequest("Cette réunion n'a pas encore été convoquée");
-    if (m.status !== "planned" || m.meeting_date < today()) throw badRequest("La séance est passée : la réponse est close");
+    if (m.status !== "planned" || m.meeting_date < today())
+      throw badRequest("La séance est passée : la réponse est close");
     if (i.response === "delegated" && !i.delegate_name?.trim())
       throw badRequest("Indiquez le nom de la personne qui vous représente");
     await this.svc.db.query(
@@ -1024,16 +1205,20 @@ export class Meetings {
       !(await this.svc.db.one("SELECT 1 FROM meeting_agenda_items WHERE meeting_id = $1 AND id = $2", [id, itemId]))
     )
       throw badRequest("Point de l'ordre du jour inconnu pour cette réunion");
-    const n = await this.svc.db.one<{ n: number }>("SELECT count(*)::int AS n FROM meeting_documents WHERE meeting_id = $1", [
-      id,
-    ]);
+    const n = await this.svc.db.one<{ n: number }>(
+      "SELECT count(*)::int AS n FROM meeting_documents WHERE meeting_id = $1",
+      [id],
+    );
     if ((n?.n ?? 0) >= MAX_DOCUMENTS) throw badRequest(`Une réunion ne peut pas avoir plus de ${MAX_DOCUMENTS} pièces`);
     const docId = uid("mdc");
     await this.svc.db.query(
       "INSERT INTO meeting_documents (id, org_id, meeting_id, agenda_item_id, uploader_id, filename, mime, size, data) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
       [docId, m.org_id, id, itemId ?? null, actorId, name, type.mime, data.length, data],
     );
-    await this.svc.log(actorId, "meeting.document", { orgId: m.org_id, data: { reference: meetingReference(m), filename: name } });
+    await this.svc.log(actorId, "meeting.document", {
+      orgId: m.org_id,
+      data: { reference: meetingReference(m), filename: name },
+    });
     return { id: docId, filename: name, mime: type.mime, size: data.length };
   }
 
@@ -1102,6 +1287,28 @@ export class Meetings {
       [status, patch.due_on ?? null, patch.postponed_reason?.trim() ?? null, closing, actorId, id],
     );
     await this.svc.log(actorId, "meeting.action", { orgId: a.org_id, data: { id, status } });
+    // Recommandation close : la tâche du projet née d'elle se termine avec elle (lot P3a)
+    if (closing && a.task_id) {
+      const done = await this.svc.db.one<{ project_id: string }>(
+        "UPDATE tasks SET completed = TRUE, completed_at = now(), updated_at = now() WHERE id = $1 AND NOT completed RETURNING project_id",
+        [a.task_id],
+      );
+      if (done) {
+        await this.svc.log(actorId, "task.completed", {
+          projectId: done.project_id,
+          taskId: a.task_id,
+          data: { from: false, to: true },
+        });
+        this.svc.bus.emit({
+          type: "task.updated",
+          actorId,
+          projectId: done.project_id,
+          taskId: a.task_id,
+          changes: ["completed"],
+          previous: { completed: false },
+        });
+      }
+    }
     // Une recommandation soumise attend qu'on la clôture : le rédacteur du compte rendu en est prévenu
     if (status === "soumis" && a.status !== "soumis") {
       const m = await this.svc.db.one<MeetingRow>("SELECT * FROM meetings WHERE id = $1", [a.meeting_id]);

@@ -86,6 +86,17 @@ const Content = z.object({
           )
           .max(100)
           .optional(),
+        decisions: z
+          .array(
+            z.object({
+              id: z.string().max(100).optional(),
+              text: z.string().trim().min(1).max(5000),
+              owner_id: z.string().max(100).nullable().optional(),
+              due_on: date.nullable().optional(),
+            }),
+          )
+          .max(50)
+          .optional(),
       }),
     )
     .max(100),

@@ -1595,6 +1595,24 @@ export class Services {
         actor_id: actorId,
       });
     }
+    // Une tâche née d'une recommandation de réunion : la terminer soumet la recommandation (docs/PARCOURS-METIER.md, P3a)
+    if (changes.includes("completed") && after.completed) {
+      const recs = await this.db.query<{ id: string; org_id: string; text: string; writer_id: string | null }>(
+        `SELECT a.id, a.org_id, a.text, m.writer_id FROM meeting_actions a JOIN meetings m ON m.id = a.meeting_id
+         WHERE a.task_id = $1 AND a.status IN ('a_faire', 'en_cours')`,
+        [after.id],
+      );
+      for (const r of recs) {
+        await this.db.query("UPDATE meeting_actions SET status = 'soumis' WHERE id = $1", [r.id]);
+        if (r.writer_id && r.writer_id !== actorId)
+          await this.notify(r.writer_id, r.org_id, {
+            kind: "meeting.action.submitted",
+            title: `Recommandation déclarée réalisée : ${r.text}`,
+            body: `La tâche liée « ${after.title} » est terminée : à vérifier puis clôturer`,
+            actor_id: actorId,
+          });
+      }
+    }
     this.bus.emit({ type: "task.updated", actorId, projectId: after.project_id, taskId: after.id, changes, previous });
     return after;
   }

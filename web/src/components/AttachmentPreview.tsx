@@ -42,6 +42,25 @@ export function AttachmentPreview({ attachment, onClose }: { attachment: Attachm
   );
 }
 
+/**
+ * Aperçu intégré d'un fichier, réutilisé par les tiroirs de documents : PDF et images dans la page, Word, Excel et
+ * texte en texte structuré. `url` sert le fichier ; `${url}/preview` en donne la lecture.
+ */
+export function FilePreview({ url, name }: { url: string; name: string }) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["file-preview", url],
+    queryFn: () => api.get<AttachmentPreviewData>(`${url}/preview`),
+  });
+  if (isLoading)
+    return (
+      <div className="flex h-40 items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  if (error) return <p className="text-[13px] text-danger">{(error as Error).message}</p>;
+  return data ? <Body data={data} url={url} name={name} /> : null;
+}
+
 function Body({ data, url, name }: { data: AttachmentPreviewData; url: string; name: string }) {
   if (data.kind === "image")
     return (

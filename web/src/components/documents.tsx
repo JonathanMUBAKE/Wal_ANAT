@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Download, FileText, Lock, Paperclip, Pencil, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { Button, ConfirmDialog, Dialog, Empty, cn } from "./ui";
+import { Button, ConfirmDialog, Empty, cn } from "./ui";
 import { RoundBtn } from "./collection";
+import { Drawer, DrawerSection } from "./drawer";
+import { FilePreview } from "./AttachmentPreview";
 import { Field, Input, Section, Select, Table, Td, Textarea, Tr, frDate } from "./gov";
 import { Fact, Facts, RowActions } from "./record";
 import { RefSelect } from "./refselect";
@@ -240,6 +242,8 @@ function DocumentDialog({
     notes: doc?.notes ?? "",
     agreement_id: doc?.agreement_id ?? agreementId ?? "",
   });
+  const [initial] = useState(() => JSON.stringify(f));
+  const dirty = editing && (JSON.stringify(f) !== initial || !!file);
   const nature = natures.find((n) => n.code === f.nature);
   const a = asks(nature);
   // Contrôles affichés sous les champs avant l'envoi ; le serveur les refait de toute façon
@@ -283,20 +287,33 @@ function DocumentDialog({
   const set = (k: keyof DocForm) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   const ag = agreements?.find((x) => x.id === (doc?.agreement_id ?? f.agreement_id));
   return (
-    <Dialog
+    <Drawer
       open
-      onOpenChange={onClose}
+      onClose={onClose}
+      width={820}
+      dirty={dirty}
       title={doc ? doc.title || doc.filename : "Ajouter un document"}
-      description={
+      subtitle={
         doc
           ? `${natureLabel(doc, natures)}${doc.official ? " · pièce officielle" : ""}`
           : "Choisissez le type : les informations demandées en dépendent."
       }
-      width={600}
       footer={
         editing ? (
           <>
-            <Button onClick={doc ? () => setEditing(false) : onClose}>Annuler</Button>
+            <Button
+              onClick={
+                doc
+                  ? () => {
+                      setF(JSON.parse(initial));
+                      setFile(null);
+                      setEditing(false);
+                    }
+                  : onClose
+              }
+            >
+              Annuler
+            </Button>
             <Button variant="primary" disabled={invalid} loading={save.isPending} onClick={() => save.mutate()}>
               Enregistrer
             </Button>
@@ -422,32 +439,39 @@ function DocumentDialog({
         </div>
       ) : (
         doc && (
-          <Facts className="p-0 pt-0">
-            <Fact label="Type">{natureLabel(doc, natures)}</Fact>
-            <Fact label="Référence">{doc.reference}</Fact>
-            <Fact label="Date de production">{doc.issued_on && frDate(doc.issued_on)}</Fact>
-            <Fact label="Date d'expiration">
-              {doc.expires_on && (
-                <span className={doc.expired ? "text-danger" : ""}>
-                  {frDate(doc.expires_on)}
-                  {doc.expired ? " (expiré)" : ""}
-                </span>
-              )}
-            </Fact>
-            {!agreementId && <Fact label="Accord">{ag ? (ag.reference ?? ag.title) : null}</Fact>}
-            <Fact label="Fichier">
-              {doc.filename} · {kb(doc.size)}
-            </Fact>
-            <Fact label="Ajouté par">
-              {doc.uploader_name} {frDate(doc.created_at.slice(0, 10))}
-            </Fact>
-            <Fact label="Description" wide>
-              {doc.notes && <span className="whitespace-pre-wrap font-normal">{doc.notes}</span>}
-            </Fact>
-          </Facts>
+          <>
+            <Facts className="p-0 pt-0">
+              <Fact label="Type">{natureLabel(doc, natures)}</Fact>
+              <Fact label="Référence">{doc.reference}</Fact>
+              <Fact label="Date de production">{doc.issued_on && frDate(doc.issued_on)}</Fact>
+              <Fact label="Date d'expiration">
+                {doc.expires_on && (
+                  <span className={doc.expired ? "text-danger" : ""}>
+                    {frDate(doc.expires_on)}
+                    {doc.expired ? " (expiré)" : ""}
+                  </span>
+                )}
+              </Fact>
+              {!agreementId && <Fact label="Accord">{ag ? (ag.reference ?? ag.title) : null}</Fact>}
+              <Fact label="Fichier">
+                {doc.filename} · {kb(doc.size)}
+              </Fact>
+              <Fact label="Ajouté par">
+                {doc.uploader_name} {frDate(doc.created_at.slice(0, 10))}
+              </Fact>
+              <Fact label="Description" wide>
+                {doc.notes && <span className="whitespace-pre-wrap font-normal">{doc.notes}</span>}
+              </Fact>
+            </Facts>
+            <div className="mt-5">
+              <DrawerSection title="Aperçu">
+                <FilePreview url={ends.item(doc.id)} name={doc.filename} />
+              </DrawerSection>
+            </div>
+          </>
         )
       )}
-    </Dialog>
+    </Drawer>
   );
 }
 

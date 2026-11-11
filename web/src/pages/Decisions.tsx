@@ -31,6 +31,7 @@ import {
   type Tone,
 } from "@/components/gov";
 import { api } from "@/lib/api";
+import { Drawer } from "@/components/drawer";
 import { useCan, useMe, useUsers } from "@/lib/hooks";
 
 export type DecisionStatus = "a_executer" | "en_cours" | "executee" | "remplacee";
@@ -231,12 +232,11 @@ function DecisionPanel({ id, onClose }: { id: string; onClose: () => void }) {
     );
   const S = DECISION_STATE[d.status];
   return (
-    <Dialog
+    <Drawer
       open
-      onOpenChange={onClose}
+      onClose={onClose}
       title={d.title}
-      description={`Décision ${d.reference} du ${frDate(d.decided_on)}`}
-      width={620}
+      subtitle={`Décision ${d.reference} du ${frDate(d.decided_on)}`}
       footer={
         <>
           {d.can.replace && (
@@ -316,7 +316,7 @@ function DecisionPanel({ id, onClose }: { id: string; onClose: () => void }) {
           Une décision enregistrée ne se modifie pas : une erreur se corrige par une nouvelle décision qui la remplace.
         </p>
       </div>
-    </Dialog>
+    </Drawer>
   );
 }
 

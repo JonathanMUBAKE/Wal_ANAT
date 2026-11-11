@@ -2,7 +2,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
+
+// Règle 14 (docs/DESIGN-SYSTEM.md § 5.5) : un échec reste affiché, avec sa croix, jusqu'à ce que la personne le ferme
+const showError = toast.error;
+toast.error = ((message, data) =>
+  showError(message, { duration: Number.POSITIVE_INFINITY, closeButton: true, ...data })) as typeof toast.error;
 import { MotionConfig } from "motion/react";
 import "@fontsource-variable/geist/wght.css";
 import "@fontsource/instrument-serif/400.css";

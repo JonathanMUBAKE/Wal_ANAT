@@ -116,4 +116,31 @@ describe("documents des dossiers", () => {
     expect((await g.api(b.who, "DELETE", `/api/dossier-documents/${r.body.id}`)).status).toBe(404);
     expect((await g.api("u_alice", "GET", "/api/dossier-documents?owner=inconnu&owner_id=x")).status).toBe(400);
   });
+
+  it("aperçu : texte structuré, PDF affiché dans la page, rien pour une autre organisation", async () => {
+    const prj = await g.project();
+    const t = await up(
+      "u_alice",
+      "project",
+      prj,
+      { nature: "autre", other_label: "Note" },
+      "Première ligne, seconde ligne",
+    );
+    const p = await g.api("u_alice", "GET", `/api/dossier-documents/${t.body.id}/preview`);
+    expect(p.status).toBe(200);
+    expect(p.body.kind).toBe("text");
+    const pdf = await g.upload(
+      "u_alice",
+      `/api/dossier-documents?${new URLSearchParams({ owner: "project", owner_id: prj, name: "plan.pdf", nature: "autre", other_label: "Plan" })}`,
+      Buffer.from("%PDF-1.4 fictif"),
+    );
+    expect(pdf.status).toBe(200);
+    const inline = await g.api("u_alice", "GET", `/api/dossier-documents/${pdf.body.id}?inline=1`);
+    expect(String(inline.headers["content-disposition"])).toMatch(/^inline/);
+    expect((await g.api("u_alice", "GET", `/api/dossier-documents/${pdf.body.id}/preview`)).body.kind).toBe("pdf");
+    const download = await g.api("u_alice", "GET", `/api/dossier-documents/${t.body.id}?inline=1`);
+    expect(String(download.headers["content-disposition"])).toMatch(/^attachment/);
+    const b = await g.foreignOrg();
+    expect((await g.api(b.who, "GET", `/api/dossier-documents/${t.body.id}/preview`)).status).toBe(404);
+  });
 });

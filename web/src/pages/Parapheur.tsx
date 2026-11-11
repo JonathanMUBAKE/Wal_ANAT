@@ -39,6 +39,7 @@ import {
 import { api } from "@/lib/api";
 import { PartnerSelect, usePartnerContacts } from "@/components/partners";
 import { RoundBtn } from "@/components/collection";
+import { Drawer } from "@/components/drawer";
 import { DossierDocuments } from "@/components/documents";
 import { Fact, Facts, RowActions } from "@/components/record";
 import { useCan, useMe, useProjects, useUnits, useUsers } from "@/lib/hooks";
@@ -204,12 +205,11 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
   if (error) return null;
   if (!d) return null;
   return (
-    <Dialog
+    <Drawer
       open
-      onOpenChange={onClose}
+      onClose={onClose}
       title={d.title}
-      description={`${d.reference} · ${d.kind}`}
-      width={680}
+      subtitle={`${d.reference} · ${d.kind}`}
       footer={
         <>
           {d.status === "draft" && d.can.edit && (
@@ -295,7 +295,7 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
           </div>
         )}
       </div>
-    </Dialog>
+    </Drawer>
   );
 }
 
@@ -984,12 +984,11 @@ function MailDialog({
   onClose: () => void;
 }) {
   return (
-    <Dialog
+    <Drawer
       open
-      onOpenChange={onClose}
+      onClose={onClose}
       title={m.subject}
-      description={`${m.reference} · courrier ${m.direction}${m.confidential ? " · confidentiel" : ""}`}
-      width={720}
+      subtitle={`${m.reference} · courrier ${m.direction}${m.confidential ? " · confidentiel" : ""}`}
       footer={
         <>
           {canManage && m.status !== "traite" && (
@@ -1038,6 +1037,6 @@ function MailDialog({
         </Facts>
         <DossierDocuments owner="mail" ownerId={m.id} title="Pièce numérisée et documents" />
       </div>
-    </Dialog>
+    </Drawer>
   );
 }

@@ -9,15 +9,17 @@ import {
   FolderOpen,
   Megaphone,
   Paperclip,
+  Pencil,
   Plus,
   RotateCcw,
   Save,
   Send,
   ShieldCheck,
   Trash2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, ConfirmDialog, Dialog, Empty, IconButton } from "@/components/ui";
+import { Button, ConfirmDialog, Dialog, Empty, IconButton, Markdown } from "@/components/ui";
 import {
   DomainSelect,
   Field,
@@ -43,6 +45,7 @@ import { useShell } from "@/lib/shell";
 import { api } from "@/lib/api";
 import { useCan, useMe, useUnits, useUsers } from "@/lib/hooks";
 import { PartnerSelect, usePartnerOptions, usePartnerContacts } from "@/components/partners";
+import { Fact, Facts, LongText } from "@/components/record";
 
 type ActionStatus = "a_faire" | "en_cours" | "soumis" | "realise" | "reporte" | "annule";
 interface MeetingAction {
@@ -638,6 +641,7 @@ export function MeetingPage() {
   });
   const [draft, setDraft] = useState<MeetingDetail | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [justValidated, setJustValidated] = useState(false);
   const [removing, setRemoving] = useState(false);
   useEffect(() => {
@@ -695,6 +699,7 @@ export function MeetingPage() {
       });
     },
     onSuccess: (r) => {
+      setEditing(false);
       qc.setQueryData(["meeting", id], r);
       qc.invalidateQueries({ queryKey: ["meetings"] });
       toast.success("Compte rendu enregistré");
@@ -788,7 +793,7 @@ export function MeetingPage() {
         {(error as Error)?.message ?? "Cette réunion n'existe pas ou vous n'y avez pas accès."}
       </Empty>
     );
-  const ro = !draft.can.edit;
+  const ro = !editing || !draft.can.edit;
   const people = users?.filter((u) => !u.is_ai) ?? [];
   const myInvite = draft.attendees.find((a) => a.invited && a.user_id === me?.id);
   const invited = draft.attendees.filter((a) => a.invited);
@@ -823,12 +828,12 @@ export function MeetingPage() {
             <a href={`/api/meetings/${id}/report.docx`} className="contents">
               <Button icon={<Download className="size-4" />}>Export Word</Button>
             </a>
-            {!ro && draft.status !== "validated" && (
+            {!editing && draft.can.edit && draft.status !== "validated" && (
               <IconButton label="Supprimer la réunion" onClick={() => setRemoving(true)}>
                 <Trash2 className="size-4" />
               </IconButton>
             )}
-            {draft.status === "validated" && draft.can.validate && (
+            {!editing && draft.status === "validated" && draft.can.validate && (
               <Button
                 icon={<RotateCcw className="size-4" />}
                 loading={reopen.isPending}
@@ -837,7 +842,7 @@ export function MeetingPage() {
                 Rouvrir
               </Button>
             )}
-            {draft.can.submit && (
+            {!editing && draft.can.submit && (
               <Button
                 icon={<Send className="size-4" />}
                 disabled={dirty}
@@ -848,12 +853,12 @@ export function MeetingPage() {
                 Soumettre pour validation
               </Button>
             )}
-            {draft.can.decide && (
+            {!editing && draft.can.decide && (
               <Button icon={<CornerUpLeft className="size-4" />} onClick={() => setReturning(true)}>
                 Retourner
               </Button>
             )}
-            {draft.can.decide && (
+            {!editing && draft.can.decide && (
               <Button
                 variant="primary"
                 icon={<ShieldCheck className="size-4" />}
@@ -863,7 +868,24 @@ export function MeetingPage() {
                 Valider
               </Button>
             )}
-            {!ro && (
+            {!editing && draft.can.edit && (
+              <Button icon={<Pencil className="size-4" />} onClick={() => setEditing(true)}>
+                Modifier le compte rendu
+              </Button>
+            )}
+            {editing && (
+              <Button
+                icon={<X className="size-4" />}
+                onClick={() => {
+                  if (m) setDraft(structuredClone(m));
+                  setDirty(false);
+                  setEditing(false);
+                }}
+              >
+                Annuler
+              </Button>
+            )}
+            {editing && (
               <Button
                 variant="primary"
                 icon={<Save className="size-4" />}
@@ -921,75 +943,77 @@ export function MeetingPage() {
             </span>
           </div>
         )}
-        <Section title="Informations générales">
-          <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="Date">{(a) => <Input {...a} disabled value={frDate(draft.meeting_date)} />}</Field>
-            <Field label="Heure de début">
-              {(a) => (
-                <Input
-                  {...a}
-                  disabled={ro}
-                  type="time"
-                  value={draft.start_time ?? ""}
-                  onChange={(e) => patch({ start_time: e.target.value })}
-                />
-              )}
-            </Field>
-            <Field label="Heure de fin">
-              {(a) => (
-                <Input
-                  {...a}
-                  disabled={ro}
-                  type="time"
-                  value={draft.end_time ?? ""}
-                  onChange={(e) => patch({ end_time: e.target.value })}
-                />
-              )}
-            </Field>
-            <Field label="Lieu">
-              {(a) => (
-                <Input
-                  {...a}
-                  disabled={ro}
-                  value={draft.location}
-                  onChange={(e) => patch({ location: e.target.value })}
-                />
-              )}
-            </Field>
-            <Field label="Convoquée par">
-              {(a) => (
-                <Input
-                  {...a}
-                  disabled={ro}
-                  value={draft.convened_by}
-                  onChange={(e) => patch({ convened_by: e.target.value })}
-                />
-              )}
-            </Field>
-            <Field label="Animateur">
-              {(a) => (
-                <Input
-                  {...a}
-                  disabled={ro}
-                  value={draft.facilitator}
-                  onChange={(e) => patch({ facilitator: e.target.value })}
-                />
-              )}
-            </Field>
-            <Field label="Rédacteur">{(a) => <Input {...a} disabled value={draft.writer_name} />}</Field>
-            <Field label="Maître du temps">
-              {(a) => (
-                <Input
-                  {...a}
-                  disabled={ro}
-                  value={draft.timekeeper}
-                  onChange={(e) => patch({ timekeeper: e.target.value })}
-                />
-              )}
-            </Field>
-          </div>
-        </Section>
-
+        {!editing && <MeetingReading m={draft} />}
+        {editing && (
+          <Section title="Informations générales">
+            <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Field label="Date">{(a) => <Input {...a} disabled value={frDate(draft.meeting_date)} />}</Field>
+              <Field label="Heure de début">
+                {(a) => (
+                  <Input
+                    {...a}
+                    disabled={ro}
+                    type="time"
+                    value={draft.start_time ?? ""}
+                    onChange={(e) => patch({ start_time: e.target.value })}
+                  />
+                )}
+              </Field>
+              <Field label="Heure de fin">
+                {(a) => (
+                  <Input
+                    {...a}
+                    disabled={ro}
+                    type="time"
+                    value={draft.end_time ?? ""}
+                    onChange={(e) => patch({ end_time: e.target.value })}
+                  />
+                )}
+              </Field>
+              <Field label="Lieu">
+                {(a) => (
+                  <Input
+                    {...a}
+                    disabled={ro}
+                    value={draft.location}
+                    onChange={(e) => patch({ location: e.target.value })}
+                  />
+                )}
+              </Field>
+              <Field label="Convoquée par">
+                {(a) => (
+                  <Input
+                    {...a}
+                    disabled={ro}
+                    value={draft.convened_by}
+                    onChange={(e) => patch({ convened_by: e.target.value })}
+                  />
+                )}
+              </Field>
+              <Field label="Animateur">
+                {(a) => (
+                  <Input
+                    {...a}
+                    disabled={ro}
+                    value={draft.facilitator}
+                    onChange={(e) => patch({ facilitator: e.target.value })}
+                  />
+                )}
+              </Field>
+              <Field label="Rédacteur">{(a) => <Input {...a} disabled value={draft.writer_name} />}</Field>
+              <Field label="Maître du temps">
+                {(a) => (
+                  <Input
+                    {...a}
+                    disabled={ro}
+                    value={draft.timekeeper}
+                    onChange={(e) => patch({ timekeeper: e.target.value })}
+                  />
+                )}
+              </Field>
+            </div>
+          </Section>
+        )}
         <Section
           title="Convocation"
           aside={
@@ -1125,433 +1149,442 @@ export function MeetingPage() {
             </div>
           </div>
         </Section>
+        {editing && (
+          <>
+            <MeetingDocuments draft={draft} readOnly={ro} onChanged={refresh} />
 
-        <MeetingDocuments draft={draft} readOnly={ro} onChanged={refresh} />
-
-        <Section
-          title="Participants"
-          aside={
-            !ro && (
-              <Button
-                size="sm"
-                icon={<Plus className="size-3.5" />}
-                onClick={() =>
-                  patch({
-                    attendees: [
-                      ...draft.attendees,
-                      { user_id: null, name: "", function_label: "", presence: "present" },
-                    ],
-                  })
-                }
-              >
-                Ajouter
-              </Button>
-            )
-          }
-        >
-          <div className="space-y-2 p-4">
-            {!draft.attendees.length && <p className="text-[13px] text-muted">Aucun participant renseigné.</p>}
-            {draft.attendees.map((p, i) => {
-              const up = (x: Partial<Attendee>) =>
-                patch({ attendees: draft.attendees.map((y, n) => (n === i ? { ...y, ...x } : y)) });
-              return (
-                <div key={i} className="grid items-center gap-2 sm:grid-cols-[1fr_1fr_140px_32px]">
-                  <Select
-                    aria-label="Personne"
-                    disabled={ro}
-                    value={p.user_id ?? ""}
-                    onChange={(e) => {
-                      const u = people.find((x) => x.id === e.target.value);
-                      up({
-                        user_id: u?.id ?? null,
-                        name: u?.name ?? p.name,
-                        function_label: u?.title ?? p.function_label,
-                      });
-                    }}
-                  >
-                    <option value="">Personne extérieure…</option>
-                    {people.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </Select>
-                  <Input
-                    aria-label="Nom"
-                    placeholder="Nom"
-                    disabled={ro || !!p.user_id}
-                    value={p.name}
-                    onChange={(e) => up({ name: e.target.value })}
-                  />
-                  <Select
-                    aria-label="Présence"
-                    disabled={ro}
-                    value={p.presence}
-                    onChange={(e) => up({ presence: e.target.value })}
-                  >
-                    {Object.entries(PRESENCE).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {v}
-                      </option>
-                    ))}
-                  </Select>
-                  {!ro && (
-                    <IconButton
-                      label="Retirer"
-                      onClick={() => patch({ attendees: draft.attendees.filter((_, n) => n !== i) })}
-                    >
-                      <Trash2 className="size-4" />
-                    </IconButton>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </Section>
-
-        <Section
-          title="Précédente réunion"
-          aside={
-            draft.previous && (
-              <Link
-                className="text-[12.5px] font-semibold text-primary hover:underline"
-                to={`/reunions/${draft.previous.id}`}
-              >
-                {draft.previous.reference}
-              </Link>
-            )
-          }
-        >
-          <div className="space-y-3 p-4">
-            <Field label="Synthèse des points abordés">
-              {(a) => (
-                <Textarea
-                  {...a}
-                  disabled={ro}
-                  value={draft.previous_summary}
-                  onChange={(e) => patch({ previous_summary: e.target.value })}
-                />
-              )}
-            </Field>
-            {!!draft.carried.length && (
-              <div>
-                <p className="mb-1 text-[12.5px] font-semibold">Recommandations restant ouvertes</p>
-                <ul className="space-y-1 text-[13px]">
-                  {draft.carried.map((a) => (
-                    <li key={a.id} className="flex flex-wrap items-center gap-2">
-                      <Status {...ACTION[a.status]} />
-                      <span>{a.text}</span>
-                      <span className="text-muted">
-                        {a.responsible_name} · {frDate(a.due_on)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </Section>
-
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[15px] font-semibold">Ordre du jour et prise de note</h2>
-            {!ro && (
-              <Button
-                size="sm"
-                icon={<Plus className="size-3.5" />}
-                onClick={() =>
-                  patch({
-                    agenda: [...draft.agenda, { subject: "", speakers: "", notes: "", actions: [], decisions: [] }],
-                  })
-                }
-              >
-                Ajouter un point
-              </Button>
-            )}
-          </div>
-          {!draft.agenda.length && (
-            <Section>
-              <Empty icon={<CalendarDays className="size-6" />} title="Ordre du jour vide">
-                Ajoutez au moins un point pour pouvoir valider le compte rendu.
-              </Empty>
-            </Section>
-          )}
-          {draft.agenda.map((item, i) => (
             <Section
-              key={item.id ?? `n${i}`}
-              title={`Point ${i + 1}`}
+              title="Participants"
               aside={
                 !ro && (
-                  <IconButton
-                    label="Retirer ce point"
+                  <Button
                     size="sm"
-                    onClick={() => patch({ agenda: draft.agenda.filter((_, n) => n !== i) })}
+                    icon={<Plus className="size-3.5" />}
+                    onClick={() =>
+                      patch({
+                        attendees: [
+                          ...draft.attendees,
+                          { user_id: null, name: "", function_label: "", presence: "present" },
+                        ],
+                      })
+                    }
                   >
-                    <Trash2 className="size-3.5" />
-                  </IconButton>
+                    Ajouter
+                  </Button>
+                )
+              }
+            >
+              <div className="space-y-2 p-4">
+                {!draft.attendees.length && <p className="text-[13px] text-muted">Aucun participant renseigné.</p>}
+                {draft.attendees.map((p, i) => {
+                  const up = (x: Partial<Attendee>) =>
+                    patch({ attendees: draft.attendees.map((y, n) => (n === i ? { ...y, ...x } : y)) });
+                  return (
+                    <div key={i} className="grid items-center gap-2 sm:grid-cols-[1fr_1fr_140px_32px]">
+                      <Select
+                        aria-label="Personne"
+                        disabled={ro}
+                        value={p.user_id ?? ""}
+                        onChange={(e) => {
+                          const u = people.find((x) => x.id === e.target.value);
+                          up({
+                            user_id: u?.id ?? null,
+                            name: u?.name ?? p.name,
+                            function_label: u?.title ?? p.function_label,
+                          });
+                        }}
+                      >
+                        <option value="">Personne extérieure…</option>
+                        {people.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name}
+                          </option>
+                        ))}
+                      </Select>
+                      <Input
+                        aria-label="Nom"
+                        placeholder="Nom"
+                        disabled={ro || !!p.user_id}
+                        value={p.name}
+                        onChange={(e) => up({ name: e.target.value })}
+                      />
+                      <Select
+                        aria-label="Présence"
+                        disabled={ro}
+                        value={p.presence}
+                        onChange={(e) => up({ presence: e.target.value })}
+                      >
+                        {Object.entries(PRESENCE).map(([k, v]) => (
+                          <option key={k} value={k}>
+                            {v}
+                          </option>
+                        ))}
+                      </Select>
+                      {!ro && (
+                        <IconButton
+                          label="Retirer"
+                          onClick={() => patch({ attendees: draft.attendees.filter((_, n) => n !== i) })}
+                        >
+                          <Trash2 className="size-4" />
+                        </IconButton>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </Section>
+
+            <Section
+              title="Précédente réunion"
+              aside={
+                draft.previous && (
+                  <Link
+                    className="text-[12.5px] font-semibold text-primary hover:underline"
+                    to={`/reunions/${draft.previous.id}`}
+                  >
+                    {draft.previous.reference}
+                  </Link>
                 )
               }
             >
               <div className="space-y-3 p-4">
-                <div className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr]">
-                  <Field label="Sujet à aborder" required>
-                    {(a) => (
-                      <Input
-                        {...a}
-                        disabled={ro}
-                        value={item.subject}
-                        onChange={(e) => setItem(i, { subject: e.target.value })}
-                      />
-                    )}
-                  </Field>
-                  <Field label="Intervenants">
-                    {(a) => (
-                      <Input
-                        {...a}
-                        disabled={ro}
-                        value={item.speakers}
-                        onChange={(e) => setItem(i, { speakers: e.target.value })}
-                      />
-                    )}
-                  </Field>
-                  <Field label="Domaine d'activité">
-                    {(a) => (
-                      <DomainSelect
-                        {...a}
-                        disabled={ro}
-                        value={item.domain_id}
-                        onChange={(v) => setItem(i, { domain_id: v || null })}
-                      />
-                    )}
-                  </Field>
-                </div>
-                <Field label="Prise de note" hint="**texte** pour le gras, « - » en début de ligne pour une puce.">
+                <Field label="Synthèse des points abordés">
                   {(a) => (
                     <Textarea
                       {...a}
                       disabled={ro}
-                      rows={5}
-                      value={item.notes}
-                      onChange={(e) => setItem(i, { notes: e.target.value })}
+                      value={draft.previous_summary}
+                      onChange={(e) => patch({ previous_summary: e.target.value })}
                     />
                   )}
                 </Field>
-                <div>
-                  <div className="mb-1 flex items-center justify-between">
-                    <p className="text-[12.5px] font-semibold">Recommandations</p>
-                    {!ro && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon={<Plus className="size-3.5" />}
-                        onClick={() =>
-                          setItem(i, {
-                            actions: [
-                              ...item.actions,
-                              { text: "", responsible_id: null, responsible_name: "", due_on: null, status: "a_faire" },
-                            ],
-                          })
-                        }
-                      >
-                        Ajouter
-                      </Button>
-                    )}
+                {!!draft.carried.length && (
+                  <div>
+                    <p className="mb-1 text-[12.5px] font-semibold">Recommandations restant ouvertes</p>
+                    <ul className="space-y-1 text-[13px]">
+                      {draft.carried.map((a) => (
+                        <li key={a.id} className="flex flex-wrap items-center gap-2">
+                          <Status {...ACTION[a.status]} />
+                          <span>{a.text}</span>
+                          <span className="text-muted">
+                            {a.responsible_name} · {frDate(a.due_on)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <div className="space-y-2">
-                    {item.actions.map((a, j) => (
-                      <div
-                        key={a.id ?? `n${j}`}
-                        className="grid items-center gap-2 lg:grid-cols-[1fr_190px_150px_32px]"
-                      >
-                        <Input
-                          aria-label="Recommandation"
-                          placeholder="Recommandation"
-                          disabled={ro}
-                          value={a.text}
-                          onChange={(e) => setAction(i, j, { text: e.target.value })}
-                        />
-                        <Select
-                          aria-label="Responsable"
-                          disabled={ro}
-                          value={a.responsible_id ?? ""}
-                          onChange={(e) =>
-                            setAction(i, j, {
-                              responsible_id: e.target.value || null,
-                              responsible_name: people.find((u) => u.id === e.target.value)?.name ?? "",
-                            })
-                          }
-                        >
-                          <option value="">Responsable…</option>
-                          {people.map((u) => (
-                            <option key={u.id} value={u.id}>
-                              {u.name}
-                            </option>
-                          ))}
-                        </Select>
-                        <Input
-                          aria-label="Échéance"
-                          type="date"
-                          disabled={ro}
-                          value={a.due_on ?? ""}
-                          onChange={(e) => setAction(i, j, { due_on: e.target.value || null })}
-                        />
-                        {!ro && (
-                          <IconButton
-                            label="Retirer"
-                            onClick={() => setItem(i, { actions: item.actions.filter((_, n) => n !== j) })}
-                          >
-                            <Trash2 className="size-4" />
-                          </IconButton>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <div className="mb-1 flex items-center justify-between">
-                    <p className="text-[12.5px] font-semibold">Décisions de la séance</p>
-                    {!ro && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon={<Plus className="size-3.5" />}
-                        onClick={() =>
-                          setItem(i, { decisions: [...item.decisions, { text: "", owner_id: null, due_on: null }] })
-                        }
-                      >
-                        Ajouter
-                      </Button>
-                    )}
-                  </div>
-                  {!item.decisions.length && (
-                    <p className="text-[12px] text-muted">
-                      Ce que la présidence tranche en séance : chaque décision sera inscrite au registre des décisions à
-                      la validation du compte rendu.
-                    </p>
-                  )}
-                  <div className="space-y-2">
-                    {item.decisions.map((dd, j) =>
-                      dd.decision_reference ? (
-                        <div
-                          key={dd.id}
-                          className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-hover/40 px-2.5 py-2 text-[13px]"
-                        >
-                          <Seal>{dd.decision_reference}</Seal>
-                          <span className="min-w-0 flex-1">{dd.text}</span>
-                          {dd.owner_name && <span className="text-muted">{dd.owner_name}</span>}
-                          {dd.due_on && <span className="tabular text-muted">{frDate(dd.due_on)}</span>}
-                        </div>
-                      ) : (
-                        <div
-                          key={dd.id ?? `n${j}`}
-                          className="grid items-center gap-2 lg:grid-cols-[1fr_190px_150px_32px]"
-                        >
-                          <Input
-                            aria-label="Décision"
-                            placeholder="Décision prise en séance"
-                            disabled={ro}
-                            value={dd.text}
-                            onChange={(e) => setDecision(i, j, { text: e.target.value })}
-                          />
-                          <Select
-                            aria-label="Chargé d'exécution"
-                            disabled={ro}
-                            value={dd.owner_id ?? ""}
-                            onChange={(e) => setDecision(i, j, { owner_id: e.target.value || null })}
-                          >
-                            <option value="">Chargé d'exécution…</option>
-                            {people.map((u) => (
-                              <option key={u.id} value={u.id}>
-                                {u.name}
-                              </option>
-                            ))}
-                          </Select>
-                          <Input
-                            aria-label="Échéance d'exécution"
-                            type="date"
-                            disabled={ro}
-                            value={dd.due_on ?? ""}
-                            onChange={(e) => setDecision(i, j, { due_on: e.target.value || null })}
-                          />
-                          {!ro && (
-                            <IconButton
-                              label="Retirer"
-                              onClick={() => setItem(i, { decisions: item.decisions.filter((_, n) => n !== j) })}
-                            >
-                              <Trash2 className="size-4" />
-                            </IconButton>
-                          )}
-                        </div>
-                      ),
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
             </Section>
-          ))}
-        </section>
 
-        <Section title="Conclusion">
-          <div className="p-4">
-            <Field label="Résumé">
-              {(a) => (
-                <Textarea
-                  {...a}
-                  disabled={ro}
-                  rows={4}
-                  value={draft.summary}
-                  onChange={(e) => patch({ summary: e.target.value })}
-                />
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[15px] font-semibold">Ordre du jour et prise de note</h2>
+                {!ro && (
+                  <Button
+                    size="sm"
+                    icon={<Plus className="size-3.5" />}
+                    onClick={() =>
+                      patch({
+                        agenda: [...draft.agenda, { subject: "", speakers: "", notes: "", actions: [], decisions: [] }],
+                      })
+                    }
+                  >
+                    Ajouter un point
+                  </Button>
+                )}
+              </div>
+              {!draft.agenda.length && (
+                <Section>
+                  <Empty icon={<CalendarDays className="size-6" />} title="Ordre du jour vide">
+                    Ajoutez au moins un point pour pouvoir valider le compte rendu.
+                  </Empty>
+                </Section>
               )}
-            </Field>
-          </div>
-        </Section>
-        <Section title="Prochaine réunion">
-          <div className="grid gap-3 p-4 sm:grid-cols-3">
-            <Field label="Date">
-              {(a) => (
-                <Input
-                  {...a}
-                  disabled={ro}
-                  type="date"
-                  value={draft.next_date ?? ""}
-                  onChange={(e) => patch({ next_date: e.target.value })}
-                />
-              )}
-            </Field>
-            <Field label="Heure">
-              {(a) => (
-                <Input
-                  {...a}
-                  disabled={ro}
-                  type="time"
-                  value={draft.next_time ?? ""}
-                  onChange={(e) => patch({ next_time: e.target.value })}
-                />
-              )}
-            </Field>
-            <Field label="Lieu">
-              {(a) => (
-                <Input
-                  {...a}
-                  disabled={ro}
-                  value={draft.next_location}
-                  onChange={(e) => patch({ next_location: e.target.value })}
-                />
-              )}
-            </Field>
-            <Field label="Synthèse des points à aborder" className="sm:col-span-3">
-              {(a) => (
-                <Textarea
-                  {...a}
-                  disabled={ro}
-                  value={draft.next_topics}
-                  onChange={(e) => patch({ next_topics: e.target.value })}
-                />
-              )}
-            </Field>
-          </div>
-        </Section>
+              {draft.agenda.map((item, i) => (
+                <Section
+                  key={item.id ?? `n${i}`}
+                  title={`Point ${i + 1}`}
+                  aside={
+                    !ro && (
+                      <IconButton
+                        label="Retirer ce point"
+                        size="sm"
+                        onClick={() => patch({ agenda: draft.agenda.filter((_, n) => n !== i) })}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </IconButton>
+                    )
+                  }
+                >
+                  <div className="space-y-3 p-4">
+                    <div className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr]">
+                      <Field label="Sujet à aborder" required>
+                        {(a) => (
+                          <Input
+                            {...a}
+                            disabled={ro}
+                            value={item.subject}
+                            onChange={(e) => setItem(i, { subject: e.target.value })}
+                          />
+                        )}
+                      </Field>
+                      <Field label="Intervenants">
+                        {(a) => (
+                          <Input
+                            {...a}
+                            disabled={ro}
+                            value={item.speakers}
+                            onChange={(e) => setItem(i, { speakers: e.target.value })}
+                          />
+                        )}
+                      </Field>
+                      <Field label="Domaine d'activité">
+                        {(a) => (
+                          <DomainSelect
+                            {...a}
+                            disabled={ro}
+                            value={item.domain_id}
+                            onChange={(v) => setItem(i, { domain_id: v || null })}
+                          />
+                        )}
+                      </Field>
+                    </div>
+                    <Field label="Prise de note" hint="**texte** pour le gras, « - » en début de ligne pour une puce.">
+                      {(a) => (
+                        <Textarea
+                          {...a}
+                          disabled={ro}
+                          rows={5}
+                          value={item.notes}
+                          onChange={(e) => setItem(i, { notes: e.target.value })}
+                        />
+                      )}
+                    </Field>
+                    <div>
+                      <div className="mb-1 flex items-center justify-between">
+                        <p className="text-[12.5px] font-semibold">Recommandations</p>
+                        {!ro && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={<Plus className="size-3.5" />}
+                            onClick={() =>
+                              setItem(i, {
+                                actions: [
+                                  ...item.actions,
+                                  {
+                                    text: "",
+                                    responsible_id: null,
+                                    responsible_name: "",
+                                    due_on: null,
+                                    status: "a_faire",
+                                  },
+                                ],
+                              })
+                            }
+                          >
+                            Ajouter
+                          </Button>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        {item.actions.map((a, j) => (
+                          <div
+                            key={a.id ?? `n${j}`}
+                            className="grid items-center gap-2 lg:grid-cols-[1fr_190px_150px_32px]"
+                          >
+                            <Input
+                              aria-label="Recommandation"
+                              placeholder="Recommandation"
+                              disabled={ro}
+                              value={a.text}
+                              onChange={(e) => setAction(i, j, { text: e.target.value })}
+                            />
+                            <Select
+                              aria-label="Responsable"
+                              disabled={ro}
+                              value={a.responsible_id ?? ""}
+                              onChange={(e) =>
+                                setAction(i, j, {
+                                  responsible_id: e.target.value || null,
+                                  responsible_name: people.find((u) => u.id === e.target.value)?.name ?? "",
+                                })
+                              }
+                            >
+                              <option value="">Responsable…</option>
+                              {people.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.name}
+                                </option>
+                              ))}
+                            </Select>
+                            <Input
+                              aria-label="Échéance"
+                              type="date"
+                              disabled={ro}
+                              value={a.due_on ?? ""}
+                              onChange={(e) => setAction(i, j, { due_on: e.target.value || null })}
+                            />
+                            {!ro && (
+                              <IconButton
+                                label="Retirer"
+                                onClick={() => setItem(i, { actions: item.actions.filter((_, n) => n !== j) })}
+                              >
+                                <Trash2 className="size-4" />
+                              </IconButton>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-1 flex items-center justify-between">
+                        <p className="text-[12.5px] font-semibold">Décisions de la séance</p>
+                        {!ro && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={<Plus className="size-3.5" />}
+                            onClick={() =>
+                              setItem(i, { decisions: [...item.decisions, { text: "", owner_id: null, due_on: null }] })
+                            }
+                          >
+                            Ajouter
+                          </Button>
+                        )}
+                      </div>
+                      {!item.decisions.length && (
+                        <p className="text-[12px] text-muted">
+                          Ce que la présidence tranche en séance : chaque décision sera inscrite au registre des
+                          décisions à la validation du compte rendu.
+                        </p>
+                      )}
+                      <div className="space-y-2">
+                        {item.decisions.map((dd, j) =>
+                          dd.decision_reference ? (
+                            <div
+                              key={dd.id}
+                              className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-hover/40 px-2.5 py-2 text-[13px]"
+                            >
+                              <Seal>{dd.decision_reference}</Seal>
+                              <span className="min-w-0 flex-1">{dd.text}</span>
+                              {dd.owner_name && <span className="text-muted">{dd.owner_name}</span>}
+                              {dd.due_on && <span className="tabular text-muted">{frDate(dd.due_on)}</span>}
+                            </div>
+                          ) : (
+                            <div
+                              key={dd.id ?? `n${j}`}
+                              className="grid items-center gap-2 lg:grid-cols-[1fr_190px_150px_32px]"
+                            >
+                              <Input
+                                aria-label="Décision"
+                                placeholder="Décision prise en séance"
+                                disabled={ro}
+                                value={dd.text}
+                                onChange={(e) => setDecision(i, j, { text: e.target.value })}
+                              />
+                              <Select
+                                aria-label="Chargé d'exécution"
+                                disabled={ro}
+                                value={dd.owner_id ?? ""}
+                                onChange={(e) => setDecision(i, j, { owner_id: e.target.value || null })}
+                              >
+                                <option value="">Chargé d'exécution…</option>
+                                {people.map((u) => (
+                                  <option key={u.id} value={u.id}>
+                                    {u.name}
+                                  </option>
+                                ))}
+                              </Select>
+                              <Input
+                                aria-label="Échéance d'exécution"
+                                type="date"
+                                disabled={ro}
+                                value={dd.due_on ?? ""}
+                                onChange={(e) => setDecision(i, j, { due_on: e.target.value || null })}
+                              />
+                              {!ro && (
+                                <IconButton
+                                  label="Retirer"
+                                  onClick={() => setItem(i, { decisions: item.decisions.filter((_, n) => n !== j) })}
+                                >
+                                  <Trash2 className="size-4" />
+                                </IconButton>
+                              )}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Section>
+              ))}
+            </section>
+
+            <Section title="Conclusion">
+              <div className="p-4">
+                <Field label="Résumé">
+                  {(a) => (
+                    <Textarea
+                      {...a}
+                      disabled={ro}
+                      rows={4}
+                      value={draft.summary}
+                      onChange={(e) => patch({ summary: e.target.value })}
+                    />
+                  )}
+                </Field>
+              </div>
+            </Section>
+            <Section title="Prochaine réunion">
+              <div className="grid gap-3 p-4 sm:grid-cols-3">
+                <Field label="Date">
+                  {(a) => (
+                    <Input
+                      {...a}
+                      disabled={ro}
+                      type="date"
+                      value={draft.next_date ?? ""}
+                      onChange={(e) => patch({ next_date: e.target.value })}
+                    />
+                  )}
+                </Field>
+                <Field label="Heure">
+                  {(a) => (
+                    <Input
+                      {...a}
+                      disabled={ro}
+                      type="time"
+                      value={draft.next_time ?? ""}
+                      onChange={(e) => patch({ next_time: e.target.value })}
+                    />
+                  )}
+                </Field>
+                <Field label="Lieu">
+                  {(a) => (
+                    <Input
+                      {...a}
+                      disabled={ro}
+                      value={draft.next_location}
+                      onChange={(e) => patch({ next_location: e.target.value })}
+                    />
+                  )}
+                </Field>
+                <Field label="Synthèse des points à aborder" className="sm:col-span-3">
+                  {(a) => (
+                    <Textarea
+                      {...a}
+                      disabled={ro}
+                      value={draft.next_topics}
+                      onChange={(e) => patch({ next_topics: e.target.value })}
+                    />
+                  )}
+                </Field>
+              </div>
+            </Section>
+          </>
+        )}
       </div>
       <Dialog
         open={returning}
@@ -1717,5 +1750,143 @@ function MeetingDocuments({
         )}
       </div>
     </Section>
+  );
+}
+
+/** Le compte rendu en lecture, mis en forme comme le document officiel ; « Modifier le compte rendu » ouvre l'éditeur. */
+function MeetingReading({ m }: { m: MeetingDetail }) {
+  const present = m.attendees.filter((a) => !a.invited || a.presence);
+  return (
+    <>
+      <Section title="Séance">
+        <Facts>
+          <Fact label="Date et heure">
+            {frDate(m.meeting_date)}
+            {m.start_time ? ` · ${m.start_time.slice(0, 5)}${m.end_time ? ` – ${m.end_time.slice(0, 5)}` : ""}` : ""}
+          </Fact>
+          <Fact label="Lieu">{[m.location, m.video_link ? "visioconférence" : ""].filter(Boolean).join(" · ")}</Fact>
+          <Fact label="Présidence">{m.chair_name}</Fact>
+          <Fact label="Convoquée par">{m.convened_by}</Fact>
+          <Fact label="Animation">{m.facilitator}</Fact>
+          <Fact label="Rédaction">{m.writer_name}</Fact>
+          <Fact label="Gardien du temps">{m.timekeeper}</Fact>
+          <Fact label="Dossier">
+            {m.dossier && (
+              <Link to={m.dossier.href} className="text-primary hover:underline">
+                {m.dossier.label}
+              </Link>
+            )}
+          </Fact>
+        </Facts>
+      </Section>
+      <Section title="Participants">
+        {present.length ? (
+          <ul className="divide-y divide-line">
+            {present.map((a) => (
+              <li key={a.id ?? a.name} className="flex flex-wrap items-center gap-x-3 px-5 py-2 text-[13px]">
+                <span className="min-w-0 flex-1">
+                  <span className="font-medium">{a.name}</span>
+                  {a.function_label && <span className="text-muted"> · {a.function_label}</span>}
+                </span>
+                <span className="text-muted">
+                  {PRESENCE[a.presence as keyof typeof PRESENCE] ?? a.presence}
+                  {a.delegate_name ? ` (${a.delegate_name})` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="px-5 pb-5 text-[13px] text-muted">La feuille de présence n'est pas encore remplie.</p>
+        )}
+      </Section>
+      {m.previous_summary?.trim() && (
+        <Section title="Rappel de la séance précédente">
+          <div className="p-5 pt-2">
+            <LongText>{m.previous_summary}</LongText>
+          </div>
+        </Section>
+      )}
+      <Section title="Ordre du jour et délibérations">
+        {m.agenda.length ? (
+          <ol className="divide-y divide-line">
+            {m.agenda.map((item, i) => (
+              <li key={item.id ?? i} className="space-y-3 px-5 py-4">
+                <div>
+                  <p className="text-[14px] font-semibold">
+                    {i + 1}. {item.subject}
+                  </p>
+                  {item.speakers && <p className="text-[12.5px] text-muted">Rapporteur : {item.speakers}</p>}
+                </div>
+                {item.notes?.trim() ? (
+                  <Markdown text={item.notes} className="text-[13.5px]" />
+                ) : (
+                  <p className="text-[13px] text-faint">Aucune note pour ce point.</p>
+                )}
+                {!!item.decisions.length && (
+                  <div>
+                    <p className="mb-1 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted">Décisions</p>
+                    <ul className="space-y-1 text-[13px]">
+                      {item.decisions.map((d, j) => (
+                        <li key={d.id ?? j}>
+                          {d.text}
+                          <span className="text-muted">
+                            {d.owner_name ? ` · ${d.owner_name}` : ""}
+                            {d.due_on ? ` · avant le ${frDate(d.due_on)}` : ""}
+                            {d.decision_reference ? ` · ${d.decision_reference}` : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {!!item.actions.length && (
+                  <div>
+                    <p className="mb-1 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted">
+                      Recommandations
+                    </p>
+                    <ul className="space-y-1 text-[13px]">
+                      {item.actions.map((a, j) => (
+                        <li key={a.id ?? j} className="flex flex-wrap items-center gap-x-2">
+                          <span className="min-w-0 flex-1">
+                            {a.text}
+                            <span className="text-muted">
+                              {a.responsible_name ? ` · ${a.responsible_name}` : ""}
+                              {a.due_on ? ` · avant le ${frDate(a.due_on)}` : ""}
+                            </span>
+                          </span>
+                          <Status {...ACTION[a.status]} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="px-5 pb-5 text-[13px] text-muted">L'ordre du jour n'est pas encore établi.</p>
+        )}
+      </Section>
+      {m.summary?.trim() && (
+        <Section title="Conclusion">
+          <div className="p-5 pt-2">
+            <Markdown text={m.summary} className="text-[13.5px]" />
+          </div>
+        </Section>
+      )}
+      {(m.next_date || m.next_topics?.trim()) && (
+        <Section title="Prochaine réunion">
+          <Facts>
+            <Fact label="Date">
+              {m.next_date && `${frDate(m.next_date)}${m.next_time ? ` · ${m.next_time.slice(0, 5)}` : ""}`}
+            </Fact>
+            <Fact label="Lieu">{m.next_location}</Fact>
+            <Fact label="Sujets prévus" wide>
+              {m.next_topics && <LongText>{m.next_topics}</LongText>}
+            </Fact>
+          </Facts>
+        </Section>
+      )}
+    </>
   );
 }

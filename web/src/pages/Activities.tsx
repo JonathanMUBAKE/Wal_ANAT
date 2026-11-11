@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Briefcase, CalendarRange, Lock, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Briefcase, CalendarRange, Lock, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Checkbox, ConfirmDialog, Dialog, Empty, IconButton, ProjectIcon, cn } from "@/components/ui";
 import { useShell } from "@/lib/shell";
 import { PartnerSelect } from "@/components/partners";
 import { DossierDocuments } from "@/components/documents";
+import { Fact, Facts, LongText, RecordActions, RowActions, useRecord } from "@/components/record";
 import { RefSelect } from "@/components/refselect";
 import type { ProjectSummary } from "@/lib/types";
 import {
@@ -29,7 +30,7 @@ import {
   isLate,
 } from "@/components/gov";
 import { api } from "@/lib/api";
-import { useCan, useProjects, useUnits, useUsers } from "@/lib/hooks";
+import { useCan, useMe, useProjects, useUnits, useUsers } from "@/lib/hooks";
 import { type RefValue, useForms, useReferentials } from "@/lib/referentials";
 import { HEALTH } from "./Pilotage";
 import { ContractsPayments } from "./ProjectDossier";
@@ -80,6 +81,18 @@ export function ActivitiesPage() {
   const shell = useShell();
   const [tab, setTab] = useState<Kind | "all" | "projects" | "contracts">("all");
   const [creating, setCreating] = useState(false);
+  const [removing, setRemoving] = useState<Activity | null>(null);
+  const { data: me } = useMe();
+  const qc = useQueryClient();
+  const remove = useMutation({
+    mutationFn: (id: string) => api.del(`/api/activities/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["activities"] });
+      qc.invalidateQueries({ queryKey: ["pilotage"] });
+      toast.success("Activité supprimée");
+    },
+    onError: fail,
+  });
   const { data, isLoading } = useQuery({
     queryKey: ["activities"],
     queryFn: () => api.get<Activity[]>("/api/activities"),
@@ -138,7 +151,7 @@ export function ActivitiesPage() {
             {isLoading ? (
               <LoadingRows />
             ) : rows.length ? (
-              <Table head={["Activité", "Nature", "Responsable", "Date", "État", "Suites ouvertes"]}>
+              <Table head={["Activité", "Nature", "Responsable", "Date", "État", "Suites ouvertes", ""]}>
                 {rows.map((a) => (
                   <Tr key={a.id} onClick={() => nav(`/activites/${a.id}`)}>
                     <Td className="font-medium">
@@ -154,6 +167,16 @@ export function ActivitiesPage() {
                       <Status label={HEALTH[a.health].label} tone={HEALTH[a.health].tone} />
                     </Td>
                     <Td className="tabular">{a.open_followups || "—"}</Td>
+                    <Td>
+                      <RowActions
+                        label={a.title}
+                        onView={() => nav(`/activites/${a.id}`)}
+                        onEdit={() => nav(`/activites/${a.id}?modifier=1`)}
+                        canEdit={can("agenda.manage") || a.lead_id === me?.id}
+                        onDelete={() => setRemoving(a)}
+                        canDelete={can("agenda.manage")}
+                      />
+                    </Td>
                   </Tr>
                 ))}
               </Table>
@@ -178,6 +201,14 @@ export function ActivitiesPage() {
           onClose={() => setCreating(false)}
         />
       )}
+      <ConfirmDialog
+        open={!!removing}
+        onOpenChange={(v) => !v && setRemoving(null)}
+        title={`Supprimer « ${removing?.title} » ?`}
+        description="L'activité, ses suites et ses documents non officiels sont supprimés. La suppression est tracée."
+        confirmLabel="Supprimer"
+        onConfirm={() => removing && remove.mutate(removing.id)}
+      />
     </div>
   );
 }
@@ -355,16 +386,22 @@ export function ActivityPage() {
     isLoading,
     error,
   } = useQuery({ queryKey: ["activity", id], queryFn: () => api.get<Detail>(`/api/activities/${id}`) });
-  const [d, setD] = useState<Detail | null>(null);
-  const [dirty, setDirty] = useState(false);
+  const rec = useRecord(a);
+  const [params, setParams] = useSearchParams();
+  // « Modifier » depuis la grille : la fiche s'ouvre directement en modification
+  useEffect(() => {
+    if (a && params.get("modifier") === "1") {
+      if (a.can.edit) rec.edit();
+      setParams({}, { replace: true });
+    }
+  }, [a, params, setParams, rec]);
+  const d = rec.draft;
   const [removing, setRemoving] = useState(false);
   const [note, setNote] = useState({ text: "", responsible_id: "", due_on: "" });
-  useEffect(() => {
-    if (a) {
-      setD(a);
-      setDirty(false);
-    }
-  }, [a]);
+  const { data: domains } = useQuery({
+    queryKey: ["domains"],
+    queryFn: () => api.get<{ id: string; name: string }[]>("/api/domains"),
+  });
   const refresh = (r: Detail) => {
     qc.setQueryData(["activity", id], r);
     qc.invalidateQueries({ queryKey: ["activities"] });
@@ -395,6 +432,7 @@ export function ActivityPage() {
         plan_activity_id: d!.plan_activity_id,
       }),
     onSuccess: (r) => {
+      rec.done();
       refresh(r);
       toast.success("Activité enregistrée");
     },
@@ -430,11 +468,10 @@ export function ActivityPage() {
   });
   if (isLoading || (!d && !error)) return <LoadingRows rows={8} />;
   if (error || !d) return <Empty title="Activité inaccessible">{(error as Error)?.message}</Empty>;
-  const ro = !d.can.edit;
-  const patch = (p: Partial<Detail>) => {
-    setD({ ...d, ...p });
-    setDirty(true);
-  };
+  const ro = !rec.editing;
+  const patch = rec.patch;
+  const editing = rec.editing;
+  const nameOf = (uid: string | null) => users?.find((u) => u.id === uid)?.name;
   const text = (k: "title" | "location" | "counterpart" | "delegation" | "decision_needed") => ({
     disabled: ro,
     value: d[k],
@@ -455,227 +492,279 @@ export function ActivityPage() {
             <Link to="/activites" aria-label="Retour au portefeuille" className="text-muted hover:text-fg">
               <ArrowLeft className="size-5" />
             </Link>
-            {d.title}
+            {a?.title}
+            {d.confidential && <Lock aria-label="Confidentielle" className="size-4 text-warning" />}
           </span>
         }
         subtitle={form(d.kind).label}
         actions={
           <>
             <Status label={HEALTH[d.health].label} tone={HEALTH[d.health].tone} />
-            {d.can.remove && (
-              <IconButton label="Supprimer" onClick={() => setRemoving(true)}>
+            {!editing && d.can.remove && (
+              <IconButton label="Supprimer l'activité" onClick={() => setRemoving(true)}>
                 <Trash2 className="size-4" />
               </IconButton>
             )}
-            {!ro && (
-              <Button
-                variant="primary"
-                icon={<Save className="size-4" />}
-                disabled={!dirty || !d.title.trim()}
-                loading={save.isPending}
-                onClick={() => save.mutate()}
-              >
-                Enregistrer
-              </Button>
-            )}
+            <RecordActions
+              editing={editing}
+              canEdit={d.can.edit}
+              onEdit={rec.edit}
+              onCancel={rec.cancel}
+              onSave={() => save.mutate()}
+              saving={save.isPending}
+              disabled={!rec.dirty || !d.title.trim()}
+            />
           </>
         }
       />
       <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-4 p-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-4">
           <Section title="Fiche">
-            <div className="grid gap-3 p-4 sm:grid-cols-2">
-              <Field label="Intitulé" required className="sm:col-span-2">
-                {(a) => <Input {...a} {...text("title")} />}
-              </Field>
-              <Field label="Responsable">
-                {(a) => (
-                  <Select
-                    {...a}
-                    disabled={ro || !d.can.remove}
-                    title={!d.can.remove ? "Seul un gestionnaire confie l'activité à une autre personne" : undefined}
-                    value={d.lead_id ?? ""}
-                    onChange={(e) => patch({ lead_id: e.target.value || null })}
-                  >
-                    <option value="">—</option>
-                    {people.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </Select>
+            {!editing ? (
+              <Facts>
+                <Fact label="Intitulé" wide>
+                  {d.title}
+                </Fact>
+                <Fact label="Responsable">{nameOf(d.lead_id)}</Fact>
+                <Fact label="Domaine d'activité">{domains?.find((x) => x.id === d.domain_id)?.name}</Fact>
+                <Fact label="Entité">{units?.find((u) => u.id === d.unit_id)?.name}</Fact>
+                <Fact label="Date">
+                  {d.start_on && `${frDate(d.start_on)}${d.start_time ? ` à ${d.start_time.slice(0, 5)}` : ""}`}
+                </Fact>
+                <Fact label="Lieu">{d.location}</Fact>
+                <Fact label={counterpartOf(type)}>
+                  {d.counterpart_partner_id ? (
+                    <Link to={`/partenaires/${d.counterpart_partner_id}`} className="text-primary hover:underline">
+                      {d.counterpart || d.counterpart_partner_name}
+                    </Link>
+                  ) : (
+                    d.counterpart
+                  )}
+                </Fact>
+                {(d.kind === "commission" || !!d.mandate) && (
+                  <Fact label="Mandat de l'Agence" wide>
+                    {d.mandate && <LongText>{d.mandate}</LongText>}
+                  </Fact>
                 )}
-              </Field>
-              <Field label="Domaine d'activité">
-                {(a) => (
-                  <DomainSelect
-                    {...a}
-                    disabled={ro}
-                    value={d.domain_id}
-                    onChange={(v) => patch({ domain_id: v || null })}
-                  />
+                {(d.kind === "conference" || !!d.delegation) && (
+                  <Fact label="Délégation" wide>
+                    {d.delegation}
+                  </Fact>
                 )}
-              </Field>
-              <Field label="Entité">
-                {(a) => (
-                  <Select
-                    {...a}
-                    disabled={ro}
-                    value={d.unit_id ?? ""}
-                    onChange={(e) => patch({ unit_id: e.target.value || null })}
-                  >
-                    <option value="">—</option>
-                    {units?.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </Field>
-              <Field label="Date">
-                {(a) => (
-                  <Input
-                    {...a}
-                    disabled={ro}
-                    type="date"
-                    value={d.start_on ?? ""}
-                    onChange={(e) => patch({ start_on: e.target.value })}
-                  />
-                )}
-              </Field>
-              <Field label="Heure">
-                {(a) => (
-                  <Input
-                    {...a}
-                    disabled={ro}
-                    type="time"
-                    value={d.start_time ?? ""}
-                    onChange={(e) => patch({ start_time: e.target.value })}
-                  />
-                )}
-              </Field>
-              <Field label="Lieu">{(a) => <Input {...a} {...text("location")} />}</Field>
-              <Field label={counterpartOf(type)}>
-                {(a) => (
-                  <span className="grid gap-1.5">
-                    <PartnerSelect
+                <Fact label="Objet" wide>
+                  {d.description && <LongText>{d.description}</LongText>}
+                </Fact>
+                <Fact label={d.kind === "conference" ? "Retombées" : "Résultat"} wide>
+                  {d.outcome && <LongText>{d.outcome}</LongText>}
+                </Fact>
+              </Facts>
+            ) : (
+              <div className="grid gap-3 p-4 sm:grid-cols-2">
+                <Field label="Intitulé" required className="sm:col-span-2">
+                  {(a) => <Input {...a} {...text("title")} />}
+                </Field>
+                <Field label="Responsable">
+                  {(a) => (
+                    <Select
+                      {...a}
+                      disabled={ro || !d.can.remove}
+                      title={!d.can.remove ? "Seul un gestionnaire confie l'activité à une autre personne" : undefined}
+                      value={d.lead_id ?? ""}
+                      onChange={(e) => patch({ lead_id: e.target.value || null })}
+                    >
+                      <option value="">—</option>
+                      {people.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+                <Field label="Domaine d'activité">
+                  {(a) => (
+                    <DomainSelect
                       {...a}
                       disabled={ro}
-                      value={d.counterpart_partner_id}
-                      current={
-                        d.counterpart_partner_id
-                          ? { id: d.counterpart_partner_id, name: d.counterpart_partner_name ?? d.counterpart }
-                          : null
-                      }
-                      onChange={(id, p) =>
-                        patch({ counterpart_partner_id: id || null, counterpart: p ? p.name : d.counterpart })
-                      }
+                      value={d.domain_id}
+                      onChange={(v) => patch({ domain_id: v || null })}
                     />
-                    <Input aria-label={`${counterpartOf(type)} (texte)`} {...text("counterpart")} />
-                    {d.counterpart_partner_id && (
-                      <Link
-                        to={`/partenaires/${d.counterpart_partner_id}`}
-                        className="text-[12px] text-primary hover:underline"
-                      >
-                        Voir la fiche du partenaire
-                      </Link>
-                    )}
-                  </span>
+                  )}
+                </Field>
+                <Field label="Entité">
+                  {(a) => (
+                    <Select
+                      {...a}
+                      disabled={ro}
+                      value={d.unit_id ?? ""}
+                      onChange={(e) => patch({ unit_id: e.target.value || null })}
+                    >
+                      <option value="">—</option>
+                      {units?.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+                <Field label="Date">
+                  {(a) => (
+                    <Input
+                      {...a}
+                      disabled={ro}
+                      type="date"
+                      value={d.start_on ?? ""}
+                      onChange={(e) => patch({ start_on: e.target.value })}
+                    />
+                  )}
+                </Field>
+                <Field label="Heure">
+                  {(a) => (
+                    <Input
+                      {...a}
+                      disabled={ro}
+                      type="time"
+                      value={d.start_time ?? ""}
+                      onChange={(e) => patch({ start_time: e.target.value })}
+                    />
+                  )}
+                </Field>
+                <Field label="Lieu">{(a) => <Input {...a} {...text("location")} />}</Field>
+                <Field label={counterpartOf(type)}>
+                  {(a) => (
+                    <span className="grid gap-1.5">
+                      <PartnerSelect
+                        {...a}
+                        disabled={ro}
+                        value={d.counterpart_partner_id}
+                        current={
+                          d.counterpart_partner_id
+                            ? { id: d.counterpart_partner_id, name: d.counterpart_partner_name ?? d.counterpart }
+                            : null
+                        }
+                        onChange={(id, p) =>
+                          patch({ counterpart_partner_id: id || null, counterpart: p ? p.name : d.counterpart })
+                        }
+                      />
+                      <Input aria-label={`${counterpartOf(type)} (texte)`} {...text("counterpart")} />
+                      {d.counterpart_partner_id && (
+                        <Link
+                          to={`/partenaires/${d.counterpart_partner_id}`}
+                          className="text-[12px] text-primary hover:underline"
+                        >
+                          Voir la fiche du partenaire
+                        </Link>
+                      )}
+                    </span>
+                  )}
+                </Field>
+                {(d.kind === "commission" || !!d.mandate) && (
+                  <Field label="Mandat de l'Agence" className="sm:col-span-2" hint="La position que l'Agence y défend.">
+                    {(a) => <Textarea {...a} {...area("mandate")} />}
+                  </Field>
                 )}
-              </Field>
-              {(d.kind === "commission" || !!d.mandate) && (
-                <Field label="Mandat de l'Agence" className="sm:col-span-2" hint="La position que l'Agence y défend.">
-                  {(a) => <Textarea {...a} {...area("mandate")} />}
+                {(d.kind === "conference" || !!d.delegation) && (
+                  <Field label="Délégation" className="sm:col-span-2">
+                    {(a) => <Input {...a} {...text("delegation")} />}
+                  </Field>
+                )}
+                <Field label="Objet" className="sm:col-span-2">
+                  {(a) => <Textarea {...a} {...area("description")} />}
                 </Field>
-              )}
-              {(d.kind === "conference" || !!d.delegation) && (
-                <Field label="Délégation" className="sm:col-span-2">
-                  {(a) => <Input {...a} {...text("delegation")} />}
+                <Field label={d.kind === "conference" ? "Retombées" : "Résultat"} className="sm:col-span-2">
+                  {(a) => <Textarea {...a} {...area("outcome")} />}
                 </Field>
-              )}
-              <Field label="Objet" className="sm:col-span-2">
-                {(a) => <Textarea {...a} {...area("description")} />}
-              </Field>
-              <Field label={d.kind === "conference" ? "Retombées" : "Résultat"} className="sm:col-span-2">
-                {(a) => <Textarea {...a} {...area("outcome")} />}
-              </Field>
-            </div>
+              </div>
+            )}
           </Section>
         </div>
         <div className="space-y-4">
           <Section title="Pilotage">
-            <div className="space-y-3 p-4">
-              <Field label="État">
-                {(a) => (
-                  <Select
-                    {...a}
-                    disabled={ro}
-                    value={d.health}
-                    onChange={(e) => patch({ health: e.target.value as Health })}
-                  >
-                    {(Object.keys(HEALTH) as Health[]).map((h) => (
-                      <option key={h} value={h}>
-                        {HEALTH[h].label}
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </Field>
-              {type?.props.tracks_progress && (
-                <Field label={`Avancement : ${d.progress} %`}>
+            {!editing ? (
+              <Facts className="sm:grid-cols-1">
+                <Fact label="État">
+                  <Status label={HEALTH[d.health].label} tone={HEALTH[d.health].tone} />
+                </Fact>
+                {type?.props.tracks_progress && <Fact label="Avancement">{`${d.progress} %`}</Fact>}
+                <Fact label="Prochaine échéance">{d.next_due_on && frDate(d.next_due_on)}</Fact>
+                <Fact label="Activité du plan de travail réalisée">{d.plan_activity_label}</Fact>
+                <Fact label="Décision attendue de la DG">{d.decision_needed}</Fact>
+                {d.confidential && <Fact label="Diffusion">Activité confidentielle</Fact>}
+              </Facts>
+            ) : (
+              <div className="space-y-3 p-4">
+                <Field label="État">
                   {(a) => (
-                    <input
+                    <Select
                       {...a}
                       disabled={ro}
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={5}
-                      className="w-full accent-[var(--primary)]"
-                      value={d.progress}
-                      onChange={(e) => patch({ progress: Number(e.target.value) })}
+                      value={d.health}
+                      onChange={(e) => patch({ health: e.target.value as Health })}
+                    >
+                      {(Object.keys(HEALTH) as Health[]).map((h) => (
+                        <option key={h} value={h}>
+                          {HEALTH[h].label}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+                {type?.props.tracks_progress && (
+                  <Field label={`Avancement : ${d.progress} %`}>
+                    {(a) => (
+                      <input
+                        {...a}
+                        disabled={ro}
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={5}
+                        className="w-full accent-[var(--primary)]"
+                        value={d.progress}
+                        onChange={(e) => patch({ progress: Number(e.target.value) })}
+                      />
+                    )}
+                  </Field>
+                )}
+                <Field label="Prochaine échéance">
+                  {(a) => (
+                    <Input
+                      {...a}
+                      disabled={ro}
+                      type="date"
+                      value={d.next_due_on ?? ""}
+                      onChange={(e) => patch({ next_due_on: e.target.value })}
                     />
                   )}
                 </Field>
-              )}
-              <Field label="Prochaine échéance">
-                {(a) => (
-                  <Input
-                    {...a}
-                    disabled={ro}
-                    type="date"
-                    value={d.next_due_on ?? ""}
-                    onChange={(e) => patch({ next_due_on: e.target.value })}
-                  />
-                )}
-              </Field>
-              <Field
-                label="Activité du plan de travail réalisée"
-                hint={!d.can.remove ? "Seul un gestionnaire change le rattachement au plan." : undefined}
-              >
-                {(a) => (
-                  <PlanActivitySelect
-                    {...a}
+                <Field
+                  label="Activité du plan de travail réalisée"
+                  hint={!d.can.remove ? "Seul un gestionnaire change le rattachement au plan." : undefined}
+                >
+                  {(a) => (
+                    <PlanActivitySelect
+                      {...a}
+                      disabled={ro || !d.can.remove}
+                      value={d.plan_activity_id}
+                      onChange={(v) => patch({ plan_activity_id: v || null })}
+                    />
+                  )}
+                </Field>
+                <Field label="Décision attendue de la DG">{(a) => <Input {...a} {...text("decision_needed")} />}</Field>
+                <label className="flex items-center gap-2 text-[13px]">
+                  <input
+                    type="checkbox"
                     disabled={ro || !d.can.remove}
-                    value={d.plan_activity_id}
-                    onChange={(v) => patch({ plan_activity_id: v || null })}
+                    checked={d.confidential}
+                    onChange={(e) => patch({ confidential: e.target.checked })}
                   />
-                )}
-              </Field>
-              <Field label="Décision attendue de la DG">{(a) => <Input {...a} {...text("decision_needed")} />}</Field>
-              <label className="flex items-center gap-2 text-[13px]">
-                <input
-                  type="checkbox"
-                  disabled={ro || !d.can.remove}
-                  checked={d.confidential}
-                  onChange={(e) => patch({ confidential: e.target.checked })}
-                />
-                Confidentielle
-              </label>
-            </div>
+                  Confidentielle
+                </label>
+              </div>
+            )}
           </Section>
-          <DossierDocuments owner="activity" ownerId={d.id} title="Documents de l'activité" />
+          {!editing && <DossierDocuments owner="activity" ownerId={d.id} title="Documents de l'activité" />}
           <Section title="Suites à donner">
             <div className="space-y-2 p-4">
               {!d.followups.length && <p className="text-[13px] text-muted">Aucune suite enregistrée.</p>}

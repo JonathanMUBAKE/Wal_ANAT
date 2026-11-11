@@ -741,6 +741,9 @@ const TABLE = [
     bin: "texte",
   })),
   R_("GET", "/api/partner-documents/:id", async (X) => ({ url: `/api/partner-documents/${(await X.pdoc()).id}` })),
+  R_("GET", "/api/partner-documents/:id/preview", async (X) => ({
+    url: `/api/partner-documents/${(await X.pdoc()).id}/preview`,
+  })),
   R_("DELETE", "/api/partner-documents/:id", async (X) => ({ url: `/api/partner-documents/${(await X.pdoc()).id}` })),
   R_("PATCH", "/api/partner-documents/:id", async (X) => ({
     url: `/api/partner-documents/${(await X.pdoc()).id}`,
@@ -755,6 +758,9 @@ const TABLE = [
     bin: "texte",
   })),
   R_("GET", "/api/dossier-documents/:id", async (X) => ({ url: `/api/dossier-documents/${(await X.ddoc()).id}` })),
+  R_("GET", "/api/dossier-documents/:id/preview", async (X) => ({
+    url: `/api/dossier-documents/${(await X.ddoc()).id}/preview`,
+  })),
   R_("PATCH", "/api/dossier-documents/:id", async (X) => ({
     url: `/api/dossier-documents/${(await X.ddoc()).id}`,
     body: { title: "Document renommé" },

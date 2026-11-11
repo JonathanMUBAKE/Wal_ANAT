@@ -2,6 +2,8 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ATTACHMENT_MAX_BYTES } from "./attachments.js";
 import { type DossierDocuments, OWNERS } from "./dossier-documents.js";
+import { previewDocument } from "./documents/extract.js";
+import { sendFile } from "./file-reply.js";
 
 type Id = { Params: { id: string } };
 const id = z.string().max(100);
@@ -32,17 +34,12 @@ export function dossierDocumentRoutes(r: FastifyInstance, d: DossierDocuments) {
   });
   r.get<Id>("/api/dossier-documents/:id", async (req, reply) => {
     const f = await d.download(req.userId, req.params.id);
-    // Un document se télécharge : aucun fichier ne s'exécute dans la page
-    return reply
-      .header("Content-Type", f.mime)
-      .header(
-        "Content-Disposition",
-        `attachment; filename*=UTF-8''${encodeURIComponent(f.filename).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`,
-      )
-      .header("X-Content-Type-Options", "nosniff")
-      .header("Content-Security-Policy", "sandbox")
-      .header("Cache-Control", "private, no-store")
-      .send(f.data);
+    return sendFile(reply, f, (req.query as { inline?: string }).inline === "1");
+  });
+  // Aperçu dans le tiroir : PDF et images dans la page ; Word, Excel et texte en texte structuré, sans HTML du fichier
+  r.get<Id>("/api/dossier-documents/:id/preview", async (req) => {
+    const f = await d.download(req.userId, req.params.id);
+    return previewDocument(f.filename, Buffer.from(f.data));
   });
   r.patch<Id>("/api/dossier-documents/:id", async (req) =>
     d.update(

@@ -93,7 +93,16 @@ export function RecordActions({
 
 /** Lecture d'une fiche : paires libellé / valeur sur une ou deux colonnes. */
 export const Facts = ({ children, className }: { children: ReactNode; className?: string }) => (
-  <dl className={cn("grid gap-x-6 gap-y-3.5 p-5 pt-2 text-[13.5px] sm:grid-cols-2", className)}>{children}</dl>
+  // Dans un tiroir ou un dialogue (classe p-0), les faits s'alignent sur le titre, sans marge propre
+  <dl
+    className={cn(
+      "grid gap-x-6 gap-y-3.5 text-[13.5px] sm:grid-cols-2",
+      !className?.includes("p-0") && "p-5 pt-2",
+      className,
+    )}
+  >
+    {children}
+  </dl>
 );
 
 export function Fact({

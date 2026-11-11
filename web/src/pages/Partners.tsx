@@ -56,6 +56,7 @@ import { DocumentsPanel, type PartnerDocument, partnerDocs } from "@/components/
 import { DossiersTab, MailTab, MeetingsTab, type PartnerLinks } from "./PartnerLinks";
 import { useCan, useMe, useUnits, useUsers } from "@/lib/hooks";
 import { RoundBtn } from "@/components/collection";
+import { Drawer } from "@/components/drawer";
 import { AddTypeButton, RefSelect } from "@/components/refselect";
 import { Fact, Facts, LongText, RecordActions, RowActions, useRecord } from "@/components/record";
 import { HUES, REF_ICONS, type RefValue, useReferentials } from "@/lib/referentials";
@@ -1280,18 +1281,42 @@ function ContactDialog({
   });
   const set = (k: "name" | "title" | "email" | "phone" | "notes") => (e: { target: { value: string } }) =>
     setF({ ...f, [k]: e.target.value });
+  const initial = JSON.stringify(
+    contact
+      ? {
+          name: contact.name,
+          title: contact.title,
+          email: contact.email,
+          phone: contact.phone,
+          notes: contact.notes,
+          principal: contact.principal,
+        }
+      : emptyContact,
+  );
+  const dirty = editing && JSON.stringify(f) !== initial;
   const badEmail = !!f.email.trim() && !EMAIL.test(f.email.trim());
   return (
-    <Dialog
+    <Drawer
       open
-      onOpenChange={onClose}
+      onClose={onClose}
+      dirty={dirty}
       title={contact ? contact.name : "Ajouter un contact"}
-      description={`Contact chez ${partner.acronym || partner.name}`}
-      width={540}
+      subtitle={`Contact chez ${partner.acronym || partner.name}`}
       footer={
         editing ? (
           <>
-            <Button onClick={contact ? () => setEditing(false) : onClose}>Annuler</Button>
+            <Button
+              onClick={
+                contact
+                  ? () => {
+                      setF(JSON.parse(initial));
+                      setEditing(false);
+                    }
+                  : onClose
+              }
+            >
+              Annuler
+            </Button>
             <Button
               variant="primary"
               disabled={!f.name.trim() || badEmail}
@@ -1355,7 +1380,7 @@ function ContactDialog({
           </Facts>
         )
       )}
-    </Dialog>
+    </Drawer>
   );
 }
 

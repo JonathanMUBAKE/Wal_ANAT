@@ -2,6 +2,7 @@ import { ATTACHMENT_MAX_BYTES } from "./attachments.js";
 import { uid, type Queryable } from "./db.js";
 import { Decisions, decisionRef } from "./decisions.js";
 import { ALLOWED_FORMATS, detectType } from "./documents/filetypes.js";
+import { linkContact, linkPartner } from "./partner-links.js";
 import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
 
 export type ActionStatus = "a_faire" | "en_cours" | "soumis" | "realise" | "reporte" | "annule";
@@ -10,6 +11,8 @@ export type Response = "pending" | "accepted" | "declined" | "delegated";
 /** Convoqué : une personne de l'institution, une personne extérieure nommée, ou une entité entière. */
 export interface InviteeInput {
   user_id?: string | null;
+  /** Contact d'un partenaire, convoqué comme personne extérieure (lot PA3). */
+  contact_id?: string | null;
   name?: string;
   function_label?: string;
   unit_id?: string;
@@ -113,6 +116,7 @@ export interface Attendee {
   invited: boolean;
   response: Response | null;
   delegate_name: string;
+  contact_id?: string | null;
 }
 export interface MeetingDocument {
   id: string;
@@ -130,6 +134,7 @@ export interface MeetingDetail extends MeetingRow {
   documents: MeetingDocument[];
   agenda: AgendaItem[];
   attendees: Attendee[];
+  partners: { id: string; name: string; acronym: string }[];
   previous: {
     id: string;
     reference: string;
@@ -169,7 +174,7 @@ export type MeetingInput = Partial<
     | "project_id"
     | "activity_id"
   >
-> & { status?: "planned" | "held" | "cancelled" };
+> & { status?: "planned" | "held" | "cancelled"; partner_ids?: string[] };
 
 export interface ContentInput {
   agenda: {
@@ -309,9 +314,22 @@ export class Meetings {
 
   /** Les convoqués : une entité convoquée l'est par ses membres ; une personne de l'institution par son compte. */
   private async resolveInvitees(orgId: string, list: InviteeInput[]) {
-    const out = new Map<string, { user_id: string | null; name: string; function_label: string }>();
+    const out = new Map<
+      string,
+      { user_id: string | null; name: string; function_label: string; contact_id?: string; partner_id?: string }
+    >();
     for (const i of list) {
-      if (i.unit_id) {
+      if (i.contact_id) {
+        // Un contact d'un partenaire : une personne extérieure, nommée avec sa fonction et son organisation
+        const c = (await linkContact(this.svc, orgId, i.contact_id))!;
+        out.set(`n:${c.name.trim().toLowerCase()}`, {
+          user_id: null,
+          name: c.name,
+          function_label: [c.title, c.partner_acronym || c.partner_name].filter(Boolean).join(" — "),
+          contact_id: c.id,
+          partner_id: c.partner_id,
+        });
+      } else if (i.unit_id) {
         if (!(await this.svc.db.one("SELECT 1 FROM org_units WHERE org_id = $1 AND id = $2", [orgId, i.unit_id])))
           throw badRequest("Entité inconnue dans cette institution");
         const members = await this.svc.db.query<{ id: string; name: string; title: string | null }>(
@@ -335,11 +353,34 @@ export class Meetings {
     return [...out.values()];
   }
 
+  /** Partenaires d'une réunion (lot PA3) : de l'institution, vivants ; un partenaire déjà lié reste valable s'il est clos. */
+  private async partnersOf(orgId: string, ids: string[], invitees: { partner_id?: string }[], current: string[]) {
+    const all = [...new Set([...ids, ...invitees.flatMap((i) => (i.partner_id ? [i.partner_id] : []))])];
+    for (const p of all) await linkPartner(this.svc, orgId, p, { current: current.includes(p) ? p : null });
+    return all;
+  }
+  private async currentPartners(meetingId: string) {
+    return (
+      await this.svc.db.query<{ partner_id: string }>("SELECT partner_id FROM meeting_partners WHERE meeting_id = $1", [
+        meetingId,
+      ])
+    ).map((r) => r.partner_id);
+  }
+  private async writePartners(q: Queryable, m: Pick<MeetingRow, "id" | "org_id">, ids: string[], replace: boolean) {
+    if (replace)
+      await q.query("DELETE FROM meeting_partners WHERE meeting_id = $1 AND NOT (partner_id = ANY($2))", [m.id, ids]);
+    for (const p of ids)
+      await q.query(
+        "INSERT INTO meeting_partners (org_id, meeting_id, partner_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING",
+        [m.org_id, m.id, p],
+      );
+  }
+
   /** Fixe la liste des convoqués sans toucher à la présence déjà notée ni aux réponses des convoqués maintenus. */
   private async writeInvitees(
     q: Queryable,
     m: Pick<MeetingRow, "id" | "org_id" | "convened_at">,
-    list: { user_id: string | null; name: string; function_label: string }[],
+    list: { user_id: string | null; name: string; function_label: string; contact_id?: string }[],
   ) {
     const key = (a: { user_id: string | null; name: string }) => a.user_id ?? `n:${a.name.trim().toLowerCase()}`;
     const existing = await q.query<Attendee>("SELECT * FROM meeting_attendees WHERE meeting_id = $1", [m.id]);
@@ -356,8 +397,17 @@ export class Meetings {
           ]);
       } else
         await q.query(
-          "INSERT INTO meeting_attendees (id, org_id, meeting_id, user_id, name, function_label, presence, invited, response) VALUES ($1,$2,$3,$4,$5,$6,'present',TRUE,$7)",
-          [uid("att"), m.org_id, m.id, i.user_id, i.name, i.function_label, m.convened_at ? "pending" : null],
+          "INSERT INTO meeting_attendees (id, org_id, meeting_id, user_id, name, function_label, presence, invited, response, contact_id) VALUES ($1,$2,$3,$4,$5,$6,'present',TRUE,$7,$8)",
+          [
+            uid("att"),
+            m.org_id,
+            m.id,
+            i.user_id,
+            i.name,
+            i.function_label,
+            m.convened_at ? "pending" : null,
+            i.contact_id ?? null,
+          ],
         );
     }
   }
@@ -399,7 +449,11 @@ export class Meetings {
   }
 
   // ---------------------------------------------------------------- lecture
-  async list(actorId: string, orgId: string, f: { project_id?: string; activity_id?: string } = {}) {
+  async list(
+    actorId: string,
+    orgId: string,
+    f: { project_id?: string; activity_id?: string; partner_id?: string } = {},
+  ) {
     await this.svc.requirePerm(actorId, orgId, "meetings.view");
     const can = await this.can(actorId, orgId);
     const rows = await this.svc.db.query<
@@ -415,8 +469,9 @@ export class Meetings {
         (SELECT x.response FROM meeting_attendees x WHERE x.meeting_id = m.id AND x.user_id = $2 AND x.invited LIMIT 1) AS my_response
        FROM meetings m LEFT JOIN users c ON c.id = m.chair_id
        WHERE m.org_id = $1 AND ${VISIBLE("m", "$2", "$3")} AND ($4::text IS NULL OR m.project_id = $4) AND ($5::text IS NULL OR m.activity_id = $5)
+         AND ($6::text IS NULL OR EXISTS (SELECT 1 FROM meeting_partners mp WHERE mp.meeting_id = m.id AND mp.partner_id = $6))
        ORDER BY m.meeting_date DESC, m.seq DESC`,
-      [orgId, actorId, can.manage, f.project_id ?? null, f.activity_id ?? null],
+      [orgId, actorId, can.manage, f.project_id ?? null, f.activity_id ?? null, f.partner_id ?? null],
     );
     return rows.map((m) => ({ ...m, reference: meetingReference(m) }));
   }
@@ -460,7 +515,7 @@ export class Meetings {
       [m.org_id, m.meeting_type, m.meeting_date, actorId, can.manage],
     );
     const attendees = await db.query<Attendee>(
-      "SELECT id, user_id, name, function_label, presence, invited, response, delegate_name FROM meeting_attendees WHERE meeting_id = $1 ORDER BY invited DESC, name",
+      "SELECT id, user_id, name, function_label, presence, invited, response, delegate_name, contact_id FROM meeting_attendees WHERE meeting_id = $1 ORDER BY invited DESC, name",
       [m.id],
     );
     const chair = m.chair_id
@@ -502,6 +557,10 @@ export class Meetings {
         decisions: decisions.filter((d) => d.agenda_item_id === i.id).map(decisionView),
       })),
       attendees,
+      partners: await db.query<{ id: string; name: string; acronym: string }>(
+        "SELECT p.id, p.name, p.acronym FROM meeting_partners mp JOIN partners p ON p.id = mp.partner_id WHERE mp.meeting_id = $1 ORDER BY p.name",
+        [m.id],
+      ),
       previous: previous
         ? {
             id: previous.id,
@@ -550,6 +609,8 @@ export class Meetings {
     if (!Number.isInteger(count) || count < 1 || count > MAX_SERIES)
       throw badRequest(`Une série compte de 1 à ${MAX_SERIES} séances`);
     const invitees = await this.resolveInvitees(orgId, input.invitees ?? []);
+    // Partenaires concernés : ceux choisis, et ceux dont un contact est convoqué
+    const partners = await this.partnersOf(orgId, input.partner_ids ?? [], invitees, []);
     const seriesId = count > 1 ? uid("ser") : null;
     let first = "";
     for (let n = 0; n < count; n++) {
@@ -561,6 +622,7 @@ export class Meetings {
       await this.svc.db.tx(async (q) => {
         await this.writeInvitees(q, m, invitees);
         await this.addFollowUp(q, m, open);
+        await this.writePartners(q, m, partners, false);
       });
     }
     await this.svc.log(actorId, "meeting.created", {
@@ -652,6 +714,10 @@ export class Meetings {
         activity_id: patch.activity_id === undefined ? m.activity_id : patch.activity_id,
       });
     if (patch.video_link !== undefined) fields.video_link = patch.video_link.trim();
+    if (patch.partner_ids !== undefined) {
+      const partners = await this.partnersOf(m.org_id, patch.partner_ids, [], await this.currentPartners(id));
+      await this.svc.db.tx((q) => this.writePartners(q, m, partners, true));
+    }
     const allowed = [
       "chair_id",
       "video_link",
@@ -759,7 +825,7 @@ export class Meetings {
         seen.add(k);
         const was = before.find((b) => key(b) === k);
         await q.query(
-          "INSERT INTO meeting_attendees (id, org_id, meeting_id, user_id, name, function_label, presence, invited, response, delegate_name, responded_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+          "INSERT INTO meeting_attendees (id, org_id, meeting_id, user_id, name, function_label, presence, invited, response, delegate_name, responded_at, contact_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
           [
             uid("att"),
             m.org_id,
@@ -772,6 +838,7 @@ export class Meetings {
             was?.response ?? null,
             was?.delegate_name ?? "",
             (was as { responded_at?: string | null } | undefined)?.responded_at ?? null,
+            was?.contact_id ?? null,
           ],
         );
       }
@@ -779,8 +846,19 @@ export class Meetings {
       for (const b of before)
         if (b.invited && !seen.has(key(b)))
           await q.query(
-            "INSERT INTO meeting_attendees (id, org_id, meeting_id, user_id, name, function_label, presence, invited, response, delegate_name) VALUES ($1,$2,$3,$4,$5,$6,$7,TRUE,$8,$9)",
-            [uid("att"), m.org_id, id, b.user_id, b.name, b.function_label, b.presence, b.response, b.delegate_name],
+            "INSERT INTO meeting_attendees (id, org_id, meeting_id, user_id, name, function_label, presence, invited, response, delegate_name, contact_id) VALUES ($1,$2,$3,$4,$5,$6,$7,TRUE,$8,$9,$10)",
+            [
+              uid("att"),
+              m.org_id,
+              id,
+              b.user_id,
+              b.name,
+              b.function_label,
+              b.presence,
+              b.response,
+              b.delegate_name,
+              b.contact_id ?? null,
+            ],
           );
       // Des notes ne font une séance « tenue » qu'une fois sa date venue : préparer l'ordre du jour ne la tient pas
       const hasNotes = input.agenda.some((i) => i.notes?.trim()) && m.meeting_date <= today();
@@ -1108,7 +1186,12 @@ export class Meetings {
   async setInvitees(actorId: string, id: string, list: InviteeInput[]) {
     const m = await this.editable(actorId, id);
     const invitees = await this.resolveInvitees(m.org_id, list);
-    await this.svc.db.tx((q) => this.writeInvitees(q, m, invitees));
+    const current = await this.currentPartners(id);
+    const partners = await this.partnersOf(m.org_id, [], invitees, current);
+    await this.svc.db.tx(async (q) => {
+      await this.writeInvitees(q, m, invitees);
+      await this.writePartners(q, m, partners, false);
+    });
     return this.get(actorId, id);
   }
 

@@ -283,8 +283,9 @@ export class Agreements {
     return Promise.all(
       partnerIds.map((p) =>
         q.query(
-          `INSERT INTO partner_history (id, org_id, partner_id, actor_id, kind, body, data) VALUES ($1,$2,$3,$4,'agreement',$5,$6)`,
-          [uid("phi"), orgId, p, actorId, body, JSON.stringify(data)],
+          `INSERT INTO partner_history (id, org_id, partner_id, actor_id, kind, body, data, happened_on)
+           VALUES ($1,$2,$3,$4,'agreement',$5,$6,$7::date)`,
+          [uid("phi"), orgId, p, actorId, body, JSON.stringify(data), today()],
         ),
       ),
     );
@@ -307,7 +308,8 @@ export class Agreements {
     );
     for (const m of moved)
       await q.query(
-        `INSERT INTO partner_history (id, org_id, partner_id, actor_id, kind, body, data) VALUES ($1,$2,$3,$4,'state',$5,$6)`,
+        `INSERT INTO partner_history (id, org_id, partner_id, actor_id, kind, body, data, happened_on)
+         VALUES ($1,$2,$3,$4,'state',$5,$6,$7::date)`,
         [
           uid("phi"),
           orgId,
@@ -315,6 +317,7 @@ export class Agreements {
           actorId,
           to === "actif" ? "Accord entré en vigueur" : "Accord en préparation",
           JSON.stringify({ from: m.old, to }),
+          today(),
         ],
       );
   }
@@ -796,8 +799,9 @@ export class Agreements {
         ],
       );
       await q.query(
-        `INSERT INTO partner_history (id, org_id, partner_id, actor_id, kind, body) VALUES ($1,$2,$3,$4,'document',$5)`,
-        [uid("phi"), p.org_id, partnerId, actorId, `Pièce jointe (${nature.label}) : ${name}`],
+        `INSERT INTO partner_history (id, org_id, partner_id, actor_id, kind, body, happened_on)
+         VALUES ($1,$2,$3,$4,'document',$5,$6::date)`,
+        [uid("phi"), p.org_id, partnerId, actorId, `Pièce jointe (${nature.label}) : ${name}`, today()],
       );
     });
     await this.svc.log(actorId, "partner.document", {

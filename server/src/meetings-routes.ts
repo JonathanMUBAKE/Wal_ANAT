@@ -42,9 +42,11 @@ const Fields = z.object({
   video_link: z.string().trim().max(500).optional(),
   project_id: z.string().max(100).nullable().optional(),
   activity_id: z.string().max(100).nullable().optional(),
+  partner_ids: z.array(z.string().max(100)).max(20).optional(),
 });
 const Invitee = z.object({
   user_id: z.string().max(100).nullable().optional(),
+  contact_id: z.string().max(100).nullable().optional(),
   name: z.string().trim().max(200).optional(),
   function_label: short.optional(),
   unit_id: z.string().max(100).optional(),
@@ -123,7 +125,13 @@ export function meetingRoutes(r: FastifyInstance, meetings: Meetings) {
     meetings.list(
       req.userId,
       req.orgId,
-      z.object({ project_id: z.string().max(100).optional(), activity_id: z.string().max(100).optional() }).parse(req.query),
+      z
+        .object({
+          project_id: z.string().max(100).optional(),
+          activity_id: z.string().max(100).optional(),
+          partner_id: z.string().max(100).optional(),
+        })
+        .parse(req.query),
     ),
   );
   r.post("/api/meetings", async (req) => meetings.create(req.userId, req.orgId, Create.parse(req.body)));
@@ -141,7 +149,11 @@ export function meetingRoutes(r: FastifyInstance, meetings: Meetings) {
     meetings.setInvitees(req.userId, req.params.id, z.object({ invitees: Invitees }).parse(req.body).invitees),
   );
   r.post<Id>("/api/meetings/:id/convene", async (req) =>
-    meetings.convene(req.userId, req.params.id, z.object({ short_notice: z.boolean().optional() }).parse(req.body ?? {})),
+    meetings.convene(
+      req.userId,
+      req.params.id,
+      z.object({ short_notice: z.boolean().optional() }).parse(req.body ?? {}),
+    ),
   );
   r.post<Id>("/api/meetings/:id/respond", async (req) =>
     meetings.respond(
@@ -154,7 +166,13 @@ export function meetingRoutes(r: FastifyInstance, meetings: Meetings) {
   );
   r.post<Id>("/api/meetings/:id/documents", { bodyLimit: ATTACHMENT_MAX_BYTES }, async (req) => {
     const q = z.object({ name: z.string().min(1).max(500), item: z.string().max(100).optional() }).parse(req.query);
-    return meetings.addDocument(req.userId, req.params.id, q.name, req.body instanceof Buffer ? req.body : Buffer.alloc(0), q.item);
+    return meetings.addDocument(
+      req.userId,
+      req.params.id,
+      q.name,
+      req.body instanceof Buffer ? req.body : Buffer.alloc(0),
+      q.item,
+    );
   });
   r.get<Id>("/api/meeting-documents/:id", async (req, reply) => {
     const d = await meetings.document(req.userId, req.params.id);
@@ -177,7 +195,11 @@ export function meetingRoutes(r: FastifyInstance, meetings: Meetings) {
   // Circuit du compte rendu : soumis par le rédacteur, retourné ou validé par la présidence
   r.post<Id>("/api/meetings/:id/submit", async (req) => meetings.submit(req.userId, req.params.id));
   r.post<Id>("/api/meetings/:id/return", async (req) =>
-    meetings.returnReport(req.userId, req.params.id, z.object({ comment: z.string().max(2000) }).parse(req.body).comment),
+    meetings.returnReport(
+      req.userId,
+      req.params.id,
+      z.object({ comment: z.string().max(2000) }).parse(req.body).comment,
+    ),
   );
   r.post<Id>("/api/meetings/:id/validate", async (req) => meetings.validate(req.userId, req.params.id));
   r.post<Id>("/api/meetings/:id/reopen", async (req) => meetings.reopen(req.userId, req.params.id));

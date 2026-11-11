@@ -35,6 +35,7 @@ const Deliverable = z.object({
 const Contract = z.object({
   project_id: id.optional(),
   user_id: id.nullable().optional(),
+  partner_id: id.nullable().optional(),
   consultant_name: z.string().max(200).optional(),
   title,
   terms: z.string().max(10_000).optional(),

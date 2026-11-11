@@ -1,4 +1,5 @@
 import { uid } from "./db.js";
+import { linkContact, linkPartner } from "./partner-links.js";
 import { HttpError, badRequest, isRealDate, notFound, type Services } from "./services.js";
 
 interface Mail {
@@ -22,11 +23,16 @@ interface Mail {
   instruction: string;
   project_id: string | null;
   activity_id: string | null;
+  partner_id: string | null;
+  contact_id: string | null;
 }
 export interface MailInput {
   direction: Mail["direction"];
   subject: string;
-  correspondent: string;
+  /** Facultatif quand un partenaire est choisi : son nom remplit le champ (lot PA3). */
+  correspondent?: string;
+  partner_id?: string | null;
+  contact_id?: string | null;
   doc_date?: string | null;
   received_on: string;
   due_on?: string | null;
@@ -75,7 +81,7 @@ export class Registers {
   async listMail(
     actorId: string,
     orgId: string,
-    f: { direction?: Mail["direction"]; project_id?: string; activity_id?: string },
+    f: { direction?: Mail["direction"]; project_id?: string; activity_id?: string; partner_id?: string },
   ) {
     await this.svc.requirePerm(actorId, orgId, "correspondence.view");
     const manager = (await this.svc.permissionsOf(actorId, orgId)).includes("correspondence.manage");
@@ -85,6 +91,8 @@ export class Registers {
         assignee_name: string | null;
         project_name: string | null;
         activity_title: string | null;
+        partner_name: string | null;
+        contact_name: string | null;
         rt_direction: Mail["direction"] | null;
         rt_year: number | null;
         rt_seq: number | null;
@@ -94,6 +102,7 @@ export class Registers {
       }
     >(
       `SELECT c.*, ou.name AS unit_name, u.name AS assignee_name, p.name AS project_name, aa.title AS activity_title,
+        pt.name AS partner_name, ct.name AS contact_name,
         rt.direction AS rt_direction, rt.year AS rt_year, rt.seq AS rt_seq,
         rsp.direction AS rsp_direction, rsp.year AS rsp_year, rsp.seq AS rsp_seq
        FROM correspondence c
@@ -101,12 +110,15 @@ export class Registers {
        LEFT JOIN users u ON u.id = c.assignee_id
        LEFT JOIN projects p ON p.id = c.project_id
        LEFT JOIN agency_activities aa ON aa.id = c.activity_id
+       LEFT JOIN partners pt ON pt.id = c.partner_id
+       LEFT JOIN partner_contacts ct ON ct.id = c.contact_id
        LEFT JOIN correspondence rt ON rt.id = c.reply_to_id
        LEFT JOIN LATERAL (SELECT r2.direction, r2.year, r2.seq FROM correspondence r2 WHERE r2.reply_to_id = c.id ORDER BY r2.created_at LIMIT 1) rsp ON TRUE
        WHERE c.org_id = $1 AND (NOT c.confidential OR $2 OR c.assignee_id = $3) AND ($4::text IS NULL OR c.direction = $4)
          AND ($5::text IS NULL OR c.project_id = $5) AND ($6::text IS NULL OR c.activity_id = $6)
+         AND ($7::text IS NULL OR c.partner_id = $7)
        ORDER BY c.received_on DESC, c.seq DESC`,
-      [orgId, manager, actorId, f.direction ?? null, f.project_id ?? null, f.activity_id ?? null],
+      [orgId, manager, actorId, f.direction ?? null, f.project_id ?? null, f.activity_id ?? null, f.partner_id ?? null],
     );
     return rows.map(({ rt_direction, rt_year, rt_seq, rsp_direction, rsp_year, rsp_seq, ...m }) => ({
       ...m,
@@ -151,20 +163,30 @@ export class Registers {
       if (!replied) throw badRequest("Courrier entrant introuvable dans cette institution");
       if (replied.direction !== "entrant") throw badRequest("On ne répond qu'à un courrier entrant");
     }
+    // Le correspondant choisi dans l'annuaire (lot PA3) ; une réponse s'adresse par défaut au même partenaire
+    const contact = await linkContact(this.svc, orgId, i.contact_id, i.partner_id);
+    const partnerId = i.partner_id ?? contact?.partner_id ?? (i.contact_id ? null : replied?.partner_id) ?? null;
+    const partner = await linkPartner(this.svc, orgId, partnerId, {
+      current: replied?.partner_id ?? null,
+    });
+    const correspondent = i.correspondent?.trim() || partner?.name || replied?.correspondent || "";
+    if (!correspondent) throw badRequest("Indiquez le correspondant, ou choisissez un partenaire de l'annuaire");
+    const contactId =
+      contact?.id ?? (partner && partner.id === replied?.partner_id ? replied?.contact_id : null) ?? null;
     const id = uid("crr");
     const year = Number(i.received_on.slice(0, 4));
     for (let attempt = 0; ; attempt++) {
       try {
         await this.svc.db.query(
-          `INSERT INTO correspondence (id, org_id, direction, year, seq, subject, correspondent, doc_date, received_on, due_on, confidential, created_by, reply_to_id, project_id, activity_id)
-           VALUES ($1,$2,$3,$4,(SELECT COALESCE(max(seq),0)+1 FROM correspondence WHERE org_id = $2 AND direction = $3 AND year = $4),$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+          `INSERT INTO correspondence (id, org_id, direction, year, seq, subject, correspondent, doc_date, received_on, due_on, confidential, created_by, reply_to_id, project_id, activity_id, partner_id, contact_id)
+           VALUES ($1,$2,$3,$4,(SELECT COALESCE(max(seq),0)+1 FROM correspondence WHERE org_id = $2 AND direction = $3 AND year = $4),$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
           [
             id,
             orgId,
             i.direction,
             year,
             i.subject.trim(),
-            i.correspondent.trim(),
+            correspondent,
             i.doc_date ?? null,
             i.received_on,
             i.due_on ?? null,
@@ -173,6 +195,8 @@ export class Registers {
             i.reply_to_id ?? null,
             i.project_id ?? null,
             i.activity_id ?? null,
+            partner?.id ?? null,
+            contactId,
           ],
         );
         break;

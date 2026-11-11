@@ -19,6 +19,7 @@ const Fields = z.object({
   end_on: date.nullable().optional(),
   location: short.optional(),
   counterpart: short.optional(),
+  counterpart_partner_id: id.nullable().optional(),
   mandate: long.optional(),
   delegation: short.optional(),
   outcome: long.optional(),
@@ -43,6 +44,7 @@ const money = z.number().min(0).max(1e14).nullable().optional();
 const Governance = z.object({
   origin: z.enum(["interne", "confie"]).optional(),
   sponsor: short.optional(),
+  sponsor_partner_id: id.nullable().optional(),
   convention_ref: short.optional(),
   lead_id: id.nullable().optional(),
   unit_id: id.nullable().optional(),

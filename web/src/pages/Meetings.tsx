@@ -42,6 +42,7 @@ import { MeetingsBrowser } from "@/components/MeetingViews";
 import { useShell } from "@/lib/shell";
 import { api } from "@/lib/api";
 import { useCan, useMe, useUnits, useUsers } from "@/lib/hooks";
+import { PartnerSelect, usePartnerOptions, usePartnerContacts } from "@/components/partners";
 
 type ActionStatus = "a_faire" | "en_cours" | "soumis" | "realise" | "reporte" | "annule";
 interface MeetingAction {
@@ -129,6 +130,7 @@ export interface MeetingDetail extends MeetingRow {
   submitted_at: string | null;
   return_comment: string;
   dossier: { kind: "project" | "activity"; id: string; label: string; href: string } | null;
+  partners?: { id: string; name: string; acronym: string }[];
   documents: MeetingDocument[];
   agenda: AgendaItem[];
   attendees: Attendee[];
@@ -189,9 +191,18 @@ export function MeetingsPage() {
 }
 
 /** Convoqué choisi à la programmation : une personne, une entité entière, ou une personne extérieure nommée. */
-type InviteeChip = { user_id?: string; unit_id?: string; name?: string; label: string };
+type InviteeChip = { user_id?: string; unit_id?: string; contact_id?: string; name?: string; label: string };
 
-export function NewMeeting({ projectId, onClose }: { projectId?: string; onClose: () => void }) {
+export function NewMeeting({
+  projectId,
+  partner,
+  onClose,
+}: {
+  projectId?: string;
+  /** Réunion programmée depuis la fiche d'un partenaire : il est prérempli, ses contacts sont convocables. */
+  partner?: { id: string; name: string };
+  onClose: () => void;
+}) {
   const { data: me } = useMe();
   const { data: users } = useUsers();
   const { data: units } = useUnits();
@@ -213,6 +224,11 @@ export function NewMeeting({ projectId, onClose }: { projectId?: string; onClose
   });
   const [invitees, setInvitees] = useState<InviteeChip[]>([]);
   const [external, setExternal] = useState("");
+  const [partnerIds, setPartnerIds] = useState<string[]>(partner ? [partner.id] : []);
+  const { data: partnerOptions } = usePartnerOptions();
+  const contacts = usePartnerContacts(partnerIds);
+  const partnerName = (id: string) =>
+    partnerOptions?.find((p) => p.id === id)?.name ?? (id === partner?.id ? partner.name : id);
   const [every, setEvery] = useState<"" | "week" | "2weeks" | "month">("");
   const [count, setCount] = useState(4);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
@@ -224,6 +240,7 @@ export function NewMeeting({ projectId, onClose }: { projectId?: string; onClose
         ...f,
         chair_id: f.chair_id || null,
         project_id: projectId ?? null,
+        partner_ids: partnerIds,
         invitees: invitees.map(({ label: _l, ...rest }) => rest),
         repeat: every ? { every, count } : null,
       }),
@@ -327,6 +344,40 @@ export function NewMeeting({ projectId, onClose }: { projectId?: string; onClose
         </Field>
         <Field label="Animateur">{(a) => <Input {...a} value={f.facilitator} onChange={set("facilitator")} />}</Field>
         <fieldset className="sm:col-span-2">
+          <legend className="mb-1.5 text-[12.5px] font-medium text-muted">Partenaires concernés</legend>
+          {!!partnerIds.length && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {partnerIds.map((id) => (
+                <span
+                  key={id}
+                  className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[12.5px]"
+                >
+                  {partnerName(id)}
+                  <button
+                    type="button"
+                    aria-label={`Retirer ${partnerName(id)}`}
+                    className="text-faint hover:text-fg"
+                    onClick={() => {
+                      setPartnerIds(partnerIds.filter((x) => x !== id));
+                      setInvitees(
+                        invitees.filter((c) => !contacts.some((k) => k.id === c.contact_id && k.partner_id === id)),
+                      );
+                    }}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <PartnerSelect
+            aria-label="Ajouter un partenaire concerné"
+            placeholder="Ajouter un partenaire de l'annuaire…"
+            value=""
+            onChange={(id) => id && !partnerIds.includes(id) && setPartnerIds([...partnerIds, id])}
+          />
+        </fieldset>
+        <fieldset className="sm:col-span-2">
           <legend className="mb-1.5 text-[12.5px] font-medium text-muted">Convoqués</legend>
           {!!invitees.length && (
             <div className="mb-2 flex flex-wrap gap-1.5">
@@ -393,6 +444,25 @@ export function NewMeeting({ projectId, onClose }: { projectId?: string; onClose
               }}
             />
           </div>
+          {!!contacts.length && (
+            <Select
+              aria-label="Convoquer un contact d'un partenaire"
+              className="mt-2"
+              value=""
+              onChange={(e) => {
+                const c = contacts.find((x) => x.id === e.target.value);
+                if (c) addChip({ contact_id: c.id, label: `${c.name} (${c.partner_label})` });
+              }}
+            >
+              <option value="">Contact d'un partenaire…</option>
+              {contacts.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {c.title ? ` — ${c.title}` : ""} ({c.partner_label})
+                </option>
+              ))}
+            </Select>
+          )}
         </fieldset>
         <label className="flex items-center gap-2 text-[13px] sm:col-span-2">
           <input
@@ -962,7 +1032,7 @@ export function MeetingPage() {
                 )}
               </Field>
             </div>
-            {(draft.dossier || draft.video_link || draft.convened_at) && (
+            {(draft.dossier || draft.video_link || draft.convened_at || !!draft.partners?.length) && (
               <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted">
                 {draft.dossier && (
                   <Link to={draft.dossier.href} className="inline-flex items-center gap-1 text-primary hover:underline">
@@ -970,6 +1040,11 @@ export function MeetingPage() {
                     Dossier : {draft.dossier.label}
                   </Link>
                 )}
+                {draft.partners?.map((p) => (
+                  <Link key={p.id} to={`/partenaires/${p.id}`} className="text-primary hover:underline">
+                    Partenaire : {p.acronym || p.name}
+                  </Link>
+                ))}
                 {draft.video_link && (
                   <a href={draft.video_link} target="_blank" rel="noreferrer" className="text-primary hover:underline">
                     Rejoindre la visioconférence

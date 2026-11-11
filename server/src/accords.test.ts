@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Agreements } from "./agreements.js";
 import { boot, type GovCtx } from "./gov-test-helpers.js";
+import { localDate } from "./services.js";
 
 /*
  * Lot PA2 — accords et pièces de collaboration (docs/CONCEPTION.md § 4.4 à 4.6).
@@ -16,7 +17,8 @@ afterEach(() => g.ctx.app.close());
 
 type Any = any;
 let n = 0;
-const day = (offset = 0) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+// Date locale, comme le serveur : autour de minuit, la date UTC serait celle de la veille
+const day = (offset = 0) => localDate(new Date(Date.now() + offset * 864e5));
 const year = Number(day().slice(0, 4));
 const partner = async (body: Record<string, unknown> = {}) =>
   (

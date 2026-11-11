@@ -667,6 +667,10 @@ const TABLE = [
     body: { plural: "x" },
   })),
   R_("GET", "/api/partners"),
+  R_("GET", "/api/partners/reconcile"),
+  R_("POST", "/api/partners/reconcile", async (X) => ({
+    body: { source: "correspondent", text: "Texte libre", partner_id: (await X.partner()).id },
+  })),
   R_("POST", "/api/partners", () => ({ body: { name: u("Partenaire"), type_code: "autre", categories: ["ptf"] } })),
   R_("GET", "/api/partners/:id", async (X) => ({ url: `/api/partners/${(await X.partner()).id}` })),
   R_("PATCH", "/api/partners/:id", async (X) => ({

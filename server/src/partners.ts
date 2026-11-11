@@ -1,5 +1,10 @@
+import { Activities } from "./activities.js";
 import { type Queryable, uid } from "./db.js";
+import { Deliverables } from "./deliverables.js";
+import { Meetings } from "./meetings.js";
+import { linkPartner } from "./partner-links.js";
 import { Referentials } from "./referentials.js";
+import { Registers } from "./registers.js";
 import { HttpError, badRequest, forbidden, isRealDate, notFound, today, type Services } from "./services.js";
 
 /*
@@ -47,11 +52,49 @@ export const agreementState = (
   a.state === "vigueur" && a.end_on && a.end_on < now && !a.tacit_renewal
     ? "echu"
     : (a.state as "preparation" | "signature" | "vigueur" | "resilie");
-/** Accord qui lie encore un partenaire : en vigueur et non échu. */
-export const LIVE_AGREEMENT = `a.state = 'vigueur' AND (a.end_on IS NULL OR a.end_on >= CURRENT_DATE OR a.tacit_renewal)`;
+/**
+ * Accord qui lie encore un partenaire : en vigueur et non échu. La date du jour est celle du serveur, passée en
+ * paramètre : `CURRENT_DATE` de la base (UTC) diffère de la date locale autour de minuit.
+ */
+export const liveAgreement = (day: string) =>
+  `a.state = 'vigueur' AND (a.end_on IS NULL OR a.end_on >= ${day}::date OR a.tacit_renewal)`;
 
 const REGIONS = new Intl.DisplayNames(["fr"], { type: "region" });
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Textes libres que le rapprochement relie aux fiches. Les mentions confidentielles n'y figurent pas. */
+const RECONCILE = {
+  sponsor: {
+    table: "projects",
+    text: "sponsor",
+    fk: "sponsor_partner_id",
+    where: "TRUE",
+    label: "Commanditaire de projet",
+  },
+  counterpart: {
+    table: "agency_activities",
+    text: "counterpart",
+    fk: "counterpart_partner_id",
+    where: "NOT confidential",
+    label: "Interlocuteur d'activité",
+  },
+  correspondent: {
+    table: "correspondence",
+    text: "correspondent",
+    fk: "partner_id",
+    where: "NOT confidential",
+    label: "Correspondant de courrier",
+  },
+  contractor: {
+    table: "consultant_contracts",
+    text: "consultant_name",
+    fk: "partner_id",
+    where: "TRUE",
+    label: "Prestataire de contrat",
+  },
+} as const;
+export type ReconcileSource = keyof typeof RECONCILE;
+export const RECONCILE_SOURCES = Object.keys(RECONCILE) as [ReconcileSource, ...ReconcileSource[]];
 
 export interface PartnerInput {
   name?: string;
@@ -279,11 +322,13 @@ export class Partners {
        ORDER BY d.created_at DESC`,
       [id, agreements.map((a) => a.id)],
     );
+    const links = await this.links(actorId, p);
     return {
       ...this.view(p),
       focals,
       agreements,
       documents,
+      ...links,
       contacts,
       notes,
       history,
@@ -383,8 +428,8 @@ export class Partners {
   ) {
     return q.query(
       `INSERT INTO partner_history (id, org_id, partner_id, actor_id, kind, body, data, happened_on)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,COALESCE($8::date, CURRENT_DATE))`,
-      [uid("phi"), orgId, partnerId, actorId, kind, body, JSON.stringify(data), happenedOn ?? null],
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8::date)`,
+      [uid("phi"), orgId, partnerId, actorId, kind, body, JSON.stringify(data), happenedOn ?? today()],
     );
   }
 
@@ -594,8 +639,8 @@ export class Partners {
       i.state === "clos" &&
       (await this.svc.db.one(
         `SELECT 1 FROM agreements a JOIN agreement_parties ap ON ap.agreement_id = a.id
-         WHERE ap.partner_id = $1 AND ${LIVE_AGREEMENT} LIMIT 1`,
-        [id],
+         WHERE ap.partner_id = $1 AND ${liveAgreement("$2")} LIMIT 1`,
+        [id, today()],
       ))
     )
       throw new HttpError(409, "Un accord en vigueur lie encore ce partenaire : résiliez-le ou attendez son échéance");
@@ -652,7 +697,12 @@ export class Partners {
         `SELECT 1 FROM partner_history WHERE partner_id = $1 AND kind = 'note'
          UNION ALL SELECT 1 FROM partners WHERE merged_into = $1
          UNION ALL SELECT 1 FROM agreement_parties WHERE partner_id = $1
-         UNION ALL SELECT 1 FROM partner_documents WHERE partner_id = $1 LIMIT 1`,
+         UNION ALL SELECT 1 FROM partner_documents WHERE partner_id = $1
+         UNION ALL SELECT 1 FROM projects WHERE sponsor_partner_id = $1
+         UNION ALL SELECT 1 FROM agency_activities WHERE counterpart_partner_id = $1
+         UNION ALL SELECT 1 FROM correspondence WHERE partner_id = $1
+         UNION ALL SELECT 1 FROM consultant_contracts WHERE partner_id = $1
+         UNION ALL SELECT 1 FROM meeting_partners WHERE partner_id = $1 LIMIT 1`,
         [id],
       ));
     if (lived)
@@ -709,6 +759,20 @@ export class Partners {
         ]);
       await q.query("UPDATE agreement_parties SET partner_id = $1 WHERE partner_id = $2", [intoId, id]);
       await q.query("UPDATE partner_documents SET partner_id = $1 WHERE partner_id = $2", [intoId, id]);
+      // Les dossiers, courriers, contrats et réunions qui citaient le doublon citent désormais la fiche gardée
+      await q.query("UPDATE projects SET sponsor_partner_id = $1 WHERE sponsor_partner_id = $2", [intoId, id]);
+      await q.query("UPDATE agency_activities SET counterpart_partner_id = $1 WHERE counterpart_partner_id = $2", [
+        intoId,
+        id,
+      ]);
+      await q.query("UPDATE correspondence SET partner_id = $1 WHERE partner_id = $2", [intoId, id]);
+      await q.query("UPDATE consultant_contracts SET partner_id = $1 WHERE partner_id = $2", [intoId, id]);
+      await q.query(
+        `DELETE FROM meeting_partners d WHERE d.partner_id = $2
+         AND EXISTS (SELECT 1 FROM meeting_partners k WHERE k.partner_id = $1 AND k.meeting_id = d.meeting_id)`,
+        [intoId, id],
+      );
+      await q.query("UPDATE meeting_partners SET partner_id = $1 WHERE partner_id = $2", [intoId, id]);
       await q.query(
         "UPDATE partner_history SET partner_id = $1 WHERE partner_id = $2 AND kind IN ('note', 'contact')",
         [intoId, id],
@@ -733,6 +797,157 @@ export class Partners {
       data: { from: id, from_name: dup.name, into: intoId, into_name: keep.name },
     });
     return this.get(actorId, intoId);
+  }
+
+  // ------------------------------------------------------------------ liens avec les autres modules (lot PA3)
+
+  /** Ce qui cite le partenaire ailleurs, chaque module appliquant ses propres droits de lecture. */
+  private async links(actorId: string, p: Row) {
+    // Sans le droit de lire un module, sa liste est simplement vide ; toute autre erreur remonte
+    const safe = async <T>(p: Promise<T[]>): Promise<T[]> => {
+      try {
+        return await p;
+      } catch (e) {
+        const status = (e as { status?: number }).status;
+        if (status && status < 500) return [];
+        throw e;
+      }
+    };
+    const projects: { id: string; name: string }[] = [];
+    for (const prj of await this.svc.db.query<{ id: string; name: string }>(
+      "SELECT id, name FROM projects WHERE org_id = $1 AND sponsor_partner_id = $2 ORDER BY name",
+      [p.org_id, p.id],
+    ))
+      if (
+        await this.svc.require(actorId, prj.id, "viewer").then(
+          () => true,
+          () => false,
+        )
+      )
+        projects.push(prj);
+    const activities = (await safe(new Activities(this.svc).list(actorId, p.org_id, {}))).filter(
+      (a) => a.counterpart_partner_id === p.id,
+    );
+    const dossiers = [
+      ...projects.map((x) => ({
+        kind: "project" as const,
+        id: x.id,
+        label: x.name,
+        role: "Commanditaire",
+        type_code: null as string | null,
+        date: null as string | null,
+        href: `/projects/${x.id}/dashboard`,
+      })),
+      ...activities.map((a) => ({
+        kind: "activity" as const,
+        id: a.id,
+        label: a.title,
+        role: "Interlocuteur",
+        type_code: a.kind as string | null,
+        date: a.start_on,
+        href: `/activites/${a.id}`,
+      })),
+    ];
+    const meetings = (await safe(new Meetings(this.svc).list(actorId, p.org_id, { partner_id: p.id }))).map((m) => ({
+      id: m.id,
+      reference: m.reference,
+      meeting_type: m.meeting_type,
+      title: m.title,
+      meeting_date: m.meeting_date,
+      start_time: m.start_time,
+      status: m.status,
+    }));
+    const mail = (await safe(new Registers(this.svc).listMail(actorId, p.org_id, { partner_id: p.id }))).map((m) => ({
+      id: m.id,
+      reference: m.reference,
+      direction: m.direction,
+      subject: m.subject,
+      correspondent: m.correspondent,
+      contact_name: m.contact_name,
+      received_on: m.received_on,
+      status: m.status,
+      confidential: m.confidential,
+    }));
+    const contracts = (await safe(new Deliverables(this.svc).contracts(actorId, p.org_id)))
+      .filter((c) => c.partner_id === p.id)
+      .map((c) => ({
+        id: c.id,
+        title: c.title,
+        consultant_name: c.consultant_name,
+        project_id: c.project_id,
+        project_name: c.project_name,
+        start_on: c.start_on,
+        end_on: c.end_on,
+        status: c.status,
+      }));
+    return { dossiers, meetings, mail, contracts };
+  }
+
+  /** Textes libres sans fiche (commanditaires, interlocuteurs, correspondants, prestataires), avec une suggestion. */
+  async reconcileList(actorId: string, orgId: string) {
+    await this.svc.requirePerm(actorId, orgId, "partners.manage");
+    const fiches = await this.svc.db.query<{ id: string; name: string; name_key: string; acronym_key: string }>(
+      "SELECT id, name, name_key, acronym_key FROM partners WHERE org_id = $1 AND merged_into IS NULL",
+      [orgId],
+    );
+    const out: {
+      source: ReconcileSource;
+      label: string;
+      text: string;
+      count: number;
+      suggestion: { id: string; name: string } | null;
+    }[] = [];
+    for (const source of RECONCILE_SOURCES) {
+      const s = RECONCILE[source];
+      const rows = await this.svc.db.query<{ t: string; n: number }>(
+        `SELECT ${s.text} AS t, count(*)::int AS n FROM ${s.table}
+         WHERE org_id = $1 AND ${s.fk} IS NULL AND trim(${s.text}) <> '' AND ${s.where}
+         GROUP BY ${s.text} ORDER BY count(*) DESC, ${s.text}`,
+        [orgId],
+      );
+      for (const r of rows) {
+        const key = partnerKey(r.t);
+        const match = key ? fiches.find((x) => x.name_key === key || x.acronym_key === key) : undefined;
+        out.push({
+          source,
+          label: s.label,
+          text: r.t,
+          count: r.n,
+          suggestion: match ? { id: match.id, name: match.name } : null,
+        });
+      }
+    }
+    return out;
+  }
+
+  /** Relie à une fiche toutes les mentions d'un même texte libre ; le texte d'origine est conservé. */
+  async reconcile(actorId: string, orgId: string, i: { source: ReconcileSource; text: string; partner_id: string }) {
+    await this.human(actorId);
+    await this.svc.requirePerm(actorId, orgId, "partners.manage");
+    const s = RECONCILE[i.source];
+    const p = (await linkPartner(this.svc, orgId, i.partner_id, {
+      allowClosed: true,
+      supplier: i.source === "contractor",
+    }))!;
+    const rows = await this.svc.db.query(
+      `UPDATE ${s.table} SET ${s.fk} = $1 WHERE org_id = $2 AND ${s.fk} IS NULL AND ${s.text} = $3 AND ${s.where} RETURNING id`,
+      [p.id, orgId, i.text],
+    );
+    if (rows.length) {
+      await this.history(
+        this.svc.db,
+        orgId,
+        p.id,
+        actorId,
+        "updated",
+        `Rapprochement : ${rows.length} mention${rows.length > 1 ? "s" : ""} « ${i.text} » (${s.label.toLowerCase()}) reliée${rows.length > 1 ? "s" : ""} à cette fiche`,
+      );
+      await this.svc.log(actorId, "partner.reconciled", {
+        orgId,
+        data: { partner: p.id, source: i.source, text: i.text, count: rows.length },
+      });
+    }
+    return { linked: rows.length };
   }
 
   // ------------------------------------------------------------------ contacts et notes

@@ -54,6 +54,7 @@ import {
 } from "@/components/gov";
 import { ApiError, api } from "@/lib/api";
 import { type AgreementRow, DocumentsPanel, PartnerAgreements, type PartnerDocument } from "./Agreements";
+import { DossiersTab, MailTab, MeetingsTab, type PartnerLinks } from "./PartnerLinks";
 import { useCan, useUnits, useUsers } from "@/lib/hooks";
 import { HUES, REF_ICONS, type RefValue, useReferentials } from "@/lib/referentials";
 
@@ -124,7 +125,7 @@ interface HistoryItem {
   author_name: string | null;
   created_at: string;
 }
-interface Detail extends Partner {
+interface Detail extends Partner, PartnerLinks {
   focals: { id: string; name: string }[];
   agreements: (AgreementRow & { lead: boolean })[];
   documents: PartnerDocument[];
@@ -222,9 +223,14 @@ export function PartnersPage() {
         subtitle="L'annuaire unique des tiers de l'Agence : institutions, entreprises, établissements publics, bailleurs… avec qui nous travaillons, et où en est chaque relation."
         actions={
           can("partners.manage") && (
-            <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
-              Nouveau partenaire
-            </Button>
+            <>
+              <Button icon={<ArrowRightLeft className="size-4" />} onClick={() => nav("/partenaires/rapprochement")}>
+                Rapprocher l'existant
+              </Button>
+              <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
+                Nouveau partenaire
+              </Button>
+            </>
           )
         }
       />
@@ -502,7 +508,7 @@ function NewPartner({ onClose }: { onClose: () => void }) {
 }
 
 // ------------------------------------------------------------------ fiche
-type DetailTab = "overview" | "agreements" | "contacts" | "documents" | "history";
+type DetailTab = "overview" | "agreements" | "dossiers" | "meetings" | "mail" | "contacts" | "documents" | "history";
 
 export function PartnerPage() {
   const { id } = useParams();
@@ -672,6 +678,9 @@ export function PartnerPage() {
         items={[
           { id: "overview" as const, label: "Vue d'ensemble" },
           { id: "agreements" as const, label: "Accords", badge: d.agreements.length },
+          { id: "dossiers" as const, label: "Dossiers", badge: d.dossiers.length + d.contracts.length },
+          { id: "meetings" as const, label: "Réunions", badge: d.meetings.length },
+          { id: "mail" as const, label: "Courrier", badge: d.mail.length },
           { id: "contacts" as const, label: "Contacts", badge: d.contacts.filter((c) => !c.archived).length },
           { id: "documents" as const, label: "Documents", badge: d.documents.length },
           { id: "history" as const, label: "Historique", badge: d.notes.length },
@@ -779,6 +788,9 @@ export function PartnerPage() {
               canCreate={d.can.edit && d.state !== "suspendu" && d.state !== "clos"}
             />
           )}
+          {tab === "dossiers" && <DossiersTab links={d} />}
+          {tab === "meetings" && <MeetingsTab partner={d} links={d} />}
+          {tab === "mail" && <MailTab links={d} />}
           {tab === "documents" && (
             <DocumentsPanel
               partnerId={d.id}
@@ -840,9 +852,7 @@ export function PartnerPage() {
               )}
             </dl>
           </Section>
-          <p className="px-1 text-[12px] text-faint">
-            Engagements, réunions, courrier et dossiers liés rejoindront cette fiche dans les prochains lots.
-          </p>
+          <p className="px-1 text-[12px] text-faint">Les engagements financiers rejoindront cette fiche au lot PA4.</p>
         </aside>
       </div>
       {moving && <StateDialog partner={d} target={moving} onClose={() => setMoving(null)} onDone={refresh} />}

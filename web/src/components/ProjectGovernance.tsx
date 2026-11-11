@@ -7,10 +7,13 @@ import { DomainSelect, Field, Input, PlanActivitySelect, ProgressBar, Section, S
 import { api } from "@/lib/api";
 import { useUnits, useUsers } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
+import { PartnerSelect } from "./partners";
 
 interface Gov {
   origin: "interne" | "confie";
   sponsor: string;
+  sponsor_partner_id: string | null;
+  sponsor_partner_name: string | null;
   convention_ref: string;
   lead_id: string | null;
   lead_name: string | null;
@@ -194,6 +197,7 @@ function EditGovernance({ g, projectId, onClose }: { g: Gov; projectId: string; 
   const [f, setF] = useState({
     origin: g.origin,
     sponsor: g.sponsor,
+    sponsor_partner_id: g.sponsor_partner_id ?? "",
     convention_ref: g.convention_ref,
     lead_id: g.lead_id ?? "",
     unit_id: g.unit_id ?? "",
@@ -209,6 +213,7 @@ function EditGovernance({ g, projectId, onClose }: { g: Gov; projectId: string; 
     mutationFn: () =>
       api.put<Gov>(`/api/projects/${projectId}/governance`, {
         ...f,
+        sponsor_partner_id: f.sponsor_partner_id || null,
         lead_id: f.lead_id || null,
         unit_id: f.unit_id || null,
         domain_id: f.domain_id || null,
@@ -278,7 +283,23 @@ function EditGovernance({ g, projectId, onClose }: { g: Gov; projectId: string; 
           )}
         </Field>
         {f.origin === "confie" ? (
-          <Field label="Commanditaire">{(a) => <Input {...a} value={f.sponsor} onChange={set("sponsor")} />}</Field>
+          <Field label="Commanditaire" hint="Choisi dans l'annuaire des partenaires, ou saisi librement.">
+            {(a) => (
+              <span className="grid gap-1.5">
+                <PartnerSelect
+                  {...a}
+                  value={f.sponsor_partner_id}
+                  current={
+                    g.sponsor_partner_id
+                      ? { id: g.sponsor_partner_id, name: g.sponsor_partner_name ?? g.sponsor }
+                      : null
+                  }
+                  onChange={(id, p) => setF({ ...f, sponsor_partner_id: id, sponsor: p ? p.name : f.sponsor })}
+                />
+                <Input aria-label="Commanditaire (texte)" value={f.sponsor} onChange={set("sponsor")} />
+              </span>
+            )}
+          </Field>
         ) : (
           <span />
         )}

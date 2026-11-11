@@ -24,6 +24,7 @@ import {
   type Tone,
 } from "@/components/gov";
 import { api } from "@/lib/api";
+import { PartnerSelect, usePartnerContacts } from "@/components/partners";
 import { useCan, useMe, useProjects, useUnits, useUsers } from "@/lib/hooks";
 
 type DocStatus = "draft" | "in_circuit" | "signed" | "rejected";
@@ -681,13 +682,18 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
     confidential: false,
     reply_to_id: "",
     dossier: "",
+    partner_id: "",
+    contact_id: "",
   });
+  const contacts = usePartnerContacts(f.partner_id ? [f.partner_id] : []);
   const save = useMutation({
     mutationFn: () =>
       api.post("/api/correspondence", {
         direction: f.direction,
         subject: f.subject,
-        correspondent: f.correspondent,
+        correspondent: f.correspondent.trim() || undefined,
+        partner_id: f.partner_id || null,
+        contact_id: f.contact_id || null,
         received_on: f.received_on,
         due_on: f.due_on || null,
         confidential: f.confidential,
@@ -712,7 +718,7 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
           <Button onClick={onClose}>Annuler</Button>
           <Button
             variant="primary"
-            disabled={!f.subject.trim() || !f.correspondent.trim()}
+            disabled={!f.subject.trim() || (!f.correspondent.trim() && !f.partner_id && !f.reply_to_id)}
             loading={save.isPending}
             onClick={() => save.mutate()}
           >
@@ -727,7 +733,41 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
             <Input {...a} autoFocus value={f.subject} onChange={(e) => setF({ ...f, subject: e.target.value })} />
           )}
         </Field>
-        <Field label={direction === "entrant" ? "Expéditeur" : "Destinataire"} required className="sm:col-span-2">
+        <Field label={direction === "entrant" ? "Expéditeur (annuaire)" : "Destinataire (annuaire)"}>
+          {(a) => (
+            <PartnerSelect
+              {...a}
+              value={f.partner_id}
+              onChange={(id, p) =>
+                setF({ ...f, partner_id: id, contact_id: "", correspondent: p ? p.name : f.correspondent })
+              }
+            />
+          )}
+        </Field>
+        <Field label="Contact">
+          {(a) => (
+            <Select
+              {...a}
+              disabled={!f.partner_id}
+              value={f.contact_id}
+              onChange={(e) => setF({ ...f, contact_id: e.target.value })}
+            >
+              <option value="">Aucun contact en particulier</option>
+              {contacts.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {c.title ? ` — ${c.title}` : ""}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <Field
+          label={direction === "entrant" ? "Expéditeur" : "Destinataire"}
+          required={!f.partner_id && !f.reply_to_id}
+          className="sm:col-span-2"
+          hint="Tel qu'il figure sur le courrier ; rempli d'après le partenaire s'il est choisi."
+        >
           {(a) => (
             <Input {...a} value={f.correspondent} onChange={(e) => setF({ ...f, correspondent: e.target.value })} />
           )}

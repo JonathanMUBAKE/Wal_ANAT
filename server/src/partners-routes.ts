@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { PARTNER_STATES, type Partners } from "./partners.js";
+import { PARTNER_STATES, type Partners, RECONCILE_SOURCES } from "./partners.js";
 
 type Id = { Params: { id: string } };
 const id = z.string().max(100);
@@ -54,6 +54,15 @@ export function partnerRoutes(r: FastifyInstance, p: Partners) {
       req.userId,
       req.orgId,
       Fields.extend({ name: z.string().trim().min(1).max(300), type_code: code.min(1) }).parse(req.body),
+    ),
+  );
+  // Rapprochement du texte libre existant (lot PA3) : réservé aux gestionnaires, après relecture
+  r.get("/api/partners/reconcile", async (req) => p.reconcileList(req.userId, req.orgId));
+  r.post("/api/partners/reconcile", async (req) =>
+    p.reconcile(
+      req.userId,
+      req.orgId,
+      z.object({ source: z.enum(RECONCILE_SOURCES), text: z.string().min(1).max(500), partner_id: id }).parse(req.body),
     ),
   );
   r.get<Id>("/api/partners/:id", async (req) => p.get(req.userId, req.params.id));

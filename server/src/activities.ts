@@ -1,4 +1,5 @@
 import { uid } from "./db.js";
+import { linkPartner } from "./partner-links.js";
 import { Referentials } from "./referentials.js";
 import { badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
 
@@ -21,6 +22,8 @@ export interface Activity {
   end_on: string | null;
   location: string;
   counterpart: string;
+  /** L'interlocuteur choisi dans l'annuaire des partenaires (lot PA3). */
+  counterpart_partner_id: string | null;
   mandate: string;
   delegation: string;
   outcome: string;
@@ -40,6 +43,7 @@ export type ActivityInput = Partial<Omit<Activity, "id" | "org_id" | "created_by
 export interface Governance {
   origin?: "interne" | "confie";
   sponsor?: string;
+  sponsor_partner_id?: string | null;
   convention_ref?: string;
   lead_id?: string | null;
   unit_id?: string | null;
@@ -61,6 +65,7 @@ const FIELDS = [
   "end_on",
   "location",
   "counterpart",
+  "counterpart_partner_id",
   "mandate",
   "delegation",
   "outcome",
@@ -123,9 +128,10 @@ export class Activities {
     await this.svc.requirePerm(actorId, orgId, "agenda.view");
     const manager = await this.canManage(actorId, orgId);
     return this.svc.db.query<Activity & { lead_name: string | null; unit_name: string | null; open_followups: number }>(
-      `SELECT a.*, u.name AS lead_name, ou.name AS unit_name,
+      `SELECT a.*, u.name AS lead_name, ou.name AS unit_name, cp.name AS counterpart_partner_name,
         (SELECT count(*)::int FROM activity_followups x WHERE x.activity_id = a.id AND NOT x.done) AS open_followups
        FROM agency_activities a LEFT JOIN users u ON u.id = a.lead_id LEFT JOIN org_units ou ON ou.id = a.unit_id
+       LEFT JOIN partners cp ON cp.id = a.counterpart_partner_id
        WHERE a.org_id = $1 AND (NOT a.confidential OR $2 OR a.lead_id = $3) AND ($4::text IS NULL OR a.kind = $4)
        ORDER BY a.start_on DESC NULLS LAST, a.created_at DESC`,
       [orgId, manager, actorId, f.kind ?? null],
@@ -153,8 +159,12 @@ export class Activities {
           [a.plan_activity_id],
         )
       : null;
+    const counterpart = a.counterpart_partner_id
+      ? await this.svc.db.one<{ name: string }>("SELECT name FROM partners WHERE id = $1", [a.counterpart_partner_id])
+      : null;
     return {
       ...a,
+      counterpart_partner_name: counterpart?.name ?? null,
       followups,
       plan_activity_label: plan ? `${plan.title} (plan ${plan.year})` : null,
       can: { edit: manager || a.lead_id === actorId, remove: manager },
@@ -166,10 +176,12 @@ export class Activities {
     await this.assertRefs(orgId, i);
     // Le type vient du référentiel : ses propriétés portent les règles (confidentialité par défaut…)
     const type = await new Referentials(this.svc).resolve(orgId, "activity_type", i.kind);
+    // L'interlocuteur choisi dans l'annuaire donne son nom au champ, sauf texte saisi
+    const partner = await linkPartner(this.svc, orgId, i.counterpart_partner_id);
     const id = uid("act");
     await this.svc.db.query(
-      `INSERT INTO agency_activities (id, org_id, kind, title, description, lead_id, unit_id, domain_id, start_on, start_time, end_on, location, counterpart, mandate, delegation, decision_needed, progress, next_due_on, health, confidential, created_by, plan_activity_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
+      `INSERT INTO agency_activities (id, org_id, kind, title, description, lead_id, unit_id, domain_id, start_on, start_time, end_on, location, counterpart, mandate, delegation, decision_needed, progress, next_due_on, health, confidential, created_by, plan_activity_id, counterpart_partner_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
       [
         id,
         orgId,
@@ -183,7 +195,7 @@ export class Activities {
         i.start_time ?? null,
         i.end_on ?? null,
         i.location ?? "",
-        i.counterpart ?? "",
+        i.counterpart?.trim() || partner?.name || "",
         i.mandate ?? "",
         i.delegation ?? "",
         i.decision_needed ?? "",
@@ -193,6 +205,7 @@ export class Activities {
         i.confidential ?? type.props.confidential_default === true,
         actorId,
         i.plan_activity_id ?? null,
+        partner?.id ?? null,
       ],
     );
     await this.svc.log(actorId, "activity.created", { orgId, data: { id, kind: i.kind } });
@@ -217,6 +230,12 @@ export class Activities {
     if (start && end && String(end).slice(0, 10) < String(start).slice(0, 10))
       throw badRequest("La fin précède le début");
     await this.assertRefs(a.org_id, patch);
+    if (patch.counterpart_partner_id) {
+      const p = await linkPartner(this.svc, a.org_id, patch.counterpart_partner_id, {
+        current: a.counterpart_partner_id,
+      });
+      if (patch.counterpart === undefined && p) patch = { ...patch, counterpart: p.name };
+    }
     const sets: string[] = [];
     const vals: unknown[] = [];
     for (const k of FIELDS) {
@@ -282,10 +301,11 @@ export class Activities {
     await this.svc.require(actorId, projectId, "viewer");
     const p = await this.svc.getProject(actorId, projectId);
     const g = await this.svc.db.one<Governance & { lead_name: string | null; unit_name: string | null }>(
-      `SELECT p.origin, p.sponsor, p.convention_ref, p.lead_id, p.unit_id, p.domain_id, p.budget_planned::float8 AS budget_planned, p.budget_spent::float8 AS budget_spent, p.decision_needed,
+      `SELECT p.origin, p.sponsor, p.sponsor_partner_id, sp.name AS sponsor_partner_name, p.convention_ref, p.lead_id, p.unit_id, p.domain_id, p.budget_planned::float8 AS budget_planned, p.budget_spent::float8 AS budget_spent, p.decision_needed,
         p.plan_activity_id, pa.title || ' (plan ' || wp.year || ')' AS plan_activity_label,
         u.name AS lead_name, ou.name AS unit_name FROM projects p LEFT JOIN users u ON u.id = p.lead_id LEFT JOIN org_units ou ON ou.id = p.unit_id
-        LEFT JOIN plan_activities pa ON pa.id = p.plan_activity_id LEFT JOIN work_plans wp ON wp.id = pa.plan_id WHERE p.id = $1`,
+        LEFT JOIN plan_activities pa ON pa.id = p.plan_activity_id LEFT JOIN work_plans wp ON wp.id = pa.plan_id
+        LEFT JOIN partners sp ON sp.id = p.sponsor_partner_id WHERE p.id = $1`,
       [projectId],
     );
     const ids = p.members.map((m: { user_id: string }) => m.user_id);
@@ -333,11 +353,21 @@ export class Activities {
     });
     if ((g.budget_planned ?? 0) < 0 || (g.budget_spent ?? 0) < 0)
       throw badRequest("Un montant ne peut pas être négatif");
+    // Le commanditaire choisi dans l'annuaire donne son nom au champ, sauf texte saisi
+    if (g.sponsor_partner_id) {
+      const current = await this.svc.db.one<{ sponsor_partner_id: string | null }>(
+        "SELECT sponsor_partner_id FROM projects WHERE id = $1",
+        [projectId],
+      );
+      const p = await linkPartner(this.svc, orgId, g.sponsor_partner_id, { current: current?.sponsor_partner_id });
+      if (g.sponsor === undefined && p) g = { ...g, sponsor: p.name };
+    }
     const sets: string[] = [];
     const vals: unknown[] = [];
     for (const k of [
       "origin",
       "sponsor",
+      "sponsor_partner_id",
       "convention_ref",
       "lead_id",
       "unit_id",

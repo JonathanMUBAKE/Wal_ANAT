@@ -28,6 +28,7 @@ import { PilotagePage } from "./pages/Pilotage";
 import { DecisionsPage } from "./pages/Decisions";
 import { PartnerPage, PartnersPage } from "./pages/Partners";
 import { AgreementPage, AgreementsPage } from "./pages/Agreements";
+import { ReconcilePage } from "./pages/PartnerLinks";
 import { AttributionsPage } from "./pages/Attributions";
 import { PlanPage, PlansPage } from "./pages/Plans";
 import { CourrierPage, ParapheurPage } from "./pages/Parapheur";
@@ -62,6 +63,7 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="pilotage" element={<PilotagePage />} />
                   <Route path="decisions" element={<DecisionsPage />} />
                   <Route path="partenaires" element={<PartnersPage />} />
+                  <Route path="partenaires/rapprochement" element={<ReconcilePage />} />
                   <Route path="partenaires/:id" element={<PartnerPage />} />
                   <Route path="conventions" element={<AgreementsPage />} />
                   <Route path="conventions/:id" element={<AgreementPage />} />

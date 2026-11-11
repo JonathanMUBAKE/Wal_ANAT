@@ -22,7 +22,8 @@ export async function seedGovDemo(svc: Services) {
   // Une base déjà illustrée reçoit seulement les lots ajoutés depuis (ici, l'annuaire des partenaires)
   if (await db.one("SELECT 1 FROM agency_activities WHERE org_id = $1", [org])) {
     await seedPartners(svc, org, me);
-    return seedAgreements(svc, org, me);
+    await seedAgreements(svc, org, me);
+    return seedPartnerLinks(svc, org, me);
   }
   const a = new Activities(svc);
   const m = new Meetings(svc);
@@ -410,6 +411,45 @@ export async function seedGovDemo(svc: Services) {
   await new Gaps(svc).detect(me, org);
   await seedPartners(svc, org, me);
   await seedAgreements(svc, org, me);
+  await seedPartnerLinks(svc, org, me);
+}
+
+/** Liens fictifs (lot PA3) : réunion avec le bailleur et sa chargée de programme, courrier du ministère. */
+async function seedPartnerLinks(svc: Services, org: string, me: string) {
+  if (await svc.db.one("SELECT 1 FROM meeting_partners WHERE org_id = $1", [org])) return;
+  const find = async (acronym: string) =>
+    svc.db.one<{ id: string; name: string }>("SELECT id, name FROM partners WHERE org_id = $1 AND acronym = $2", [
+      org,
+      acronym,
+    ]);
+  const ffdt = await find("FFDT");
+  const mfuh = await find("MFUH");
+  if (!ffdt || !mfuh) return;
+  const awa = await svc.db.one<{ id: string }>("SELECT id FROM partner_contacts WHERE partner_id = $1 AND principal", [
+    ffdt.id,
+  ]);
+  await new Meetings(svc).create(me, org, {
+    meeting_type: "Comité de suivi du programme",
+    title: "Revue semestrielle avec le bailleur",
+    meeting_date: day(6),
+    start_time: "10:00",
+    end_time: "12:00",
+    location: "Salle du conseil",
+    partner_ids: [ffdt.id],
+    invitees: [...(awa ? [{ contact_id: awa.id }] : []), { user_id: "u_karim" }],
+  });
+  const secretary = await svc.db.one<{ id: string }>(
+    "SELECT id FROM partner_contacts WHERE partner_id = $1 AND principal",
+    [mfuh.id],
+  );
+  await new Registers(svc).registerMail(me, org, {
+    direction: "entrant",
+    subject: "Demande d'appui pour la révision des plans d'urbanisme provinciaux",
+    partner_id: mfuh.id,
+    contact_id: secretary?.id ?? null,
+    received_on: day(-2),
+    due_on: day(8),
+  });
 }
 
 /** Accords fictifs (lot PA2) : en vigueur, à l'échéance proche, en préparation, au parapheur, avec un avenant. */

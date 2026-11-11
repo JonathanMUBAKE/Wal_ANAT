@@ -23,6 +23,7 @@ import { Button, Dialog, Empty, cn } from "@/components/ui";
 import { Badge, GroupedTable, Seal } from "@/components/collection";
 import { STAGE, stageOf } from "@/components/MeetingViews";
 import { type MeetingRow, NewMeeting } from "./Meetings";
+import { PartnerSelect } from "@/components/partners";
 import {
   Field,
   Input,
@@ -669,6 +670,7 @@ function NewContract({ projectId, onClose }: { projectId: string; onClose: () =>
   const { data: users } = useUsers();
   const [f, setF] = useState({
     user_id: "",
+    partner_id: "",
     consultant_name: "",
     title: "",
     terms: "",
@@ -685,6 +687,7 @@ function NewContract({ projectId, onClose }: { projectId: string; onClose: () =>
         ...f,
         project_id: projectId,
         user_id: f.user_id || null,
+        partner_id: f.partner_id || null,
         amount: f.amount ? Number(f.amount) : null,
       }),
     onSuccess: () => {
@@ -711,7 +714,7 @@ function NewContract({ projectId, onClose }: { projectId: string; onClose: () =>
               !f.start_on ||
               !f.end_on ||
               !f.supervisor_id ||
-              (!f.user_id && !f.consultant_name.trim())
+              (!f.user_id && !f.partner_id && !f.consultant_name.trim())
             }
             loading={create.isPending}
             onClick={() => create.mutate()}
@@ -730,6 +733,17 @@ function NewContract({ projectId, onClose }: { projectId: string; onClose: () =>
               placeholder="Aucun compte"
               value={f.user_id}
               onChange={(v) => setF({ ...f, user_id: v })}
+            />
+          )}
+        </Field>
+        <Field label="Cabinet (annuaire)" hint="Partenaire classé « prestataire ».">
+          {(a) => (
+            <PartnerSelect
+              {...a}
+              supplier
+              placeholder="Aucun cabinet de l'annuaire"
+              value={f.partner_id}
+              onChange={(id, p) => setF({ ...f, partner_id: id, consultant_name: p ? p.name : f.consultant_name })}
             />
           )}
         </Field>

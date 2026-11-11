@@ -1,4 +1,5 @@
 import { uid } from "./db.js";
+import { linkPartner } from "./partner-links.js";
 import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
 
 export type DeliverableStatus = "prevu" | "en_cours" | "soumis" | "en_revue" | "a_corriger" | "valide";
@@ -27,6 +28,7 @@ export interface Contract {
   project_id: string | null;
   user_id: string | null;
   consultant_name: string;
+  partner_id: string | null;
   title: string;
   terms: string;
   start_on: string;
@@ -57,6 +59,8 @@ export type DeliverableInput = Partial<
 export type ContractInput = {
   project_id?: string | null;
   user_id?: string | null;
+  /** Le cabinet prestataire, choisi dans l'annuaire des partenaires (lot PA3). */
+  partner_id?: string | null;
   consultant_name?: string;
   title: string;
   terms?: string;
@@ -460,11 +464,13 @@ export class Deliverables {
       throw badRequest("Le superviseur doit être membre de l'organisation");
     if (i.user_id && !(await this.svc.orgRole(i.user_id, orgId)))
       throw badRequest("Le consultant doit d'abord être invité dans l'organisation");
-    const name = i.consultant_name?.trim() || (i.user_id ? (await this.svc.user(i.user_id)).name : "");
+    const partner = await linkPartner(this.svc, orgId, i.partner_id, { supplier: true });
+    const name =
+      i.consultant_name?.trim() || (i.user_id ? (await this.svc.user(i.user_id)).name : "") || partner?.name || "";
     if (!name) throw badRequest("Indiquez le nom du consultant");
     const id = uid("mis");
     await this.svc.db.query(
-      "INSERT INTO consultant_contracts (id, org_id, user_id, consultant_name, title, terms, start_on, end_on, amount, currency, supervisor_id, created_by, project_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
+      "INSERT INTO consultant_contracts (id, org_id, user_id, consultant_name, title, terms, start_on, end_on, amount, currency, supervisor_id, created_by, project_id, partner_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)",
       [
         id,
         orgId,
@@ -479,6 +485,7 @@ export class Deliverables {
         i.supervisor_id,
         actorId,
         i.project_id,
+        partner?.id ?? null,
       ],
     );
     await this.svc.log(actorId, "contract.created", { orgId, projectId: i.project_id, data: { id } });

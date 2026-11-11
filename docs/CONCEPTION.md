@@ -176,7 +176,7 @@ l'**activité** (une représentation ou un engagement ponctuel).
 | États « annulée » / « reportée » d'une activité | ⬜ |
 | Accès externe des consultants qui expire avec le contrat, TdR structurés (P4) | ⬜ |
 | **Financement du projet par source (partenaire, budget propre)** (partie 4) | ⬜ |
-| **Le commanditaire, l'interlocuteur, le prestataire choisis dans l'annuaire des partenaires** (partie 4) | ⬜ |
+| **Le commanditaire, l'interlocuteur, le prestataire choisis dans l'annuaire des partenaires** (partie 4, lot PA3) | ✅ |
 
 ### 3.6 Pilotage — Décisions de la DG
 
@@ -200,7 +200,7 @@ l'**activité** (une représentation ou un engagement ponctuel).
 | Circuit soumettre → retourner / valider par la présidence, numéro, figé, export Word, diffusion | ✅ |
 | Recommandations suivies, devenant tâches du projet | ✅ |
 | Rattachement à un projet ou une activité | ✅ |
-| **Réunion avec un partenaire : convoqués extérieurs pris parmi ses contacts** (partie 4) | ⬜ |
+| **Réunion avec un partenaire : convoqués extérieurs pris parmi ses contacts** (partie 4, lot PA3) | ✅ |
 | Invitation de calendrier envoyée aux convoqués (Lot G) | ⬜ |
 
 ### 3.8 Suivi-évaluation — Plans de travail
@@ -235,7 +235,7 @@ l'**activité** (une représentation ou un engagement ponctuel).
 | --- | --- |
 | Registre entrant / sortant numéroté, imputation avec instruction, délai, relance remontée | ✅ |
 | Réponse sortante liée à l'entrant, qui le clôt ; rattachement à un dossier | ✅ |
-| **Correspondant choisi dans l'annuaire des partenaires ; courrier visible sur la fiche** (partie 4) | ⬜ |
+| **Correspondant choisi dans l'annuaire des partenaires ; courrier visible sur la fiche** (partie 4, lot PA3) | ✅ |
 
 ### 3.12 Espace personnel
 
@@ -512,7 +512,7 @@ Cas fictif : un bailleur propose d'appuyer l'élaboration des schémas provincia
 | --- | --- | --- |
 | **PA1. L'annuaire** ✅ | Référentiels (types, catégories), fiche partenaire, états et cycle, contacts, points focaux, doublons et fusion, notes d'échange, liste filtrable (type, catégorie, état, recherche), droits, journal, matrice | — |
 | **PA2. Accords et pièces** ✅ | Types d'accords, fiche accord multi-parties, cycle de vie, registre `CONV/AAAA/NNNN`, avenants, pièces de collaboration par nature, passage au parapheur, alertes d'échéance | PA1 |
-| **PA3. Les liens** | Partenaire choisi dans projets, activités, courrier, contrats, réunions (programmer depuis la fiche, contacts convoqués) ; onglets Dossiers, Réunions, Courrier, Historique ; écran de rapprochement de l'existant | PA1 |
+| **PA3. Les liens** ✅ | Partenaire choisi dans projets, activités, courrier, contrats, réunions (programmer depuis la fiche, contacts convoqués) ; onglets Dossiers, Réunions, Courrier, Historique ; écran de rapprochement de l'existant | PA1 |
 | **PA4. Engagements et financement** | Engagements, décaissements, financement des projets par source, lien au plan, cartes du tableau de bord DG | PA2 |
 | **PA5. IA** | Note de préparation, résumé de la relation, proposition d'accord à partir d'un scan, veille | PA2, Lot D souhaitable |
 

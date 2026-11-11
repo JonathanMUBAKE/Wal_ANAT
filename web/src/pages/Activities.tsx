@@ -5,6 +5,7 @@ import { ArrowLeft, Briefcase, CalendarRange, Lock, Plus, Save, Trash2 } from "l
 import { toast } from "sonner";
 import { Button, Checkbox, ConfirmDialog, Dialog, Empty, IconButton, ProjectIcon, cn } from "@/components/ui";
 import { useShell } from "@/lib/shell";
+import { PartnerSelect } from "@/components/partners";
 import type { ProjectSummary } from "@/lib/types";
 import {
   DomainSelect,
@@ -49,6 +50,8 @@ interface Activity {
   end_on: string | null;
   location: string;
   counterpart: string;
+  counterpart_partner_id: string | null;
+  counterpart_partner_name?: string | null;
   mandate: string;
   delegation: string;
   outcome: string;
@@ -240,6 +243,7 @@ function NewActivity({ defaultKind, onClose }: { defaultKind: Kind; onClose: () 
     start_time: "",
     location: "",
     counterpart: "",
+    counterpart_partner_id: "",
   });
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   const choices = refs?.activity_type.filter((t) => !t.archived) ?? [];
@@ -251,6 +255,7 @@ function NewActivity({ defaultKind, onClose }: { defaultKind: Kind; onClose: () 
         lead_id: f.lead_id || undefined,
         start_on: f.start_on || null,
         start_time: f.start_time || null,
+        counterpart_partner_id: f.counterpart_partner_id || null,
       }),
     onSuccess: (a) => {
       qc.invalidateQueries({ queryKey: ["activities"] });
@@ -316,8 +321,27 @@ function NewActivity({ defaultKind, onClose }: { defaultKind: Kind; onClose: () 
           {(a) => <Input {...a} type="time" value={f.start_time} onChange={set("start_time")} />}
         </Field>
         <Field label="Lieu">{(a) => <Input {...a} value={f.location} onChange={set("location")} />}</Field>
-        <Field label={counterpartOf(type)}>
-          {(a) => <Input {...a} value={f.counterpart} onChange={set("counterpart")} />}
+        <Field
+          label={counterpartOf(type)}
+          className="sm:col-span-2"
+          hint="Choisi dans l'annuaire des partenaires, ou saisi librement."
+        >
+          {(a) => (
+            <span className="grid gap-1.5 sm:grid-cols-2">
+              <PartnerSelect
+                {...a}
+                value={f.counterpart_partner_id}
+                onChange={(id, p) =>
+                  setF({ ...f, counterpart_partner_id: id, counterpart: p ? p.name : f.counterpart })
+                }
+              />
+              <Input
+                aria-label={`${counterpartOf(type)} (texte)`}
+                value={f.counterpart}
+                onChange={set("counterpart")}
+              />
+            </span>
+          )}
         </Field>
       </div>
     </Dialog>
@@ -365,6 +389,7 @@ export function ActivityPage() {
         end_on: d!.end_on || null,
         location: d!.location,
         counterpart: d!.counterpart,
+        counterpart_partner_id: d!.counterpart_partner_id,
         mandate: d!.mandate,
         delegation: d!.delegation,
         outcome: d!.outcome,
@@ -537,7 +562,34 @@ export function ActivityPage() {
                 )}
               </Field>
               <Field label="Lieu">{(a) => <Input {...a} {...text("location")} />}</Field>
-              <Field label={counterpartOf(type)}>{(a) => <Input {...a} {...text("counterpart")} />}</Field>
+              <Field label={counterpartOf(type)}>
+                {(a) => (
+                  <span className="grid gap-1.5">
+                    <PartnerSelect
+                      {...a}
+                      disabled={ro}
+                      value={d.counterpart_partner_id}
+                      current={
+                        d.counterpart_partner_id
+                          ? { id: d.counterpart_partner_id, name: d.counterpart_partner_name ?? d.counterpart }
+                          : null
+                      }
+                      onChange={(id, p) =>
+                        patch({ counterpart_partner_id: id || null, counterpart: p ? p.name : d.counterpart })
+                      }
+                    />
+                    <Input aria-label={`${counterpartOf(type)} (texte)`} {...text("counterpart")} />
+                    {d.counterpart_partner_id && (
+                      <Link
+                        to={`/partenaires/${d.counterpart_partner_id}`}
+                        className="text-[12px] text-primary hover:underline"
+                      >
+                        Voir la fiche du partenaire
+                      </Link>
+                    )}
+                  </span>
+                )}
+              </Field>
               {(d.kind === "commission" || !!d.mandate) && (
                 <Field label="Mandat de l'Agence" className="sm:col-span-2" hint="La position que l'Agence y défend.">
                   {(a) => <Textarea {...a} {...area("mandate")} />}

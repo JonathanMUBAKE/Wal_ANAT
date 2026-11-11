@@ -33,6 +33,8 @@ import { Decisions } from "./decisions.js";
 import { referentialRoutes } from "./referentials-routes.js";
 import { Referentials } from "./referentials.js";
 import { partnerRoutes } from "./partners-routes.js";
+import { dossierDocumentRoutes } from "./dossier-documents-routes.js";
+import { DossierDocuments } from "./dossier-documents.js";
 import { agreementRoutes } from "./agreements-routes.js";
 import { Agreements } from "./agreements.js";
 import { Partners } from "./partners.js";
@@ -302,6 +304,7 @@ export async function buildApp(opts: AppOptions = {}) {
     decisionRoutes(r, new Decisions(svc));
     referentialRoutes(r, new Referentials(svc));
     partnerRoutes(r, new Partners(svc));
+    dossierDocumentRoutes(r, new DossierDocuments(svc));
     agreementRoutes(r, new Agreements(svc));
     r.get("/api/me", async (req) => {
       const security = await db.one<{ platform_role: string | null; totp_enabled: boolean }>(

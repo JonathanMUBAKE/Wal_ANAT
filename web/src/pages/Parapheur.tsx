@@ -1,6 +1,19 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, Check, Clock, FileSignature, Inbox, Mail, Plus, Trash2, X } from "lucide-react";
+import {
+  ArrowDown,
+  Check,
+  CheckCircle2,
+  Clock,
+  FileSignature,
+  Inbox,
+  Mail,
+  Plus,
+  Trash2,
+  UserRoundPlus,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Empty, IconButton, cn } from "@/components/ui";
 import {
@@ -25,6 +38,9 @@ import {
 } from "@/components/gov";
 import { api } from "@/lib/api";
 import { PartnerSelect, usePartnerContacts } from "@/components/partners";
+import { RoundBtn } from "@/components/collection";
+import { DossierDocuments } from "@/components/documents";
+import { Fact, Facts, RowActions } from "@/components/record";
 import { useCan, useMe, useProjects, useUnits, useUsers } from "@/lib/hooks";
 
 type DocStatus = "draft" | "in_circuit" | "signed" | "rejected";
@@ -538,6 +554,12 @@ interface MailRow {
   project_name: string | null;
   activity_id: string | null;
   activity_title: string | null;
+  partner_id: string | null;
+  partner_name: string | null;
+  contact_name: string | null;
+  doc_date: string | null;
+  confidential: boolean;
+  assignee_id: string | null;
 }
 /** Instructions d'imputation usuelles du bureau d'ordre. */
 const INSTRUCTIONS = ["Pour traitement", "Pour avis", "Pour information"];
@@ -551,6 +573,7 @@ export function CourrierPage() {
   const [tab, setTab] = useState<"entrant" | "sortant">("entrant");
   const [creating, setCreating] = useState(false);
   const [assign, setAssign] = useState<MailRow | null>(null);
+  const [open, setOpen] = useState<MailRow | null>(null);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["correspondence", tab],
@@ -602,7 +625,7 @@ export function CourrierPage() {
               ]}
             >
               {data.map((m) => (
-                <Tr key={m.id}>
+                <Tr key={m.id} onClick={() => setOpen(m)}>
                   <Td className="whitespace-nowrap font-mono text-[12px]">{m.reference}</Td>
                   <Td className="font-medium">
                     {m.subject}
@@ -632,17 +655,19 @@ export function CourrierPage() {
                   <Td>
                     <Status {...MAIL[m.status]} />
                   </Td>
-                  <Td className="whitespace-nowrap text-right">
-                    {m.status !== "traite" && can("correspondence.manage") && (
-                      <>
-                        <Button size="sm" variant="ghost" onClick={() => setAssign(m)}>
-                          Imputer
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => close.mutate(m.id)}>
-                          Clôturer
-                        </Button>
-                      </>
-                    )}
+                  <Td>
+                    <RowActions label={m.reference} onView={() => setOpen(m)}>
+                      {m.status !== "traite" && can("correspondence.manage") && (
+                        <>
+                          <RoundBtn label={`Imputer ${m.reference}`} onClick={() => setAssign(m)}>
+                            <UserRoundPlus className="size-4" />
+                          </RoundBtn>
+                          <RoundBtn label={`Clôturer ${m.reference}`} onClick={() => close.mutate(m.id)}>
+                            <CheckCircle2 className="size-4" />
+                          </RoundBtn>
+                        </>
+                      )}
+                    </RowActions>
                   </Td>
                 </Tr>
               ))}
@@ -656,6 +681,17 @@ export function CourrierPage() {
       </div>
       {creating && <NewMail direction={tab} onClose={() => setCreating(false)} />}
       {assign && <Assign m={assign} onClose={() => setAssign(null)} />}
+      {open && (
+        <MailDialog
+          m={open}
+          canManage={can("correspondence.manage")}
+          onAssign={() => {
+            setAssign(open);
+            setOpen(null);
+          }}
+          onClose={() => setOpen(null)}
+        />
+      )}
     </div>
   );
 }
@@ -930,6 +966,77 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
             </Select>
           )}
         </Field>
+      </div>
+    </Dialog>
+  );
+}
+
+/** Fiche d'un courrier : le registre en lecture, la pièce numérisée et les documents, puis les actes (imputer). */
+function MailDialog({
+  m,
+  canManage,
+  onAssign,
+  onClose,
+}: {
+  m: MailRow;
+  canManage: boolean;
+  onAssign: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog
+      open
+      onOpenChange={onClose}
+      title={m.subject}
+      description={`${m.reference} · courrier ${m.direction}${m.confidential ? " · confidentiel" : ""}`}
+      width={720}
+      footer={
+        <>
+          {canManage && m.status !== "traite" && (
+            <Button icon={<UserRoundPlus className="size-4" />} onClick={onAssign}>
+              Imputer
+            </Button>
+          )}
+          <Button onClick={onClose}>Fermer</Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Facts className="p-0 pt-0">
+          <Fact label={m.direction === "entrant" ? "Expéditeur" : "Destinataire"}>
+            {m.partner_id ? (
+              <Link to={`/partenaires/${m.partner_id}`} className="text-primary hover:underline">
+                {m.correspondent}
+              </Link>
+            ) : (
+              m.correspondent
+            )}
+            {m.contact_name && <span className="block text-[12px] font-normal text-muted">{m.contact_name}</span>}
+          </Fact>
+          <Fact label="État">
+            <Status {...MAIL[m.status]} />
+          </Fact>
+          <Fact label="Date du courrier">{m.doc_date && frDate(m.doc_date)}</Fact>
+          <Fact label={m.direction === "entrant" ? "Reçu le" : "Envoyé le"}>{frDate(m.received_on)}</Fact>
+          <Fact label="Imputation">
+            {m.assignee_name ?? m.unit_name}
+            {m.instruction && <span className="block text-[12px] font-normal text-muted">{m.instruction}</span>}
+          </Fact>
+          <Fact label="Délai de réponse">
+            {m.due_on && (
+              <span className={m.status !== "traite" && isLate(m.due_on) ? "text-danger" : ""}>{frDate(m.due_on)}</span>
+            )}
+          </Fact>
+          <Fact label="Dossier">{m.project_name ?? m.activity_title}</Fact>
+          <Fact label="Lien">
+            {m.reply_to_reference
+              ? `Répond à ${m.reply_to_reference}`
+              : m.response_reference
+                ? `Réponse : ${m.response_reference}`
+                : null}
+          </Fact>
+        </Facts>
+        <DossierDocuments owner="mail" ownerId={m.id} title="Pièce numérisée et documents" />
       </div>
     </Dialog>
   );

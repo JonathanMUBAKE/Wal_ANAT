@@ -107,7 +107,7 @@ Une seule échelle : **32 px** (compacte : pagination, actions de ligne), **36 p
 1. Une fiche (partenaire, accord, réunion, activité, contact, document…) **s'ouvre toujours en lecture** : faits en paires libellé / valeur (`Facts`, `Fact`), textes longs en paragraphes (`LongText`), aucun champ de saisie.
 2. En tête, à droite : **« Modifier »** si le profil le permet (`RecordActions`). Pendant la modification : **« Annuler »** (rien n'est perdu côté serveur) et **« Enregistrer »** (principal). On ne quitte jamais une fiche avec des champs ouverts sans l'avoir décidé.
 3. Les actes du circuit (changer l'état, soumettre au parapheur, résilier…) restent des boutons distincts, chacun avec sa boîte de dialogue ; ils ne se mêlent pas à la modification.
-4. Une petite fiche (contact, document) s'ouvre dans une boîte de dialogue, sur le même principe : lecture, puis « Modifier ».
+4. Une petite fiche (contact, document, courrier, décision) s'ouvre dans un **tiroir** à droite, sur le même principe : lecture, puis « Modifier ».
 
 ### Grille CRUD
 1. **Créer** : bouton principal en tête de page ou de section (« Nouveau partenaire », « Ajouter un contact », « Ajouter un document »).
@@ -115,6 +115,15 @@ Une seule échelle : **32 px** (compacte : pagination, actions de ligne), **36 p
 3. **Modifier, supprimer** : boutons-icônes en bout de ligne (`RowActions` : œil, crayon, corbeille), puis les actions propres à l'objet (archiver, télécharger).
 4. **Selon les droits** : un bouton n'apparaît que si le profil peut agir ; le serveur refuse de toute façon ce qui n'est pas permis. Ce qui ne se supprime pas par règle (pièce officielle, acte numéroté, fiche qui a une histoire) se clôt, s'archive ou se remplace : la corbeille n'apparaît pas et la fiche dit pourquoi.
 5. **Contrôles** : toute règle de saisie (champ obligatoire selon le type, dates cohérentes, doublon) est vérifiée par le serveur ; l'écran la montre sous le champ avant l'envoi.
+
+### Où s'ouvre quoi — page, tiroir, modal (`components/drawer.tsx`)
+| Surface | Pour | Exemples |
+| --- | --- | --- |
+| **Page** | Un dossier qui a ses propres onglets et une vie longue | Partenaire, accord, projet, réunion, activité, plan |
+| **Tiroir** (à droite, 600 px, plein écran sur téléphone) | **Consulter** une fiche secondaire sans quitter la liste, puis la modifier sur place | Contact, document, courrier, décision, document du parapheur, recommandation |
+| **Modal** (centré) | **Décider** : confirmer, motiver, choisir une option courte | Supprimer, résilier, rejeter avec motif, changer d'état, abandonner des modifications |
+
+Le modal n'est jamais une fiche de consultation ; le tiroir n'est jamais une confirmation. Un tiroir n'en ouvre pas un autre : un lien vers un autre objet mène à sa page ou remplace le contenu du tiroir.
 
 ### Charpente de l'application (modèle Tracklio / Oripio)
 - **Barre du haut** (64 px, blanche, filet en bas) : recherche bordée à gauche (« Rechercher une réunion, un dossier, une personne… », ⌘K) ; à droite, carrés d'icône bordés de 40 px (Assistant IA, Boîte de réception, Notifications avec pastille rouge), puis la pastille du compte (photo, nom, rôle, chevron) qui ouvre profil, sécurité, organisations, thème et déconnexion.
@@ -124,7 +133,46 @@ Une seule échelle : **32 px** (compacte : pagination, actions de ligne), **36 p
 ### Calendrier
 Colonne gauche : mini-mois, carte de rappel, légende-filtre. Centre : en-tête de période (‹ date ›, Aujourd'hui, Jour/Semaine/Mois). Droite : détail de l'élément choisi.
 
-## 5. Écriture de l'interface
+## 5. Règles de comportement — une institution publique
+
+L'outil sert une administration : il doit inspirer confiance par sa **prévisibilité**. Ces règles s'appliquent à
+chaque écran ; une revue d'écran les vérifie une à une.
+
+### 5.1 Prévisibilité
+1. **Un geste, un effet, partout le même** : le clic sur une ligne consulte ; le crayon modifie ; la corbeille supprime ; « Enregistrer » est toujours le bouton principal à droite ; « Annuler » ne fait jamais rien d'irréversible.
+2. **Aucune action ne surprend** : un bouton annonce ce qu'il fait (verbe + objet : « Imputer le courrier », « Déclarer en vigueur »), jamais « OK » ni « Valider » seul.
+3. **Ce qui n'est pas permis n'est pas proposé.** Un bouton absent vaut mieux qu'un bouton qui échoue ; quand la règle mérite d'être connue (pièce officielle, accord conclu), la fiche dit pourquoi l'action n'existe pas.
+
+### 5.2 Aucune perte silencieuse
+4. **Des champs ouverts et modifiés ne se ferment pas sans confirmation** (tiroir, page, navigation).
+5. **Une saisie refusée reste à l'écran**, avec le message sous le champ concerné ; rien n'est vidé après une erreur.
+6. **Pas d'enregistrement automatique des fiches** : la personne décide du moment où sa modification devient officielle.
+
+### 5.3 Actes et conséquences
+7. **Avant un acte irréversible** (supprimer, résilier, valider un compte rendu, déclarer en vigueur), le modal nomme l'objet, dit la conséquence et rappelle ce qui sera tracé. Le bouton de confirmation reprend le verbe (« Résilier »), en rouge s'il détruit.
+8. **Ce qui fait foi ne se supprime pas** : acte numéroté, pièce officielle, fiche qui a une histoire. Il se remplace (avenant, décision de remplacement), se clôt ou s'archive.
+9. **Le motif est obligatoire** pour suspendre, clore, rejeter, résilier, rouvrir : il est conservé à l'historique.
+
+### 5.4 Lisibilité
+10. **Un état se lit sans la couleur** : pastille + mot (« En vigueur »), jamais une couleur seule.
+11. **Numéros officiels en sceau** (`CONV/2026/0004`, `ENT/2026/0142`), jamais tronqués ; dates au format **jj/mm/aaaa** ; montants avec séparateur de milliers et devise.
+12. **Une valeur absente s'écrit « — »**, pas un champ vide ni « null ».
+13. **Langue administrative sobre** : vouvoiement implicite, phrases courtes, pas d'anglicisme ni de familiarité, pas de point d'exclamation.
+
+### 5.5 Retour d'information
+14. **Succès** : message bref en bas d'écran (« Accord enregistré »), qui disparaît seul. **Échec** : message clair du serveur, en français, qui dit quoi faire ; il reste jusqu'à ce que la personne le ferme.
+15. **Chargement** : squelette à la place du contenu, jamais d'écran blanc ; bouton en cours d'envoi désactivé (pas de double envoi).
+16. **Liste vide** : une phrase qui dit pourquoi elle est vide et quoi faire, avec le bouton de création si le droit existe.
+
+### 5.6 Traçabilité et confidentialité
+17. **Chaque fiche dit qui l'a créée ou modifiée, et quand** (pied de fiche ou historique).
+18. **Une information confidentielle porte son cadenas** partout où elle apparaît ; elle n'apparaît jamais à qui n'y a pas droit, même dans un compteur.
+
+### 5.7 Accessibilité et clavier
+19. Échap ferme le tiroir ou le modal (avec la confirmation de la règle 4) ; le focus revient à l'élément qui l'a ouvert.
+20. Chaque bouton-icône a une étiquette ; chaque champ, un libellé permanent ; contraste conforme RGAA / WCAG AA.
+
+## 6. Écriture de l'interface
 
 Ton : **institutionnel et chaleureux**. On vouvoie, on parle concret, on n'emploie ni jargon informatique ni anglicisme.
 

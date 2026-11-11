@@ -78,6 +78,10 @@ export class Registers {
     if (m.confidential && !manager && m.assignee_id !== actorId) throw notFound("Courrier introuvable");
     return { m, manager };
   }
+  /** Lecture d'un courrier par un autre module (documents du dossier) : mêmes droits que le registre. */
+  access(actorId: string, id: string) {
+    return this.mailReadable(actorId, id);
+  }
   async listMail(
     actorId: string,
     orgId: string,

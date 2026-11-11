@@ -9,6 +9,7 @@ import {
   ChartNoAxesGantt,
   FileCheck2,
   FileSignature,
+  FolderOpen,
   Landmark,
   Check,
   ChevronDown,
@@ -54,6 +55,7 @@ import { CalendarView } from "@/views/CalendarView";
 import { TimelineView } from "@/views/TimelineView";
 import { DashboardView } from "@/views/DashboardView";
 import { ProjectContracts, ProjectDeliverables, ProjectMeetings } from "./ProjectDossier";
+import { DossierDocuments } from "@/components/documents";
 import { AutomationsView } from "@/views/AutomationsView";
 
 export interface ViewProps {
@@ -72,6 +74,7 @@ const VIEWS = [
   { id: "livrables", label: "Livrables", icon: FileCheck2 },
   { id: "contrats", label: "Contrats", icon: FileSignature },
   { id: "reunions", label: "Réunions", icon: Landmark },
+  { id: "documents", label: "Documents", icon: FolderOpen },
   { id: "dashboard", label: "Tableau de bord", icon: BarChart3 },
   { id: "automations", label: "Automatisations", icon: Zap },
 ] as const;
@@ -236,6 +239,11 @@ export function ProjectPage() {
         {view === "livrables" && <ProjectDeliverables projectId={project.id} />}
         {view === "contrats" && <ProjectContracts projectId={project.id} />}
         {view === "reunions" && <ProjectMeetings projectId={project.id} />}
+        {view === "documents" && (
+          <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
+            <DossierDocuments owner="project" ownerId={project.id} title="Documents du projet" />
+          </div>
+        )}
       </div>
       <StatusUpdateDialog projectId={project.id} open={statusOpen} onOpenChange={setStatusOpen} />
     </div>

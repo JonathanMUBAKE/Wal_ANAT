@@ -1,5 +1,6 @@
 import { ATTACHMENT_MAX_BYTES, cleanName } from "./attachments.js";
 import { type Queryable, uid } from "./db.js";
+import { type DocumentMeta, checkDocumentMeta } from "./document-meta.js";
 import { ALLOWED_FORMATS, detectType } from "./documents/filetypes.js";
 import { Partners, agreementRef, agreementState } from "./partners.js";
 import { Referentials } from "./referentials.js";
@@ -16,16 +17,6 @@ export type AgreementState = "preparation" | "signature" | "vigueur" | "resilie"
 /** Seuils d'alerte avant l'échéance, du plus large au plus serré (paramétrables au lot P5). */
 const REMINDERS = [90, 30, 7];
 const MAX_DOCUMENTS = 100;
-
-/** Description d'une pièce : les champs exigés dépendent de sa nature (docs/DESIGN-SYSTEM.md § 4). */
-export interface DocumentMeta {
-  title?: string;
-  other_label?: string;
-  reference?: string;
-  issued_on?: string | null;
-  expires_on?: string | null;
-  notes?: string;
-}
 
 export interface AgreementInput {
   type_code?: string;
@@ -772,7 +763,7 @@ export class Agreements {
     if (!manager && !focal)
       throw forbidden("Seuls les gestionnaires des partenariats et les points focaux joignent des pièces");
     const nature = await this.ref.resolve(p.org_id, "partner_doc_nature", i.nature);
-    const meta = this.checkMeta(nature, i);
+    const meta = checkDocumentMeta(nature, i);
     if (
       i.agreement_id &&
       !(await this.svc.db.one("SELECT 1 FROM agreement_parties WHERE agreement_id = $1 AND partner_id = $2", [
@@ -840,28 +831,6 @@ export class Agreements {
     };
   }
 
-  /** Contrôle de la description selon la nature : dates, référence, précision ; dates réelles et cohérentes. */
-  private checkMeta(nature: { label: string; props: Record<string, unknown> }, i: DocumentMeta) {
-    const m = {
-      title: i.title?.trim() ?? "",
-      other_label: i.other_label?.trim() ?? "",
-      reference: i.reference?.trim() ?? "",
-      issued_on: i.issued_on || null,
-      expires_on: i.expires_on || null,
-      notes: i.notes?.trim() ?? "",
-    };
-    const what = `pour un document « ${nature.label} »`;
-    if (nature.props.dated && !m.issued_on) throw badRequest(`La date de production est obligatoire ${what}`);
-    if (nature.props.expires && !m.expires_on) throw badRequest(`La date d'expiration est obligatoire ${what}`);
-    if (nature.props.referenced && !m.reference) throw badRequest(`La référence est obligatoire ${what}`);
-    if (nature.props.precise && !m.other_label) throw badRequest("Précisez la nature du document");
-    for (const d of [m.issued_on, m.expires_on]) if (d && !isRealDate(d)) throw badRequest(`Date invalide : ${d}`);
-    if (m.issued_on && m.issued_on > today()) throw badRequest("La date de production ne peut pas être dans le futur");
-    if (m.issued_on && m.expires_on && m.expires_on < m.issued_on)
-      throw badRequest("La date d'expiration précède la date de production");
-    return m;
-  }
-
   /** Modifier la description d'une pièce : son auteur, un point focal ou un gestionnaire ; une pièce officielle le reste. */
   async updateDocument(actorId: string, docId: string, i: DocumentMeta & { nature_code?: string }) {
     await this.human(actorId);
@@ -889,7 +858,7 @@ export class Agreements {
     );
     if (d.official && !nature.props.official)
       throw new HttpError(409, "Une pièce officielle reste officielle : choisissez une autre nature officielle");
-    const meta = this.checkMeta(nature, {
+    const meta = checkDocumentMeta(nature, {
       title: i.title ?? cur.title,
       other_label: i.other_label ?? cur.other_label,
       reference: i.reference ?? cur.reference,

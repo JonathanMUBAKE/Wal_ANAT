@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button, Checkbox, ConfirmDialog, Dialog, Empty, IconButton, ProjectIcon, cn } from "@/components/ui";
 import { useShell } from "@/lib/shell";
 import { PartnerSelect } from "@/components/partners";
+import { DossierDocuments } from "@/components/documents";
 import { RefSelect } from "@/components/refselect";
 import type { ProjectSummary } from "@/lib/types";
 import {
@@ -674,6 +675,7 @@ export function ActivityPage() {
               </label>
             </div>
           </Section>
+          <DossierDocuments owner="activity" ownerId={d.id} title="Documents de l'activité" />
           <Section title="Suites à donner">
             <div className="space-y-2 p-4">
               {!d.followups.length && <p className="text-[13px] text-muted">Aucune suite enregistrée.</p>}

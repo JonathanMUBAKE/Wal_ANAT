@@ -51,7 +51,8 @@ import {
   type Tone,
 } from "@/components/gov";
 import { ApiError, api } from "@/lib/api";
-import { type AgreementRow, DocumentsPanel, PartnerAgreements, type PartnerDocument } from "./Agreements";
+import { type AgreementRow, PartnerAgreements } from "./Agreements";
+import { DocumentsPanel, type PartnerDocument, partnerDocs } from "@/components/documents";
 import { DossiersTab, MailTab, MeetingsTab, type PartnerLinks } from "./PartnerLinks";
 import { useCan, useMe, useUnits, useUsers } from "@/lib/hooks";
 import { RoundBtn } from "@/components/collection";
@@ -892,7 +893,7 @@ export function PartnerPage() {
           {tab === "mail" && <MailTab links={d} />}
           {tab === "documents" && (
             <DocumentsPanel
-              partnerId={d.id}
+              ends={partnerDocs(d.id)}
               documents={d.documents}
               agreements={d.agreements}
               canAdd={d.can.edit}

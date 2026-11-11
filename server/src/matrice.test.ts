@@ -222,6 +222,17 @@ async function boot(kind: Kind) {
       await inj(a, "POST", `/api/agreements/${ag.id}/activate`, { signed_on: "2026-03-02" });
       return ag;
     },
+    ddoc: async () =>
+      JSON.parse(
+        (
+          await ctx.app.inject({
+            method: "POST",
+            url: `/api/dossier-documents?owner=project&owner_id=${app}&name=a.txt&nature=autre&other_label=Note`,
+            payload: Buffer.from("texte"),
+            headers: { cookie: c[a], "content-type": "application/octet-stream" },
+          })
+        ).body,
+      ),
     pdoc: async () =>
       JSON.parse(
         (
@@ -738,6 +749,17 @@ const TABLE = [
   R_("DELETE", "/api/partner-contacts/:id", async (X) => ({
     url: `/api/partner-contacts/${(await X.partnerContact()).id}`,
   })),
+  R_("GET", "/api/dossier-documents", (X) => ({ url: `/api/dossier-documents?owner=project&owner_id=${X.app}` })),
+  R_("POST", "/api/dossier-documents", (X) => ({
+    url: `/api/dossier-documents?owner=project&owner_id=${X.app}&name=a.txt&nature=autre&other_label=Note`,
+    bin: "texte",
+  })),
+  R_("GET", "/api/dossier-documents/:id", async (X) => ({ url: `/api/dossier-documents/${(await X.ddoc()).id}` })),
+  R_("PATCH", "/api/dossier-documents/:id", async (X) => ({
+    url: `/api/dossier-documents/${(await X.ddoc()).id}`,
+    body: { title: "Document renommé" },
+  })),
+  R_("DELETE", "/api/dossier-documents/:id", async (X) => ({ url: `/api/dossier-documents/${(await X.ddoc()).id}` })),
   R_("GET", "/api/decisions"),
   R_("POST", "/api/decisions", () => ({ body: { title: "D", content: "Texte", decided_on: "2026-03-02" } })),
   R_("GET", "/api/decisions/:id", async (X) => ({ url: `/api/decisions/${(await X.decision()).id}` })),

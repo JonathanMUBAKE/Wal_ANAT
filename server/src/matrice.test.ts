@@ -227,7 +227,7 @@ async function boot(kind: Kind) {
         (
           await ctx.app.inject({
             method: "POST",
-            url: `/api/partners/${(await X.partner()).id}/documents?name=a.txt&nature=autre`,
+            url: `/api/partners/${(await X.partner()).id}/documents?name=a.txt&nature=autre&other_label=Note`,
             payload: Buffer.from("texte"),
             headers: { cookie: c[a], "content-type": "application/octet-stream" },
           })
@@ -661,6 +661,7 @@ const TABLE = [
   })),
   R_("GET", "/api/pilotage"),
   R_("GET", "/api/referentials"),
+  R_("POST", "/api/referentials", () => ({ body: { list: "partner_type", label: u("Type") } })),
   R_("POST", "/api/admin/referentials", () => ({ body: { list: "activity_type", label: u("Type") } })),
   R_("PATCH", "/api/admin/referentials/:id", async (X) => ({
     url: `/api/admin/referentials/${(await X.referential()).id}`,
@@ -725,11 +726,18 @@ const TABLE = [
     body: { reason: "Fin", ended_on: "2026-03-03" },
   })),
   R_("POST", "/api/partners/:id/documents", async (X) => ({
-    url: `/api/partners/${(await X.partner()).id}/documents?name=a.txt&nature=autre`,
+    url: `/api/partners/${(await X.partner()).id}/documents?name=a.txt&nature=autre&other_label=Note`,
     bin: "texte",
   })),
   R_("GET", "/api/partner-documents/:id", async (X) => ({ url: `/api/partner-documents/${(await X.pdoc()).id}` })),
   R_("DELETE", "/api/partner-documents/:id", async (X) => ({ url: `/api/partner-documents/${(await X.pdoc()).id}` })),
+  R_("PATCH", "/api/partner-documents/:id", async (X) => ({
+    url: `/api/partner-documents/${(await X.pdoc()).id}`,
+    body: { title: "Pièce renommée" },
+  })),
+  R_("DELETE", "/api/partner-contacts/:id", async (X) => ({
+    url: `/api/partner-contacts/${(await X.partnerContact()).id}`,
+  })),
   R_("GET", "/api/decisions"),
   R_("POST", "/api/decisions", () => ({ body: { title: "D", content: "Texte", decided_on: "2026-03-02" } })),
   R_("GET", "/api/decisions/:id", async (X) => ({ url: `/api/decisions/${(await X.decision()).id}` })),

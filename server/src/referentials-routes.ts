@@ -21,6 +21,13 @@ export function referentialRoutes(r: FastifyInstance, ref: Referentials) {
     const b = Fields.extend({ list: z.string().max(40), label: z.string().trim().min(1).max(80) }).parse(req.body);
     return ref.create(req.userId, req.orgId, b.list, b);
   });
+  // « Autre… » : le gestionnaire du module ajoute un type qui manque ; il ne le renomme ni ne l'archive
+  r.post("/api/referentials", async (req) => {
+    const b = Fields.pick({ plural: true, props: true })
+      .extend({ list: z.string().max(40), label: z.string().trim().min(1).max(80) })
+      .parse(req.body);
+    return ref.contribute(req.userId, req.orgId, b.list, b);
+  });
   // Le code n'est jamais modifiable : il est ignoré s'il est envoyé
   r.patch<Id>("/api/admin/referentials/:id", async (req) =>
     ref.update(req.userId, req.orgId, req.params.id, Fields.parse(req.body)),

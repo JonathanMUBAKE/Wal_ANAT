@@ -217,10 +217,38 @@ export function InstitutionSettings() {
   );
 }
 
-function ValueDialog({ list, value, onClose }: { list: RefList; value: RefValue | null; onClose: () => void }) {
+/** Libellés des listes, pour les formulaires « Autre… » des modules. */
+export const LIST_TITLE: Record<RefList, string> = {
+  activity_type: "type d'activité",
+  unit_type: "type d'entité",
+  partner_type: "type de partenaire",
+  partner_category: "catégorie de partenaire",
+  agreement_type: "type d'accord",
+  partner_doc_nature: "type de document",
+};
+
+/**
+ * Formulaire d'une valeur de référentiel. `contribute` : depuis un formulaire de module (« Autre… »), le
+ * gestionnaire du module définit un nouveau type et ses règles ; couleur et icône restent à l'administrateur.
+ */
+export function ValueDialog({
+  list,
+  value,
+  onClose,
+  contribute,
+  initialLabel,
+  onCreated,
+}: {
+  list: RefList;
+  value: RefValue | null;
+  onClose: () => void;
+  contribute?: boolean;
+  initialLabel?: string;
+  onCreated?: (v: RefValue) => void;
+}) {
   const qc = useQueryClient();
   const [f, setF] = useState({
-    label: value?.label ?? "",
+    label: value?.label ?? initialLabel ?? "",
     plural: value?.plural ?? "",
     color: value?.color ?? "blue",
     icon:
@@ -234,6 +262,10 @@ function ValueDialog({ list, value, onClose }: { list: RefList; value: RefValue 
     supplier: !!value?.props.supplier,
     binding: !!value?.props.binding,
     official: !!value?.props.official,
+    dated: !!value?.props.dated,
+    expires: !!value?.props.expires,
+    referenced: !!value?.props.referenced,
+    precise: !!value?.props.precise,
   });
   const props =
     list === "activity_type"
@@ -249,17 +281,32 @@ function ValueDialog({ list, value, onClose }: { list: RefList; value: RefValue 
           : list === "agreement_type"
             ? { binding: f.binding, financial: f.financial }
             : list === "partner_doc_nature"
-              ? { official: f.official }
+              ? {
+                  official: f.official,
+                  dated: f.dated,
+                  expires: f.expires,
+                  referenced: f.referenced,
+                  precise: f.precise,
+                }
               : { financial: f.financial, supplier: f.supplier };
   const body = { label: f.label, plural: f.plural || f.label, color: f.color, icon: f.icon, props };
   const save = useMutation({
     mutationFn: () =>
       value
         ? api.patch<RefValue>(`/api/admin/referentials/${value.id}`, body)
-        : api.post<RefValue>("/api/admin/referentials", { list, ...body }),
-    onSuccess: (r) => {
-      qc.invalidateQueries({ queryKey: ["referentials"] });
-      toast.success(value ? "Valeur modifiée" : `Valeur ajoutée (code ${r.code})`);
+        : contribute
+          ? api.post<RefValue>("/api/referentials", { list, label: f.label, plural: f.plural || f.label, props })
+          : api.post<RefValue>("/api/admin/referentials", { list, ...body }),
+    onSuccess: async (r) => {
+      await qc.invalidateQueries({ queryKey: ["referentials"] });
+      toast.success(
+        value
+          ? "Valeur modifiée"
+          : contribute
+            ? `Nouveau ${LIST_TITLE[list]} : « ${r.label} »`
+            : `Valeur ajoutée (code ${r.code})`,
+      );
+      onCreated?.(r);
       onClose();
     },
     onError: fail,
@@ -270,11 +317,19 @@ function ValueDialog({ list, value, onClose }: { list: RefList; value: RefValue 
     <Dialog
       open
       onOpenChange={onClose}
-      title={value ? `Modifier « ${value.label} »` : "Ajouter une valeur"}
+      title={
+        value
+          ? `Modifier « ${value.label} »`
+          : contribute
+            ? `Définir un nouveau ${LIST_TITLE[list]}`
+            : "Ajouter une valeur"
+      }
       description={
         value
           ? `Code ${value.code} : il ne change pas, les dossiers existants suivent le nouveau libellé.`
-          : "Le code est dérivé du libellé et ne changera plus."
+          : contribute
+            ? "Le type rejoint la liste de l'institution et reste proposé à tous. Seul l'administrateur système le renomme ou l'archive."
+            : "Le code est dérivé du libellé et ne changera plus."
       }
       width={560}
       footer={
@@ -311,46 +366,52 @@ function ValueDialog({ list, value, onClose }: { list: RefList; value: RefValue 
             )}
           </Field>
         </div>
-        <fieldset>
-          <legend className="mb-1.5 text-[12.5px] font-medium text-muted">Couleur</legend>
-          <div className="flex flex-wrap gap-2">
-            {Object.keys(HUES).map((c) => (
-              <button
-                key={c}
-                type="button"
-                aria-label={HUE_LABEL[c]}
-                aria-pressed={f.color === c}
-                title={HUE_LABEL[c]}
-                onClick={() => setF({ ...f, color: c })}
-                className={cn(
-                  "size-7 rounded-full ring-offset-2 ring-offset-[var(--panel)] transition",
-                  f.color === c ? "ring-2 ring-[var(--fg)]" : "hover:scale-110",
-                )}
-                style={{ background: HUES[c] }}
-              />
-            ))}
-          </div>
-        </fieldset>
-        <fieldset>
-          <legend className="mb-1.5 text-[12.5px] font-medium text-muted">Icône</legend>
-          <div className="grid grid-cols-8 gap-1.5">
-            {Object.entries(REF_ICONS).map(([k, I]) => (
-              <button
-                key={k}
-                type="button"
-                aria-label={k}
-                aria-pressed={f.icon === k}
-                onClick={() => setF({ ...f, icon: k })}
-                className={cn(
-                  "flex h-9 items-center justify-center rounded-lg border transition-colors",
-                  f.icon === k ? "border-primary bg-brand-soft text-primary" : "border-line text-muted hover:bg-hover",
-                )}
-              >
-                <I className="size-4" />
-              </button>
-            ))}
-          </div>
-        </fieldset>
+        {!contribute && (
+          <>
+            <fieldset>
+              <legend className="mb-1.5 text-[12.5px] font-medium text-muted">Couleur</legend>
+              <div className="flex flex-wrap gap-2">
+                {Object.keys(HUES).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-label={HUE_LABEL[c]}
+                    aria-pressed={f.color === c}
+                    title={HUE_LABEL[c]}
+                    onClick={() => setF({ ...f, color: c })}
+                    className={cn(
+                      "size-7 rounded-full ring-offset-2 ring-offset-[var(--panel)] transition",
+                      f.color === c ? "ring-2 ring-[var(--fg)]" : "hover:scale-110",
+                    )}
+                    style={{ background: HUES[c] }}
+                  />
+                ))}
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend className="mb-1.5 text-[12.5px] font-medium text-muted">Icône</legend>
+              <div className="grid grid-cols-8 gap-1.5">
+                {Object.entries(REF_ICONS).map(([k, I]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    aria-label={k}
+                    aria-pressed={f.icon === k}
+                    onClick={() => setF({ ...f, icon: k })}
+                    className={cn(
+                      "flex h-9 items-center justify-center rounded-lg border transition-colors",
+                      f.icon === k
+                        ? "border-primary bg-brand-soft text-primary"
+                        : "border-line text-muted hover:bg-hover",
+                    )}
+                  >
+                    <I className="size-4" />
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          </>
+        )}
         <fieldset className="space-y-2 border-t border-line pt-3">
           <legend className="sr-only">Règles</legend>
           {list === "activity_type" ? (
@@ -407,12 +468,38 @@ function ValueDialog({ list, value, onClose }: { list: RefList; value: RefValue 
               />
             </>
           ) : list === "partner_doc_nature" ? (
-            <Toggle
-              checked={f.official}
-              onChange={(v) => setF({ ...f, official: v })}
-              label="Pièce officielle"
-              hint="Une pièce de cette nature reste au dossier : elle ne se supprime jamais."
-            />
+            <>
+              <Toggle
+                checked={f.official}
+                onChange={(v) => setF({ ...f, official: v })}
+                label="Pièce officielle"
+                hint="Une pièce de cette nature reste au dossier : elle ne se supprime jamais."
+              />
+              <Toggle
+                checked={f.dated}
+                onChange={(v) => setF({ ...f, dated: v })}
+                label="Date de production obligatoire"
+                hint="Le formulaire du document demande la date à laquelle il a été produit ou signé."
+              />
+              <Toggle
+                checked={f.expires}
+                onChange={(v) => setF({ ...f, expires: v })}
+                label="Date d'expiration obligatoire"
+                hint="Contrat, attestation, assurance… : la fiche signale le document une fois expiré."
+              />
+              <Toggle
+                checked={f.referenced}
+                onChange={(v) => setF({ ...f, referenced: v })}
+                label="Référence obligatoire"
+                hint="Numéro, cote ou référence du document."
+              />
+              <Toggle
+                checked={f.precise}
+                onChange={(v) => setF({ ...f, precise: v })}
+                label="Préciser le type"
+                hint="Pour une nature générique comme « Autre » : la personne précise de quel document il s'agit."
+              />
+            </>
           ) : (
             <>
               <Toggle

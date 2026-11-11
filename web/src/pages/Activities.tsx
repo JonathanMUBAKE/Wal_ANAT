@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button, Checkbox, ConfirmDialog, Dialog, Empty, IconButton, ProjectIcon, cn } from "@/components/ui";
 import { useShell } from "@/lib/shell";
 import { PartnerSelect } from "@/components/partners";
+import { RefSelect } from "@/components/refselect";
 import type { ProjectSummary } from "@/lib/types";
 import {
   DomainSelect,
@@ -289,15 +290,7 @@ function NewActivity({ defaultKind, onClose }: { defaultKind: Kind; onClose: () 
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Nature" required>
-          {(a) => (
-            <Select {...a} value={f.kind} onChange={set("kind")}>
-              {choices.map((t) => (
-                <option key={t.code} value={t.code}>
-                  {t.label}
-                </option>
-              ))}
-            </Select>
-          )}
+          {(a) => <RefSelect {...a} list="activity_type" value={f.kind} onChange={(kind) => setF({ ...f, kind })} />}
         </Field>
         <Field label="Responsable">
           {(a) => (

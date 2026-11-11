@@ -49,6 +49,10 @@ export interface RefValue {
     supplier?: boolean;
     binding?: boolean;
     official?: boolean;
+    dated?: boolean;
+    expires?: boolean;
+    referenced?: boolean;
+    precise?: boolean;
   };
 }
 export type Referentials = Record<RefList, RefValue[]>;

@@ -1,4 +1,5 @@
 import { uid } from "./db.js";
+import type { Permission } from "./permissions.js";
 import { HttpError, badRequest, forbidden, notFound, type Services } from "./services.js";
 
 /** Listes paramétrables de l'institution (docs/PARAMETRAGE.md). Les autres listes restent fixes : des règles en dépendent. */
@@ -38,7 +39,22 @@ const PROPS: Record<List, Record<string, "boolean" | "string">> = {
   partner_type: { public: "boolean" },
   partner_category: { financial: "boolean", supplier: "boolean" },
   agreement_type: { binding: "boolean", financial: "boolean" },
-  partner_doc_nature: { official: "boolean" },
+  partner_doc_nature: {
+    official: "boolean",
+    dated: "boolean",
+    expires: "boolean",
+    referenced: "boolean",
+    precise: "boolean",
+  },
+};
+/** Qui peut ajouter un type depuis un formulaire du module (« Autre… ») : le droit de gestion de ce module. */
+const CONTRIBUTORS: Record<List, Permission> = {
+  activity_type: "agenda.manage",
+  unit_type: "org.structure",
+  partner_type: "partners.manage",
+  partner_category: "partners.manage",
+  agreement_type: "partners.manage",
+  partner_doc_nature: "partners.manage",
 };
 const LIST_NAME: Record<List, string> = {
   activity_type: "Type d'activité",
@@ -301,7 +317,7 @@ const DEFAULTS: Record<List, Seed[]> = {
       plural: "Conventions signées",
       color: "blue",
       icon: "file-text",
-      props: { official: true },
+      props: { official: true, dated: true, expires: false, referenced: false, precise: false },
     },
     {
       code: "avenant",
@@ -309,7 +325,15 @@ const DEFAULTS: Record<List, Seed[]> = {
       plural: "Avenants",
       color: "indigo",
       icon: "file-text",
-      props: { official: true },
+      props: { official: true, dated: true, expires: false, referenced: false, precise: false },
+    },
+    {
+      code: "contrat",
+      label: "Contrat",
+      plural: "Contrats",
+      color: "violet",
+      icon: "scale",
+      props: { official: true, dated: true, expires: true, referenced: true, precise: false },
     },
     {
       code: "lettre_intention",
@@ -317,7 +341,7 @@ const DEFAULTS: Record<List, Seed[]> = {
       plural: "Lettres d'intention",
       color: "teal",
       icon: "flag",
-      props: { official: true },
+      props: { official: true, dated: true, expires: false, referenced: false, precise: false },
     },
     {
       code: "rapport_activite",
@@ -325,7 +349,7 @@ const DEFAULTS: Record<List, Seed[]> = {
       plural: "Rapports d'activité",
       color: "green",
       icon: "file-text",
-      props: { official: false },
+      props: { official: false, dated: true, expires: false, referenced: false, precise: false },
     },
     {
       code: "rapport_financier",
@@ -333,7 +357,7 @@ const DEFAULTS: Record<List, Seed[]> = {
       plural: "Rapports financiers",
       color: "ochre",
       icon: "file-text",
-      props: { official: false },
+      props: { official: false, dated: true, expires: false, referenced: false, precise: false },
     },
     {
       code: "compte_rendu",
@@ -341,7 +365,7 @@ const DEFAULTS: Record<List, Seed[]> = {
       plural: "Comptes rendus",
       color: "slate",
       icon: "file-text",
-      props: { official: false },
+      props: { official: false, dated: true, expires: false, referenced: false, precise: false },
     },
     {
       code: "correspondance",
@@ -349,7 +373,7 @@ const DEFAULTS: Record<List, Seed[]> = {
       plural: "Correspondances",
       color: "slate",
       icon: "file-text",
-      props: { official: false },
+      props: { official: false, dated: true, expires: false, referenced: true, precise: false },
     },
     {
       code: "presentation",
@@ -357,9 +381,16 @@ const DEFAULTS: Record<List, Seed[]> = {
       plural: "Fiches de présentation",
       color: "slate",
       icon: "file-text",
-      props: { official: false },
+      props: { official: false, dated: false, expires: false, referenced: false, precise: false },
     },
-    { code: "autre", label: "Autre", plural: "Autres", color: "slate", icon: "circle", props: { official: false } },
+    {
+      code: "autre",
+      label: "Autre",
+      plural: "Autres",
+      color: "slate",
+      icon: "circle",
+      props: { official: false, dated: false, expires: false, referenced: false, precise: true },
+    },
   ],
 };
 
@@ -464,6 +495,23 @@ export class Referentials {
 
   async create(actorId: string, orgId: string, list: string, i: RefInput & { label: string }) {
     await this.requireSystemAdmin(actorId);
+    return this.insert(actorId, orgId, list, i, "admin");
+  }
+
+  /**
+   * « Autre… » dans un formulaire : le gestionnaire du module ajoute un type qui manque, avec ses règles.
+   * Renommer, réordonner ou archiver reste l'affaire de l'administrateur système.
+   */
+  async contribute(actorId: string, orgId: string, list: string, i: RefInput & { label: string }) {
+    if ((await this.svc.userOrNull(actorId))?.is_ai)
+      throw forbidden("Un type est ajouté par une personne, jamais par un coéquipier IA");
+    const perm = CONTRIBUTORS[list as List];
+    if (!perm) throw badRequest(`Liste inconnue : ${list}`);
+    await this.svc.requirePerm(actorId, orgId, perm);
+    return this.insert(actorId, orgId, list, { label: i.label, plural: i.plural, props: i.props }, "module");
+  }
+
+  private async insert(actorId: string, orgId: string, list: string, i: RefInput & { label: string }, by: string) {
     if (!(LISTS as readonly string[]).includes(list)) throw badRequest(`Liste inconnue : ${list}`);
     const l = list as List;
     if (!i.label.trim()) throw badRequest("Le libellé est obligatoire");
@@ -491,7 +539,10 @@ export class Referentials {
         JSON.stringify(i.props ?? {}),
       ],
     );
-    await this.svc.log(actorId, "referential.created", { orgId, data: { id, list: l, code, label: i.label.trim() } });
+    await this.svc.log(actorId, "referential.created", {
+      orgId,
+      data: { id, list: l, code, label: i.label.trim(), by },
+    });
     return this.svc.db.one<RefValue>("SELECT * FROM ref_values WHERE id = $1", [id]);
   }
 

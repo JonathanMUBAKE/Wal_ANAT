@@ -479,6 +479,8 @@ async function seedAgreements(svc: Services, org: string, me: string) {
   await ag.activate(me, prog.id, { signed_on: day(-675) });
   await ag.addDocument(me, ffdt, "rapport-semestriel.txt", Buffer.from("Rapport semestriel fictif du programme."), {
     nature: "rapport_activite",
+    title: "Rapport semestriel du programme",
+    issued_on: day(-30),
     agreement_id: prog.id,
   });
   await ag.amend(me, prog.id, {

@@ -88,6 +88,7 @@ export function partnerRoutes(r: FastifyInstance, p: Partners) {
   r.patch<Id>("/api/partner-contacts/:id", async (req) =>
     p.updateContact(req.userId, req.params.id, Contact.parse(req.body)),
   );
+  r.delete<Id>("/api/partner-contacts/:id", async (req) => p.removeContact(req.userId, req.params.id));
   r.post<Id>("/api/partners/:id/notes", async (req) =>
     p.addNote(
       req.userId,

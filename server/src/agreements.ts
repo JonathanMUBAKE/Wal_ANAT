@@ -17,6 +17,16 @@ export type AgreementState = "preparation" | "signature" | "vigueur" | "resilie"
 const REMINDERS = [90, 30, 7];
 const MAX_DOCUMENTS = 100;
 
+/** Description d'une pièce : les champs exigés dépendent de sa nature (docs/DESIGN-SYSTEM.md § 4). */
+export interface DocumentMeta {
+  title?: string;
+  other_label?: string;
+  reference?: string;
+  issued_on?: string | null;
+  expires_on?: string | null;
+  notes?: string;
+}
+
 export interface AgreementInput {
   type_code?: string;
   title?: string;
@@ -199,9 +209,11 @@ export class Agreements {
         )
       : null;
     const documents = await db.query(
-      `SELECT d.id, d.nature_code, d.official, d.filename, d.mime, d.size, d.created_at, d.uploader_id, u.name AS uploader_name
+      `SELECT d.id, d.nature_code, d.official, d.filename, d.mime, d.size, d.created_at, d.uploader_id, u.name AS uploader_name,
+        d.title, d.other_label, d.reference, d.issued_on::text AS issued_on, d.expires_on::text AS expires_on, d.notes,
+        (d.expires_on IS NOT NULL AND d.expires_on < $2::date) AS expired
        FROM partner_documents d LEFT JOIN users u ON u.id = d.uploader_id WHERE d.agreement_id = $1 ORDER BY d.created_at DESC`,
-      [id],
+      [id, today()],
     );
     const sign = a.sign_document_id
       ? await db.one<Pick<SignDoc, "id" | "year" | "seq" | "status">>(
@@ -752,7 +764,7 @@ export class Agreements {
     partnerId: string,
     filename: string,
     data: Buffer,
-    i: { nature: string; agreement_id?: string },
+    i: DocumentMeta & { nature: string; agreement_id?: string },
   ) {
     await this.human(actorId);
     const { p, manager, focal } = await this.partners.access(actorId, partnerId);
@@ -760,6 +772,7 @@ export class Agreements {
     if (!manager && !focal)
       throw forbidden("Seuls les gestionnaires des partenariats et les points focaux joignent des pièces");
     const nature = await this.ref.resolve(p.org_id, "partner_doc_nature", i.nature);
+    const meta = this.checkMeta(nature, i);
     if (
       i.agreement_id &&
       !(await this.svc.db.one("SELECT 1 FROM agreement_parties WHERE agreement_id = $1 AND partner_id = $2", [
@@ -782,8 +795,9 @@ export class Agreements {
     const id = uid("pdc");
     await this.svc.db.tx(async (q) => {
       await q.query(
-        `INSERT INTO partner_documents (id, org_id, partner_id, agreement_id, nature_code, official, filename, mime, size, data, uploader_id)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        `INSERT INTO partner_documents (id, org_id, partner_id, agreement_id, nature_code, official, filename, mime, size, data, uploader_id,
+           title, other_label, reference, issued_on, expires_on, notes)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
         [
           id,
           p.org_id,
@@ -796,12 +810,18 @@ export class Agreements {
           data.length,
           data,
           actorId,
+          meta.title || name,
+          meta.other_label,
+          meta.reference,
+          meta.issued_on,
+          meta.expires_on,
+          meta.notes,
         ],
       );
       await q.query(
         `INSERT INTO partner_history (id, org_id, partner_id, actor_id, kind, body, happened_on)
          VALUES ($1,$2,$3,$4,'document',$5,$6::date)`,
-        [uid("phi"), p.org_id, partnerId, actorId, `Pièce jointe (${nature.label}) : ${name}`, today()],
+        [uid("phi"), p.org_id, partnerId, actorId, `Pièce jointe (${nature.label}) : ${meta.title || name}`, today()],
       );
     });
     await this.svc.log(actorId, "partner.document", {
@@ -815,7 +835,93 @@ export class Agreements {
       size: data.length,
       nature_code: nature.code,
       official: !!nature.props.official,
+      ...meta,
+      title: meta.title || name,
     };
+  }
+
+  /** Contrôle de la description selon la nature : dates, référence, précision ; dates réelles et cohérentes. */
+  private checkMeta(nature: { label: string; props: Record<string, unknown> }, i: DocumentMeta) {
+    const m = {
+      title: i.title?.trim() ?? "",
+      other_label: i.other_label?.trim() ?? "",
+      reference: i.reference?.trim() ?? "",
+      issued_on: i.issued_on || null,
+      expires_on: i.expires_on || null,
+      notes: i.notes?.trim() ?? "",
+    };
+    const what = `pour un document « ${nature.label} »`;
+    if (nature.props.dated && !m.issued_on) throw badRequest(`La date de production est obligatoire ${what}`);
+    if (nature.props.expires && !m.expires_on) throw badRequest(`La date d'expiration est obligatoire ${what}`);
+    if (nature.props.referenced && !m.reference) throw badRequest(`La référence est obligatoire ${what}`);
+    if (nature.props.precise && !m.other_label) throw badRequest("Précisez la nature du document");
+    for (const d of [m.issued_on, m.expires_on]) if (d && !isRealDate(d)) throw badRequest(`Date invalide : ${d}`);
+    if (m.issued_on && m.issued_on > today()) throw badRequest("La date de production ne peut pas être dans le futur");
+    if (m.issued_on && m.expires_on && m.expires_on < m.issued_on)
+      throw badRequest("La date d'expiration précède la date de production");
+    return m;
+  }
+
+  /** Modifier la description d'une pièce : son auteur, un point focal ou un gestionnaire ; une pièce officielle le reste. */
+  async updateDocument(actorId: string, docId: string, i: DocumentMeta & { nature_code?: string }) {
+    await this.human(actorId);
+    const { d, manager, focal } = await this.documentRow(actorId, docId);
+    if (!manager && !focal && d.uploader_id !== actorId)
+      throw forbidden("Seuls l'auteur de la pièce, les points focaux et les gestionnaires la modifient");
+    const cur = (await this.svc.db.one<{
+      nature_code: string;
+      title: string;
+      other_label: string;
+      reference: string;
+      issued_on: string | null;
+      expires_on: string | null;
+      notes: string;
+    }>(
+      `SELECT nature_code, title, other_label, reference, issued_on::text AS issued_on, expires_on::text AS expires_on, notes
+       FROM partner_documents WHERE id = $1`,
+      [docId],
+    ))!;
+    const nature = await this.ref.resolve(
+      d.org_id,
+      "partner_doc_nature",
+      i.nature_code ?? cur.nature_code,
+      cur.nature_code,
+    );
+    if (d.official && !nature.props.official)
+      throw new HttpError(409, "Une pièce officielle reste officielle : choisissez une autre nature officielle");
+    const meta = this.checkMeta(nature, {
+      title: i.title ?? cur.title,
+      other_label: i.other_label ?? cur.other_label,
+      reference: i.reference ?? cur.reference,
+      issued_on: i.issued_on !== undefined ? i.issued_on : cur.issued_on,
+      expires_on: i.expires_on !== undefined ? i.expires_on : cur.expires_on,
+      notes: i.notes ?? cur.notes,
+    });
+    if (!meta.title) throw badRequest("Le nom du document est obligatoire");
+    await this.svc.db.query(
+      `UPDATE partner_documents SET nature_code = $1, official = $2, title = $3, other_label = $4, reference = $5,
+        issued_on = $6, expires_on = $7, notes = $8, updated_at = now() WHERE id = $9`,
+      [
+        nature.code,
+        d.official || !!nature.props.official,
+        meta.title,
+        meta.other_label,
+        meta.reference,
+        meta.issued_on,
+        meta.expires_on,
+        meta.notes,
+        docId,
+      ],
+    );
+    await this.svc.log(actorId, "partner.document.updated", {
+      orgId: d.org_id,
+      data: { partner: d.partner_id, document: docId, fields: Object.keys(i) },
+    });
+    return this.svc.db.one(
+      `SELECT id, agreement_id, nature_code, official, filename, mime, size, created_at, uploader_id, title, other_label, reference,
+        issued_on::text AS issued_on, expires_on::text AS expires_on, notes FROM partner_documents WHERE id = $1`,
+      [docId],
+    );
   }
 
   private async documentRow(actorId: string, docId: string) {

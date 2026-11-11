@@ -23,6 +23,16 @@ const Fields = z.object({
   confidential: z.boolean().optional(),
 });
 
+/** Description d'une pièce : les champs exigés dépendent de sa nature, contrôlés par le service. */
+const Meta = z.object({
+  title: z.string().max(300).optional(),
+  other_label: z.string().max(200).optional(),
+  reference: z.string().max(120).optional(),
+  issued_on: date.nullable().optional(),
+  expires_on: date.nullable().optional(),
+  notes: z.string().max(5000).optional(),
+});
+
 /** Accords avec les partenaires (lot PA2) : aucune route ne modifie un accord conclu, sauf l'avenant et la résiliation. */
 export function agreementRoutes(r: FastifyInstance, a: Agreements) {
   r.get("/api/agreements", async (req) =>
@@ -88,11 +98,15 @@ export function agreementRoutes(r: FastifyInstance, a: Agreements) {
   // Pièces de collaboration : au partenaire, et le cas échéant à l'un de ses accords
   r.post<Id>("/api/partners/:id/documents", { bodyLimit: ATTACHMENT_MAX_BYTES }, async (req) => {
     const q = z
-      .object({ name: z.string().min(1).max(500), nature: code.min(1), agreement_id: id.optional() })
+      .object({
+        name: z.string().min(1).max(500),
+        nature: code.min(1),
+        agreement_id: id.optional(),
+        ...Meta.shape,
+      })
       .parse(req.query);
     return a.addDocument(req.userId, req.params.id, q.name, req.body instanceof Buffer ? req.body : Buffer.alloc(0), {
-      nature: q.nature,
-      agreement_id: q.agreement_id,
+      ...q,
     });
   });
   r.get<Id>("/api/partner-documents/:id", async (req, reply) => {
@@ -109,5 +123,8 @@ export function agreementRoutes(r: FastifyInstance, a: Agreements) {
       .header("Cache-Control", "private, no-store")
       .send(d.data);
   });
+  r.patch<Id>("/api/partner-documents/:id", async (req) =>
+    a.updateDocument(req.userId, req.params.id, Meta.extend({ nature_code: code.min(1).optional() }).parse(req.body)),
+  );
   r.delete<Id>("/api/partner-documents/:id", async (req) => a.removeDocument(req.userId, req.params.id));
 }

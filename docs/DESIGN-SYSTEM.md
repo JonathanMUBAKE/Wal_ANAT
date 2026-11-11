@@ -103,6 +103,19 @@ Une seule échelle : **32 px** (compacte : pagination, actions de ligne), **36 p
 
 **Liste groupée** (`GroupedTable`) : une section par étape, en-tête teinté de la couleur d'étape (8 %), chevron de repli, icône, libellé, compteur. Colonnes à largeur fixe identiques d'un groupe à l'autre, en-têtes avec icône. Le repli de chaque groupe et le choix de vue sont mémorisés sur le poste.
 
+### Fiche — consulter d'abord, modifier ensuite (`components/record.tsx`)
+1. Une fiche (partenaire, accord, réunion, activité, contact, document…) **s'ouvre toujours en lecture** : faits en paires libellé / valeur (`Facts`, `Fact`), textes longs en paragraphes (`LongText`), aucun champ de saisie.
+2. En tête, à droite : **« Modifier »** si le profil le permet (`RecordActions`). Pendant la modification : **« Annuler »** (rien n'est perdu côté serveur) et **« Enregistrer »** (principal). On ne quitte jamais une fiche avec des champs ouverts sans l'avoir décidé.
+3. Les actes du circuit (changer l'état, soumettre au parapheur, résilier…) restent des boutons distincts, chacun avec sa boîte de dialogue ; ils ne se mêlent pas à la modification.
+4. Une petite fiche (contact, document) s'ouvre dans une boîte de dialogue, sur le même principe : lecture, puis « Modifier ».
+
+### Grille CRUD
+1. **Créer** : bouton principal en tête de page ou de section (« Nouveau partenaire », « Ajouter un contact », « Ajouter un document »).
+2. **Consulter** : le clic sur la ligne ouvre la fiche en lecture.
+3. **Modifier, supprimer** : boutons-icônes en bout de ligne (`RowActions` : œil, crayon, corbeille), puis les actions propres à l'objet (archiver, télécharger).
+4. **Selon les droits** : un bouton n'apparaît que si le profil peut agir ; le serveur refuse de toute façon ce qui n'est pas permis. Ce qui ne se supprime pas par règle (pièce officielle, acte numéroté, fiche qui a une histoire) se clôt, s'archive ou se remplace : la corbeille n'apparaît pas et la fiche dit pourquoi.
+5. **Contrôles** : toute règle de saisie (champ obligatoire selon le type, dates cohérentes, doublon) est vérifiée par le serveur ; l'écran la montre sous le champ avant l'envoi.
+
 ### Charpente de l'application (modèle Tracklio / Oripio)
 - **Barre du haut** (64 px, blanche, filet en bas) : recherche bordée à gauche (« Rechercher une réunion, un dossier, une personne… », ⌘K) ; à droite, carrés d'icône bordés de 40 px (Assistant IA, Boîte de réception, Notifications avec pastille rouge), puis la pastille du compte (photo, nom, rôle, chevron) qui ouvre profil, sécurité, organisations, thème et déconnexion.
 - **Barre latérale** (256 px, blanche) : en tête, sur 64 px alignés avec la barre du haut, le logo ANAT, « ANAT Pilotage » et l'organisation. Puis Accueil, Mes tâches, Coéquipiers IA ; des sections titrées en **petites capitales** avec chevron : PILOTAGE, SUIVI-ÉVALUATION, SECRÉTARIAT, ORGANISATION. Le contenu de chaque section est fixé par `docs/ARCHITECTURE-INFORMATION.md`. Liens de 36 px, rayon 10 px, icône 18 px ; actif : fond bleu très léger, texte et icône bleus. En pied : Assistant IA.

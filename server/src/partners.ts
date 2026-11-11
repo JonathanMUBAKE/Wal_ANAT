@@ -156,6 +156,7 @@ interface Row {
   focal_ids: string[];
   contacts_count: number;
   last_note_on: string | null;
+  deletable: boolean;
 }
 
 const SELECT = `SELECT p.id, p.org_id, p.name, p.acronym, p.official_id, p.type_code, p.state, p.state_reason, p.engaged,
@@ -165,7 +166,18 @@ const SELECT = `SELECT p.id, p.org_id, p.name, p.acronym, p.official_id, p.type_
   COALESCE((SELECT json_agg(pc.code ORDER BY pc.code) FROM partner_categories pc WHERE pc.partner_id = p.id), '[]'::json) AS categories,
   COALESCE((SELECT json_agg(pf.user_id ORDER BY pf.user_id) FROM partner_focals pf WHERE pf.partner_id = p.id), '[]'::json) AS focal_ids,
   (SELECT count(*)::int FROM partner_contacts c WHERE c.partner_id = p.id AND NOT c.archived) AS contacts_count,
-  (SELECT max(h.happened_on)::text FROM partner_history h WHERE h.partner_id = p.id AND h.kind = 'note') AS last_note_on
+  (SELECT max(h.happened_on)::text FROM partner_history h WHERE h.partner_id = p.id AND h.kind = 'note') AS last_note_on,
+  -- Une fiche sans histoire (jamais sortie de « Identifié », ni échange, ni lien) se supprime ; les autres se closent
+  (NOT p.engaged AND p.merged_into IS NULL
+    AND NOT EXISTS (SELECT 1 FROM partner_history h WHERE h.partner_id = p.id AND h.kind = 'note')
+    AND NOT EXISTS (SELECT 1 FROM partners x WHERE x.merged_into = p.id)
+    AND NOT EXISTS (SELECT 1 FROM agreement_parties x WHERE x.partner_id = p.id)
+    AND NOT EXISTS (SELECT 1 FROM partner_documents x WHERE x.partner_id = p.id)
+    AND NOT EXISTS (SELECT 1 FROM projects x WHERE x.sponsor_partner_id = p.id)
+    AND NOT EXISTS (SELECT 1 FROM agency_activities x WHERE x.counterpart_partner_id = p.id)
+    AND NOT EXISTS (SELECT 1 FROM correspondence x WHERE x.partner_id = p.id)
+    AND NOT EXISTS (SELECT 1 FROM consultant_contracts x WHERE x.partner_id = p.id)
+    AND NOT EXISTS (SELECT 1 FROM meeting_partners x WHERE x.partner_id = p.id)) AS deletable
   FROM partners p
   LEFT JOIN org_units u ON u.id = p.unit_id
   LEFT JOIN users f ON f.id = p.focal_id
@@ -269,8 +281,10 @@ export class Partners {
     const { p, manager } = await this.readable(actorId, id);
     const db = this.svc.db;
     const contacts = await db.query(
-      `SELECT id, name, title, email, phone, notes, principal, archived, created_at FROM partner_contacts
-       WHERE partner_id = $1 ORDER BY archived, principal DESC, name`,
+      `SELECT c.id, c.name, c.title, c.email, c.phone, c.notes, c.principal, c.archived, c.created_at,
+        NOT EXISTS (SELECT 1 FROM correspondence m WHERE m.contact_id = c.id)
+          AND NOT EXISTS (SELECT 1 FROM meeting_attendees a WHERE a.contact_id = c.id) AS deletable
+       FROM partner_contacts c WHERE c.partner_id = $1 ORDER BY c.archived, c.principal DESC, c.name`,
       [id],
     );
     const history = await db.query<{ kind: string }>(
@@ -282,7 +296,6 @@ export class Partners {
     const focal = this.focal(p, actorId);
     const live = !p.merged_into;
     const notes = history.filter((h) => h.kind === "note");
-    const absorbed = await db.one("SELECT 1 FROM partners WHERE merged_into = $1 LIMIT 1", [id]);
     const states = live ? NEXT[p.state].filter((s) => manager || (focal && FOCAL_MOVES.has(`${p.state}>${s}`))) : [];
     const focals = p.focal_ids.length
       ? await db.query<{ id: string; name: string }>(
@@ -317,10 +330,12 @@ export class Partners {
     ).map((a) => ({ ...a, reference: agreementRef(a), state: agreementState(a) }));
     const documents = await db.query(
       `SELECT d.id, d.agreement_id, d.nature_code, d.official, d.filename, d.mime, d.size, d.created_at, d.uploader_id,
-        u.name AS uploader_name FROM partner_documents d LEFT JOIN users u ON u.id = d.uploader_id
+        u.name AS uploader_name, d.title, d.other_label, d.reference, d.issued_on::text AS issued_on,
+        d.expires_on::text AS expires_on, d.notes, (d.expires_on IS NOT NULL AND d.expires_on < $3::date) AS expired
+       FROM partner_documents d LEFT JOIN users u ON u.id = d.uploader_id
        WHERE d.partner_id = $1 AND (d.agreement_id IS NULL OR d.agreement_id = ANY($2::text[]))
        ORDER BY d.created_at DESC`,
-      [id, agreements.map((a) => a.id)],
+      [id, agreements.map((a) => a.id), today()],
     );
     const links = await this.links(actorId, p);
     return {
@@ -336,7 +351,7 @@ export class Partners {
         edit: live && (manager || focal),
         manage: live && manager,
         states,
-        delete: live && manager && !p.engaged && !notes.length && !absorbed,
+        delete: live && manager && p.deletable,
       },
     };
   }
@@ -1047,6 +1062,32 @@ export class Partners {
       data: { partner: ct.partner_id, contact: contactId, action: "updated", fields: Object.keys(input) },
     });
     return this.get(actorId, ct.partner_id);
+  }
+
+  /** Un contact jamais cité (courrier, réunion) se supprime ; un contact cité s'archive, pour garder la trace. */
+  async removeContact(actorId: string, contactId: string) {
+    const ct = await this.svc.db.one<{ partner_id: string; name: string }>(
+      "SELECT partner_id, name FROM partner_contacts WHERE id = $1",
+      [contactId],
+    );
+    if (!ct) throw notFound("Contact introuvable");
+    const { p } = await this.writable(actorId, ct.partner_id);
+    if (
+      await this.svc.db.one(
+        "SELECT 1 FROM correspondence WHERE contact_id = $1 UNION ALL SELECT 1 FROM meeting_attendees WHERE contact_id = $1 LIMIT 1",
+        [contactId],
+      )
+    )
+      throw new HttpError(409, "Ce contact est cité dans le courrier ou une réunion : archivez-le plutôt");
+    await this.svc.db.tx(async (q) => {
+      await q.query("DELETE FROM partner_contacts WHERE id = $1", [contactId]);
+      await this.history(q, p.org_id, ct.partner_id, actorId, "contact", `Contact supprimé : ${ct.name}`);
+    });
+    await this.svc.log(actorId, "partner.contact", {
+      orgId: p.org_id,
+      data: { partner: ct.partner_id, contact: contactId, action: "deleted" },
+    });
+    return { ok: true };
   }
 
   /** Note d'échange : un fait daté de la relation (appel, visite, mission). Elle ne se modifie pas. */

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { boot, type GovCtx } from "./gov-test-helpers.js";
+import { Referentials } from "./referentials.js";
 
 /*
  * Référentiels paramétrables de l'institution (docs/PARAMETRAGE.md) : types d'activités et types d'entités.
@@ -131,5 +132,65 @@ describe("structure : les types d'entités viennent du référentiel, provinces 
     expect(units.find((u) => u.id === s.body.id)?.kind).toBe("service");
     expect((await unit("Galaxie")).status).toBe(400);
     expect((await g.api("u_alice", "PATCH", `/api/units/${s.body.id}`, { kind: "Galaxie" })).status).toBe(400);
+  });
+});
+
+describe("référentiels : « Autre… » depuis un formulaire", () => {
+  it("le gestionnaire du module ajoute un type qui manque, avec ses règles ; il ne peut ni le renommer ni l'archiver", async () => {
+    const r = await g.api("u_alice", "POST", "/api/referentials", {
+      list: "agreement_type",
+      label: "Accord de jumelage",
+      props: { binding: true, financial: false },
+    });
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ list: "agreement_type", code: "accord_de_jumelage", props: { binding: true } });
+    expect((await value("agreement_type", "accord_de_jumelage")).label).toBe("Accord de jumelage");
+    // Utilisable aussitôt
+    const p = (await g.api("u_alice", "POST", "/api/partners", { name: "Ville jumelle fictive", type_code: "autre" }))
+      .body;
+    const a = await g.api("u_alice", "POST", "/api/agreements", {
+      type_code: "accord_de_jumelage",
+      title: "Jumelage",
+      partner_ids: [p.id],
+    });
+    expect(a.status).toBe(200);
+    // Renommer ou archiver reste à l'administrateur système
+    expect((await edit(r.body.id, { label: "Autre nom" })).status).toBe(403);
+    expect(await g.ctx.db.one("SELECT 1 FROM activity WHERE kind = 'referential.created'")).toBeTruthy();
+  });
+
+  it("chacun selon son module ; doublon, liste inconnue, règle inconnue et coéquipier IA refusés", async () => {
+    expect(
+      (await g.api("u_karim", "POST", "/api/referentials", { list: "partner_category", label: "Bailleur" })).status,
+    ).toBe(403);
+    expect(
+      (await g.api("u_karim", "POST", "/api/referentials", { list: "activity_type", label: "Atelier" })).status,
+    ).toBe(403);
+    expect(
+      (await g.api("u_alice", "POST", "/api/referentials", { list: "activity_type", label: "Atelier" })).status,
+    ).toBe(200);
+    expect(
+      (await g.api("u_alice", "POST", "/api/referentials", { list: "activity_type", label: "atelier" })).status,
+    ).toBe(400);
+    expect((await g.api("u_alice", "POST", "/api/referentials", { list: "inconnue", label: "X" })).status).toBe(400);
+    expect(
+      (
+        await g.api("u_alice", "POST", "/api/referentials", {
+          list: "partner_doc_nature",
+          label: "Plan",
+          props: { provincial: true },
+        })
+      ).status,
+    ).toBe(400);
+    const nat = await g.api("u_alice", "POST", "/api/referentials", {
+      list: "partner_doc_nature",
+      label: "Attestation d'assurance",
+      props: { official: false, dated: true, expires: true },
+    });
+    expect(nat.body.props).toMatchObject({ dated: true, expires: true });
+    const svc = new Referentials(g.ctx.svc);
+    await expect(svc.contribute("ai_atlas", g.org, "partner_type", { label: "IA" })).rejects.toMatchObject({
+      status: 403,
+    });
   });
 });

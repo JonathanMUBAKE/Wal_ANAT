@@ -138,7 +138,7 @@ describe("accords : entrée en vigueur", () => {
     expect(r.body.error).toMatch(/parapheur/);
     const up = await g.upload(
       "u_alice",
-      `/api/partners/${p.id}/documents?name=convention.txt&nature=convention_signee&agreement_id=${a.id}`,
+      `/api/partners/${p.id}/documents?name=convention.txt&nature=convention_signee&issued_on=2026-01-05&agreement_id=${a.id}`,
       Buffer.from("Exemplaire signé"),
     );
     expect(up.status).toBe(200);
@@ -321,13 +321,19 @@ describe("pièces de collaboration", () => {
     const p = await partner({ focal_id: "u_karim" });
     const a = (await create({ partner_ids: [p.id] })).body;
     expect((await up("u_karim", p.id, "name=rapport.txt&nature=inconnue")).status).toBe(400);
-    expect((await up("u_karim", p.id, "name=x.exe&nature=autre", "MZ\x90\x00")).status).toBe(415);
-    expect((await up("u_hugo", p.id, "name=r.txt&nature=rapport_activite")).status).toBe(403);
+    expect((await up("u_karim", p.id, "name=x.exe&nature=autre&other_label=Note", "MZ\x90\x00")).status).toBe(415);
+    expect((await up("u_hugo", p.id, "name=r.txt&nature=rapport_activite&issued_on=2026-01-05")).status).toBe(403);
     const other = (await create({ partner_ids: [(await partner()).id] })).body;
-    expect((await up("u_karim", p.id, `name=r.txt&nature=autre&agreement_id=${other.id}`)).status).toBe(400);
-    const r = await up("u_karim", p.id, "name=rapport.txt&nature=rapport_activite");
+    expect(
+      (await up("u_karim", p.id, `name=r.txt&nature=autre&other_label=Note&agreement_id=${other.id}`)).status,
+    ).toBe(400);
+    const r = await up("u_karim", p.id, "name=rapport.txt&nature=rapport_activite&issued_on=2026-01-05");
     expect(r.status).toBe(200);
-    const o = await up("u_karim", p.id, `name=conv.txt&nature=convention_signee&agreement_id=${a.id}`);
+    const o = await up(
+      "u_karim",
+      p.id,
+      `name=conv.txt&nature=convention_signee&issued_on=2026-01-05&agreement_id=${a.id}`,
+    );
     expect(o.status).toBe(200);
     const detail = (await g.api("u_hugo", "GET", `/api/partners/${p.id}`)).body;
     expect(detail.documents.map((d: Any) => [d.filename, d.nature_code, d.agreement_id])).toEqual(
@@ -347,7 +353,7 @@ describe("pièces de collaboration", () => {
 
   it("une pièce d'un partenaire confidentiel ou d'une autre organisation reste inaccessible", async () => {
     const p = await partner({ confidential: true });
-    const d = await up("u_alice", p.id, "name=note.txt&nature=autre");
+    const d = await up("u_alice", p.id, "name=note.txt&nature=autre&other_label=Note");
     expect((await g.api("u_hugo", "GET", `/api/partner-documents/${d.body.id}`)).status).toBe(404);
     const b = await g.foreignOrg();
     expect((await g.api(b.who, "GET", `/api/partner-documents/${d.body.id}`)).status).toBe(404);

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -14,8 +14,8 @@ import {
   Handshake,
   Lock,
   Paperclip,
+  Pencil,
   Plus,
-  Save,
   ScrollText,
   Trash2,
   Upload,
@@ -23,7 +23,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, ConfirmDialog, Dialog, Empty, IconButton, cn } from "@/components/ui";
-import { Seal } from "@/components/collection";
+import { RoundBtn, Seal } from "@/components/collection";
+import { Fact, Facts, LongText, RecordActions, RowActions, useRecord } from "@/components/record";
+import { RefSelect } from "@/components/refselect";
 import {
   Field,
   Input,
@@ -94,6 +96,13 @@ export interface PartnerDocument {
   created_at: string;
   uploader_id: string | null;
   uploader_name: string | null;
+  title: string;
+  other_label: string;
+  reference: string;
+  issued_on: string | null;
+  expires_on: string | null;
+  notes: string;
+  expired: boolean;
 }
 interface Detail extends AgreementRow {
   content: string;
@@ -150,6 +159,18 @@ type TabId = "all" | AgreementState;
 export function AgreementsPage() {
   const nav = useNavigate();
   const can = useCan();
+  const qc = useQueryClient();
+  const { data: me } = useMe();
+  const manager = can("partners.manage");
+  const [removing, setRemoving] = useState<AgreementRow | null>(null);
+  const remove = useMutation({
+    mutationFn: (id: string) => api.del(`/api/agreements/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["agreements"] });
+      toast.success("Préparation abandonnée");
+    },
+    onError: fail,
+  });
   const { data: refs } = useReferentials();
   const [tab, setTab] = useState<TabId>("all");
   const [type, setType] = useState("");
@@ -226,7 +247,7 @@ export function AgreementsPage() {
           {isLoading ? (
             <LoadingRows />
           ) : rows.length ? (
-            <Table head={["Numéro", "Accord", "État", "Partenaires", "Échéance", "Point focal"]}>
+            <Table head={["Numéro", "Accord", "État", "Partenaires", "Échéance", "Point focal", ""]}>
               {rows.map((a) => (
                 <Tr key={a.id} onClick={() => nav(`/conventions/${a.id}`)}>
                   <Td className="whitespace-nowrap font-mono text-[12px] text-muted">{a.reference ?? "—"}</Td>
@@ -246,6 +267,17 @@ export function AgreementsPage() {
                     <EndOn a={a} />
                   </Td>
                   <Td className="text-muted">{a.focal_name ?? "—"}</Td>
+                  <Td>
+                    <RowActions
+                      label={a.reference ?? a.title}
+                      onView={() => nav(`/conventions/${a.id}`)}
+                      onEdit={() => nav(`/conventions/${a.id}?modifier=1`)}
+                      canEdit={a.state === "preparation" && (manager || a.focal_id === me?.id)}
+                      onDelete={() => setRemoving(a)}
+                      canDelete={a.state === "preparation" && manager}
+                      deleteLabel="Abandonner"
+                    />
+                  </Td>
                 </Tr>
               ))}
             </Table>
@@ -262,6 +294,14 @@ export function AgreementsPage() {
         </Section>
       </div>
       {creating && <NewAgreement onClose={() => setCreating(false)} />}
+      <ConfirmDialog
+        open={!!removing}
+        onOpenChange={(v) => !v && setRemoving(null)}
+        title={`Abandonner « ${removing?.title} » ?`}
+        description="Un accord en préparation n'a jamais été signé : il disparaît du registre, ses pièces restent chez le partenaire. Un accord conclu ne se supprime jamais : il se résilie ou s'éteint à son échéance."
+        confirmLabel="Abandonner"
+        onConfirm={() => removing && remove.mutate(removing.id)}
+      />
     </div>
   );
 }
@@ -334,14 +374,12 @@ export function NewAgreement({ partner, onClose }: { partner?: { id: string; nam
           }
         >
           {(a) => (
-            <Select {...a} value={f.type_code} onChange={(e) => setF({ ...f, type_code: e.target.value })}>
-              <option value="">Choisir…</option>
-              {types.map((t) => (
-                <option key={t.code} value={t.code}>
-                  {t.label}
-                </option>
-              ))}
-            </Select>
+            <RefSelect
+              {...a}
+              list="agreement_type"
+              value={f.type_code}
+              onChange={(type_code) => setF({ ...f, type_code })}
+            />
           )}
         </Field>
         <Field label="Échéance">
@@ -417,6 +455,7 @@ export function AgreementPage() {
   const { id } = useParams();
   const nav = useNavigate();
   const qc = useQueryClient();
+  const [params, setParams] = useSearchParams();
   const { data: refs } = useReferentials();
   const { data: users } = useUsers();
   const { data: units } = useUnits();
@@ -428,15 +467,16 @@ export function AgreementPage() {
     queryKey: ["agreement", id],
     queryFn: () => api.get<Detail>(`/api/agreements/${id}`),
   });
-  const [d, setD] = useState<Detail | null>(null);
-  const [dirty, setDirty] = useState(false);
+  const rec = useRecord(a);
+  const d = rec.draft;
   const [dialog, setDialog] = useState<"sign" | "activate" | "amend" | "terminate" | "delete" | null>(null);
+  // « Modifier » depuis le registre : la fiche s'ouvre directement en modification
   useEffect(() => {
-    if (a) {
-      setD(a);
-      setDirty(false);
+    if (a && params.get("modifier") === "1") {
+      if (a.can.edit) rec.edit();
+      setParams({}, { replace: true });
     }
-  }, [a]);
+  }, [a, params, setParams, rec]);
   const refresh = (r: Detail) => {
     qc.setQueryData(["agreement", r.id], r);
     qc.invalidateQueries({ queryKey: ["agreements"] });
@@ -456,6 +496,7 @@ export function AgreementPage() {
         ...(d!.parent_id ? { new_end_on: d!.new_end_on || null } : {}),
       }),
     onSuccess: (r) => {
+      rec.done();
       refresh(r);
       toast.success("Accord enregistré");
     },
@@ -473,13 +514,10 @@ export function AgreementPage() {
   });
   if (isLoading || (!d && !error)) return <LoadingRows rows={8} />;
   if (error || !d) return <Empty title="Accord inaccessible">{(error as Error)?.message}</Empty>;
-  const ro = !d.can.edit;
-  const patch = (x: Partial<Detail>) => {
-    setD({ ...d, ...x });
-    setDirty(true);
-  };
+  const editing = rec.editing;
   const S = AGREEMENT_STATE[d.state];
   const type = refs?.agreement_type.find((t) => t.code === d.type_code);
+  const datesBad = !!d.effective_on && !!d.end_on && d.end_on < d.effective_on;
   return (
     <div className="min-h-full pb-10">
       <PageHeader
@@ -490,7 +528,7 @@ export function AgreementPage() {
               <ArrowLeft className="size-5" />
             </Link>
             {d.amendment_no ? `Avenant n° ${d.amendment_no} — ` : ""}
-            {d.title}
+            {a?.title}
             {d.confidential && <Lock aria-label="Confidentiel" className="size-4 text-warning" />}
           </span>
         }
@@ -508,42 +546,44 @@ export function AgreementPage() {
           <>
             {d.state === "vigueur" ? <Stamp>En vigueur</Stamp> : <Status label={S.label} tone={S.tone} />}
             {d.reference && <Seal>{d.reference}</Seal>}
-            {d.can.sign && d.binding && (
-              <Button icon={<FileSignature className="size-4" />} onClick={() => setDialog("sign")}>
-                Soumettre au parapheur
-              </Button>
+            {!editing && (
+              <>
+                {d.can.sign && d.binding && (
+                  <Button icon={<FileSignature className="size-4" />} onClick={() => setDialog("sign")}>
+                    Soumettre au parapheur
+                  </Button>
+                )}
+                {d.can.activate && (
+                  <Button icon={<CheckCircle2 className="size-4" />} onClick={() => setDialog("activate")}>
+                    {d.binding ? "Déclarer signé hors parapheur" : "Déclarer en vigueur"}
+                  </Button>
+                )}
+                {d.can.amend && (
+                  <Button icon={<FilePlus2 className="size-4" />} onClick={() => setDialog("amend")}>
+                    Préparer un avenant
+                  </Button>
+                )}
+                {d.can.terminate && (
+                  <Button variant="danger" icon={<Ban className="size-4" />} onClick={() => setDialog("terminate")}>
+                    Résilier
+                  </Button>
+                )}
+                {d.can.delete && (
+                  <IconButton label="Abandonner la préparation" onClick={() => setDialog("delete")}>
+                    <Trash2 className="size-4" />
+                  </IconButton>
+                )}
+              </>
             )}
-            {d.can.activate && (
-              <Button icon={<CheckCircle2 className="size-4" />} onClick={() => setDialog("activate")}>
-                {d.binding ? "Déclarer signé hors parapheur" : "Déclarer en vigueur"}
-              </Button>
-            )}
-            {d.can.amend && (
-              <Button icon={<FilePlus2 className="size-4" />} onClick={() => setDialog("amend")}>
-                Préparer un avenant
-              </Button>
-            )}
-            {d.can.terminate && (
-              <Button variant="danger" icon={<Ban className="size-4" />} onClick={() => setDialog("terminate")}>
-                Résilier
-              </Button>
-            )}
-            {d.can.delete && (
-              <IconButton label="Abandonner la préparation" onClick={() => setDialog("delete")}>
-                <Trash2 className="size-4" />
-              </IconButton>
-            )}
-            {!ro && (
-              <Button
-                variant="primary"
-                icon={<Save className="size-4" />}
-                disabled={!dirty || !d.title.trim()}
-                loading={save.isPending}
-                onClick={() => save.mutate()}
-              >
-                Enregistrer
-              </Button>
-            )}
+            <RecordActions
+              editing={editing}
+              canEdit={d.can.edit}
+              onEdit={rec.edit}
+              onCancel={rec.cancel}
+              onSave={() => save.mutate()}
+              saving={save.isPending}
+              disabled={!rec.dirty || !d.title.trim() || datesBad}
+            />
           </>
         }
       />
@@ -565,24 +605,22 @@ export function AgreementPage() {
             </p>
           )}
           <Section title="Texte de l'accord">
-            <div className="space-y-3 p-4 pt-2">
-              {!ro && (
-                <Field label="Objet" required>
-                  {(x) => <Input {...x} value={d.title} onChange={(e) => patch({ title: e.target.value })} />}
-                </Field>
-              )}
-              {ro ? (
-                <div className="whitespace-pre-wrap rounded-xl border border-line bg-hover/40 px-4 py-3 text-[13.5px] leading-relaxed">
-                  {d.content || <span className="text-muted">Aucun texte saisi.</span>}
-                </div>
+            <div className="space-y-3 p-5 pt-2">
+              {editing ? (
+                <>
+                  <Field label="Objet" required error={!d.title.trim() ? "L'objet est obligatoire" : null}>
+                    {(x) => <Input {...x} value={d.title} onChange={(e) => rec.patch({ title: e.target.value })} />}
+                  </Field>
+                  <Textarea
+                    aria-label="Texte de l'accord"
+                    rows={14}
+                    placeholder="Préambule, objet, engagements des parties, durée, résiliation…"
+                    value={d.content}
+                    onChange={(e) => rec.patch({ content: e.target.value })}
+                  />
+                </>
               ) : (
-                <Textarea
-                  aria-label="Texte de l'accord"
-                  rows={12}
-                  placeholder="Préambule, objet, engagements des parties, durée, résiliation…"
-                  value={d.content}
-                  onChange={(e) => patch({ content: e.target.value })}
-                />
+                <LongText empty="Aucun texte saisi.">{d.content}</LongText>
               )}
               {d.state !== "preparation" && (
                 <p className="text-[12px] text-faint">
@@ -591,14 +629,16 @@ export function AgreementPage() {
               )}
             </div>
           </Section>
-          <DocumentsPanel
-            partnerId={(d.parties.find((p) => p.lead) ?? d.parties[0]).id}
-            agreementId={d.id}
-            documents={d.documents}
-            canAdd={d.can.edit || d.can.amend || d.can.terminate}
-            onChange={() => qc.invalidateQueries({ queryKey: ["agreement", id] })}
-          />
-          {!d.parent_id && (
+          {!editing && (
+            <DocumentsPanel
+              partnerId={(d.parties.find((p) => p.lead) ?? d.parties[0]).id}
+              agreementId={d.id}
+              documents={d.documents}
+              canAdd={d.can.edit || d.can.amend || d.can.terminate}
+              onChange={() => qc.invalidateQueries({ queryKey: ["agreement", id] })}
+            />
+          )}
+          {!editing && !d.parent_id && (
             <Section title="Avenants">
               {d.amendments.length ? (
                 <ul className="divide-y divide-line">
@@ -643,95 +683,104 @@ export function AgreementPage() {
             </ul>
           </Section>
           <Section title="Dates et suivi">
-            <div className="space-y-3 p-4 pt-2 text-[13px]">
-              <Field label="Référence du partenaire">
-                {(x) => (
-                  <Input
-                    {...x}
-                    disabled={ro}
-                    value={d.partner_ref}
-                    onChange={(e) => patch({ partner_ref: e.target.value })}
-                  />
-                )}
-              </Field>
-              <Meta label="Signé le" Icon={Hash}>
-                {frDate(d.signed_on)}
-                {d.signed_outside && (
-                  <span className="block text-[12px] font-normal text-muted">Exemplaire signé hors parapheur</span>
-                )}
-              </Meta>
-              <Field label="Entrée en vigueur">
-                {(x) => (
-                  <Input
-                    {...x}
-                    type="date"
-                    disabled={ro}
-                    value={d.effective_on ?? ""}
-                    onChange={(e) => patch({ effective_on: e.target.value || null })}
-                  />
-                )}
-              </Field>
-              {d.parent_id ? (
-                <Field label="Nouvelle échéance portée par l'avenant">
+            {editing ? (
+              <div className="space-y-3 p-4 pt-2 text-[13px]">
+                <Field label="Référence du partenaire">
+                  {(x) => (
+                    <Input {...x} value={d.partner_ref} onChange={(e) => rec.patch({ partner_ref: e.target.value })} />
+                  )}
+                </Field>
+                <Field label="Entrée en vigueur">
                   {(x) => (
                     <Input
                       {...x}
                       type="date"
-                      disabled={ro}
-                      value={d.new_end_on ?? ""}
-                      onChange={(e) => patch({ new_end_on: e.target.value || null })}
+                      value={d.effective_on ?? ""}
+                      onChange={(e) => rec.patch({ effective_on: e.target.value || null })}
                     />
                   )}
                 </Field>
-              ) : (
-                <>
-                  <Field label="Échéance">
-                    {(x) =>
-                      ro ? (
-                        <div id={x.id} className="font-medium">
-                          <EndOn a={d} />
-                        </div>
-                      ) : (
+                {d.parent_id ? (
+                  <Field label="Nouvelle échéance portée par l'avenant">
+                    {(x) => (
+                      <Input
+                        {...x}
+                        type="date"
+                        value={d.new_end_on ?? ""}
+                        onChange={(e) => rec.patch({ new_end_on: e.target.value || null })}
+                      />
+                    )}
+                  </Field>
+                ) : (
+                  <>
+                    <Field label="Échéance" error={datesBad ? "L'échéance précède l'entrée en vigueur" : null}>
+                      {(x) => (
                         <Input
                           {...x}
                           type="date"
                           value={d.end_on ?? ""}
-                          onChange={(e) => patch({ end_on: e.target.value || null })}
+                          onChange={(e) => rec.patch({ end_on: e.target.value || null })}
                         />
-                      )
-                    }
-                  </Field>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="size-4 accent-[var(--primary)]"
-                      disabled={ro}
-                      checked={d.tacit_renewal}
-                      onChange={(e) => patch({ tacit_renewal: e.target.checked })}
-                    />
-                    Reconduction tacite
-                  </label>
-                </>
-              )}
-              <Field label="Entité porteuse">
-                {(x) => (
-                  <Select
-                    {...x}
-                    disabled={ro}
-                    value={d.unit_id ?? ""}
-                    onChange={(e) => patch({ unit_id: e.target.value || null })}
-                  >
-                    <option value="">Aucune</option>
-                    {units?.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </Select>
+                      )}
+                    </Field>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="size-4 accent-[var(--primary)]"
+                        checked={d.tacit_renewal}
+                        onChange={(e) => rec.patch({ tacit_renewal: e.target.checked })}
+                      />
+                      Reconduction tacite
+                    </label>
+                  </>
                 )}
-              </Field>
-              <Meta label="Point focal">{users?.find((u) => u.id === d.focal_id)?.name ?? "Non désigné"}</Meta>
-            </div>
+                <Field label="Entité porteuse">
+                  {(x) => (
+                    <Select
+                      {...x}
+                      value={d.unit_id ?? ""}
+                      onChange={(e) => rec.patch({ unit_id: e.target.value || null })}
+                    >
+                      <option value="">Aucune</option>
+                      {units?.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+              </div>
+            ) : (
+              <Facts className="sm:grid-cols-1">
+                <Fact label="Référence du partenaire">{d.partner_ref}</Fact>
+                <Fact label="Signé le" Icon={Hash}>
+                  {d.signed_on && (
+                    <>
+                      {frDate(d.signed_on)}
+                      {d.signed_outside && (
+                        <span className="block text-[12px] font-normal text-muted">
+                          Exemplaire signé hors parapheur
+                        </span>
+                      )}
+                    </>
+                  )}
+                </Fact>
+                <Fact label="Entrée en vigueur">{d.effective_on && frDate(d.effective_on)}</Fact>
+                {d.parent_id ? (
+                  <Fact label="Nouvelle échéance portée par l'avenant">{d.new_end_on && frDate(d.new_end_on)}</Fact>
+                ) : (
+                  <Fact label="Échéance">
+                    {d.end_on && <EndOn a={d} />}
+                    {d.tacit_renewal && (
+                      <span className="block text-[12px] font-normal text-muted">Reconduction tacite</span>
+                    )}
+                  </Fact>
+                )}
+                <Fact label="Entité porteuse">{d.unit_name}</Fact>
+                <Fact label="Point focal">{users?.find((u) => u.id === d.focal_id)?.name}</Fact>
+              </Facts>
+            )}
           </Section>
         </aside>
       </div>
@@ -750,16 +799,6 @@ export function AgreementPage() {
     </div>
   );
 }
-
-const Meta = ({ label, children, Icon }: { label: string; children: React.ReactNode; Icon?: typeof Hash }) => (
-  <div className="min-w-0">
-    <dt className="flex items-center gap-1 text-[12px] text-muted">
-      {Icon && <Icon className="size-3" />}
-      {label}
-    </dt>
-    <dd className="mt-0.5 font-medium">{children}</dd>
-  </div>
-);
 
 function SignDialog({
   agreement,
@@ -1028,6 +1067,19 @@ function TerminateDialog({
 }
 
 // ------------------------------------------------------------------ pièces de collaboration
+/** Ce qu'une nature de pièce demande, d'après le référentiel (docs/DESIGN-SYSTEM.md § 4, « Grille CRUD »). */
+const asks = (n?: RefValue) => ({
+  dated: !!n?.props.dated,
+  expires: !!n?.props.expires,
+  referenced: !!n?.props.referenced,
+  precise: !!n?.props.precise,
+  official: !!n?.props.official,
+});
+const natureLabel = (doc: Pick<PartnerDocument, "nature_code" | "other_label">, natures: RefValue[]) => {
+  const n = natures.find((x) => x.code === doc.nature_code);
+  return n?.props.precise && doc.other_label ? `${n.label} : ${doc.other_label}` : (n?.label ?? doc.nature_code);
+};
+
 export function DocumentsPanel({
   partnerId,
   agreementId,
@@ -1040,6 +1092,7 @@ export function DocumentsPanel({
   agreementId?: string;
   documents: PartnerDocument[];
   agreements?: { id: string; reference: string | null; title: string }[];
+  /** Gestionnaire ou point focal du partenaire : il ajoute et modifie toutes les pièces. */
   canAdd: boolean;
   onChange: () => void;
 }) {
@@ -1047,133 +1100,360 @@ export function DocumentsPanel({
   const { data: me } = useMe();
   const can = useCan();
   const natures = refs?.partner_doc_nature ?? [];
-  const [nature, setNature] = useState("");
-  const [target, setTarget] = useState(agreementId ?? "");
-  const file = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState<{ doc: PartnerDocument | null; editing: boolean } | null>(null);
   const [removing, setRemoving] = useState<PartnerDocument | null>(null);
-  const upload = useMutation({
-    mutationFn: (f: File) =>
-      api.upload(
-        `/api/partners/${partnerId}/documents?nature=${encodeURIComponent(nature)}${target ? `&agreement_id=${target}` : ""}`,
-        f,
-      ),
-    onSuccess: () => {
-      onChange();
-      toast.success("Pièce jointe");
-    },
-    onError: fail,
-  });
   const remove = useMutation({
     mutationFn: (id: string) => api.del(`/api/partner-documents/${id}`),
     onSuccess: () => {
       onChange();
-      toast.success("Pièce supprimée");
+      toast.success("Document supprimé");
     },
     onError: fail,
   });
-  const natureOf = (c: string) => natures.find((n) => n.code === c);
+  const canEdit = (doc: PartnerDocument) => canAdd || doc.uploader_id === me?.id;
+  const canDelete = (doc: PartnerDocument) => !doc.official && (can("partners.manage") || doc.uploader_id === me?.id);
   return (
-    <Section title={agreementId ? "Pièces de l'accord" : "Pièces de collaboration"}>
+    <Section
+      title={agreementId ? "Documents de l'accord" : "Documents"}
+      aside={
+        canAdd && (
+          <Button icon={<Upload className="size-4" />} onClick={() => setOpen({ doc: null, editing: true })}>
+            Ajouter un document
+          </Button>
+        )
+      }
+    >
       {documents.length ? (
-        <ul className="divide-y divide-line">
+        <Table
+          head={["Document", "Type", "Référence", "Production", "Expiration", ...(agreementId ? [] : ["Accord"]), ""]}
+        >
           {documents.map((doc) => {
             const ag = agreements?.find((x) => x.id === doc.agreement_id);
-            const deletable = !doc.official && (can("partners.manage") || doc.uploader_id === me?.id);
             return (
-              <li key={doc.id} className="flex flex-wrap items-center gap-3 px-5 py-2.5 text-[13px]">
-                <FileText className="size-4 shrink-0 text-muted" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">{doc.filename}</span>
-                  <span className="block text-[12px] text-muted">
-                    {natureOf(doc.nature_code)?.label ?? doc.nature_code}
-                    {doc.official && " · officielle"}
-                    {ag && ` · ${ag.reference ?? ag.title}`} · {kb(doc.size)} · {frDate(doc.created_at.slice(0, 10))}
-                    {doc.uploader_name && ` · ${doc.uploader_name}`}
+              <Tr key={doc.id} onClick={() => setOpen({ doc, editing: false })}>
+                <Td className="min-w-[200px]">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <FileText className="size-4 shrink-0 text-muted" />
+                    {doc.title || doc.filename}
+                    {doc.official && <Lock className="size-3 shrink-0 text-muted" aria-label="Pièce officielle" />}
                   </span>
-                </span>
-                <a
-                  href={`/api/partner-documents/${doc.id}`}
-                  className="inline-flex size-8 items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-fg"
-                  aria-label={`Télécharger ${doc.filename}`}
-                  title="Télécharger"
-                >
-                  <Download className="size-4" />
-                </a>
-                {deletable && (
-                  <IconButton label="Supprimer la pièce" onClick={() => setRemoving(doc)}>
-                    <Trash2 className="size-4" />
-                  </IconButton>
-                )}
-              </li>
+                  <span className="block truncate text-[12px] text-muted">
+                    {doc.filename} · {kb(doc.size)}
+                  </span>
+                </Td>
+                <Td className="text-muted">{natureLabel(doc, natures)}</Td>
+                <Td className="font-mono text-[12px] text-muted">{doc.reference || "—"}</Td>
+                <Td className="tabular text-muted">{frDate(doc.issued_on)}</Td>
+                <Td className={cn("tabular", doc.expired ? "font-medium text-danger" : "text-muted")}>
+                  {frDate(doc.expires_on)}
+                  {doc.expired && <span className="block text-[11.5px] font-normal">expiré</span>}
+                </Td>
+                {!agreementId && <Td className="text-muted">{ag ? (ag.reference ?? ag.title) : "—"}</Td>}
+                <Td>
+                  <RowActions
+                    label={doc.title || doc.filename}
+                    onView={() => setOpen({ doc, editing: false })}
+                    onEdit={() => setOpen({ doc, editing: true })}
+                    canEdit={canEdit(doc)}
+                    onDelete={() => setRemoving(doc)}
+                    canDelete={canDelete(doc)}
+                  >
+                    <RoundBtn label={`Télécharger ${doc.filename}`} href={`/api/partner-documents/${doc.id}`}>
+                      <Download className="size-4" />
+                    </RoundBtn>
+                  </RowActions>
+                </Td>
+              </Tr>
             );
           })}
-        </ul>
+        </Table>
       ) : (
-        <Empty icon={<Paperclip className="size-6" />} title="Aucune pièce">
-          Conventions signées, avenants, rapports, comptes rendus : chaque pièce est rangée par nature.
+        <Empty icon={<Paperclip className="size-6" />} title="Aucun document">
+          Conventions signées, contrats, avenants, rapports, comptes rendus : chaque document est décrit par son type,
+          ses dates et sa référence.
         </Empty>
       )}
-      {canAdd && (
-        <div className="grid gap-2 border-t border-line p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-          <Select aria-label="Nature de la pièce" value={nature} onChange={(e) => setNature(e.target.value)}>
-            <option value="">Nature de la pièce…</option>
-            {natures
-              .filter((n) => !n.archived)
-              .map((n) => (
-                <option key={n.code} value={n.code}>
-                  {n.label}
-                  {n.props.official ? " (officielle)" : ""}
-                </option>
-              ))}
-          </Select>
-          {agreementId ? (
-            <span />
-          ) : (
-            <Select aria-label="Accord concerné" value={target} onChange={(e) => setTarget(e.target.value)}>
-              <option value="">Aucun accord en particulier</option>
-              {agreements?.map((x) => (
-                <option key={x.id} value={x.id}>
-                  {x.reference ?? "En préparation"} — {x.title}
-                </option>
-              ))}
-            </Select>
-          )}
-          <Button
-            icon={<Upload className="size-4" />}
-            disabled={!nature}
-            loading={upload.isPending}
-            onClick={() => file.current?.click()}
-          >
-            Joindre
-          </Button>
-          <input
-            ref={file}
-            type="file"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) upload.mutate(f);
-              e.target.value = "";
-            }}
-          />
-          {natureOf(nature)?.props.official && (
-            <p className="text-[12px] text-muted sm:col-span-3">
-              Une pièce officielle reste au dossier : elle ne pourra pas être supprimée.
-            </p>
-          )}
-        </div>
+      {open && (
+        <DocumentDialog
+          partnerId={partnerId}
+          agreementId={agreementId}
+          agreements={agreements}
+          doc={open.doc}
+          startEditing={open.editing}
+          canEdit={open.doc ? canEdit(open.doc) : canAdd}
+          onClose={() => setOpen(null)}
+          onSaved={onChange}
+        />
       )}
       <ConfirmDialog
         open={!!removing}
         onOpenChange={(v) => !v && setRemoving(null)}
-        title={`Supprimer « ${removing?.filename} » ?`}
-        description="La suppression est tracée."
+        title={`Supprimer « ${removing?.title || removing?.filename} » ?`}
+        description="La suppression est tracée. Une pièce officielle (convention signée, contrat, avenant…) ne se supprime jamais."
         confirmLabel="Supprimer"
         onConfirm={() => removing && remove.mutate(removing.id)}
       />
     </Section>
   );
 }
+
+type DocForm = {
+  nature: string;
+  title: string;
+  other_label: string;
+  reference: string;
+  issued_on: string;
+  expires_on: string;
+  notes: string;
+  agreement_id: string;
+};
+
+/** Fiche d'un document : lecture, puis « Modifier » ; en création, le formulaire et le fichier. */
+function DocumentDialog({
+  partnerId,
+  agreementId,
+  agreements,
+  doc,
+  startEditing,
+  canEdit,
+  onClose,
+  onSaved,
+}: {
+  partnerId: string;
+  agreementId?: string;
+  agreements?: { id: string; reference: string | null; title: string }[];
+  doc: PartnerDocument | null;
+  startEditing: boolean;
+  canEdit: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const { data: refs } = useReferentials();
+  const natures = refs?.partner_doc_nature ?? [];
+  const [editing, setEditing] = useState(startEditing || !doc);
+  const [file, setFile] = useState<File | null>(null);
+  const [f, setF] = useState<DocForm>({
+    nature: doc?.nature_code ?? "",
+    title: doc?.title ?? "",
+    other_label: doc?.other_label ?? "",
+    reference: doc?.reference ?? "",
+    issued_on: doc?.issued_on ?? "",
+    expires_on: doc?.expires_on ?? "",
+    notes: doc?.notes ?? "",
+    agreement_id: doc?.agreement_id ?? agreementId ?? "",
+  });
+  const nature = natures.find((n) => n.code === f.nature);
+  const a = asks(nature);
+  // Contrôles affichés sous les champs avant l'envoi ; le serveur les refait de toute façon
+  const errors = {
+    title: doc && !f.title.trim() ? "Le nom du document est obligatoire" : null,
+    issued_on:
+      a.dated && !f.issued_on ? "Obligatoire pour ce type" : f.issued_on > today() ? "Pas dans le futur" : null,
+    expires_on:
+      a.expires && !f.expires_on
+        ? "Obligatoire pour ce type"
+        : f.expires_on && f.issued_on && f.expires_on < f.issued_on
+          ? "Précède la date de production"
+          : null,
+    reference: a.referenced && !f.reference.trim() ? "Obligatoire pour ce type" : null,
+    other_label: a.precise && !f.other_label.trim() ? "Précisez la nature du document" : null,
+  };
+  const invalid = !f.nature || (!doc && !file) || Object.values(errors).some(Boolean);
+  const meta = () => ({
+    title: f.title.trim() || undefined,
+    other_label: a.precise ? f.other_label.trim() : "",
+    reference: f.reference.trim(),
+    issued_on: f.issued_on || null,
+    expires_on: f.expires_on || null,
+    notes: f.notes.trim(),
+  });
+  const save = useMutation({
+    mutationFn: () => {
+      if (doc) return api.patch(`/api/partner-documents/${doc.id}`, { ...meta(), nature_code: f.nature });
+      const q = new URLSearchParams({ nature: f.nature });
+      for (const [k, v] of Object.entries(meta())) if (v) q.set(k, String(v));
+      if (f.agreement_id) q.set("agreement_id", f.agreement_id);
+      return api.upload(`/api/partners/${partnerId}/documents?${q}`, file!);
+    },
+    onSuccess: () => {
+      onSaved();
+      toast.success(doc ? "Document modifié" : "Document ajouté");
+      onClose();
+    },
+    onError: fail,
+  });
+  const set = (k: keyof DocForm) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
+  const ag = agreements?.find((x) => x.id === (doc?.agreement_id ?? f.agreement_id));
+  return (
+    <Dialog
+      open
+      onOpenChange={onClose}
+      title={doc ? doc.title || doc.filename : "Ajouter un document"}
+      description={
+        doc
+          ? `${natureLabel(doc, natures)}${doc.official ? " · pièce officielle" : ""}`
+          : "Choisissez le type : les informations demandées en dépendent."
+      }
+      width={600}
+      footer={
+        editing ? (
+          <>
+            <Button onClick={doc ? () => setEditing(false) : onClose}>Annuler</Button>
+            <Button variant="primary" disabled={invalid} loading={save.isPending} onClick={() => save.mutate()}>
+              Enregistrer
+            </Button>
+          </>
+        ) : (
+          <>
+            {doc && (
+              <a
+                href={`/api/partner-documents/${doc.id}`}
+                className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line px-3 text-[13px] font-medium hover:bg-hover"
+              >
+                <Download className="size-4" /> Télécharger
+              </a>
+            )}
+            {canEdit && (
+              <Button icon={<Pencil className="size-4" />} onClick={() => setEditing(true)}>
+                Modifier
+              </Button>
+            )}
+            <Button onClick={onClose}>Fermer</Button>
+          </>
+        )
+      }
+    >
+      {editing ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Type de document" required>
+            {(x) => (
+              <RefSelect
+                {...x}
+                list="partner_doc_nature"
+                autoFocus={!doc}
+                value={f.nature}
+                onChange={(nature) => setF({ ...f, nature })}
+                filter={(n) => !doc?.official || !!n.props.official}
+                suffix={(n) => (n.props.official ? " (officielle)" : "")}
+              />
+            )}
+          </Field>
+          {a.precise ? (
+            <Field label="Préciser le type" required error={errors.other_label}>
+              {(x) => (
+                <Input {...x} value={f.other_label} onChange={set("other_label")} placeholder="Plan, étude, note…" />
+              )}
+            </Field>
+          ) : (
+            <span />
+          )}
+          <Field
+            label="Nom du document"
+            required={!!doc}
+            className="sm:col-span-2"
+            error={errors.title}
+            hint={!doc ? "Par défaut, le nom du fichier." : undefined}
+          >
+            {(x) => <Input {...x} value={f.title} onChange={set("title")} />}
+          </Field>
+          {f.nature && (
+            <>
+              {(a.referenced || f.reference) && (
+                <Field label="Référence" required={a.referenced} error={errors.reference}>
+                  {(x) => <Input {...x} value={f.reference} onChange={set("reference")} placeholder="Numéro, cote…" />}
+                </Field>
+              )}
+              {(a.dated || f.issued_on) && (
+                <Field label="Date de production" required={a.dated} error={errors.issued_on}>
+                  {(x) => <Input {...x} type="date" max={today()} value={f.issued_on} onChange={set("issued_on")} />}
+                </Field>
+              )}
+              {(a.expires || f.expires_on) && (
+                <Field label="Date d'expiration" required={a.expires} error={errors.expires_on}>
+                  {(x) => (
+                    <Input
+                      {...x}
+                      type="date"
+                      min={f.issued_on || undefined}
+                      value={f.expires_on}
+                      onChange={set("expires_on")}
+                    />
+                  )}
+                </Field>
+              )}
+            </>
+          )}
+          {!doc && !agreementId && !!agreements?.length && (
+            <Field label="Accord concerné" className="sm:col-span-2">
+              {(x) => (
+                <Select {...x} value={f.agreement_id} onChange={set("agreement_id")}>
+                  <option value="">Aucun accord en particulier</option>
+                  {agreements.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.reference ?? "En préparation"} — {g.title}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+          )}
+          <Field label="Description" className="sm:col-span-2">
+            {(x) => <Textarea {...x} rows={2} value={f.notes} onChange={set("notes")} />}
+          </Field>
+          {!doc && (
+            <Field label="Fichier" required className="sm:col-span-2" hint={`${ALLOWED_FORMATS} · 25 Mo au maximum`}>
+              {(x) => (
+                <input
+                  {...x}
+                  type="file"
+                  className="block w-full text-[13px] file:mr-3 file:h-9 file:rounded-[10px] file:border file:border-line file:bg-panel file:px-3 file:text-[13px]"
+                  onChange={(e) => {
+                    const picked = e.target.files?.[0] ?? null;
+                    setFile(picked);
+                    if (picked && !f.title) setF({ ...f, title: picked.name.replace(/\.[^.]+$/, "") });
+                  }}
+                />
+              )}
+            </Field>
+          )}
+          {a.official && (
+            <p className="text-[12px] text-muted sm:col-span-2">
+              Pièce officielle : elle restera au dossier et ne pourra pas être supprimée.
+            </p>
+          )}
+        </div>
+      ) : (
+        doc && (
+          <Facts className="p-0 pt-0">
+            <Fact label="Type">{natureLabel(doc, natures)}</Fact>
+            <Fact label="Référence">{doc.reference}</Fact>
+            <Fact label="Date de production">{doc.issued_on && frDate(doc.issued_on)}</Fact>
+            <Fact label="Date d'expiration">
+              {doc.expires_on && (
+                <span className={doc.expired ? "text-danger" : ""}>
+                  {frDate(doc.expires_on)}
+                  {doc.expired ? " (expiré)" : ""}
+                </span>
+              )}
+            </Fact>
+            {!agreementId && <Fact label="Accord">{ag ? (ag.reference ?? ag.title) : null}</Fact>}
+            <Fact label="Fichier">
+              {doc.filename} · {kb(doc.size)}
+            </Fact>
+            <Fact label="Ajouté par">
+              {doc.uploader_name} {frDate(doc.created_at.slice(0, 10))}
+            </Fact>
+            <Fact label="Description" wide>
+              {doc.notes && <span className="whitespace-pre-wrap font-normal">{doc.notes}</span>}
+            </Fact>
+          </Facts>
+        )
+      )}
+    </Dialog>
+  );
+}
+
+const ALLOWED_FORMATS = "PDF, Word, Excel, PowerPoint, images, texte, CSV ou ZIP";
 
 // ------------------------------------------------------------------ onglet Accords de la fiche partenaire
 export function PartnerAgreements({
@@ -1206,7 +1486,7 @@ export function PartnerAgreements({
       }
     >
       {agreements.length ? (
-        <Table head={["Numéro", "Accord", "État", "Signé le", "Échéance"]}>
+        <Table head={["Numéro", "Accord", "État", "Signé le", "Échéance", ""]}>
           {agreements.map((a) => (
             <Tr key={a.id} onClick={() => nav(`/conventions/${a.id}`)}>
               <Td className="whitespace-nowrap font-mono text-[12px] text-muted">{a.reference ?? "—"}</Td>
@@ -1223,6 +1503,14 @@ export function PartnerAgreements({
               <Td className="tabular text-muted">{frDate(a.signed_on)}</Td>
               <Td>
                 <EndOn a={a} />
+              </Td>
+              <Td>
+                <RowActions
+                  label={a.reference ?? a.title}
+                  onView={() => nav(`/conventions/${a.id}`)}
+                  onEdit={() => nav(`/conventions/${a.id}?modifier=1`)}
+                  canEdit={canCreate && a.state === "preparation"}
+                />
               </Td>
             </Tr>
           ))}

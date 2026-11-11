@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Archive,
@@ -13,13 +13,11 @@ import {
   History,
   Lock,
   Mail,
+  Pencil,
   MessageSquarePlus,
-  Phone,
   Plus,
-  Save,
   Star,
   Trash2,
-  UserRound,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -55,7 +53,10 @@ import {
 import { ApiError, api } from "@/lib/api";
 import { type AgreementRow, DocumentsPanel, PartnerAgreements, type PartnerDocument } from "./Agreements";
 import { DossiersTab, MailTab, MeetingsTab, type PartnerLinks } from "./PartnerLinks";
-import { useCan, useUnits, useUsers } from "@/lib/hooks";
+import { useCan, useMe, useUnits, useUsers } from "@/lib/hooks";
+import { RoundBtn } from "@/components/collection";
+import { AddTypeButton, RefSelect } from "@/components/refselect";
+import { Fact, Facts, LongText, RecordActions, RowActions, useRecord } from "@/components/record";
 import { HUES, REF_ICONS, type RefValue, useReferentials } from "@/lib/referentials";
 
 /* Partenariats › Partenaires — lot PA1 (docs/CONCEPTION.md, partie 4) : l'annuaire unique des tiers de l'institution. */
@@ -102,6 +103,7 @@ interface Partner {
   merged_into: string | null;
   merged_into_name: string | null;
   contacts_count: number;
+  deletable: boolean;
   last_note_on: string | null;
   created_at: string;
   closed_at: string | null;
@@ -115,6 +117,8 @@ interface Contact {
   notes: string;
   principal: boolean;
   archived: boolean;
+  /** Jamais cité (courrier, réunion) : il peut être supprimé ; sinon il s'archive. */
+  deletable: boolean;
 }
 interface HistoryItem {
   id: string;
@@ -198,6 +202,18 @@ export function PartnersPage() {
   const [category, setCategory] = useState("");
   const [q, setQ] = useState("");
   const [creating, setCreating] = useState(false);
+  const [removing, setRemoving] = useState<Partner | null>(null);
+  const { data: me } = useMe();
+  const manager = can("partners.manage");
+  const qc = useQueryClient();
+  const remove = useMutation({
+    mutationFn: (id: string) => api.del(`/api/partners/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["partners"] });
+      toast.success("Fiche supprimée");
+    },
+    onError: fail,
+  });
   const { data, isLoading } = useQuery({
     queryKey: ["partners"],
     queryFn: () => api.get<Partner[]>("/api/partners"),
@@ -275,7 +291,7 @@ export function PartnersPage() {
           {isLoading ? (
             <LoadingRows />
           ) : rows.length ? (
-            <Table head={["Partenaire", "État", "Type", "Catégories", "Point focal", "Dernier échange"]}>
+            <Table head={["Partenaire", "État", "Type", "Catégories", "Point focal", "Dernier échange", ""]}>
               {rows.map((p) => (
                 <Tr key={p.id} onClick={() => nav(`/partenaires/${p.id}`)}>
                   <Td className="min-w-[220px]">
@@ -308,6 +324,16 @@ export function PartnersPage() {
                   </Td>
                   <Td className="text-muted">{p.focal_name ?? "—"}</Td>
                   <Td className="tabular text-muted">{frDate(p.last_note_on)}</Td>
+                  <Td>
+                    <RowActions
+                      label={p.name}
+                      onView={() => nav(`/partenaires/${p.id}`)}
+                      onEdit={() => nav(`/partenaires/${p.id}?modifier=1`)}
+                      canEdit={manager || p.focal_id === me?.id || p.focal_ids.includes(me?.id ?? "")}
+                      onDelete={() => setRemoving(p)}
+                      canDelete={manager && p.deletable}
+                    />
+                  </Td>
                 </Tr>
               ))}
             </Table>
@@ -324,6 +350,14 @@ export function PartnersPage() {
         </Section>
       </div>
       {creating && <NewPartner onClose={() => setCreating(false)} />}
+      <ConfirmDialog
+        open={!!removing}
+        onOpenChange={(v) => !v && setRemoving(null)}
+        title={`Supprimer « ${removing?.name} » ?`}
+        description="Cette fiche n'a aucune histoire (ni échange, ni accord, ni lien) : elle peut être supprimée. Une fiche qui a vécu se clôt. La suppression est tracée."
+        confirmLabel="Supprimer"
+        onConfirm={() => removing && remove.mutate(removing.id)}
+      />
     </div>
   );
 }
@@ -357,6 +391,11 @@ function CategoryChecks({
             {c.label}
           </label>
         ))}
+      {!disabled && (
+        <span className="sm:col-span-2">
+          <AddTypeButton list="partner_category" onCreated={(v) => onChange([...selected, v.code])} />
+        </span>
+      )}
     </fieldset>
   );
 }
@@ -367,7 +406,6 @@ function NewPartner({ onClose }: { onClose: () => void }) {
   const { data: users } = useUsers();
   const { data: units } = useUnits();
   const { data: refs } = useReferentials();
-  const types = refs?.partner_type.filter((t) => !t.archived) ?? [];
   const [f, setF] = useState({
     name: "",
     acronym: "",
@@ -433,14 +471,12 @@ function NewPartner({ onClose }: { onClose: () => void }) {
         <Field label="Sigle">{(a) => <Input {...a} value={f.acronym} onChange={set("acronym")} />}</Field>
         <Field label="Type" required>
           {(a) => (
-            <Select {...a} value={f.type_code} onChange={set("type_code")}>
-              <option value="">Choisir…</option>
-              {types.map((t) => (
-                <option key={t.code} value={t.code}>
-                  {t.label}
-                </option>
-              ))}
-            </Select>
+            <RefSelect
+              {...a}
+              list="partner_type"
+              value={f.type_code}
+              onChange={(type_code) => setF({ ...f, type_code })}
+            />
           )}
         </Field>
         <div className="sm:col-span-2">
@@ -514,6 +550,7 @@ export function PartnerPage() {
   const { id } = useParams();
   const nav = useNavigate();
   const qc = useQueryClient();
+  const [params, setParams] = useSearchParams();
   const { data: refs } = useReferentials();
   const { data: users } = useUsers();
   const { data: units } = useUnits();
@@ -526,17 +563,21 @@ export function PartnerPage() {
     queryKey: ["partner", id],
     queryFn: () => api.get<Detail>(`/api/partners/${id}`),
   });
-  const [d, setD] = useState<Detail | null>(null);
-  const [dirty, setDirty] = useState(false);
+  const rec = useRecord(p);
+  const d = rec.draft;
   const [moving, setMoving] = useState<PartnerState | null>(null);
   const [merging, setMerging] = useState(false);
   const [removing, setRemoving] = useState(false);
+  // « Modifier » depuis la grille de l'annuaire : la fiche s'ouvre directement en modification
   useEffect(() => {
-    if (p) {
-      setD(p);
-      setDirty(false);
+    if (p && params.get("modifier") === "1") {
+      if (p.can.edit) {
+        setTab("overview");
+        rec.edit();
+      }
+      setParams({}, { replace: true });
     }
-  }, [p]);
+  }, [p, params, setParams, rec]);
   const refresh = (r: Detail) => {
     qc.setQueryData(["partner", r.id], r);
     qc.invalidateQueries({ queryKey: ["partners"] });
@@ -568,6 +609,7 @@ export function PartnerPage() {
       return api.patch<Detail>(`/api/partners/${id}`, body);
     },
     onSuccess: (r) => {
+      rec.done();
       refresh(r);
       toast.success("Fiche enregistrée");
     },
@@ -584,20 +626,18 @@ export function PartnerPage() {
   });
   if (isLoading || (!d && !error)) return <LoadingRows rows={8} />;
   if (error || !d) return <Empty title="Partenaire inaccessible">{(error as Error)?.message}</Empty>;
-  const ro = !d.can.edit;
-  const roManage = !d.can.manage;
-  const patch = (x: Partial<Detail>) => {
-    setD({ ...d, ...x });
-    setDirty(true);
-  };
+  const editing = rec.editing;
   const text = (k: "name" | "acronym" | "official_id" | "city" | "address" | "website" | "email" | "phone") => ({
-    disabled: ro,
     value: d[k],
-    onChange: (e: { target: { value: string } }) => patch({ [k]: e.target.value }),
+    onChange: (e: { target: { value: string } }) => rec.patch({ [k]: e.target.value }),
   });
   const S = PARTNER_STATE[d.state];
   const types = refs?.partner_type ?? [];
   const people = users?.filter((u) => !u.is_ai) ?? [];
+  const startEdit = () => {
+    setTab("overview");
+    rec.edit();
+  };
   return (
     <div className="min-h-full pb-10">
       <PageHeader
@@ -607,15 +647,15 @@ export function PartnerPage() {
             <Link to="/partenaires" aria-label="Retour à l'annuaire" className="text-muted hover:text-fg">
               <ArrowLeft className="size-5" />
             </Link>
-            {d.name}
-            {d.acronym && <span className="text-[16px] font-medium text-muted">({d.acronym})</span>}
+            {p?.name}
+            {p?.acronym && <span className="text-[16px] font-medium text-muted">({p.acronym})</span>}
             {d.confidential && <Lock aria-label="Confidentiel" className="size-4 text-warning" />}
           </span>
         }
         subtitle={
           <span className="flex flex-wrap items-center gap-1.5">
-            <RefTag value={types.find((t) => t.code === d.type_code)} code={d.type_code} />
-            {d.categories.map((c) => (
+            <RefTag value={types.find((t) => t.code === p?.type_code)} code={p?.type_code ?? ""} />
+            {p?.categories.map((c) => (
               <RefTag key={c} value={refs?.partner_category.find((x) => x.code === c)} code={c} />
             ))}
           </span>
@@ -623,7 +663,7 @@ export function PartnerPage() {
         actions={
           <>
             <Status label={S.label} tone={S.tone} />
-            {d.can.states.length > 0 && (
+            {!editing && d.can.states.length > 0 && (
               <Menu>
                 <MenuTrigger asChild>
                   <Button icon={<CircleDot className="size-4" />}>Changer l'état</Button>
@@ -637,27 +677,25 @@ export function PartnerPage() {
                 </MenuContent>
               </Menu>
             )}
-            {d.can.manage && (
+            {!editing && d.can.manage && (
               <IconButton label="Fusionner avec une autre fiche" onClick={() => setMerging(true)}>
                 <ArrowRightLeft className="size-4" />
               </IconButton>
             )}
-            {d.can.delete && (
+            {!editing && d.can.delete && (
               <IconButton label="Supprimer la fiche" onClick={() => setRemoving(true)}>
                 <Trash2 className="size-4" />
               </IconButton>
             )}
-            {!ro && (
-              <Button
-                variant="primary"
-                icon={<Save className="size-4" />}
-                disabled={!dirty || !d.name.trim()}
-                loading={save.isPending}
-                onClick={() => save.mutate()}
-              >
-                Enregistrer
-              </Button>
-            )}
+            <RecordActions
+              editing={editing}
+              canEdit={d.can.edit}
+              onEdit={startEdit}
+              onCancel={rec.cancel}
+              onSave={() => save.mutate()}
+              saving={save.isPending}
+              disabled={!rec.dirty || !d.name.trim()}
+            />
           </>
         }
       />
@@ -672,113 +710,174 @@ export function PartnerPage() {
           </p>
         </div>
       )}
-      <Tabs
-        value={tab}
-        onChange={setTab}
-        items={[
-          { id: "overview" as const, label: "Vue d'ensemble" },
-          { id: "agreements" as const, label: "Accords", badge: d.agreements.length },
-          { id: "dossiers" as const, label: "Dossiers", badge: d.dossiers.length + d.contracts.length },
-          { id: "meetings" as const, label: "Réunions", badge: d.meetings.length },
-          { id: "mail" as const, label: "Courrier", badge: d.mail.length },
-          { id: "contacts" as const, label: "Contacts", badge: d.contacts.filter((c) => !c.archived).length },
-          { id: "documents" as const, label: "Documents", badge: d.documents.length },
-          { id: "history" as const, label: "Historique", badge: d.notes.length },
-        ]}
-      />
-      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-4 p-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {!editing && (
+        <Tabs
+          value={tab}
+          onChange={setTab}
+          items={[
+            { id: "overview" as const, label: "Vue d'ensemble" },
+            { id: "agreements" as const, label: "Accords", badge: d.agreements.length },
+            { id: "dossiers" as const, label: "Dossiers", badge: d.dossiers.length + d.contracts.length },
+            { id: "meetings" as const, label: "Réunions", badge: d.meetings.length },
+            { id: "mail" as const, label: "Courrier", badge: d.mail.length },
+            { id: "contacts" as const, label: "Contacts", badge: d.contacts.filter((c) => !c.archived).length },
+            { id: "documents" as const, label: "Documents", badge: d.documents.length },
+            { id: "history" as const, label: "Historique", badge: d.notes.length },
+          ]}
+        />
+      )}
+      {editing && (
+        <p className="mx-auto max-w-[1240px] px-4 text-[13px] text-muted sm:px-8">
+          Modification de la fiche : enregistrez pour valider, ou annulez pour revenir à la lecture sans rien changer.
+        </p>
+      )}
+      <div
+        className={cn(
+          "mx-auto grid max-w-[1240px] grid-cols-1 gap-4 p-4 sm:px-8",
+          tab === "overview" && "lg:grid-cols-[minmax(0,1fr)_340px]",
+        )}
+      >
         <div className="min-w-0 space-y-4">
-          {tab === "overview" && (
-            <>
-              <Section title="Présentation">
-                <div className="p-4 pt-2">
-                  <Textarea
-                    aria-label="Présentation du partenaire"
-                    rows={4}
-                    disabled={ro}
-                    placeholder="Mission, domaines d'intervention, programmes en cours…"
-                    value={d.description}
-                    onChange={(e) => patch({ description: e.target.value })}
-                  />
-                </div>
-              </Section>
-              <Section title="Identification">
-                <div className="grid gap-3 p-4 sm:grid-cols-2">
-                  <Field label="Nom" required className="sm:col-span-2">
-                    {(a) => <Input {...a} {...text("name")} />}
-                  </Field>
-                  <Field label="Sigle">{(a) => <Input {...a} {...text("acronym")} />}</Field>
-                  <Field label="Identifiant officiel" hint="NIF, RCCM, numéro d'enregistrement…">
-                    {(a) => <Input {...a} {...text("official_id")} />}
-                  </Field>
-                  <Field label="Type" required>
-                    {(a) => (
-                      <Select
-                        {...a}
-                        disabled={roManage}
-                        value={d.type_code}
-                        onChange={(e) => patch({ type_code: e.target.value })}
-                      >
-                        {types
-                          .filter((t) => !t.archived || t.code === d.type_code)
-                          .map((t) => (
-                            <option key={t.code} value={t.code}>
-                              {t.label}
-                            </option>
-                          ))}
-                      </Select>
-                    )}
-                  </Field>
-                  <Field label="Entité porteuse">
-                    {(a) => (
-                      <Select
-                        {...a}
-                        disabled={roManage}
-                        value={d.unit_id ?? ""}
-                        onChange={(e) => patch({ unit_id: e.target.value || null })}
-                      >
-                        <option value="">Aucune</option>
-                        {units?.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.name}
-                          </option>
-                        ))}
-                      </Select>
-                    )}
-                  </Field>
-                  <div className="sm:col-span-2">
-                    <CategoryChecks
-                      values={refs?.partner_category ?? []}
-                      selected={d.categories}
-                      disabled={roManage}
-                      onChange={(categories) => patch({ categories })}
+          {tab === "overview" &&
+            (editing ? (
+              <>
+                <Section title="Présentation">
+                  <div className="p-4 pt-2">
+                    <Textarea
+                      aria-label="Présentation du partenaire"
+                      rows={4}
+                      placeholder="Mission, domaines d'intervention, programmes en cours…"
+                      value={d.description}
+                      onChange={(e) => rec.patch({ description: e.target.value })}
                     />
                   </div>
-                </div>
-              </Section>
-              <Section title="Coordonnées">
-                <div className="grid gap-3 p-4 sm:grid-cols-2">
-                  <Field label="Pays">
-                    {(a) => (
-                      <CountrySelect
-                        {...a}
-                        disabled={ro}
-                        value={d.country}
-                        onChange={(country) => patch({ country })}
+                </Section>
+                <Section title="Identification">
+                  <div className="grid gap-3 p-4 sm:grid-cols-2">
+                    <Field
+                      label="Nom"
+                      required
+                      className="sm:col-span-2"
+                      error={!d.name.trim() ? "Le nom est obligatoire" : null}
+                    >
+                      {(a) => <Input {...a} {...text("name")} />}
+                    </Field>
+                    <Field label="Sigle">{(a) => <Input {...a} {...text("acronym")} />}</Field>
+                    <Field label="Identifiant officiel" hint="NIF, RCCM, numéro d'enregistrement…">
+                      {(a) => <Input {...a} {...text("official_id")} />}
+                    </Field>
+                    <Field
+                      label="Type"
+                      required
+                      hint={!d.can.manage ? "Le classement revient aux gestionnaires des partenariats." : undefined}
+                    >
+                      {(a) => (
+                        <RefSelect
+                          {...a}
+                          list="partner_type"
+                          disabled={!d.can.manage}
+                          value={d.type_code}
+                          onChange={(type_code) => type_code && rec.patch({ type_code })}
+                        />
+                      )}
+                    </Field>
+                    <Field label="Entité porteuse">
+                      {(a) => (
+                        <Select
+                          {...a}
+                          disabled={!d.can.manage}
+                          value={d.unit_id ?? ""}
+                          onChange={(e) => rec.patch({ unit_id: e.target.value || null })}
+                        >
+                          <option value="">Aucune</option>
+                          {units?.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.name}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                    </Field>
+                    <div className="sm:col-span-2">
+                      <CategoryChecks
+                        values={refs?.partner_category ?? []}
+                        selected={d.categories}
+                        disabled={!d.can.manage}
+                        onChange={(categories) => rec.patch({ categories })}
                       />
-                    )}
-                  </Field>
-                  <Field label="Ville">{(a) => <Input {...a} {...text("city")} />}</Field>
-                  <Field label="Adresse" className="sm:col-span-2">
-                    {(a) => <Input {...a} {...text("address")} />}
-                  </Field>
-                  <Field label="Site">{(a) => <Input {...a} {...text("website")} placeholder="https://" />}</Field>
-                  <Field label="Courriel">{(a) => <Input {...a} type="email" {...text("email")} />}</Field>
-                  <Field label="Téléphone">{(a) => <Input {...a} {...text("phone")} />}</Field>
-                </div>
-              </Section>
-            </>
-          )}
+                    </div>
+                  </div>
+                </Section>
+                <Section title="Coordonnées">
+                  <div className="grid gap-3 p-4 sm:grid-cols-2">
+                    <Field label="Pays">
+                      {(a) => <CountrySelect {...a} value={d.country} onChange={(country) => rec.patch({ country })} />}
+                    </Field>
+                    <Field label="Ville">{(a) => <Input {...a} {...text("city")} />}</Field>
+                    <Field label="Adresse" className="sm:col-span-2">
+                      {(a) => <Input {...a} {...text("address")} />}
+                    </Field>
+                    <Field label="Site">{(a) => <Input {...a} {...text("website")} placeholder="https://" />}</Field>
+                    <Field label="Courriel">{(a) => <Input {...a} type="email" {...text("email")} />}</Field>
+                    <Field label="Téléphone">{(a) => <Input {...a} {...text("phone")} />}</Field>
+                  </div>
+                </Section>
+              </>
+            ) : (
+              <>
+                <Section title="Présentation">
+                  <div className="p-5 pt-2">
+                    <LongText empty="Aucune présentation : « Modifier » pour la rédiger.">{d.description}</LongText>
+                  </div>
+                </Section>
+                <Section title="Identification">
+                  <Facts>
+                    <Fact label="Nom" wide>
+                      {d.name}
+                    </Fact>
+                    <Fact label="Sigle">{d.acronym}</Fact>
+                    <Fact label="Identifiant officiel">{d.official_id}</Fact>
+                    <Fact label="Type">
+                      <RefTag value={types.find((t) => t.code === d.type_code)} code={d.type_code} />
+                    </Fact>
+                    <Fact label="Entité porteuse">{d.unit_name}</Fact>
+                    <Fact label="Catégories" wide>
+                      {d.categories.length ? (
+                        <span className="flex flex-wrap gap-1.5">
+                          {d.categories.map((c) => (
+                            <RefTag key={c} value={refs?.partner_category.find((x) => x.code === c)} code={c} />
+                          ))}
+                        </span>
+                      ) : null}
+                    </Fact>
+                  </Facts>
+                </Section>
+                <Section title="Coordonnées">
+                  <Facts>
+                    <Fact label="Pays">{countryName(d.country)}</Fact>
+                    <Fact label="Ville">{d.city}</Fact>
+                    <Fact label="Adresse" wide>
+                      {d.address}
+                    </Fact>
+                    <Fact label="Site">
+                      {d.website && (
+                        <a href={d.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                          {d.website.replace(/^https?:\/\//, "")}
+                        </a>
+                      )}
+                    </Fact>
+                    <Fact label="Courriel">
+                      {d.email && (
+                        <a href={`mailto:${d.email}`} className="text-primary hover:underline">
+                          {d.email}
+                        </a>
+                      )}
+                    </Fact>
+                    <Fact label="Téléphone">{d.phone}</Fact>
+                  </Facts>
+                </Section>
+              </>
+            ))}
           {tab === "contacts" && <ContactsTab partner={d} onChange={refresh} />}
           {tab === "history" && <HistoryTab partner={d} onChange={refresh} />}
           {tab === "agreements" && (
@@ -801,59 +900,60 @@ export function PartnerPage() {
             />
           )}
         </div>
-        <aside className="space-y-4">
-          <Section title="Suivi de la relation">
-            <dl className="space-y-3 p-4 pt-2 text-[13px]">
-              <Meta label="État">
-                <Status label={S.label} tone={S.tone} />
-                {d.state_reason && (
-                  <span className="mt-1 block text-[12.5px] font-normal text-muted">{d.state_reason}</span>
-                )}
-              </Meta>
-              <Meta label="Point focal">
-                {d.can.manage ? (
-                  <PeopleSelect
-                    aria-label="Point focal"
-                    people={people}
-                    placeholder="Non désigné"
-                    value={d.focal_id}
-                    onChange={(v) => patch({ focal_id: v || null, focal_ids: d.focal_ids.filter((x) => x !== v) })}
-                  />
-                ) : (
-                  (d.focal_name ?? "Non désigné")
-                )}
-              </Meta>
-              <Meta label="Autres points focaux">
-                {d.can.manage ? (
-                  <FocalPicker
-                    people={people.filter((u) => u.id !== d.focal_id)}
-                    value={d.focal_ids}
-                    onChange={(focal_ids) => patch({ focal_ids })}
-                  />
-                ) : d.focals.length ? (
-                  d.focals.map((f) => f.name).join(", ")
-                ) : (
-                  "Aucun"
-                )}
-              </Meta>
-              <Meta label="Entité porteuse">{d.unit_name ?? "Aucune"}</Meta>
-              <Meta label="Dernier échange">{frDate(d.last_note_on)}</Meta>
-              <Meta label="Dans l'annuaire depuis">{frDate(d.created_at.slice(0, 10))}</Meta>
-              {d.can.manage && (
-                <label className="flex items-center gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    className="size-4 accent-[var(--primary)]"
-                    checked={d.confidential}
-                    onChange={(e) => patch({ confidential: e.target.checked })}
-                  />
-                  Fiche confidentielle
-                </label>
+        {tab === "overview" && (
+          <aside className="space-y-4">
+            <Section title="Suivi de la relation">
+              {editing && d.can.manage ? (
+                <div className="space-y-3 p-4 pt-2 text-[13px]">
+                  <Field label="Point focal">
+                    {(a) => (
+                      <PeopleSelect
+                        {...a}
+                        people={people}
+                        placeholder="Non désigné"
+                        value={d.focal_id}
+                        onChange={(v) =>
+                          rec.patch({ focal_id: v || null, focal_ids: d.focal_ids.filter((x) => x !== v) })
+                        }
+                      />
+                    )}
+                  </Field>
+                  <div>
+                    <p className="mb-1.5 text-[12.5px] font-medium text-muted">Autres points focaux</p>
+                    <FocalPicker
+                      people={people.filter((u) => u.id !== d.focal_id)}
+                      value={d.focal_ids}
+                      onChange={(focal_ids) => rec.patch({ focal_ids })}
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-[var(--primary)]"
+                      checked={d.confidential}
+                      onChange={(e) => rec.patch({ confidential: e.target.checked })}
+                    />
+                    Fiche confidentielle
+                  </label>
+                </div>
+              ) : (
+                <Facts className="sm:grid-cols-1">
+                  <Fact label="État">
+                    <Status label={S.label} tone={S.tone} />
+                    {d.state_reason && (
+                      <span className="mt-1 block text-[12.5px] font-normal text-muted">{d.state_reason}</span>
+                    )}
+                  </Fact>
+                  <Fact label="Point focal">{d.focal_name}</Fact>
+                  <Fact label="Autres points focaux">{d.focals.map((f) => f.name).join(", ")}</Fact>
+                  <Fact label="Dernier échange">{d.last_note_on && frDate(d.last_note_on)}</Fact>
+                  <Fact label="Dans l'annuaire depuis">{frDate(d.created_at.slice(0, 10))}</Fact>
+                  {d.confidential && <Fact label="Diffusion">Fiche confidentielle</Fact>}
+                </Facts>
               )}
-            </dl>
-          </Section>
-          <p className="px-1 text-[12px] text-faint">Les engagements financiers rejoindront cette fiche au lot PA4.</p>
-        </aside>
+            </Section>
+          </aside>
+        )}
       </div>
       {moving && <StateDialog partner={d} target={moving} onClose={() => setMoving(null)} onDone={refresh} />}
       {merging && <MergeDialog partner={d} onClose={() => setMerging(false)} />}
@@ -868,13 +968,6 @@ export function PartnerPage() {
     </div>
   );
 }
-
-const Meta = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="min-w-0">
-    <dt className="text-[12px] text-muted">{label}</dt>
-    <dd className="mt-0.5 font-medium">{children}</dd>
-  </div>
-);
 
 function FocalPicker({
   people,
@@ -1023,20 +1116,16 @@ function MergeDialog({ partner, onClose }: { partner: Detail; onClose: () => voi
 }
 
 // ------------------------------------------------------------------ contacts
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+type ContactForm = { name: string; title: string; email: string; phone: string; notes: string; principal: boolean };
+const emptyContact: ContactForm = { name: "", title: "", email: "", phone: "", notes: "", principal: false };
+
 function ContactsTab({ partner, onChange }: { partner: Detail; onChange: (r: Detail) => void }) {
   const qc = useQueryClient();
-  const [f, setF] = useState({ name: "", title: "", email: "", phone: "", principal: false });
   const [showArchived, setShowArchived] = useState(false);
+  const [open, setOpen] = useState<{ contact: Contact | null; editing: boolean } | null>(null);
+  const [removing, setRemoving] = useState<Contact | null>(null);
   const reload = async () => onChange(await api.get<Detail>(`/api/partners/${partner.id}`));
-  const add = useMutation({
-    mutationFn: () => api.post(`/api/partners/${partner.id}/contacts`, f),
-    onSuccess: async () => {
-      setF({ name: "", title: "", email: "", phone: "", principal: false });
-      await reload();
-      toast.success("Contact ajouté");
-    },
-    onError: fail,
-  });
   const edit = useMutation({
     mutationFn: (v: { id: string; body: Partial<Contact> }) =>
       api.patch<Detail>(`/api/partner-contacts/${v.id}`, v.body),
@@ -1046,14 +1135,23 @@ function ContactsTab({ partner, onChange }: { partner: Detail; onChange: (r: Det
     },
     onError: fail,
   });
+  const remove = useMutation({
+    mutationFn: (id: string) => api.del(`/api/partner-contacts/${id}`),
+    onSuccess: async () => {
+      await reload();
+      toast.success("Contact supprimé");
+    },
+    onError: fail,
+  });
+  const can = partner.can.edit;
   const shown = partner.contacts.filter((c) => showArchived || !c.archived);
   const archived = partner.contacts.filter((c) => c.archived).length;
   return (
-    <>
-      <Section
-        title="Personnes chez le partenaire"
-        aside={
-          archived > 0 && (
+    <Section
+      title="Personnes chez le partenaire"
+      aside={
+        <span className="flex items-center gap-3">
+          {archived > 0 && (
             <button
               type="button"
               className="text-[12.5px] text-muted hover:text-fg"
@@ -1061,108 +1159,202 @@ function ContactsTab({ partner, onChange }: { partner: Detail; onChange: (r: Det
             >
               {showArchived ? "Masquer les archivés" : `Voir les archivés (${archived})`}
             </button>
-          )
-        }
-      >
-        {shown.length ? (
-          <ul className="divide-y divide-line">
-            {shown.map((c) => (
-              <li key={c.id} className={cn("flex flex-wrap items-start gap-3 px-5 py-3", c.archived && "opacity-60")}>
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-hover text-muted">
-                  <UserRound className="size-4" />
+          )}
+          {can && (
+            <Button icon={<Plus className="size-4" />} onClick={() => setOpen({ contact: null, editing: true })}>
+              Ajouter un contact
+            </Button>
+          )}
+        </span>
+      }
+    >
+      {shown.length ? (
+        <Table head={["Nom", "Fonction", "Courriel", "Téléphone", ""]}>
+          {shown.map((c) => (
+            <Tr key={c.id} onClick={() => setOpen({ contact: c, editing: false })}>
+              <Td className={cn("min-w-[180px]", c.archived && "opacity-60")}>
+                <span className="flex items-center gap-1.5 font-medium">
+                  {c.name}
+                  {c.principal && <Star className="size-3.5 shrink-0 text-primary" aria-label="Contact principal" />}
                 </span>
-                <span className="min-w-0 flex-1 text-[13px]">
-                  <span className="flex flex-wrap items-center gap-2 font-medium">
-                    {c.name}
-                    {c.principal && (
-                      <span className="inline-flex items-center gap-1 text-[12px] font-normal text-primary">
-                        <Star className="size-3" /> Contact principal
-                      </span>
-                    )}
-                    {c.archived && <span className="text-[12px] font-normal text-muted">Archivé</span>}
-                  </span>
-                  {c.title && <span className="block text-muted">{c.title}</span>}
-                  <span className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[12.5px] text-muted">
-                    {c.email && (
-                      <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 hover:text-primary">
-                        <Mail className="size-3" /> {c.email}
-                      </a>
-                    )}
-                    {c.phone && (
-                      <span className="inline-flex items-center gap-1">
-                        <Phone className="size-3" /> {c.phone}
-                      </span>
-                    )}
-                  </span>
-                </span>
-                {partner.can.edit && (
-                  <span className="flex shrink-0 items-center gap-1">
-                    {!c.archived && !c.principal && (
-                      <IconButton
-                        label="Désigner contact principal"
-                        onClick={() => edit.mutate({ id: c.id, body: { principal: true } })}
-                      >
-                        <Star className="size-4" />
-                      </IconButton>
-                    )}
-                    <IconButton
-                      label={c.archived ? "Réactiver" : "Archiver"}
+                {c.archived && <span className="text-[12px] text-muted">Archivé</span>}
+              </Td>
+              <Td className="text-muted">{c.title || "—"}</Td>
+              <Td className="text-muted">{c.email || "—"}</Td>
+              <Td className="tabular text-muted">{c.phone || "—"}</Td>
+              <Td>
+                <RowActions
+                  label={c.name}
+                  onView={() => setOpen({ contact: c, editing: false })}
+                  onEdit={() => setOpen({ contact: c, editing: true })}
+                  canEdit={can}
+                  onDelete={() => setRemoving(c)}
+                  canDelete={can && c.deletable}
+                >
+                  {can && !c.archived && !c.principal && (
+                    <RoundBtn
+                      label={`Désigner ${c.name} contact principal`}
+                      onClick={() => edit.mutate({ id: c.id, body: { principal: true } })}
+                    >
+                      <Star className="size-4" />
+                    </RoundBtn>
+                  )}
+                  {can && (
+                    <RoundBtn
+                      label={`${c.archived ? "Réactiver" : "Archiver"} ${c.name}`}
                       onClick={() => edit.mutate({ id: c.id, body: { archived: !c.archived } })}
                     >
                       {c.archived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
-                    </IconButton>
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <Empty icon={<Users className="size-6" />} title="Aucun contact">
-            Les personnes chez le partenaire n'ont pas de compte dans l'outil : elles sont seulement répertoriées ici.
-          </Empty>
-        )}
-      </Section>
-      {partner.can.edit && (
-        <Section title="Ajouter un contact">
-          <div className="grid gap-3 p-4 pt-2 sm:grid-cols-2">
-            <Field label="Nom" required>
-              {(a) => <Input {...a} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}
-            </Field>
-            <Field label="Fonction">
-              {(a) => <Input {...a} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />}
-            </Field>
-            <Field label="Courriel">
-              {(a) => (
-                <Input {...a} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
-              )}
-            </Field>
-            <Field label="Téléphone">
-              {(a) => <Input {...a} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />}
-            </Field>
-            <label className="flex items-center gap-2 text-[13px]">
-              <input
-                type="checkbox"
-                className="size-4 accent-[var(--primary)]"
-                checked={f.principal}
-                onChange={(e) => setF({ ...f, principal: e.target.checked })}
-              />
-              Contact principal
-            </label>
-            <div className="flex justify-end">
-              <Button
-                variant="primary"
-                icon={<Plus className="size-4" />}
-                disabled={!f.name.trim()}
-                loading={add.isPending}
-                onClick={() => add.mutate()}
-              >
-                Ajouter
-              </Button>
-            </div>
-          </div>
-        </Section>
+                    </RoundBtn>
+                  )}
+                </RowActions>
+              </Td>
+            </Tr>
+          ))}
+        </Table>
+      ) : (
+        <Empty icon={<Users className="size-6" />} title="Aucun contact">
+          Les personnes chez le partenaire n'ont pas de compte dans l'outil : elles sont seulement répertoriées ici.
+        </Empty>
       )}
-    </>
+      {open && (
+        <ContactDialog
+          partner={partner}
+          contact={open.contact}
+          startEditing={open.editing}
+          onClose={() => setOpen(null)}
+          onSaved={reload}
+        />
+      )}
+      <ConfirmDialog
+        open={!!removing}
+        onOpenChange={(v) => !v && setRemoving(null)}
+        title={`Supprimer ${removing?.name} ?`}
+        description="Ce contact n'est cité dans aucun courrier ni aucune réunion : il peut être supprimé. La suppression est tracée."
+        confirmLabel="Supprimer"
+        onConfirm={() => removing && remove.mutate(removing.id)}
+      />
+    </Section>
+  );
+}
+
+/** Fiche d'un contact : lecture, puis « Modifier » ; en création, le formulaire s'ouvre directement. */
+function ContactDialog({
+  partner,
+  contact,
+  startEditing,
+  onClose,
+  onSaved,
+}: {
+  partner: Detail;
+  contact: Contact | null;
+  startEditing: boolean;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(startEditing || !contact);
+  const [f, setF] = useState<ContactForm>(
+    contact
+      ? {
+          name: contact.name,
+          title: contact.title,
+          email: contact.email,
+          phone: contact.phone,
+          notes: contact.notes,
+          principal: contact.principal,
+        }
+      : emptyContact,
+  );
+  const save = useMutation({
+    mutationFn: () =>
+      contact
+        ? api.patch(`/api/partner-contacts/${contact.id}`, f)
+        : api.post(`/api/partners/${partner.id}/contacts`, f),
+    onSuccess: async () => {
+      await onSaved();
+      toast.success(contact ? "Contact modifié" : "Contact ajouté");
+      onClose();
+    },
+    onError: fail,
+  });
+  const set = (k: "name" | "title" | "email" | "phone" | "notes") => (e: { target: { value: string } }) =>
+    setF({ ...f, [k]: e.target.value });
+  const badEmail = !!f.email.trim() && !EMAIL.test(f.email.trim());
+  return (
+    <Dialog
+      open
+      onOpenChange={onClose}
+      title={contact ? contact.name : "Ajouter un contact"}
+      description={`Contact chez ${partner.acronym || partner.name}`}
+      width={540}
+      footer={
+        editing ? (
+          <>
+            <Button onClick={contact ? () => setEditing(false) : onClose}>Annuler</Button>
+            <Button
+              variant="primary"
+              disabled={!f.name.trim() || badEmail}
+              loading={save.isPending}
+              onClick={() => save.mutate()}
+            >
+              Enregistrer
+            </Button>
+          </>
+        ) : (
+          <>
+            {partner.can.edit && (
+              <Button icon={<Pencil className="size-4" />} onClick={() => setEditing(true)}>
+                Modifier
+              </Button>
+            )}
+            <Button onClick={onClose}>Fermer</Button>
+          </>
+        )
+      }
+    >
+      {editing ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Nom" required error={!f.name.trim() && contact ? "Le nom est obligatoire" : null}>
+            {(a) => <Input {...a} autoFocus value={f.name} onChange={set("name")} />}
+          </Field>
+          <Field label="Fonction">{(a) => <Input {...a} value={f.title} onChange={set("title")} />}</Field>
+          <Field label="Courriel" error={badEmail ? "Adresse électronique invalide" : null}>
+            {(a) => <Input {...a} type="email" value={f.email} onChange={set("email")} />}
+          </Field>
+          <Field label="Téléphone">{(a) => <Input {...a} value={f.phone} onChange={set("phone")} />}</Field>
+          <Field label="Notes" className="sm:col-span-2">
+            {(a) => <Textarea {...a} rows={3} value={f.notes} onChange={set("notes")} />}
+          </Field>
+          <label className="flex items-center gap-2 text-[13px]">
+            <input
+              type="checkbox"
+              className="size-4 accent-[var(--primary)]"
+              checked={f.principal}
+              onChange={(e) => setF({ ...f, principal: e.target.checked })}
+            />
+            Contact principal
+          </label>
+        </div>
+      ) : (
+        contact && (
+          <Facts className="p-0 pt-0">
+            <Fact label="Fonction">{contact.title}</Fact>
+            <Fact label="Rôle">{contact.principal ? "Contact principal" : contact.archived ? "Archivé" : null}</Fact>
+            <Fact label="Courriel">
+              {contact.email && (
+                <a href={`mailto:${contact.email}`} className="text-primary hover:underline">
+                  {contact.email}
+                </a>
+              )}
+            </Fact>
+            <Fact label="Téléphone">{contact.phone}</Fact>
+            <Fact label="Notes" wide>
+              {contact.notes && <span className="whitespace-pre-wrap font-normal">{contact.notes}</span>}
+            </Fact>
+          </Facts>
+        )
+      )}
+    </Dialog>
   );
 }
 

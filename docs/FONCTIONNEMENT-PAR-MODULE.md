@@ -393,6 +393,11 @@ Partenaires ──► Conventions, projets, courrier, réunions
 
 ## 21. Synthèse des incohérences et points à trancher
 
+> **État au 12 novembre 2026 (branche `lot-corrections`)** : corrigés — I-01, I-02, I-03, I-10, I-11, I-12, I-13, I-16,
+> I-20, I-22 (portefeuille, partenaires, conventions, risques ; reste Parapheur et Mon entité), I-23, I-30, I-31, I-32,
+> I-36. Restent ouverts : I-04 (lien décision de séance / décision attendue), I-14, I-15, I-17, I-21, I-33, I-34, I-35.
+> Le guide Word `docs/word/ANAT-Pilotage-guide-module-par-module.docx` décrit le fonctionnement corrigé avec des scénarios.
+
 Gravité : **A** = fausse l'information ou la décision · **B** = parcours incohérent · **C** = finition.
 
 | N° | Module | Constat | Gravité | Piste |

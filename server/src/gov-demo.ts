@@ -462,6 +462,30 @@ export async function seedGovDemo(svc: Services) {
   await seedPartnerLinks(svc, org, me);
   await seedUnitTasks(svc, org);
   await seedHr(svc, org);
+  await seedProfiles(svc, org);
+}
+
+/**
+ * Profils institutionnels des personnes fictives, posés en dernier (le jeu de données a été créé avec des droits
+ * larges) : chacun voit alors l'outil comme il le verra vraiment. Alice reste propriétaire et joue la DG.
+ */
+async function seedProfiles(svc: Services, org: string) {
+  for (const [user, slug, role] of [
+    ["u_karim", "chef_entite", "member"],
+    ["u_hugo", "chef_entite", "member"],
+    ["u_chloe", "agent", "member"],
+    ["u_theo", "agent", "member"],
+    ["u_ines", "assistant_dg", "member"],
+  ] as const) {
+    const profile = `prf_${slug}_${org}`;
+    if (!(await svc.db.one("SELECT 1 FROM access_profiles WHERE id = $1", [profile]))) continue;
+    await svc.db.query("UPDATE org_members SET profile_id = $3, role = $4 WHERE org_id = $1 AND user_id = $2", [
+      org,
+      user,
+      profile,
+      role,
+    ]);
+  }
 }
 
 /** Dossiers RH fictifs des personnes de démonstration (module RH). */

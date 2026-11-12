@@ -47,6 +47,8 @@ export interface Organization {
   slug: string;
   domains: string[];
   role: OrgRole;
+  /** Le profil de la personne dans l'organisation (Agent, Chef d'entité, DG…). */
+  profile_name?: string | null;
 }
 export interface Me extends User {
   org_id: string;

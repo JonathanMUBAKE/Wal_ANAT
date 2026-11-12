@@ -170,3 +170,21 @@ describe("la vue de la DG", () => {
     expect(a.permissions).not.toContain("meetings.validate");
   });
 });
+
+describe("le niveau de l'Agence", () => {
+  it("ce qui est rattaché à l'Agence elle-même (son plan, son courrier) a sa propre ligne", async () => {
+    await g.ctx.db.query(
+      "INSERT INTO work_plans (id, org_id, unit_id, year, title, status) VALUES ('wp_agence', $1, $2, $3, 'Plan de l''Agence', 'approved')",
+      [g.org, root, Number(day().slice(0, 4))],
+    );
+    await g.ctx.db.query(
+      `INSERT INTO plan_activities (id, org_id, plan_id, title, start_on, end_on, progress)
+       VALUES ('pa_agence', $1, 'wp_agence', 'Stratégie nationale', $2, $3, 20)`,
+      [g.org, day(-30), day(30)],
+    );
+    const r = (await g.api("u_alice", "GET", "/api/pilotage/directions")).body;
+    expect(r.agency).toMatchObject({ id: root, plan: { activities: 1, progress: 20 } });
+    // Le plan de l'Agence n'est compté dans aucune direction
+    expect(r.directions.every((d: Any) => d.plan.activities === 0 || d.id !== root)).toBe(true);
+  });
+});

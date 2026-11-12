@@ -88,7 +88,8 @@ const Late = ({ n, label }: { n: number; label: string }) =>
 export function ByDirection({ className }: { className?: string }) {
   const { data, error } = useQuery({
     queryKey: ["pilotage-directions"],
-    queryFn: () => api.get<{ today: string; directions: DirectionRow[] }>("/api/pilotage/directions"),
+    queryFn: () =>
+      api.get<{ today: string; agency: DirectionRow | null; directions: DirectionRow[] }>("/api/pilotage/directions"),
   });
   const alerts = data?.directions.filter((d) => d.assessment === "alerte").length ?? 0;
   return (
@@ -107,7 +108,14 @@ export function ByDirection({ className }: { className?: string }) {
       ) : !data ? (
         <p className="px-5 pb-5 text-[13px] text-muted">Chargement…</p>
       ) : (
-        <DirectionTable rows={data.directions} empty="Aucune direction : créez-les dans Organisation › Structure." />
+        <DirectionTable
+          rows={[
+            // Ce qui est rattaché à l'Agence elle-même (son plan, son courrier), en tête (I-16)
+            ...(data.agency ? [{ ...data.agency, name: `${data.agency.name} · niveau de l'Agence` }] : []),
+            ...data.directions,
+          ]}
+          empty="Aucune direction : créez-les dans Organisation › Structure."
+        />
       )}
     </section>
   );

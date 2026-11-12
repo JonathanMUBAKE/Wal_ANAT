@@ -158,7 +158,7 @@ export function PilotagePage() {
       />
 
       {/* Saisir : les saisies de la direction, sans détour (la DG ou son assistant) */}
-      <QuickEntry />
+      <QuickEntry wide />
 
       {/* Grille bento : 12 colonnes, chaque carte occupe la place que mérite son importance */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-6 xl:grid-cols-12 xl:grid-flow-row-dense">

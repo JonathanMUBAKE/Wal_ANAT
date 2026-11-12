@@ -253,7 +253,12 @@ export class Directions {
         ...this.stats(data, this.subtree(data.units, u.id)),
       }));
     const all = new Set(data.units.map((u) => u.id));
-    return { today: data.now, institution: this.stats(data, all), directions };
+    // Le niveau de l'Agence elle-même (direction générale) : son plan, son courrier, ses projets propres (I-16)
+    const root = data.units.find((u) => !u.parent_id);
+    const agency = root
+      ? { id: root.id, name: root.name, kind: root.kind, manager_name: root.manager_name, ...this.stats(data, roots) }
+      : null;
+    return { today: data.now, institution: this.stats(data, all), agency, directions };
   }
 
   /** Le détail d'une direction (ou de l'un de ses services) : ses entités, ses dossiers, ses agents, ses retards. */

@@ -1,3 +1,4 @@
+import { ExportMenu, tableDoc } from "@/components/export-menu";
 import { todayIso } from "@/lib/format";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
@@ -241,16 +242,38 @@ export function PartnersPage() {
         title="Partenaires"
         subtitle="L'annuaire unique des tiers de l'Agence : institutions, entreprises, établissements publics, bailleurs… avec qui nous travaillons, et où en est chaque relation."
         actions={
-          can("partners.manage") && (
-            <>
-              <Button icon={<ArrowRightLeft className="size-4" />} onClick={() => nav("/partenaires/rapprochement")}>
-                Rapprocher l'existant
-              </Button>
-              <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
-                Nouveau partenaire
-              </Button>
-            </>
-          )
+          <>
+            <ExportMenu
+              disabled={!rows.length}
+              build={() =>
+                tableDoc(
+                  "Annuaire des partenaires",
+                  ["Partenaire", "Sigle", "Identifiant", "État", "Ville", "Pays", "Courriel", "Téléphone"],
+                  rows.map((p) => [
+                    p.name,
+                    p.acronym,
+                    p.official_id,
+                    PARTNER_STATE[p.state].label,
+                    p.city,
+                    p.country,
+                    p.email,
+                    p.phone,
+                  ]),
+                  { filename: "annuaire-des-partenaires", widths: [5, 1.5, 2, 1.6, 2, 2, 3, 2] },
+                )
+              }
+            />
+            {can("partners.manage") && (
+              <>
+                <Button icon={<ArrowRightLeft className="size-4" />} onClick={() => nav("/partenaires/rapprochement")}>
+                  Rapprocher l'existant
+                </Button>
+                <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
+                  Nouveau partenaire
+                </Button>
+              </>
+            )}
+          </>
         }
       />
       <Tabs

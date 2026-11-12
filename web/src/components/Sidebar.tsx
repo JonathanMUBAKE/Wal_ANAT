@@ -289,7 +289,10 @@ function AccountMenu() {
             <span className="hidden min-w-0 md:block">
               <span className="block max-w-[160px] truncate text-[13px] font-medium leading-tight">
                 {me?.name}
-                <span className="font-normal text-faint"> ({currentOrg ? ORG_ROLE[currentOrg.role] : ""})</span>
+                <span className="font-normal text-faint">
+                  {" "}
+                  ({currentOrg ? (currentOrg.profile_name ?? ORG_ROLE[currentOrg.role]) : ""})
+                </span>
               </span>
             </span>
             <ChevronDown className="size-4 text-faint" />

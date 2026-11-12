@@ -1095,31 +1095,37 @@ export function MeetingPage() {
           }
         >
           <div className="space-y-3 p-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Présidence de séance" hint="C'est elle qui valide le compte rendu.">
-                {(a) => (
-                  <PeopleSelect
-                    {...a}
-                    disabled={ro}
-                    people={users}
-                    placeholder="Non désignée"
-                    value={draft.chair_id ?? ""}
-                    onChange={(v) => patch({ chair_id: v || null })}
-                  />
-                )}
-              </Field>
-              <Field label="Lien de visioconférence">
-                {(a) => (
-                  <Input
-                    {...a}
-                    disabled={ro}
-                    placeholder="https://…"
-                    value={draft.video_link}
-                    onChange={(e) => patch({ video_link: e.target.value })}
-                  />
-                )}
-              </Field>
-            </div>
+            {/* Consulter d'abord : les champs ne s'ouvrent qu'avec « Modifier » (I-23) */}
+            {editing && !ro ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Présidence de séance" hint="C'est elle qui valide le compte rendu.">
+                  {(a) => (
+                    <PeopleSelect
+                      {...a}
+                      people={users}
+                      placeholder="Non désignée"
+                      value={draft.chair_id ?? ""}
+                      onChange={(v) => patch({ chair_id: v || null })}
+                    />
+                  )}
+                </Field>
+                <Field label="Lien de visioconférence">
+                  {(a) => (
+                    <Input
+                      {...a}
+                      placeholder="https://…"
+                      value={draft.video_link}
+                      onChange={(e) => patch({ video_link: e.target.value })}
+                    />
+                  )}
+                </Field>
+              </div>
+            ) : (
+              <Facts className="p-0">
+                <Fact label="Présidence de séance">{users?.find((u) => u.id === draft.chair_id)?.name ?? null}</Fact>
+                <Fact label="Lien de visioconférence">{draft.video_link || null}</Fact>
+              </Facts>
+            )}
             {(draft.dossier || draft.video_link || draft.convened_at || !!draft.partners?.length) && (
               <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted">
                 {draft.dossier && (

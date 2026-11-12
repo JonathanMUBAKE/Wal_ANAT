@@ -24,7 +24,7 @@ export function useOpenFromUrl(open: () => void) {
   }, [params, setParams, open]);
 }
 
-export function QuickEntry({ className }: { className?: string }) {
+export function QuickEntry({ className, wide }: { className?: string; wide?: boolean }) {
   const can = useCan();
   const { data: pending } = useQuery({
     queryKey: ["arbitrations", "en_attente"],
@@ -80,7 +80,7 @@ export function QuickEntry({ className }: { className?: string }) {
   return (
     <section aria-label="Saisir" className={cn("rounded-2xl border border-line bg-panel p-4 shadow-sm", className)}>
       <h2 className="mb-3 text-[14.5px] font-semibold tracking-[-0.01em]">Saisir</h2>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className={cn("grid gap-2 sm:grid-cols-2", wide && "lg:grid-cols-3")}>
         {items.map((i) => (
           <Link
             key={i.label}

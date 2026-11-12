@@ -1,3 +1,4 @@
+import { ExportMenu, tableDoc } from "@/components/export-menu";
 import { todayIso } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
@@ -179,11 +180,35 @@ export function AgreementsPage() {
         title="Conventions et accords"
         subtitle="Le registre des actes conclus avec les partenaires : chaque accord reçoit son numéro à l'entrée en vigueur, son texte est alors figé et toute modification passe par un avenant."
         actions={
-          can("partners.manage") && (
-            <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
-              Nouvel accord
-            </Button>
-          )
+          <>
+            <ExportMenu
+              disabled={!rows.length}
+              build={() =>
+                tableDoc(
+                  "Registre des conventions et accords",
+                  ["Numéro", "Accord", "État", "Partenaires", "Signé le", "Échéance", "Point focal", "Entité"],
+                  rows.map((a) => [
+                    a.reference ?? "",
+                    a.amendment_no ? `Avenant n° ${a.amendment_no} — ${a.title}` : a.title,
+                    AGREEMENT_STATE[a.state].label,
+                    a.parties
+                      .map((p) => (p.lead ? `${p.acronym || p.name} (chef de file)` : p.acronym || p.name))
+                      .join(", "),
+                    frDate(a.signed_on),
+                    a.end_on ? frDate(a.end_on) : a.tacit_renewal ? "Reconduction tacite" : "",
+                    a.focal_name,
+                    a.unit_name,
+                  ]),
+                  { filename: "registre-des-conventions", widths: [2, 5, 1.6, 4, 1.5, 1.8, 2.2, 2.2] },
+                )
+              }
+            />
+            {can("partners.manage") && (
+              <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
+                Nouvel accord
+              </Button>
+            )}
+          </>
         }
       />
       <Tabs

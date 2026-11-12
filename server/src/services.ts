@@ -435,8 +435,9 @@ export class Services {
   // ================================================================ organisations
   async orgsOf(userId: string): Promise<Organization[]> {
     return this.db.query<Organization>(
-      `SELECT o.id, o.name, o.slug, o.domains, om.role FROM organizations o
-      JOIN org_members om ON om.org_id = o.id WHERE om.user_id = $1 ORDER BY o.created_at`,
+      `SELECT o.id, o.name, o.slug, o.domains, om.role, p.name AS profile_name FROM organizations o
+      JOIN org_members om ON om.org_id = o.id LEFT JOIN access_profiles p ON p.id = om.profile_id
+      WHERE om.user_id = $1 ORDER BY o.created_at`,
       [userId],
     );
   }

@@ -32,7 +32,8 @@ import {
   isLate,
 } from "@/components/gov";
 import { api } from "@/lib/api";
-import { useCan, useMe, useProjects, useUnits, useUsers } from "@/lib/hooks";
+import { useCan, useMe, useProjects, useUnits, useUserMap, useUsers } from "@/lib/hooks";
+import { ExportMenu, tableDoc } from "@/components/export-menu";
 import { type RefValue, useForms, useReferentials } from "@/lib/referentials";
 import { HEALTH } from "./Pilotage";
 import { ContractsPayments } from "./ProjectDossier";
@@ -112,6 +113,8 @@ export function ActivitiesPage() {
   const types = (refs?.activity_type ?? []).filter((t) => !t.archived || data?.some((a) => a.kind === t.code));
   const firstActive = refs?.activity_type.find((t) => !t.archived)?.code ?? "";
   const rows = data?.filter((a) => tab === "all" || a.kind === tab) ?? [];
+  const users = useUserMap();
+  const dossierProjects = tab === "all" ? (projects ?? []) : [];
   // Le portefeuille de la DG : projets et activités au même endroit (docs/ARCHITECTURE-INFORMATION.md)
   return (
     <div className="min-h-full">
@@ -121,16 +124,51 @@ export function ActivitiesPage() {
         title="Portefeuille"
         subtitle="Projets internes et confiés, commissions, conférences, rendez-vous et activités internes, suivis jusqu'à leurs suites."
         actions={
-          tab === "contracts" || tab === "revue" || tab === "arbitrages" ? null : tab === "projects" ? (
-            <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => shell.setNewProject(true)}>
-              Nouveau projet
-            </Button>
-          ) : (
-            can("agenda.manage") && (
-              <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
-                Nouvelle activité
-              </Button>
-            )
+          tab === "contracts" || tab === "revue" || tab === "arbitrages" ? null : (
+            <>
+              <ExportMenu
+                build={() =>
+                  tableDoc(
+                    tab === "all"
+                      ? "Portefeuille · tous les dossiers"
+                      : tab === "projects"
+                        ? "Portefeuille · projets"
+                        : `Portefeuille · ${form(tab).label}`,
+                    ["Dossier", "Nature", "Responsable", "Date ou échéance", "État", "Suites ouvertes"],
+                    [
+                      ...(tab === "all" || tab === "projects" ? (projects ?? []) : []).map((p) => [
+                        p.name,
+                        "Projet",
+                        (p.owner_id && users.get(p.owner_id)?.name) || "",
+                        frDate(p.due_on),
+                        HEALTH[p.status].label,
+                        "",
+                      ]),
+                      ...(tab === "projects" ? [] : rows).map((a) => [
+                        a.title,
+                        form(a.kind).label,
+                        a.lead_name,
+                        frDate(a.start_on),
+                        HEALTH[a.health].label,
+                        a.open_followups || "",
+                      ]),
+                    ],
+                    { filename: "portefeuille", widths: [5, 2, 3, 2, 2, 1.5] },
+                  )
+                }
+              />
+              {tab === "projects" ? (
+                <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => shell.setNewProject(true)}>
+                  Nouveau projet
+                </Button>
+              ) : (
+                can("agenda.manage") && (
+                  <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
+                    Nouvelle activité
+                  </Button>
+                )
+              )}
+            </>
           )
         }
       />
@@ -144,7 +182,7 @@ export function ActivitiesPage() {
                 { id: "arbitrages" as const, label: "Arbitrages" },
               ]
             : []),
-          { id: "all" as const, label: "Toutes les activités" },
+          { id: "all" as const, label: "Tous les dossiers" },
           { id: "projects" as const, label: "Projets", badge: projects?.length },
           ...types.map((t) => ({
             id: t.code,
@@ -168,8 +206,22 @@ export function ActivitiesPage() {
           <Section>
             {isLoading ? (
               <LoadingRows />
-            ) : rows.length ? (
-              <Table head={["Activité", "Nature", "Responsable", "Date", "État", "Suites ouvertes", ""]}>
+            ) : rows.length || dossierProjects.length ? (
+              <Table head={["Dossier", "Nature", "Responsable", "Date", "État", "Suites ouvertes", ""]}>
+                {/* Le portefeuille, ce sont les projets et les activités (I-13) */}
+                {dossierProjects.map((p) => (
+                  <Tr key={p.id} onClick={() => nav(`/projects/${p.id}/dashboard`)}>
+                    <Td className="font-medium">{p.name}</Td>
+                    <Td>Projet</Td>
+                    <Td>{(p.owner_id && users.get(p.owner_id)?.name) || "—"}</Td>
+                    <Td className="tabular">{frDate(p.due_on)}</Td>
+                    <Td>
+                      <Status label={HEALTH[p.status].label} tone={HEALTH[p.status].tone} />
+                    </Td>
+                    <Td>—</Td>
+                    <Td />
+                  </Tr>
+                ))}
                 {rows.map((a) => (
                   <Tr key={a.id} onClick={() => nav(`/activites/${a.id}`)}>
                     <Td className="font-medium">

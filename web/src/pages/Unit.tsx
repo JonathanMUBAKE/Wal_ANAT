@@ -1,3 +1,4 @@
+import { RECURRENCE_LABELS } from "@/components/TaskDrawer";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -500,7 +501,14 @@ function FollowUp({ unitId }: { unitId: string }) {
 export function GiveTask({ board, onClose }: { board: UnitBoard; onClose: () => void }) {
   const qc = useQueryClient();
   const { data: me } = useMe();
-  const [f, setF] = useState({ title: "", description: "", assignee_id: "", due_on: "", priority: "none" });
+  const [f, setF] = useState({
+    title: "",
+    description: "",
+    assignee_id: "",
+    due_on: "",
+    priority: "none",
+    recurrence: "",
+  });
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
   const assignee = board.can.assign ? f.assignee_id : (me?.id ?? "");
@@ -524,6 +532,7 @@ export function GiveTask({ board, onClose }: { board: UnitBoard; onClose: () => 
         assignee_id: assignee || null,
         due_on: f.due_on || undefined,
         priority: f.priority,
+        recurrence: f.recurrence || null,
       })
       .then(
         () => {
@@ -615,6 +624,18 @@ export function GiveTask({ board, onClose }: { board: UnitBoard; onClose: () => 
                   {Object.entries(PRIORITY).map(([v, l]) => (
                     <option key={v} value={v}>
                       {v === "none" ? "Aucune" : l}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+            <Field label="Répétition" hint="Une tâche récurrente renaît, une fois terminée, à la période suivante.">
+              {(a) => (
+                <Select {...a} value={f.recurrence} onChange={set("recurrence")}>
+                  <option value="">Ne se répète pas</option>
+                  {Object.entries(RECURRENCE_LABELS).map(([v, l]) => (
+                    <option key={v} value={v}>
+                      {l}
                     </option>
                   ))}
                 </Select>

@@ -1,0 +1,343 @@
+# Guide fonctionnel — ANAT Pilotage
+
+> Ce document explique **comment fonctionne l'outil dans son ensemble** : à quoi il sert au quotidien, qui fait quoi,
+> ce que chaque écran affiche et ce que l'outil fait de lui-même (numéros, notifications, rappels, traces).
+> Il décrit l'état réel de la branche `lot-partenaires` au 12 novembre 2026 ; ce qui n'existe pas encore est signalé
+> comme tel (« **À construire** »).
+>
+> Documents voisins : `CONCEPTION.md` (vision et conception des modules), `PARCOURS-METIER.md` (parcours détaillés),
+> `PARAMETRAGE.md` (listes paramétrables), `DESIGN-SYSTEM.md` (règles d'écran), `PLAN-DE-TRAVAIL.md` (lots et journal).
+
+---
+
+## 1. À quoi sert l'outil
+
+ANAT Pilotage est l'outil de travail et de pilotage de l'Agence. Il sert au quotidien à :
+
+| Besoin | Où | En une phrase |
+| --- | --- | --- |
+| Gérer et suivre les tâches des agents d'une entité | Mes tâches, projets, Accueil | Un responsable confie une tâche à un agent, fixe une échéance et suit son état ; l'agent la voit dans « Mes tâches » et est prévenu. |
+| Gérer les projets | Pilotage › Portefeuille, fiche projet | Le projet est le **dossier complet** : équipe, tâches, documents, livrables, contrats, réunions, décisions, risques, indicateurs. |
+| Gérer les partenariats | Partenariats › Partenaires, Conventions | Un annuaire unique des tiers, leurs contacts, leurs documents, et le registre des accords conclus. |
+| Programmer et suivre les réunions | Pilotage › Réunions | De la convocation au compte rendu validé, avec recommandations et décisions qui alimentent les registres. |
+| Suivre les décisions | Pilotage › Décisions | Registre numéroté des décisions de la DG, avec leur exécution. |
+| Traiter le courrier | Secrétariat › Courrier, Parapheur | Enregistrement, annotation et imputation par la DG, délais, réponse signée au parapheur. |
+| Planifier l'année | Suivi-évaluation › Plans de travail | Plan annuel par entité, soumis, approuvé, réalisé par les projets et activités. |
+| Piloter | Pilotage › Tableau de bord DG | Ce qui est en retard, ce qui attend une décision, ce qui arrive à échéance. |
+| Administrer | Administration système | Comptes, profils, paramètres, **journal d'audit**. |
+
+## 2. Les règles qui valent partout
+
+Ce sont les règles d'une institution publique. Elles sont **contrôlées par le serveur**, pas seulement par l'écran :
+un bouton masqué ne suffit jamais, la règle est vérifiée à chaque demande.
+
+1. **Tout est tracé.** Chaque action qui crée, modifie, valide, signe, supprime ou consulte une pièce sensible laisse
+   une trace : qui, quoi, quand, depuis quelle adresse, sur quel objet. Les connexions et échecs de connexion aussi.
+   Une trace ne se modifie ni ne se supprime. Consulter l'analyse du journal ou l'exporter laisse aussi une trace.
+2. **Rien ne se fait de manière isolée.** Ce qui engage l'institution passe par au moins deux personnes : le
+   rédacteur d'un compte rendu ne le valide pas, celui qui soumet un plan ne l'approuve pas, l'auteur d'un livrable
+   ne le valide pas, un document part au parapheur pour visa puis signature. L'analyse du journal signale tout cas
+   où la même personne a préparé et validé.
+3. **Ce qui est validé est figé.** Compte rendu validé, décision enregistrée, accord en vigueur, document signé :
+   le texte ne se modifie plus. On corrige par un acte nouveau (réouverture motivée, décision de remplacement,
+   avenant).
+4. **L'IA propose, un humain décide.** Les coéquipiers IA rédigent, résument, proposent ; ils ne valident, ne
+   signent, ne suppriment ni ne créent rien d'engageant. Leurs propositions attendent une validation humaine.
+5. **Chacun voit ce qu'il a le droit de voir.** Les droits viennent du **profil** de la personne (Administrateur,
+   Membre, etc.), ajustables individuellement, et de son appartenance aux projets. Ce qui est confidentiel reste
+   masqué même dans les listes, les recherches et les fiches liées.
+6. **Consulter d'abord, modifier ensuite.** Une fiche s'ouvre en lecture ; « Modifier » ouvre les champs. Fermer
+   avec des modifications non enregistrées demande confirmation.
+7. **Numéros officiels attribués par l'outil** : `DEC/2026/0001` (décision), `CONV/2026/0001` (accord),
+   `ENT/2026/0142` et `SOR/2026/0098` (courrier), numéros de réunion et de parapheur. Jamais saisis à la main.
+8. **Date locale.** Toutes les dates « aujourd'hui », échéances et retards sont calculés à l'heure de l'Agence.
+
+## 3. Qui fait quoi
+
+| Personne | Ce qu'elle fait dans l'outil |
+| --- | --- |
+| **Directeur·rice général·e (DG)** | Consulte le tableau de bord, annote et impute le courrier, enregistre les décisions, préside et valide les comptes rendus, signe au parapheur. |
+| **Responsable d'entité** (direction, service, cellule) | Confie des tâches à ses agents et les suit, prépare le plan de travail de son entité, porte les projets, vise au parapheur. |
+| **Agent** | Traite ses tâches, le courrier qui lui est imputé, ses recommandations de réunion ; rédige des comptes rendus ; tient les fiches partenaires dont il est point focal. |
+| **Secrétariat / bureau d'ordre** | Enregistre le courrier, programme et convoque les réunions, rédige les comptes rendus. |
+| **Gestionnaire d'un module** (partenariats, réunions…) | Profil qui porte le droit « gérer » du module : crée, modifie, archive, définit de nouveaux types. |
+| **Consultant** (extérieur) | Compte limité aux projets de son contrat ; produit des livrables. |
+| **Administrateur système** | Crée les comptes, règle les profils et les listes, consulte et analyse le journal d'audit. Ne connaît jamais le mot de passe d'autrui. |
+| **Coéquipier IA** | Assistant : propose, résume, rédige ; ne décide jamais. |
+
+Les droits se règlent par **profil** dans Organisation › Structure, onglet « Profils et droits » : chaque profil coche des droits
+regroupés par domaine (Projets, Tâches, Réunions, Plans de travail, Livrables, Parapheur et courrier, Partenaires,
+Pilotage, IA…). Un droit peut être ajouté ou retiré à une personne précise ; ce réglage est une action **critique**
+du journal.
+
+## 4. Se repérer dans l'écran
+
+La **barre latérale** regroupe les espaces :
+
+- **Accueil** (ce qui m'attend aujourd'hui), **Mes tâches**, **Coéquipiers IA** ;
+- **Pilotage** : Tableau de bord DG, Portefeuille, Décisions, Réunions ;
+- **Suivi-évaluation** : Plans de travail ;
+- **Partenariats** : Partenaires, Conventions ;
+- **Secrétariat** : Parapheur, Courrier ;
+- **Organisation** : structure (organigramme, attributions, personnes, profils et droits, messagerie), équipes ;
+- **Administration système** (administrateur seulement).
+
+En haut : recherche (raccourci `Ctrl K`), notifications, compte. Les écrans suivent trois formes :
+**page** pour un dossier (projet, partenaire, accord, réunion), **tiroir** (panneau à droite) pour consulter une
+fiche secondaire sans perdre la liste (contact, document, courrier, décision, trace du journal), **fenêtre** pour
+décider (confirmer, motiver, valider).
+
+---
+
+## 5. Les usages, un par un
+
+### 5.1 Tâches des agents d'une entité
+
+**Ce qui existe.**
+- Une tâche a un titre, une description, un **responsable** (l'agent), une **échéance** (et un début), une
+  priorité, une colonne d'avancement (sections), des **sous-tâches**, des commentaires avec mentions, des pièces
+  jointes et un historique.
+- Les tâches s'affichent en **liste, tableau (kanban), calendrier ou chronologie**, comme dans Asana.
+- **Mes tâches** rassemble tout ce qui est confié à la personne, tous projets confondus, avec aussi les livrables
+  à produire ou à valider ; l'**Accueil** montre ce qui est dû aujourd'hui et en retard.
+- Attribuer une tâche **prévient l'agent** (notification et courriel). Terminer une tâche prévient son créateur.
+- **Rappels** : la veille de l'échéance, puis une fois en retard (jamais en boucle).
+- Chaque changement (attribution, échéance, colonne, achèvement…) est tracé au journal ; attribution et échéance
+  sont classées « importantes ».
+- Les recommandations d'un compte rendu rattaché à un projet **deviennent des tâches** du projet.
+
+**Écarts avec le besoin exprimé — À construire (lot proposé « T1 — tâches d'entité »).**
+- Aujourd'hui une tâche appartient **toujours à un projet**. Le besoin « une tâche peut être dans un projet ou non »
+  demande des **tâches d'entité** (rattachées à une direction ou un service, sans projet).
+- Il manque une vue **« Tâches de mon entité »** pour le responsable : par agent, en cours / en retard / terminées,
+  avec la charge de chacun, et le droit de confier une tâche à tout agent de son entité.
+- Ces deux points sont la prochaine étape logique ; ils respectent les mêmes règles (droits, traces, rappels).
+
+### 5.2 Projets
+
+Le projet est le **dossier complet** d'une action de l'Agence. Sa fiche (Pilotage › Portefeuille) réunit :
+
+- **Identité** : nom, objectif, statut (en bonne voie, à risque, en difficulté…), entité porteuse, chef de projet,
+  **commanditaire** (choisi dans l'annuaire des partenaires), confidentialité, **activité du plan** réalisée ;
+- **Équipe et parties prenantes** : membres avec leur rôle dans le projet, consultants sous contrat, partenaires ;
+- **Tâches** (§ 5.1), **Documents** du projet (§ 5.10), **Livrables** (validés par une autre personne que
+  l'auteur ; tranche de paiement), **Contrats** de consultants (échéancier, payé / à payer), **Réunions**
+  rattachées (comité de pilotage…), **Décisions**, **Risques**, **Indicateurs**, **Points d'avancement** ;
+- l'**avancement** remonte au plan de travail et au tableau de bord.
+
+Le portefeuille liste projets et activités, filtrables par statut, entité, province ; les droits de chaque
+projet s'appliquent (un projet privé n'apparaît qu'à ses membres).
+
+### 5.3 Partenariats
+
+**Partenaires** (Partenariats › Partenaires) est l'**annuaire unique des tiers** : ministères, collectivités,
+bailleurs, entreprises, ONG, cabinets.
+
+- Fiche : nom, sigle, type et catégories (listes paramétrables, « Autre… » pour en créer), identifiant officiel,
+  coordonnées, **points focaux** internes, confidentialité.
+- **États** : Identifié → En discussion → Actif → Suspendu / Clos (motif obligatoire pour suspendre, clore,
+  rouvrir). Un partenaire lié par un accord en vigueur ne se clôt pas.
+- Onglets : Vue d'ensemble, **Contacts** (un principal ; un contact déjà cité s'archive au lieu d'être supprimé),
+  **Accords**, **Documents** (décrits par type, § 5.10), **Dossiers** (projets, activités, contrats), **Réunions**,
+  **Courrier**, **Historique** (notes d'échange datées, non modifiables).
+- **Doublons** refusés (même nom, sigle ou identifiant) ; **fusion** d'un doublon avec tous ses liens.
+- **Rapprocher l'existant** : les noms saisis librement avant l'annuaire sont proposés au rattachement, après
+  relecture par un gestionnaire.
+
+### 5.4 Conventions — ce que l'écran affiche
+
+**Partenariats › Conventions** est le **registre des actes conclus avec les partenaires** : conventions, protocoles,
+accords-cadres, contrats de financement, et leurs avenants. C'est l'équivalent du registre papier du service
+juridique.
+
+**En haut de l'écran**
+- Le titre « Conventions et accords » et le bouton **Nouvel accord** (gestionnaires et points focaux).
+- Des **onglets par état**, chacun avec son nombre :
+  | Onglet | Ce qu'il contient |
+  | --- | --- |
+  | **Tous** | Tout le registre. |
+  | **En vigueur** | Accords signés et actifs, numérotés. |
+  | **En préparation** | Textes en cours de rédaction : encore modifiables, sans numéro. |
+  | **Au parapheur** | Textes envoyés en signature : **scellés** pendant le circuit. Un rejet les renvoie en préparation ; la signature les fait entrer en vigueur. |
+  | **Échus** | Date de fin dépassée sans reconduction tacite. |
+  | **Résiliés** | Accords auxquels on a mis fin avant terme, avec motif. |
+- Un **bandeau d'alerte** quand des accords en vigueur arrivent à échéance **dans les 90 jours** : « à prolonger
+  par avenant, à dénoncer ou à laisser échoir ». Le point focal reçoit aussi des alertes à 90, 30 et 7 jours.
+- Une **recherche** (objet, numéro, référence du partenaire, nom du partenaire) et un filtre **par type** d'accord.
+
+**Le tableau** — une ligne par accord :
+| Colonne | Contenu |
+| --- | --- |
+| **Numéro** | `CONV/AAAA/NNNN`, attribué à l'**entrée en vigueur** (année de signature). « — » tant que l'accord est en préparation ou au parapheur. |
+| **Accord** | L'objet ; « Avenant n° X — » devant un avenant ; un cadenas si confidentiel ; le type en étiquette. |
+| **État** | En préparation, Au parapheur, En vigueur, Échu, Résilié. |
+| **Partenaires** | Le ou les partenaires liés (un accord peut être multipartite, avec un chef de file). |
+| **Échéance** | Date de fin, avec un repère quand elle approche (≤ 90 jours) ou « reconduction tacite ». |
+| **Point focal** | L'agent qui suit l'accord. |
+| *(actions)* | Consulter ; **Modifier** et **Abandonner** seulement en préparation et selon les droits. |
+
+**La fiche d'un accord** (clic sur une ligne) s'ouvre en lecture :
+- **Texte de l'accord** (figé dès l'entrée en vigueur) ;
+- **Parties** (partenaires, chef de file, référence chez le partenaire) ;
+- **Dates et suivi** : signature, entrée en vigueur, fin, reconduction tacite, préavis, entité porteuse, point focal ;
+- **Documents** : exemplaire signé, annexes (pièces officielles jamais supprimées ; téléchargements tracés) ;
+- **Avenants** : chacun numéroté, il peut reporter l'échéance ;
+- **Actions** selon l'état : *Soumettre au parapheur* (accord contraignant) ou *Déclarer en vigueur* avec
+  l'exemplaire signé joint ; *Préparer un avenant* ; *Résilier* (motif et date, gestionnaire seulement).
+
+**Ce que l'écran n'affiche pas encore** : les engagements chiffrés et l'échéancier des décaissements (volet
+**finance**, reporté), les obligations de rapport devenant des tâches.
+
+### 5.5 Réunions
+
+**Pilotage › Réunions** — liste par étape, tableau, calendrier (jour, semaine, mois).
+
+- À la création, on choisit :
+  - **Réunion à venir** : date à partir d'aujourd'hui ; elle est *programmée*, puis *convoquée* ;
+  - **Réunion déjà tenue** : date au plus tard aujourd'hui ; enregistrée directement *tenue* pour la traçabilité,
+    participants notés présents, ni convocation ni série.
+- Champs : type (référentiel), objet, date et heures, lieu ou visioconférence, convoquée et présidée par,
+  rédacteur, **convoqués** (personnes, entités entières, contacts de partenaires, extérieurs), partenaires
+  concernés, dossier rattaché, confidentialité, **récurrence** (série).
+- **Convocation** : au moins 48 h avant (sinon urgence à confirmer) ; chaque convoqué est prévenu par courriel et
+  répond *présent / excusé / représenté par*.
+- **Ordre du jour** avec rapporteurs et pièces ; le point « suivi des recommandations précédentes » est ajouté
+  d'office.
+- **Compte rendu** : le rédacteur le rédige puis le **soumet** ; la présidence le **valide** (ou le retourne avec
+  motif). Validé, il est numéroté, figé, diffusé ; ses **décisions** entrent au registre des décisions, ses
+  **recommandations** deviennent des tâches du projet rattaché.
+
+### 5.6 Décisions
+
+**Pilotage › Décisions** — le **registre des décisions de la DG**.
+- Numéro `DEC/AAAA/NNNN`, titre, texte (figé), date, chargé d'exécution, échéance, dossier rattaché, confidentialité
+  héritée du dossier.
+- **Exécution** à sens unique : à exécuter → en cours → exécutée ; rappels avant l'échéance et en retard.
+- Une erreur se corrige par une **décision de remplacement** (l'ancienne reste lisible et renvoie à la nouvelle).
+- Les décisions prises en séance arrivent ici automatiquement à la validation du compte rendu.
+
+### 5.7 Courrier
+
+**Secrétariat › Courrier** — courrier **entrant** et **sortant**.
+1. **Enregistrer** (bureau d'ordre) : expéditeur (partenaire de l'annuaire et contact), date et référence de la
+   lettre, objet, réception, **pièce numérisée** → numéro `ENT/AAAA/NNNN`.
+2. **Annoter et imputer** (DG) : entité et agent chargés, **instruction** (pour traitement, pour avis, pour
+   information), **délai** de réponse → l'agent est prévenu, le délai court.
+3. **Traiter** : l'agent instruit, rattache au besoin un dossier (projet, activité).
+4. **Répondre** : projet de réponse au parapheur ; une fois signée, la réponse est enregistrée en sortie
+   (`SOR/AAAA/NNNN`), **liée** à l'entrant, qui est **clôturé**.
+5. **Rappels** : deux jours avant le délai, puis en retard.
+
+### 5.8 Parapheur
+
+**Secrétariat › Parapheur** — circuit de visa et de signature.
+- Un document est déposé avec son circuit (visa du directeur, signature de la DG…) ; chaque signataire est prévenu
+  à son tour ; il **approuve** ou **rejette** avec commentaire.
+- Le document est figé pendant le circuit. Une **délégation de signature** permet à un suppléant de signer, tracée.
+- Signé, il alimente le dossier d'origine : accord en vigueur, réponse de courrier enregistrée en sortie.
+
+### 5.9 Plans de travail
+
+**Suivi-évaluation › Plans de travail** — un plan par entité et par année : activités avec cibles et
+indicateurs ; **soumis** par l'entité, **approuvé** (ou renvoyé) par une autre personne ; révisable de façon tracée.
+Les projets et activités qui réalisent une activité du plan **remontent leur avancement** dans le plan.
+
+### 5.10 Documents
+
+Partout où un dossier en a besoin (partenaire, accord, projet, courrier, activité, réunion), on joint des documents
+**décrits par type** : on choisit le type (contrat, rapport, note…, ou « Autre » en le précisant), son nom, puis
+les champs propres au type apparaissent (date de production, date d'expiration, référence…). Les documents expirés
+sont signalés. **Aperçu à la demande** (bouton œil) : PDF et images dans la page, Word, Excel et texte en lecture
+structurée. Ouvrir ou télécharger une pièce sensible est tracé ; une pièce **officielle** ne se supprime pas.
+
+### 5.11 Notifications et rappels
+
+Chaque notification apparaît dans l'outil (cloche) **et part par courriel** signé « ANAT Pilotage » avec le lien
+direct.
+
+| Événement | Qui est prévenu |
+| --- | --- |
+| Tâche attribuée / terminée | L'agent / le créateur |
+| Échéance de tâche (veille, puis retard) | Le responsable de la tâche |
+| Courrier imputé ; délai proche ou dépassé | L'agent imputé |
+| Réunion convoquée ; compte rendu soumis, retourné, validé | Convoqués ; présidence ; rédacteur ; participants |
+| Recommandation à exécuter ; échéance proche ou dépassée | Son responsable |
+| Décision enregistrée ; échéance d'exécution | Le chargé d'exécution |
+| Document en attente au parapheur ; signé ; rejeté | Le signataire du tour ; le déposant |
+| Livrable soumis, à corriger, à payer | Validateur ; auteur ; service concerné |
+| Plan soumis ou renvoyé | Approbateurs ; entité |
+| Accord : échéance à 90, 30, 7 jours ; entrée en vigueur ; rejet | Point focal, gestionnaires |
+| Point focal désigné ; état du partenaire changé | Points focaux |
+
+Sans messagerie configurée (usage local), les notifications restent dans l'outil.
+
+### 5.12 Administration système
+
+Réservée à l'administrateur système (double authentification recommandée, signalée sinon).
+
+- **Paramètres de l'institution** : toutes les listes (types d'activités, d'entités, de partenaires, d'accords,
+  natures de documents…), avec leurs propriétés. Les gestionnaires de module peuvent aussi créer un type via
+  « Autre… ».
+- **Comptes** : tous les comptes, leur état, leurs organisations, leur sécurité (2FA, sessions), leur dernière
+  connexion.
+  - **Créer un compte** : nom, adresse, fonction, institution, **entité**, **profil d'accès**. La personne reçoit
+    un **lien personnel** pour choisir elle-même son mot de passe ; le compte reste « Invité » jusque-là. À
+    l'activation, elle est rangée dans son entité avec son profil. **Renvoyer le lien** annule le précédent.
+    Sans messagerie, le lien s'affiche une seule fois à l'administrateur, à transmettre par un canal sûr.
+  - Actions : envoyer un lien de mot de passe, réinitialiser la 2FA, fermer les sessions, nommer ou retirer un
+    administrateur système, suspendre, réactiver.
+  - Cliquer sur le **nom** ouvre le **journal de la personne**.
+- **Inscriptions** : sur invitation seulement (recommandé) ou demande d'accès avec validation.
+- **Journal d'audit** (§ 6).
+
+---
+
+## 6. Le journal d'audit
+
+**Administration système › Journal d'audit** réunit les deux traces que l'outil tient : le **fil d'activité**
+(tout ce qui se fait dans les modules) et le **journal de sécurité** (connexions, comptes, droits, mots de passe).
+
+**Chaque ligne** : date et heure, **auteur**, **gravité**, **domaine** (Partenariats, Décisions, Réunions,
+Courrier, Parapheur, Projets, Tâches, Activités, Plans de travail, Documents, Organisation, Paramétrage, Sécurité),
+**action** en clair (« Accord entré en vigueur », « Tâche attribuée », « Connexion refusée »…), **objet** (nom du
+partenaire, titre de la décision, numéro, document, personne concernée). Un clic ouvre la trace complète dans un
+tiroir (institution, adresse IP, source, code technique).
+
+**Gravité**
+| Gravité | Exemples |
+| --- | --- |
+| **Critique** | Toute suppression ; échec de connexion ; compte verrouillé ou suspendu ; rôle d'administrateur système accordé ou retiré ; 2FA désactivée ; mot de passe réinitialisé ; droits individuels modifiés ; fusion de partenaires ; résiliation d'accord ; rejet au parapheur ; sessions fermées ; configuration de la messagerie. |
+| **Importante** | Ce qui engage l'institution : décision enregistrée ou exécutée, accord en vigueur ou au parapheur, avenant, réunion convoquée, compte rendu validé ou retourné, courrier imputé ou clôturé, visa ou signature, délégation, plan soumis ou approuvé, livrable validé ou payé, tâche attribuée, échéance changée, compte créé, profil changé, analyse ou export du journal. |
+| **Normale** | Le reste : création, modification courante, consultation de document, connexion réussie. |
+
+**Filtres** : recherche libre, domaine, gravité, auteur, période. **Exporter** produit un fichier tableur (CSV)
+avec les mêmes filtres ; l'export est lui-même tracé.
+
+**Journal par personne** (depuis la liste des comptes, ou en cliquant sur un auteur) : chiffres clés (connexions,
+échecs, adresses distinctes, actions métier, traces critiques, dernière connexion), puis deux onglets :
+**Connexions et sécurité** (y compris ce que d'autres ont fait sur son compte) et **Activités**. Exportable et
+analysable.
+
+**Analyse avec l'IA** — en deux temps, pour rester vérifiable :
+1. l'outil calcule des **signaux** à partir des traces, chacun avec ses traces à l'appui :
+   échecs de connexion répétés sur un compte ; changements sensibles de droits ou de sécurité ; suppressions en
+   série ; **préparé et validé par la même personne** ; actions importantes hors des heures ouvrées ; consultation
+   massive de documents ; connexions depuis de nombreuses adresses ; exports du journal ;
+2. l'IA rédige une **appréciation** et des **mesures suggérées** à partir de ces seuls signaux. Elle ne conclut à
+   aucune faute ; l'administrateur apprécie et décide des suites. L'analyse est inscrite au journal.
+
+**Pas encore** : durée de conservation paramétrable (E2), navigateur utilisé à chaque connexion (E3), valeurs
+« avant / après » pour chaque modification de champ.
+
+---
+
+## 7. Ce qui reste à construire
+
+| Sujet | État |
+| --- | --- |
+| Tâches d'entité (hors projet) et vue « Tâches de mon entité » pour le responsable | À construire — prochain lot proposé (§ 5.1) |
+| Finance des partenariats : engagements, échéancier des décaissements, tableau des bailleurs | Reporté à la demande (PA4) |
+| Obligations de rapport d'un accord devenant des tâches du point focal | À construire (PA5) |
+| CRUD complet sur les grilles hors partenariats (décisions, parapheur, plans, équipes, structure) | Partiel |
+| Conservation paramétrable du journal, navigateur des connexions, valeurs avant / après | À construire (E2, E3) |
+| Aperçu fidèle des documents Word | Plus tard |

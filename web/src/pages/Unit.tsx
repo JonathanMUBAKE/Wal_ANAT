@@ -8,6 +8,7 @@ import {
   ChartNoAxesGantt,
   FolderKanban,
   FolderPlus,
+  Landmark,
   LayoutList,
   Plus,
   SquareKanban,
@@ -18,6 +19,8 @@ import { Button, Empty, Spinner, cn } from "@/components/ui";
 import { Drawer, DrawerSection } from "@/components/drawer";
 import { Field, Input, PageHeader, Section, Select, Status, Table, Td, Tr, frDate } from "@/components/gov";
 import { UnitDashboardView, UnitProjects } from "@/components/unit-dashboard";
+import { MeetingsBrowser } from "@/components/MeetingViews";
+import { NewMeeting, type MeetingRow } from "./Meetings";
 import { isActive } from "@/components/ai";
 import { useMe, useMyUnits, useProject, useProjectTasks, useRuns } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
@@ -35,7 +38,7 @@ import { TimelineView } from "@/views/TimelineView";
  * se crée aussi d'ici et reste porté par l'entité. Le responsable y confie les tâches et suit chaque agent ; la vue
  * d'ensemble est le tableau de bord de l'entité.
  */
-type View = "ensemble" | "liste" | "tableau" | "calendrier" | "chronologie" | "projets" | "suivi";
+type View = "ensemble" | "liste" | "tableau" | "calendrier" | "chronologie" | "projets" | "reunions" | "suivi";
 const VIEWS: { id: View; label: string; Icon: typeof LayoutList; responsable?: boolean }[] = [
   { id: "ensemble", label: "Vue d'ensemble", Icon: BarChart3 },
   { id: "liste", label: "Liste", Icon: LayoutList },
@@ -43,6 +46,7 @@ const VIEWS: { id: View; label: string; Icon: typeof LayoutList; responsable?: b
   { id: "calendrier", label: "Calendrier", Icon: CalendarDays },
   { id: "chronologie", label: "Chronologie", Icon: ChartNoAxesGantt },
   { id: "projets", label: "Projets", Icon: FolderKanban },
+  { id: "reunions", label: "Réunions", Icon: Landmark },
   { id: "suivi", label: "Suivi des agents", Icon: UserCheck, responsable: true },
 ];
 
@@ -63,6 +67,7 @@ export function UnitPage() {
   const go = (patch: Record<string, string>) => setParams({ unite: unitId, vue: view, ...patch });
   const [giving, setGiving] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [meeting, setMeeting] = useState(false);
 
   if (!units) return <Spinner />;
   if (!units.length)
@@ -97,6 +102,11 @@ export function UnitPage() {
                   </option>
                 ))}
               </Select>
+            )}
+            {board?.can.assign && (
+              <Button icon={<Landmark className="size-4" />} onClick={() => setMeeting(true)}>
+                Réunion
+              </Button>
             )}
             {board && (
               <Button icon={<FolderPlus className="size-4" />} onClick={() => setCreating(true)}>
@@ -143,6 +153,8 @@ export function UnitPage() {
             onNewProject={() => setCreating(true)}
             onNewTask={() => setGiving(true)}
           />
+        ) : view === "reunions" ? (
+          <UnitMeetings board={board} onNew={() => setMeeting(true)} />
         ) : view === "suivi" ? (
           <div className="mx-auto max-w-[1240px] space-y-4 px-4 pb-16 pt-5 sm:px-8">
             <FollowUp unitId={unitId} />
@@ -153,6 +165,38 @@ export function UnitPage() {
       </div>
       {giving && board && <GiveTask board={board} onClose={() => setGiving(false)} />}
       {creating && board && <NewUnitProject board={board} onClose={() => setCreating(false)} />}
+      {meeting && board && (
+        <NewMeeting unit={{ id: board.unit.id, name: board.unit.name }} onClose={() => setMeeting(false)} />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Réunions de l'entité : le module Réunions, filtré sur l'entité (liste, tableau, calendrier ; compte rendu et
+ * circuit de validation inchangés). Le responsable les programme ; toute l'entité est convoquée d'office.
+ */
+function UnitMeetings({ board, onNew }: { board: UnitBoard; onNew: () => void }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["meetings", "unit", board.unit.id],
+    queryFn: () => api.get<MeetingRow[]>(`/api/meetings?unit_id=${board.unit.id}`),
+  });
+  return (
+    <div className="mx-auto max-w-[1480px] px-4 pb-16 pt-5 sm:px-8">
+      <MeetingsBrowser
+        rows={data ?? []}
+        isLoading={isLoading}
+        primary={
+          board.can.assign && (
+            <Button variant="primary" icon={<Plus className="size-4" />} onClick={onNew}>
+              Programmer une réunion
+            </Button>
+          )
+        }
+        renderActions={() => (
+          <p className="p-5 text-[13px] text-muted">Les recommandations se suivent depuis la page Réunions.</p>
+        )}
+      />
     </div>
   );
 }

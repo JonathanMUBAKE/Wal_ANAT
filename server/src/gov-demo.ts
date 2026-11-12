@@ -473,6 +473,22 @@ async function seedUnitTasks(svc: Services, org: string) {
     );
     await backdate(t.id, -4);
   }
+  // La réunion hebdomadaire de l'entité : toujours en tête de son espace et de l'accueil des convoqués
+  const monday = new Date();
+  monday.setDate(monday.getDate() + ((8 - monday.getDay()) % 7 || 7));
+  await new Meetings(svc).create("u_karim", org, {
+    meeting_type: "Réunion de service",
+    title: "Réunion hebdomadaire de l'Ingénierie",
+    meeting_date: localDate(monday),
+    start_time: "09:00",
+    end_time: "10:00",
+    location: "Salle Ingénierie",
+    unit_id: inge,
+    chair_id: "u_karim",
+    timing: "upcoming",
+    invitees: [{ unit_id: inge }, { unit_id: qualite }],
+    repeat: { every: "week", count: 8 },
+  });
   const p = await ut.createProject("u_karim", org, inge, {
     name: "Plateforme de tests automatisés",
     description: "Exemple fictif : outiller les tests de non-régression de l'Ingénierie.",

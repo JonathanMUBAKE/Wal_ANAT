@@ -1,6 +1,17 @@
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
-import { AlertTriangle, CalendarClock, CheckCircle2, CircleDot, FolderKanban, Gauge, Plus } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarClock,
+  CalendarDays,
+  CheckCircle2,
+  CircleDot,
+  FolderKanban,
+  Gauge,
+  Landmark,
+  Plus,
+} from "lucide-react";
+import { UpcomingMeetingList } from "@/components/upcoming-meetings";
 import { Button, ProjectIcon, cn } from "@/components/ui";
 import { frDate } from "@/components/gov";
 import { useShell } from "@/lib/shell";
@@ -425,10 +436,30 @@ export function UnitDashboardView({
           >
             <span
               className="block h-full rounded-full"
-              style={{ width: `${k.completion_rate}%`, minWidth: k.completion_rate ? 6 : 0, background: "var(--viz-1)" }}
+              style={{
+                width: `${k.completion_rate}%`,
+                minWidth: k.completion_rate ? 6 : 0,
+                background: "var(--viz-1)",
+              }}
             />
           </span>
         </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card title="Réunions de l'entité" aside={<Landmark className="size-4 text-faint" />}>
+          <UpcomingMeetingList
+            rows={data.meetings.unit}
+            empty={
+              responsable
+                ? "Aucune réunion prévue. Programmez la réunion hebdomadaire de l'entité depuis « Réunion »."
+                : "Aucune réunion de l'entité n'est prévue."
+            }
+          />
+        </Card>
+        <Card title="Où vous êtes attendu·e" aside={<CalendarDays className="size-4 text-faint" />}>
+          <UpcomingMeetingList rows={data.meetings.mine} empty="Aucune réunion prévue où vous êtes convoqué·e." />
+        </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-12">

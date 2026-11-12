@@ -518,6 +518,7 @@ export interface UnitDashboard {
     projects: number;
     agents: number | null;
   };
+  meetings: { unit: UpcomingMeeting[]; mine: UpcomingMeeting[] };
   trend: { week: string; created: number; completed: number }[];
   by_status: { key: string; label: string; count: number }[];
   by_priority: { priority: string; count: number }[];
@@ -547,4 +548,23 @@ export interface UnitDashboard {
         done_30: number;
       }[]
     | null;
+}
+/** Réunion à mettre en avant (accueil, espace de l'entité). */
+export interface UpcomingMeeting {
+  id: string;
+  reference: string;
+  title: string;
+  meeting_type: string;
+  meeting_date: string;
+  start_time: string | null;
+  location: string;
+  video_link: string;
+  status: string;
+  convened: boolean;
+  chair_name: string | null;
+  unit_name: string | null;
+  recurring: boolean;
+  invited: boolean;
+  my_response: "pending" | "accepted" | "declined" | "delegated" | null;
+  role: "chair" | "writer" | "invited" | null;
 }

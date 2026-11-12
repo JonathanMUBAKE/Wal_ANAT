@@ -200,9 +200,12 @@ type InviteeChip = { user_id?: string; unit_id?: string; contact_id?: string; na
 export function NewMeeting({
   projectId,
   partner,
+  unit,
   onClose,
 }: {
   projectId?: string;
+  /** Réunion programmée depuis l'espace d'une entité : elle lui appartient, toute l'entité est convoquée d'office. */
+  unit?: { id: string; name: string };
   /** Réunion programmée depuis la fiche d'un partenaire : il est prérempli, ses contacts sont convocables. */
   partner?: { id: string; name: string };
   onClose: () => void;
@@ -226,7 +229,9 @@ export function NewMeeting({
     chair_id: "",
     confidential: false,
   });
-  const [invitees, setInvitees] = useState<InviteeChip[]>([]);
+  const [invitees, setInvitees] = useState<InviteeChip[]>(
+    unit ? [{ unit_id: unit.id, label: `Toute l'entité ${unit.name}` }] : [],
+  );
   const [external, setExternal] = useState("");
   const [partnerIds, setPartnerIds] = useState<string[]>(partner ? [partner.id] : []);
   const { data: partnerOptions } = usePartnerOptions();
@@ -255,6 +260,7 @@ export function NewMeeting({
         ...f,
         chair_id: f.chair_id || null,
         project_id: projectId ?? null,
+        unit_id: unit?.id ?? null,
         partner_ids: partnerIds,
         invitees: invitees.map(({ label: _l, ...rest }) => rest),
         timing,
@@ -262,6 +268,7 @@ export function NewMeeting({
       }),
     onSuccess: (m) => {
       qc.invalidateQueries({ queryKey: ["meetings"] });
+      qc.invalidateQueries({ queryKey: ["unit-dashboard"] });
       nav(`/reunions/${m.id}`);
     },
     onError: fail,
@@ -271,7 +278,7 @@ export function NewMeeting({
     <Dialog
       open
       onOpenChange={onClose}
-      title={past ? "Enregistrer une réunion déjà tenue" : "Programmer une réunion"}
+      title={(past ? "Enregistrer une réunion déjà tenue" : "Programmer une réunion") + (unit ? ` — ${unit.name}` : "")}
       description={
         past
           ? "Pour la traçabilité : la séance entre au registre comme tenue, avec ses participants ; son compte rendu suit ensuite le circuit de validation."

@@ -5,6 +5,7 @@ import { Archive, ArrowRight, Sparkles, Wand2 } from "lucide-react";
 import { Avatar, Button, Empty, ProgressRing, ProjectIcon, cn } from "@/components/ui";
 import { ApprovalCard, RUN_STATUS, isActive } from "@/components/ai";
 import { TaskRow } from "@/components/TaskRow";
+import { MyMeetingsCard } from "@/components/upcoming-meetings";
 import {
   useApprovals,
   useArchivedProjects,
@@ -211,6 +212,7 @@ export function HomePage() {
         </div>
 
         <aside className="min-w-0 space-y-6">
+          <MyMeetingsCard />
           <section className="relative overflow-hidden rounded-2xl border border-ai-line bg-panel p-5 shadow-sm">
             <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-[radial-gradient(circle,var(--ai-soft),transparent_70%)]" />
             <div className="relative">

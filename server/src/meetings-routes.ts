@@ -53,6 +53,7 @@ const Invitee = z.object({
 });
 const Invitees = z.array(Invitee).max(300);
 const Create = Fields.extend({
+  unit_id: z.string().max(100).nullable().optional(),
   meeting_type: z.string().trim().min(1).max(200),
   meeting_date: date,
   timing: z.enum(["upcoming", "past"]).optional(),
@@ -131,10 +132,13 @@ export function meetingRoutes(r: FastifyInstance, meetings: Meetings) {
           project_id: z.string().max(100).optional(),
           activity_id: z.string().max(100).optional(),
           partner_id: z.string().max(100).optional(),
+          unit_id: z.string().max(100).optional(),
         })
         .parse(req.query),
     ),
   );
+  // Mes prochaines réunions (accueil) : où je suis convoqué, préside ou rédige
+  r.get("/api/me/meetings", async (req) => meetings.upcoming(req.userId, req.orgId, { mine: true }));
   r.post("/api/meetings", async (req) => meetings.create(req.userId, req.orgId, Create.parse(req.body)));
   r.get<Id>("/api/meetings/:id", async (req) => meetings.get(req.userId, req.params.id));
   r.patch<Id>("/api/meetings/:id", async (req) => meetings.update(req.userId, req.params.id, Patch.parse(req.body)));

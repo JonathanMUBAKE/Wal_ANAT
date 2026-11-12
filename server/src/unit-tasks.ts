@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { uid } from "./db.js";
+import { Meetings } from "./meetings.js";
 import { forbidden, localDate, notFound, type Services } from "./services.js";
 
 /*
@@ -314,11 +315,21 @@ export class UnitTasks {
               (SELECT count(*)::int FROM tasks t WHERE t.project_id = p.id AND t.parent_id IS NULL AND t.completed) AS done_count,
               (SELECT count(*)::int FROM tasks t WHERE t.project_id = p.id AND t.parent_id IS NULL AND NOT t.completed AND t.due_on < $3::date) AS overdue_count
          FROM projects p LEFT JOIN users o ON o.id = p.owner_id
-        WHERE p.org_id = $1 AND p.unit_id = $2 AND p.kind = 'project' AND NOT p.archived AND p.id = ANY($4)
+        WHERE p.org_id = $1 AND p.kind = 'project' AND NOT p.archived AND p.id = ANY($4)
+          AND (p.unit_id = $2 OR EXISTS (
+                SELECT 1 FROM memberships ms WHERE ms.project_id = p.id AND (
+                  ms.user_id = (SELECT manager_id FROM org_units WHERE id = $2)
+                  OR ms.user_id IN (SELECT user_id FROM org_members WHERE org_id = $1 AND unit_id = $2))))
         ORDER BY p.created_at DESC`,
       [orgId, unitId, today, readable],
     );
     const PRIORITIES = ["urgent", "high", "medium", "low", "none"];
+    // Réunions à mettre en avant : celles de l'entité (une séance par série) et celles où la personne est attendue
+    const meetings = new Meetings(this.svc);
+    const meetingsOf = {
+      unit: await meetings.upcoming(actorId, orgId, { unit_id: unitId, limit: 6 }),
+      mine: await meetings.upcoming(actorId, orgId, { mine: true, limit: 6 }),
+    };
     return {
       unit: { id: u.id, name: u.name },
       role: b.role,
@@ -334,6 +345,7 @@ export class UnitTasks {
         projects: projects.length,
         agents: follow?.agents.length ?? null,
       },
+      meetings: meetingsOf,
       trend,
       by_status: [
         { key: "overdue", label: "En retard", count: overdue.length },

@@ -415,6 +415,7 @@ const TABLE = [
   R_("GET", "/api/org/units"),
   R_("POST", "/api/org/units", () => ({ body: { name: u("U") } })),
   R_("GET", "/api/me/units"),
+  R_("GET", "/api/me/meetings"),
   R_("GET", "/api/units/:id/board", async (X) => ({ url: `/api/units/${(await X.unit()).id}/board` })),
   R_("GET", "/api/units/:id/dashboard", async (X) => ({ url: `/api/units/${(await X.unit()).id}/dashboard` })),
   R_("POST", "/api/units/:id/projects", async (X) => ({

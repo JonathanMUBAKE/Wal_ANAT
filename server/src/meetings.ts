@@ -54,6 +54,8 @@ export interface MeetingRow {
   next_location: string;
   next_topics: string;
   confidential: boolean;
+  /** Entité à laquelle appartient la réunion (programmée depuis son espace, ou entité convoquée en entier). */
+  unit_id: string | null;
   status: MeetingStatus;
   validated_by: string | null;
   validated_at: string | null;
@@ -173,6 +175,7 @@ export type MeetingInput = Partial<
     | "video_link"
     | "project_id"
     | "activity_id"
+    | "unit_id"
   >
 > & { status?: "planned" | "held" | "cancelled"; partner_ids?: string[] };
 
@@ -260,10 +263,23 @@ export class Meetings {
     ]));
   }
 
+  /** Le responsable d'une entité (ou d'une entité au-dessus) gère les réunions de cette entité. */
+  async managesUnit(actorId: string, unitId: string | null | undefined) {
+    if (!unitId) return false;
+    return !!(await this.svc.db.one(
+      `WITH RECURSIVE up(id, manager_id, parent_id) AS (
+         SELECT id, manager_id, parent_id FROM org_units WHERE id = $1
+         UNION SELECT p.id, p.manager_id, p.parent_id FROM org_units p JOIN up ON p.id = up.parent_id
+       ) SELECT 1 FROM up WHERE manager_id = $2`,
+      [unitId, actorId],
+    ));
+  }
+
   private async readable(actorId: string, id: string) {
     const m = await this.row(id);
     await this.svc.requirePerm(actorId, m.org_id, "meetings.view");
     const can = await this.can(actorId, m.org_id);
+    if (!can.manage && (await this.managesUnit(actorId, m.unit_id))) can.manage = true;
     if (
       m.confidential &&
       !can.manage &&
@@ -452,7 +468,7 @@ export class Meetings {
   async list(
     actorId: string,
     orgId: string,
-    f: { project_id?: string; activity_id?: string; partner_id?: string } = {},
+    f: { project_id?: string; activity_id?: string; partner_id?: string; unit_id?: string } = {},
   ) {
     await this.svc.requirePerm(actorId, orgId, "meetings.view");
     const can = await this.can(actorId, orgId);
@@ -470,8 +486,17 @@ export class Meetings {
        FROM meetings m LEFT JOIN users c ON c.id = m.chair_id
        WHERE m.org_id = $1 AND ${VISIBLE("m", "$2", "$3")} AND ($4::text IS NULL OR m.project_id = $4) AND ($5::text IS NULL OR m.activity_id = $5)
          AND ($6::text IS NULL OR EXISTS (SELECT 1 FROM meeting_partners mp WHERE mp.meeting_id = m.id AND mp.partner_id = $6))
+         AND ($7::text IS NULL OR m.unit_id = $7)
        ORDER BY m.meeting_date DESC, m.seq DESC`,
-      [orgId, actorId, can.manage, f.project_id ?? null, f.activity_id ?? null, f.partner_id ?? null],
+      [
+        orgId,
+        actorId,
+        can.manage,
+        f.project_id ?? null,
+        f.activity_id ?? null,
+        f.partner_id ?? null,
+        f.unit_id ?? null,
+      ],
     );
     return rows.map((m) => ({ ...m, reference: meetingReference(m) }));
   }
@@ -600,7 +625,15 @@ export class Meetings {
       timing?: "upcoming" | "past";
     },
   ) {
-    await this.svc.requirePerm(actorId, orgId, "meetings.manage");
+    // Réunion d'une entité : celle choisie, sinon l'entité convoquée en entier
+    const unitId = input.unit_id ?? input.invitees?.find((i) => i.unit_id)?.unit_id ?? null;
+    if (unitId && !(await this.svc.db.one("SELECT 1 FROM org_units WHERE org_id = $1 AND id = $2", [orgId, unitId])))
+      throw badRequest("Entité inconnue");
+    if (
+      !(await this.can(actorId, orgId)).manage &&
+      !(input.unit_id && (await this.managesUnit(actorId, input.unit_id)))
+    )
+      await this.svc.requirePerm(actorId, orgId, "meetings.manage");
     assertDate(input.meeting_date);
     assertDate(input.next_date);
     if (input.timing === "upcoming" && input.meeting_date < today())
@@ -646,10 +679,15 @@ export class Meetings {
         }
       });
     }
+    if (unitId)
+      await this.svc.db.query(
+        "UPDATE meetings SET unit_id = $1 WHERE id = $2 OR (series_id IS NOT NULL AND series_id = $3)",
+        [unitId, first, seriesId],
+      );
     await this.svc.log(actorId, "meeting.created", {
       orgId,
       projectId: input.project_id ?? null,
-      data: { id: first, type: input.meeting_type, series: seriesId, count },
+      data: { id: first, type: input.meeting_type, series: seriesId, count, unit_id: unitId },
     });
     return this.get(actorId, first);
   }
@@ -953,8 +991,8 @@ export class Meetings {
   }
 
   async remove(actorId: string, id: string) {
-    const m = await this.row(id);
-    await this.svc.requirePerm(actorId, m.org_id, "meetings.manage");
+    const { m, can } = await this.readable(actorId, id);
+    if (!can.manage) throw forbidden("Seuls les gestionnaires des réunions suppriment une réunion");
     if (m.status === "validated") throw locked();
     await this.svc.db.query("DELETE FROM meetings WHERE id = $1", [id]);
     await this.svc.log(actorId, "meeting.deleted", { orgId: m.org_id, data: { reference: meetingReference(m) } });
@@ -1353,6 +1391,69 @@ export class Meetings {
   }
 
   // ---------------------------------------------------------------- suivi des recommandations
+  /**
+   * Prochaines réunions à mettre en avant. « mine » : celles où la personne est convoquée, préside ou rédige.
+   * « unit_id » : celles de l'entité, une seule séance par série (la prochaine). Les réunions confidentielles
+   * restent réservées à ceux qui peuvent les voir.
+   */
+  async upcoming(actorId: string, orgId: string, f: { mine?: boolean; unit_id?: string; limit?: number }) {
+    const perms = await this.svc.permissionsOf(actorId, orgId);
+    if (!perms.includes("meetings.view")) return [];
+    const manage = perms.includes("meetings.manage");
+    const rows = await this.svc.db.query<
+      MeetingRow & {
+        chair_name: string | null;
+        unit_name: string | null;
+        my_response: Response | null;
+        invited: boolean;
+      }
+    >(
+      `SELECT DISTINCT ON (COALESCE(m.series_id, m.id)) m.*, c.name AS chair_name, ou.name AS unit_name,
+              (SELECT x.response FROM meeting_attendees x WHERE x.meeting_id = m.id AND x.user_id = $2 AND x.invited LIMIT 1) AS my_response,
+              EXISTS (SELECT 1 FROM meeting_attendees x WHERE x.meeting_id = m.id AND x.user_id = $2) AS invited
+         FROM meetings m LEFT JOIN users c ON c.id = m.chair_id LEFT JOIN org_units ou ON ou.id = m.unit_id
+        WHERE m.org_id = $1 AND ${VISIBLE("m", "$2", "$3")} AND m.meeting_date >= $4::date AND m.status = 'planned'
+          AND ($5::text IS NULL OR m.unit_id = $5
+               OR (m.unit_id IN (WITH RECURSIVE up(id, parent_id) AS (
+                     SELECT id, parent_id FROM org_units WHERE id = $5
+                     UNION SELECT p.id, p.parent_id FROM org_units p JOIN up ON p.id = up.parent_id
+                   ) SELECT id FROM up)
+                   AND EXISTS (SELECT 1 FROM meeting_attendees x JOIN org_members om ON om.user_id = x.user_id AND om.org_id = m.org_id
+                               WHERE x.meeting_id = m.id AND om.unit_id = $5)))
+          AND (NOT $6 OR m.chair_id = $2 OR m.writer_id = $2
+               OR EXISTS (SELECT 1 FROM meeting_attendees x WHERE x.meeting_id = m.id AND x.user_id = $2))
+        ORDER BY COALESCE(m.series_id, m.id), m.meeting_date, m.start_time NULLS LAST`,
+      [orgId, actorId, manage, today(), f.unit_id ?? null, !!f.mine],
+    );
+    return rows
+      .sort((a, b) =>
+        String(a.meeting_date) === String(b.meeting_date)
+          ? String(a.start_time ?? "").localeCompare(String(b.start_time ?? ""))
+          : String(a.meeting_date) < String(b.meeting_date)
+            ? -1
+            : 1,
+      )
+      .slice(0, f.limit ?? 8)
+      .map((m) => ({
+        id: m.id,
+        reference: meetingReference(m),
+        title: m.title,
+        meeting_type: m.meeting_type,
+        meeting_date: m.meeting_date,
+        start_time: m.start_time,
+        location: m.location,
+        video_link: m.video_link,
+        status: m.status,
+        convened: !!m.convened_at,
+        chair_name: m.chair_name,
+        unit_name: m.unit_name,
+        recurring: !!m.series_id,
+        invited: m.invited,
+        my_response: m.my_response,
+        role: m.chair_id === actorId ? "chair" : m.writer_id === actorId ? "writer" : m.invited ? "invited" : null,
+      }));
+  }
+
   async listActions(actorId: string, orgId: string, f: { mine?: boolean }) {
     await this.svc.requirePerm(actorId, orgId, "meetings.view");
     const can = await this.can(actorId, orgId);

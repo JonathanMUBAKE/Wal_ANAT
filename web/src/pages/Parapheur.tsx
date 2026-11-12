@@ -1140,7 +1140,7 @@ function MailDialog({
               Prendre en charge
             </Button>
           )}
-          {open && canClose && m.status !== "impute" && (
+          {open && canClose && (m.status !== "impute" || canManage) && (
             <Button
               variant={m.assignee_id === meId ? "primary" : undefined}
               icon={<CheckCircle2 className="size-4" />}

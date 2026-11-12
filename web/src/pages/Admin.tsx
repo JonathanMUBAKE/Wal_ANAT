@@ -22,6 +22,7 @@ import type {
 import { LinkResult } from "./OrgAccess";
 import { Field, Input, PageHeader, Select, Tabs } from "@/components/gov";
 import { InstitutionSettings } from "./AdminReferentials";
+import { ActiveSessions, RolesMatrix, SystemHealth } from "./AdminPlus";
 
 const STATUS: Record<
   AdminUser["status"],
@@ -38,7 +39,9 @@ const failure = (e: unknown) => toast.error((e as Error).message);
 /** Console de l'administrateur système : tous les comptes, inscriptions et journal de sécurité. */
 export function AdminPage() {
   const { data: me } = useMe();
-  const [tab, setTab] = useState<"institution" | "users" | "settings" | "events">("institution");
+  const [tab, setTab] = useState<"health" | "institution" | "users" | "sessions" | "roles" | "settings" | "events">(
+    "health",
+  );
   if (me && !me.platform_role) return <Navigate to="/" replace />;
   return (
     <div className="min-h-full">
@@ -46,14 +49,17 @@ export function AdminPage() {
         Icon={ShieldCheck}
         crumbs={["Administration système"]}
         title="Administration système"
-        subtitle="Réservée à l'administrateur système : paramètres de l'institution, comptes, inscriptions et journal d'audit."
+        subtitle="Réservée à l'administrateur système : état du système, paramètres, comptes, sessions, rôles et droits, inscriptions, journal d'audit."
       />
       <Tabs
         value={tab}
         onChange={setTab}
         items={[
+          { id: "health", label: "État du système" },
           { id: "institution", label: "Paramètres de l'institution" },
           { id: "users", label: "Comptes" },
+          { id: "sessions", label: "Sessions" },
+          { id: "roles", label: "Rôles et droits" },
           { id: "settings", label: "Inscriptions" },
           { id: "events", label: "Journal d'audit" },
         ]}
@@ -65,7 +71,13 @@ export function AdminPage() {
             Ce compte contrôle toute l'institution : activez la double authentification dans « Sécurité du compte ».
           </p>
         )}
-        {tab === "institution" ? (
+        {tab === "health" ? (
+          <SystemHealth />
+        ) : tab === "sessions" ? (
+          <ActiveSessions />
+        ) : tab === "roles" ? (
+          <RolesMatrix />
+        ) : tab === "institution" ? (
           <InstitutionSettings />
         ) : tab === "users" ? (
           <Users meId={me?.id} />
@@ -120,6 +132,14 @@ function Users({ meId }: { meId?: string }) {
           {users.length} compte(s). Un compte créé ici reste « Invité » tant que la personne n'a pas choisi son mot de
           passe.
         </p>
+        <a
+          href="/api/admin/accounts.csv"
+          download="comptes.csv"
+          className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line px-3 text-[13px] font-medium hover:bg-hover"
+        >
+          <Download className="size-4" />
+          Exporter les comptes
+        </a>
         <Button variant="primary" icon={<UserPlus className="size-4" />} onClick={() => setCreating(true)}>
           Créer un compte
         </Button>

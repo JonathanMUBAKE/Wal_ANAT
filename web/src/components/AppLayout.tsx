@@ -7,6 +7,7 @@ import { Assistant } from "./Assistant";
 import { CommandPalette } from "./CommandPalette";
 import { NewProjectDialog, QuickAddDialog } from "./dialogs";
 import { PendingInvitations } from "./PendingInvitations";
+import { PlatformBanner } from "@/pages/AdminPlus";
 import { Spinner } from "./ui";
 import { useLiveUpdates, useMe } from "@/lib/hooks";
 import { ShellProvider, useShell } from "@/lib/shell";
@@ -84,6 +85,7 @@ function Shell() {
 
       <main className="flex min-w-0 flex-1 flex-col">
         <TopBar onMenu={() => setMobileNav(true)} />
+        <PlatformBanner />
         <MfaReminder />
         <PendingInvitations />
         <div className="min-h-0 flex-1 overflow-y-auto">

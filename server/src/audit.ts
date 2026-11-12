@@ -91,6 +91,9 @@ const LABELS: Record<string, string> = {
   "correspondence.registered": "Courrier enregistré",
   "correspondence.assigned": "Courrier imputé",
   "correspondence.closed": "Courrier clôturé",
+  "correspondence.started": "Courrier pris en charge",
+  "correspondence.filed": "Courrier classé sans suite",
+  "correspondence.annotated": "Courrier annoté",
   "signature.started": "Circuit de signature lancé",
   "signature.created": "Document déposé au parapheur",
   "signature.deleted": "Document retiré du parapheur",
@@ -202,6 +205,10 @@ const LABELS: Record<string, string> = {
   "settings.registration": "Mode d'inscription changé",
   "audit.analysed": "Journal d'audit analysé",
   "audit.exported": "Journal d'audit exporté",
+  "session.revoked": "Session fermée par l'administrateur",
+  "platform.banner": "Bandeau d'information publié",
+  "platform.banner.removed": "Bandeau d'information retiré",
+  "accounts.exported": "Liste des comptes exportée",
   "platform.granted": "Rôle d'administrateur système accordé",
   "platform.revoked": "Rôle d'administrateur système retiré",
   "mfa.failed": "Code de vérification erroné",
@@ -280,6 +287,8 @@ const CRITICAL = new Set([
   "agreement.terminated",
   "signature.reject",
   "org.mail.config",
+  "session.revoked",
+  "correspondence.filed",
 ]);
 const IMPORTANT = new Set([
   "account.invited",
@@ -325,6 +334,9 @@ const IMPORTANT = new Set([
   "audit.exported",
   "hr.agent.created",
   "hr.agent.updated",
+  "platform.banner",
+  "accounts.exported",
+  "correspondence.started",
 ]);
 export const severityOf = (kind: string): Severity =>
   CRITICAL.has(kind) || kind.endsWith(".deleted") || kind.endsWith(".removed")

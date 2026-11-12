@@ -119,7 +119,15 @@ export class Hr {
               p.name AS profile_name, mgr.name AS manager_name
          FROM agent_records a JOIN users u ON u.id = a.user_id
          JOIN org_members om ON om.org_id = a.org_id AND om.user_id = a.user_id
-         LEFT JOIN org_units ou ON ou.id = om.unit_id LEFT JOIN users mgr ON mgr.id = ou.manager_id
+         LEFT JOIN org_units ou ON ou.id = om.unit_id
+         -- Supérieur : le chef de l'entité, ou de l'entité au-dessus quand l'agent dirige la sienne
+         LEFT JOIN LATERAL (
+           WITH RECURSIVE up(id, manager_id, parent_id, depth) AS (
+             SELECT u2.id, u2.manager_id, u2.parent_id, 0 FROM org_units u2 WHERE u2.id = om.unit_id
+             UNION SELECT p2.id, p2.manager_id, p2.parent_id, up.depth + 1 FROM org_units p2 JOIN up ON p2.id = up.parent_id
+           ) SELECT up.manager_id FROM up WHERE up.manager_id IS NOT NULL AND up.manager_id <> a.user_id ORDER BY up.depth LIMIT 1
+         ) sup ON TRUE
+         LEFT JOIN users mgr ON mgr.id = sup.manager_id
          LEFT JOIN access_profiles p ON p.id = om.profile_id
         WHERE a.org_id = $1 AND a.user_id = $2`,
       [orgId, userId],

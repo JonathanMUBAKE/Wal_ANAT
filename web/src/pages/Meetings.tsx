@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, ConfirmDialog, Dialog, Empty, IconButton, Markdown } from "@/components/ui";
+import { Button, ConfirmDialog, Dialog, Empty, IconButton, Markdown, cn } from "@/components/ui";
 import {
   DomainSelect,
   Field,
@@ -234,6 +234,17 @@ export function NewMeeting({
   const partnerName = (id: string) =>
     partnerOptions?.find((p) => p.id === id)?.name ?? (id === partner?.id ? partner.name : id);
   const [every, setEvery] = useState<"" | "week" | "2weeks" | "month">("");
+  // Réunion à venir (programmée à partir d'aujourd'hui) ou déjà tenue (enregistrée pour la traçabilité)
+  const [timing, setTiming] = useState<"upcoming" | "past">("upcoming");
+  const past = timing === "past";
+  const t = todayIso();
+  const dateError = !f.meeting_date
+    ? null
+    : past && f.meeting_date > t
+      ? "Une réunion déjà tenue a lieu au plus tard aujourd'hui"
+      : !past && f.meeting_date < t
+        ? "Une réunion à venir part d'aujourd'hui"
+        : null;
   const [count, setCount] = useState(4);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   const addChip = (c: InviteeChip) =>
@@ -246,7 +257,8 @@ export function NewMeeting({
         project_id: projectId ?? null,
         partner_ids: partnerIds,
         invitees: invitees.map(({ label: _l, ...rest }) => rest),
-        repeat: every ? { every, count } : null,
+        timing,
+        repeat: every && !past ? { every, count } : null,
       }),
     onSuccess: (m) => {
       qc.invalidateQueries({ queryKey: ["meetings"] });
@@ -259,11 +271,13 @@ export function NewMeeting({
     <Dialog
       open
       onOpenChange={onClose}
-      title="Programmer une réunion"
+      title={past ? "Enregistrer une réunion déjà tenue" : "Programmer une réunion"}
       description={
-        projectId
-          ? "La réunion sera rattachée à ce projet. Le numéro officiel est attribué automatiquement."
-          : "Le numéro officiel est attribué automatiquement. Les réunions de même type se suivent et reprennent la synthèse précédente."
+        past
+          ? "Pour la traçabilité : la séance entre au registre comme tenue, avec ses participants ; son compte rendu suit ensuite le circuit de validation."
+          : projectId
+            ? "La réunion sera rattachée à ce projet. Le numéro officiel est attribué automatiquement."
+            : "Le numéro officiel est attribué automatiquement. Les réunions de même type se suivent et reprennent la synthèse précédente."
       }
       width={640}
       footer={
@@ -273,16 +287,43 @@ export function NewMeeting({
             variant="primary"
             loading={create.isPending}
             disabled={
-              !f.meeting_type.trim() || !f.meeting_date || !f.writer_id || (!!every && (count < 2 || count > 12))
+              !f.meeting_type.trim() ||
+              !f.meeting_date ||
+              !!dateError ||
+              !f.writer_id ||
+              (!past && !!every && (count < 2 || count > 12))
             }
             onClick={() => create.mutate()}
           >
-            {every ? `Programmer ${count} séances` : "Programmer la réunion"}
+            {past ? "Enregistrer la réunion" : every ? `Programmer ${count} séances` : "Programmer la réunion"}
           </Button>
         </>
       }
     >
       <div className="grid gap-3 sm:grid-cols-2">
+        <div role="radiogroup" aria-label="Moment de la réunion" className="grid gap-2 sm:col-span-2 sm:grid-cols-2">
+          {(
+            [
+              ["upcoming", "Réunion à venir", "À partir d'aujourd'hui : programmée, puis convoquée."],
+              ["past", "Réunion déjà tenue", "Jusqu'à aujourd'hui : enregistrée pour la traçabilité."],
+            ] as const
+          ).map(([v, label, hint]) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={timing === v}
+              onClick={() => setTiming(v)}
+              className={cn(
+                "rounded-[10px] border px-3 py-2.5 text-left transition-colors",
+                timing === v ? "border-primary bg-brand-soft" : "border-line hover:bg-hover",
+              )}
+            >
+              <span className="block text-[13px] font-medium">{label}</span>
+              <span className="block text-[12px] text-muted">{hint}</span>
+            </button>
+          ))}
+        </div>
         <Field
           label="Type de réunion"
           required
@@ -291,32 +332,45 @@ export function NewMeeting({
         >
           {(a) => <Input {...a} autoFocus value={f.meeting_type} onChange={set("meeting_type")} />}
         </Field>
-        <Field label="Date" required>
-          {(a) => <Input {...a} type="date" value={f.meeting_date} onChange={set("meeting_date")} />}
-        </Field>
-        <Field label="Récurrence">
+        <Field label="Date" required error={dateError}>
           {(a) => (
-            <span className="flex gap-2">
-              <Select {...a} value={every} onChange={(e) => setEvery(e.target.value as typeof every)}>
-                <option value="">Séance unique</option>
-                <option value="week">Chaque semaine</option>
-                <option value="2weeks">Toutes les 2 semaines</option>
-                <option value="month">Chaque mois</option>
-              </Select>
-              {every && (
-                <Input
-                  aria-label="Nombre de séances"
-                  type="number"
-                  min={2}
-                  max={12}
-                  className="w-20"
-                  value={count}
-                  onChange={(e) => setCount(Number(e.target.value))}
-                />
-              )}
-            </span>
+            <Input
+              {...a}
+              type="date"
+              min={past ? undefined : t}
+              max={past ? t : undefined}
+              value={f.meeting_date}
+              onChange={set("meeting_date")}
+            />
           )}
         </Field>
+        {past ? (
+          <span />
+        ) : (
+          <Field label="Récurrence">
+            {(a) => (
+              <span className="flex gap-2">
+                <Select {...a} value={every} onChange={(e) => setEvery(e.target.value as typeof every)}>
+                  <option value="">Séance unique</option>
+                  <option value="week">Chaque semaine</option>
+                  <option value="2weeks">Toutes les 2 semaines</option>
+                  <option value="month">Chaque mois</option>
+                </Select>
+                {every && (
+                  <Input
+                    aria-label="Nombre de séances"
+                    type="number"
+                    min={2}
+                    max={12}
+                    className="w-20"
+                    value={count}
+                    onChange={(e) => setCount(Number(e.target.value))}
+                  />
+                )}
+              </span>
+            )}
+          </Field>
+        )}
         <Field label="Heure de début">
           {(a) => <Input {...a} type="time" value={f.start_time} onChange={set("start_time")} />}
         </Field>
@@ -382,7 +436,7 @@ export function NewMeeting({
           />
         </fieldset>
         <fieldset className="sm:col-span-2">
-          <legend className="mb-1.5 text-[12.5px] font-medium text-muted">Convoqués</legend>
+          <legend className="mb-1.5 text-[12.5px] font-medium text-muted">{past ? "Participants" : "Convoqués"}</legend>
           {!!invitees.length && (
             <div className="mb-2 flex flex-wrap gap-1.5">
               {invitees.map((c) => (

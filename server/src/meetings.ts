@@ -596,11 +596,24 @@ export class Meetings {
       meeting_date: string;
       invitees?: InviteeInput[];
       repeat?: Repeat | null;
+      /** « upcoming » : programmée à partir d'aujourd'hui ; « past » : déjà tenue, enregistrée pour la traçabilité. */
+      timing?: "upcoming" | "past";
     },
   ) {
     await this.svc.requirePerm(actorId, orgId, "meetings.manage");
     assertDate(input.meeting_date);
     assertDate(input.next_date);
+    if (input.timing === "upcoming" && input.meeting_date < today())
+      throw badRequest(
+        "Une réunion à venir se programme à partir d'aujourd'hui : pour une séance passée, enregistrez une réunion déjà tenue",
+      );
+    if (input.timing === "past") {
+      if (input.meeting_date > today())
+        throw badRequest(
+          "Une réunion déjà tenue a eu lieu au plus tard aujourd'hui : pour une date à venir, programmez-la",
+        );
+      if (input.repeat) throw badRequest("Une réunion déjà tenue s'enregistre séance par séance, sans série");
+    }
     const writerId = input.writer_id ?? actorId;
     await this.assertMember(orgId, writerId, "Le rédacteur");
     if (input.chair_id) await this.assertMember(orgId, input.chair_id, "La présidence de séance");
@@ -623,6 +636,14 @@ export class Meetings {
         await this.writeInvitees(q, m, invitees);
         await this.addFollowUp(q, m, open);
         await this.writePartners(q, m, partners, false);
+        // Séance déjà tenue : elle entre au registre « tenue » ; ses participants sont notés présents, sans convocation
+        if (input.timing === "past") {
+          await q.query("UPDATE meetings SET status = 'held', updated_at = now() WHERE id = $1", [id]);
+          await q.query(
+            "UPDATE meeting_attendees SET invited = FALSE, response = NULL, presence = 'present' WHERE meeting_id = $1",
+            [id],
+          );
+        }
       });
     }
     await this.svc.log(actorId, "meeting.created", {

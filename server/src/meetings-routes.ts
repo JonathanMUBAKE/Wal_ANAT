@@ -55,6 +55,7 @@ const Invitees = z.array(Invitee).max(300);
 const Create = Fields.extend({
   meeting_type: z.string().trim().min(1).max(200),
   meeting_date: date,
+  timing: z.enum(["upcoming", "past"]).optional(),
   invitees: Invitees.optional(),
   repeat: z
     .object({ every: z.enum(["week", "2weeks", "month"]), count: z.number().int() })

@@ -859,6 +859,9 @@ const TABLE = [
     bin: "texte",
   })),
   R_("GET", "/api/meeting-documents/:id", async (X) => ({ url: `/api/meeting-documents/${await X.mdoc()}` })),
+  R_("GET", "/api/meeting-documents/:id/preview", async (X) => ({
+    url: `/api/meeting-documents/${await X.mdoc()}/preview`,
+  })),
   R_("DELETE", "/api/meeting-documents/:id", async (X) => ({ url: `/api/meeting-documents/${await X.mdoc()}` })),
   R_("POST", "/api/meetings/:id/submit", async (X) => ({ url: `/api/meetings/${(await X.filled()).id}/submit` })),
   R_("POST", "/api/meetings/:id/return", async (X) => ({

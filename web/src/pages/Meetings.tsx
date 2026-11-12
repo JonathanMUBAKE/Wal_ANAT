@@ -7,6 +7,7 @@ import {
   CalendarDays,
   CornerUpLeft,
   Download,
+  Eye,
   FolderOpen,
   Megaphone,
   Paperclip,
@@ -41,6 +42,7 @@ import {
   type Tone,
 } from "@/components/gov";
 import { Seal } from "@/components/collection";
+import { PreviewDrawer } from "@/components/AttachmentPreview";
 import { MeetingsBrowser } from "@/components/MeetingViews";
 import { useShell } from "@/lib/shell";
 import { api } from "@/lib/api";
@@ -1748,6 +1750,7 @@ function MeetingDocuments({
       if (fileRef.current) fileRef.current.value = "";
     }
   };
+  const [preview, setPreview] = useState<{ id: string; filename: string } | null>(null);
   const removeDoc = useMutation({
     mutationFn: (docId: string) => api.del(`/api/meeting-documents/${docId}`),
     onSuccess: reload,
@@ -1797,6 +1800,9 @@ function MeetingDocuments({
                 {d.uploader_name && (
                   <span className="hidden shrink-0 text-[12px] text-muted sm:inline">{d.uploader_name}</span>
                 )}
+                <IconButton label={`Aperçu de ${d.filename}`} size="sm" onClick={() => setPreview(d)}>
+                  <Eye className="size-3.5" />
+                </IconButton>
                 {!readOnly && (
                   <IconButton label={`Supprimer ${d.filename}`} size="sm" onClick={() => removeDoc.mutate(d.id)}>
                     <Trash2 className="size-3.5" />
@@ -1809,6 +1815,13 @@ function MeetingDocuments({
           <p className="text-[13px] text-muted">
             Notes et présentations se joignent ici : les convoqués les lisent avant la séance.
           </p>
+        )}
+        {preview && (
+          <PreviewDrawer
+            url={`/api/meeting-documents/${preview.id}`}
+            name={preview.filename}
+            onClose={() => setPreview(null)}
+          />
         )}
       </div>
     </Section>

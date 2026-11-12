@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download, FileQuestion } from "lucide-react";
 import { Button, Dialog, Empty, Spinner, cn } from "./ui";
+import { Drawer } from "./drawer";
 import { api } from "@/lib/api";
 import type { Attachment, AttachmentPreviewData } from "@/lib/types";
 
@@ -182,5 +183,36 @@ function Sheets({ sheets, truncated }: { sheets: { name: string; rows: string[][
         </table>
       </div>
     </div>
+  );
+}
+
+/**
+ * Aperçu d'un document dans un tiroir, à la demande (bouton œil) : PDF et images tels quels, Word, Excel et texte
+ * en lecture structurée. Le téléchargement reste à côté. `url` sert le fichier, `${url}/preview` sa lecture.
+ */
+export function PreviewDrawer({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      width={880}
+      subtitle="Aperçu du document"
+      title={name}
+      footer={
+        <>
+          <a
+            href={url}
+            download={name}
+            className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line px-3 text-[13px] font-medium hover:bg-hover"
+          >
+            <Download className="size-4" />
+            Télécharger
+          </a>
+          <Button onClick={onClose}>Fermer</Button>
+        </>
+      }
+    >
+      <FilePreview url={url} name={name} />
+    </Drawer>
   );
 }

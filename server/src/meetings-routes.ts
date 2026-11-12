@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ATTACHMENT_MAX_BYTES } from "./attachments.js";
+import { previewDocument } from "./documents/extract.js";
+import { sendFile } from "./file-reply.js";
 import { buildMeetingReport, reportFileName } from "./meetings-report.js";
 import type { Meetings } from "./meetings.js";
 
@@ -181,17 +183,13 @@ export function meetingRoutes(r: FastifyInstance, meetings: Meetings) {
   });
   r.get<Id>("/api/meeting-documents/:id", async (req, reply) => {
     const d = await meetings.document(req.userId, req.params.id);
-    // Une pièce se télécharge : aucun fichier ne s'exécute dans la page
-    return reply
-      .header("Content-Type", d.mime)
-      .header(
-        "Content-Disposition",
-        `attachment; filename*=UTF-8''${encodeURIComponent(d.filename).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`,
-      )
-      .header("X-Content-Type-Options", "nosniff")
-      .header("Content-Security-Policy", "sandbox")
-      .header("Cache-Control", "private, no-store")
-      .send(d.data);
+    // Téléchargement par défaut ; PDF et images s'affichent dans l'aperçu (?inline=1), rien d'autre ne s'exécute
+    return sendFile(reply, { ...d, data: Buffer.from(d.data) }, (req.query as { inline?: string }).inline === "1");
+  });
+  // Aperçu dans la page : PDF et images tels quels ; Word, Excel et texte en texte structuré
+  r.get<Id>("/api/meeting-documents/:id/preview", async (req) => {
+    const d = await meetings.document(req.userId, req.params.id);
+    return previewDocument(d.filename, Buffer.from(d.data));
   });
   r.delete<Id>("/api/meeting-documents/:id", async (req) => {
     await meetings.removeDocument(req.userId, req.params.id);

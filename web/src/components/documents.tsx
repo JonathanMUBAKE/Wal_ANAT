@@ -138,8 +138,22 @@ export function DocumentsPanel({
                     {doc.title || doc.filename}
                     {doc.official && <Lock className="size-3 shrink-0 text-muted" aria-label="Pièce officielle" />}
                   </span>
-                  <span className="block truncate text-[12px] text-muted">
-                    {doc.filename} · {kb(doc.size)}
+                  <span className="flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
+                    <span className="truncate">
+                      {doc.filename} · {kb(doc.size)}
+                    </span>
+                    {/* Aperçu toujours visible, même quand le tableau déborde de sa colonne */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpen({ doc, editing: false, preview: true });
+                      }}
+                      className="inline-flex items-center gap-1 rounded-md px-1 font-medium text-primary hover:bg-brand-soft"
+                    >
+                      <Eye className="size-3.5" />
+                      Aperçu
+                    </button>
                   </span>
                 </Td>
                 <Td className="text-muted">{natureLabel(doc, natures)}</Td>

@@ -172,6 +172,11 @@ describe("pièces de l'ordre du jour", () => {
     expect(up.status).toBe(200);
     const doc = up.body.id as string;
     expect((await g.api("u_karim", "GET", `/api/meeting-documents/${doc}`)).raw.toString()).toBe("Note de cadrage");
+    // Aperçu à la demande, sans téléchargement (lot aperçus)
+    const prev = await g.api("u_karim", "GET", `/api/meeting-documents/${doc}/preview`);
+    expect(prev.status).toBe(200);
+    expect(prev.body).toMatchObject({ kind: "text" });
+    expect(JSON.stringify(prev.body)).toContain("Note de cadrage");
     await g.api("u_alice", "PUT", `/api/meetings/${m.id}/invitees`, { invitees: [{ user_id: "u_karim" }] });
     expect((await g.api("u_hugo", "GET", `/api/meeting-documents/${doc}`)).status).toBe(404);
     expect((await g.api("u_alice", "GET", `/api/meetings/${m.id}`)).body.documents).toHaveLength(1);

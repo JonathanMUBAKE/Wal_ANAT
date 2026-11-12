@@ -29,7 +29,7 @@ import {
   Users,
 } from "lucide-react";
 import { Avatar, Button, Dialog, Kbd, Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger, cn } from "./ui";
-import { useAiStatus, useApprovals, useCan, useMe, useNotifications } from "@/lib/hooks";
+import { useAiStatus, useApprovals, useCan, useMe, useMyUnits, useNotifications } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { AvatarUpload } from "./AvatarUpload";
 import { api } from "@/lib/api";
@@ -99,6 +99,7 @@ function NavSection({
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { data: me } = useMe();
   const { data: approvals } = useApprovals();
+  const { data: myUnits } = useMyUnits();
   const { data: aiStatus } = useAiStatus();
   const shell = useShell();
   const can = useCan();
@@ -153,6 +154,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <nav className="space-y-0.5 px-3">
           {link("/", House, "Accueil")}
           {link("/my-tasks", CheckCircle2, "Mes tâches")}
+          {!!myUnits?.length &&
+            link("/entite", Users, myUnits.some((u) => u.role === "responsable") ? "Mon entité" : "Tâches de l'entité")}
           {link("/ai", Sparkles, "Coéquipiers IA", approvals?.length, true)}
         </nav>
 

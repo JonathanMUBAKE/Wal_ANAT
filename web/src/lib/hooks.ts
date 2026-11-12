@@ -3,6 +3,7 @@ import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/re
 import { toast } from "sonner";
 import { api } from "./api";
 import type {
+  MyUnit,
   AiApproval,
   AiRule,
   AiRun,
@@ -297,3 +298,7 @@ export function useLiveUpdates(enabled: boolean) {
     };
   }, [enabled, qc]);
 }
+
+/** Entités de la personne (lot T1) : celles qu'elle dirige, puis la sienne. */
+export const useMyUnits = () =>
+  useQuery({ queryKey: ["my-units"], queryFn: () => api.get<MyUnit[]>("/api/me/units"), staleTime: 60_000 });

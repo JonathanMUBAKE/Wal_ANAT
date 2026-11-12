@@ -43,6 +43,7 @@ import { Signature } from "./signature.js";
 import { Pilotage } from "./pilotage.js";
 import { Plans } from "./plans.js";
 import { planRoutes } from "./plans-routes.js";
+import { UnitTasks, unitTaskRoutes } from "./unit-tasks.js";
 import { Attributions } from "./attributions.js";
 import { attributionRoutes } from "./attributions-routes.js";
 import { Meetings } from "./meetings.js";
@@ -304,6 +305,7 @@ export async function buildApp(opts: AppOptions = {}) {
     attributionRoutes(r, new Attributions(svc));
     activityRoutes(r, new Activities(svc), new Pilotage(svc));
     planRoutes(r, new Plans(svc), new Deliverables(svc));
+    unitTaskRoutes(r, new UnitTasks(svc));
     registerRoutes(r, new Signature(svc), new Registers(svc), new Gaps(svc));
     decisionRoutes(r, new Decisions(svc));
     referentialRoutes(r, new Referentials(svc));

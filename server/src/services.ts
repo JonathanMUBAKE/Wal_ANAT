@@ -83,6 +83,9 @@ export interface Project {
   owner_id: string | null;
   archived: boolean;
   created_at: string;
+  /** « project » : un vrai projet ; « unit » : le registre de tâches d'une entité (lot T1). */
+  kind?: "project" | "unit";
+  unit_id?: string | null;
 }
 export interface Section {
   id: string;
@@ -200,7 +203,9 @@ const ACCESS_SQL = `
                   FROM team_members tm WHERE tm.team_id = p.team_id AND tm.user_id = $1), 0) ELSE 0 END,
         CASE WHEN om.role <> 'guest' AND p.access = 'team' AND t.visibility <> 'private' AND t.unit_id IN (SELECT id FROM managed) THEN 1 ELSE 0 END,
         CASE WHEN om.role <> 'guest' AND p.access = 'team' AND t.visibility = 'public' THEN 1 ELSE 0 END
-      ))
+      )),
+    CASE WHEN p.kind = 'unit' AND om.role <> 'guest' AND p.unit_id IN (SELECT id FROM managed) THEN 4
+         WHEN p.kind = 'unit' AND om.role <> 'guest' AND om.unit_id = p.unit_id THEN 3 ELSE 0 END
   ) AS rank
   FROM projects p
   JOIN org_members om ON om.org_id = p.org_id AND om.user_id = $1
@@ -982,7 +987,7 @@ export class Services {
         (SELECT count(*)::int FROM tasks t WHERE t.project_id = p.id AND t.parent_id IS NULL AND t.completed) AS done_count,
         (SELECT count(*)::int FROM tasks t WHERE t.project_id = p.id AND t.parent_id IS NULL AND NOT t.completed AND t.due_on < $3::date) AS overdue_count
       FROM (${ACCESS_SQL}) a JOIN projects p ON p.id = a.id LEFT JOIN teams tm ON tm.id = p.team_id
-      WHERE a.rank > 0 AND p.org_id = $2 AND p.archived = $4 ORDER BY tm.name NULLS LAST, p.created_at`,
+      WHERE a.rank > 0 AND p.org_id = $2 AND p.archived = $4 AND p.kind = 'project' ORDER BY tm.name NULLS LAST, p.created_at`,
       [actorId, orgId, today(), !!opts.archived],
     );
     const members = await this.memberIdsByProject(rows.map((r) => String(r.id)));
@@ -1040,7 +1045,7 @@ export class Services {
       members: await this.members(projectId),
     };
   }
-  private async suggestKey(orgId: string, name: string) {
+  async suggestKey(orgId: string, name: string) {
     const base = (
       name
         .normalize("NFD")
@@ -1466,6 +1471,7 @@ export class Services {
       if (!s || s.project_id !== input.project_id) throw badRequest("Section invalide");
     }
     if (input.assignee_id) await this.checkAssignee(input.project_id, input.assignee_id);
+    await this.checkUnitBoard(actorId, input.project_id, { assignee: input.assignee_id ?? null });
     if (input.assignee_id && !opts.silent) await this.assertCanDelegate(actorId, input.project_id, [input.assignee_id]);
     if (input.start_on && input.due_on && input.start_on > input.due_on)
       throw badRequest("La date de début doit précéder l'échéance");
@@ -1510,7 +1516,49 @@ export class Services {
 
   private async checkAssignee(projectId: string, userId: string) {
     const u = await this.user(userId);
+    const board = await this.unitBoardOf(projectId);
+    if (board) {
+      // Registre d'entité : la tâche revient à un agent de l'entité ou à son responsable
+      const inUnit = await this.db.one(
+        `SELECT 1 FROM org_members om WHERE om.org_id = $1 AND om.user_id = $2 AND om.unit_id = $3
+         UNION ALL SELECT 1 FROM org_units WHERE id = $3 AND manager_id = $2`,
+        [board.org_id, userId, board.unit_id],
+      );
+      if (!inUnit) throw badRequest(`${u.name} n'appartient pas à l'entité « ${board.unit_name} »`);
+      return;
+    }
     if (!(await this.projectRole(userId, projectId))) throw badRequest(`${u.name} n'a pas accès à ce projet`);
+  }
+
+  /** Le registre de tâches d'une entité, si ce projet en est un. */
+  async unitBoardOf(projectId: string) {
+    return this.db.one<{ org_id: string; unit_id: string; unit_name: string }>(
+      "SELECT p.org_id, p.unit_id, COALESCE(u.name, 'entité supprimée') AS unit_name FROM projects p LEFT JOIN org_units u ON u.id = p.unit_id WHERE p.id = $1 AND p.kind = 'unit'",
+      [projectId],
+    );
+  }
+
+  /**
+   * Règles du registre d'une entité (lot T1) : un agent y note ses propres tâches et fait avancer celles qui lui sont
+   * confiées ; attribuer une tâche à un collègue, ou toucher à la tâche d'un autre, revient au responsable.
+   */
+  private async checkUnitBoard(
+    actorId: string,
+    projectId: string,
+    o: {
+      assignee?: string | null;
+      task?: { assignee_id: string | null; creator_id: string | null };
+      reassign?: boolean;
+    },
+  ) {
+    if (!(await this.unitBoardOf(projectId))) return;
+    if ((await this.projectRole(actorId, projectId)) === "admin") return;
+    if (o.task && o.task.assignee_id !== actorId && !(o.task.creator_id === actorId && !o.task.assignee_id))
+      throw forbidden("Seul le responsable de l'entité modifie la tâche d'un autre agent");
+    if ((o.reassign || !o.task) && o.assignee && o.assignee !== actorId)
+      throw forbidden("Seul le responsable de l'entité confie une tâche à un agent");
+    if (o.reassign && !o.assignee && o.task?.creator_id !== actorId)
+      throw forbidden("Seul le responsable de l'entité retire une tâche qu'il a confiée");
   }
 
   /** Assigner ou mentionner un coéquipier IA lance un travail : c'est une délégation, soumise au droit correspondant. */
@@ -1523,6 +1571,11 @@ export class Services {
     const before = await this.taskRow(await this.resolveTaskId(actorId, ref));
     await this.require(actorId, before.project_id, "editor");
     await this.projectPerm(actorId, before.project_id, "tasks.edit");
+    await this.checkUnitBoard(actorId, before.project_id, {
+      task: before,
+      reassign: patch.assignee_id !== undefined && patch.assignee_id !== before.assignee_id,
+      assignee: patch.assignee_id ?? null,
+    });
     assertDates(patch.start_on, patch.due_on);
     const start = patch.start_on !== undefined ? patch.start_on : before.start_on;
     const due = patch.due_on !== undefined ? patch.due_on : before.due_on;

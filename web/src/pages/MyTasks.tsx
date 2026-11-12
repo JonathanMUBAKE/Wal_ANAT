@@ -1,12 +1,19 @@
 import { useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { Empty, cn } from "@/components/ui";
+import { ChevronDown, Plus } from "lucide-react";
+import { toast } from "sonner";
+import { Button, Empty, cn } from "@/components/ui";
 import { TaskRow } from "@/components/TaskRow";
-import { useMe, useMyTasks, useProjects, useUpdateTask } from "@/lib/hooks";
+import { useMe, useMyTasks, useMyUnits, useProjects, useUpdateTask } from "@/lib/hooks";
+import { api } from "@/lib/api";
+import type { UnitBoard } from "@/lib/types";
+import { GiveTask } from "./Unit";
 import { useShell } from "@/lib/shell";
 import { isoIn, todayIso } from "@/lib/format";
-import type { Task } from "@/lib/types";
+import type { ProjectSummary, Task } from "@/lib/types";
 import { MyDeliverables } from "./ProjectDossier";
+
+/** Une tâche hors projet vit dans le registre de son entité, qui n'est pas un projet du portefeuille. */
+const UNIT_TASK = { name: "Tâche d'entité", icon: "users", color: "#64748B" } as unknown as ProjectSummary;
 
 const BUCKETS: { id: string; label: string; test: (t: Task) => boolean }[] = [
   { id: "overdue", label: "En retard", test: (t) => !!t.due_on && t.due_on < todayIso() },
@@ -23,6 +30,12 @@ export function MyTasksPage() {
   const update = useUpdateTask();
   const shell = useShell();
   const [showDone, setShowDone] = useState(false);
+  // Une tâche hors projet se range dans le registre de l'entité de la personne (lot T1)
+  const { data: units } = useMyUnits();
+  const home = units?.find((u) => u.role === "agent") ?? units?.[0];
+  const [board, setBoard] = useState<UnitBoard | null>(null);
+  const newTask = () =>
+    home && api.get<UnitBoard>(`/api/units/${home.id}/board`).then(setBoard, (e: Error) => toast.error(e.message));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const pm = useMemo(() => new Map(projects?.map((p) => [p.id, p])), [projects]);
   const open = (tasks ?? [])
@@ -38,9 +51,15 @@ export function MyTasksPage() {
         <div>
           <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Mes tâches</h1>
           <p className="mt-1 text-[13px] text-muted">
-            Tout ce qui vous est assigné, dans tous vos projets : livrables à produire ou à valider, puis tâches.
+            Tout ce qui vous est assigné, dans vos projets et dans votre entité : livrables à produire ou à valider,
+            puis tâches.
           </p>
         </div>
+        {home && (
+          <Button variant="primary" icon={<Plus className="size-4" />} onClick={newTask}>
+            Tâche hors projet
+          </Button>
+        )}
         <label className="ml-auto flex items-center gap-2 text-[13px] text-muted">
           <input
             type="checkbox"
@@ -51,6 +70,7 @@ export function MyTasksPage() {
           Afficher les terminées
         </label>
       </header>
+      {board && <GiveTask board={board} onClose={() => setBoard(null)} />}
       {/* Les livrables à produire ou à valider vivent dans leur projet ; ils se retrouvent ici (docs/PARCOURS-METIER.md) */}
       <div className="px-4 pb-6 sm:px-8">
         <MyDeliverables />
@@ -79,7 +99,7 @@ export function MyTasksPage() {
                       key={t.id}
                       t={t}
                       assignee={me}
-                      project={pm.get(t.project_id)}
+                      project={pm.get(t.project_id) ?? UNIT_TASK}
                       onOpen={() => shell.openTask(t.id)}
                       onToggle={(v) => update.mutate({ id: t.id, completed: v })}
                     />
@@ -101,7 +121,7 @@ export function MyTasksPage() {
                   key={t.id}
                   t={t}
                   assignee={me}
-                  project={pm.get(t.project_id)}
+                  project={pm.get(t.project_id) ?? UNIT_TASK}
                   onOpen={() => shell.openTask(t.id)}
                   onToggle={(v) => update.mutate({ id: t.id, completed: v })}
                 />

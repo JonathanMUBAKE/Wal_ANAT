@@ -214,6 +214,51 @@ export interface ProjectDetail extends Omit<ProjectSummary, "task_count" | "done
   sections: Section[];
   members: { user_id: string; role: Role; source: "explicit" | "team" }[];
   archived: boolean;
+  /** « unit » : le registre de tâches d'une entité (lot T1), pas un projet du portefeuille. */
+  kind?: "project" | "unit";
+  unit_id?: string | null;
+}
+export interface MyUnit {
+  id: string;
+  name: string;
+  role: "responsable" | "agent";
+  depth: number;
+}
+export interface UnitBoard {
+  project_id: string;
+  unit: { id: string; name: string; manager_id: string | null };
+  role: "responsable" | "agent";
+  can: { assign: boolean };
+  members: { id: string; name: string; title: string | null; manager: boolean; unit_id: string; unit_name: string }[];
+}
+export interface UnitFollowUp {
+  unit: { id: string; name: string };
+  agents: {
+    user_id: string;
+    name: string;
+    title: string | null;
+    unit_id: string;
+    unit_name: string;
+    open: number;
+    overdue: number;
+    due_soon: number;
+    done_30: number;
+  }[];
+  tasks: {
+    id: string;
+    key: string;
+    title: string;
+    assignee_id: string;
+    project_id: string;
+    project_name: string;
+    in_unit_board: boolean;
+    section_name: string | null;
+    priority: string;
+    due_on: string | null;
+    completed: boolean;
+    completed_at: string | null;
+    overdue: boolean;
+  }[];
 }
 export interface Task {
   id: string;

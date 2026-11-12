@@ -57,7 +57,7 @@ un bouton masqué ne suffit jamais, la règle est vérifiée à chaque demande.
 | Personne | Ce qu'elle fait dans l'outil |
 | --- | --- |
 | **Directeur·rice général·e (DG)** | Consulte le tableau de bord, annote et impute le courrier, enregistre les décisions, préside et valide les comptes rendus, signe au parapheur. |
-| **Responsable d'entité** (direction, service, cellule) | Confie des tâches à ses agents et les suit, prépare le plan de travail de son entité, porte les projets, vise au parapheur. |
+| **Responsable d'entité** (direction, service, cellule) | Confie des tâches à ses agents et les suit dans « Mon entité », prépare le plan de travail de son entité, porte les projets, vise au parapheur. |
 | **Agent** | Traite ses tâches, le courrier qui lui est imputé, ses recommandations de réunion ; rédige des comptes rendus ; tient les fiches partenaires dont il est point focal. |
 | **Secrétariat / bureau d'ordre** | Enregistre le courrier, programme et convoque les réunions, rédige les comptes rendus. |
 | **Gestionnaire d'un module** (partenariats, réunions…) | Profil qui porte le droit « gérer » du module : crée, modifie, archive, définit de nouveaux types. |
@@ -74,7 +74,7 @@ du journal.
 
 La **barre latérale** regroupe les espaces :
 
-- **Accueil** (ce qui m'attend aujourd'hui), **Mes tâches**, **Coéquipiers IA** ;
+- **Accueil** (ce qui m'attend aujourd'hui), **Mes tâches**, **Mon entité** (tâches hors projet et suivi des agents), **Coéquipiers IA** ;
 - **Pilotage** : Tableau de bord DG, Portefeuille, Décisions, Réunions ;
 - **Suivi-évaluation** : Plans de travail ;
 - **Partenariats** : Partenaires, Conventions ;
@@ -106,12 +106,24 @@ décider (confirmer, motiver, valider).
   sont classées « importantes ».
 - Les recommandations d'un compte rendu rattaché à un projet **deviennent des tâches** du projet.
 
-**Écarts avec le besoin exprimé — À construire (lot proposé « T1 — tâches d'entité »).**
-- Aujourd'hui une tâche appartient **toujours à un projet**. Le besoin « une tâche peut être dans un projet ou non »
-  demande des **tâches d'entité** (rattachées à une direction ou un service, sans projet).
-- Il manque une vue **« Tâches de mon entité »** pour le responsable : par agent, en cours / en retard / terminées,
-  avec la charge de chacun, et le droit de confier une tâche à tout agent de son entité.
-- Ces deux points sont la prochaine étape logique ; ils respectent les mêmes règles (droits, traces, rappels).
+**Tâches hors projet et suivi par le responsable (lot T1).**
+- Une tâche n'est pas forcément dans un projet : chaque entité (direction, service, cellule) a son **registre de
+  tâches**, créé à la première ouverture. Ses tâches ont tout ce qu'ont les autres (vues liste, tableau, calendrier,
+  chronologie ; sous-tâches, commentaires, pièces, rappels, traces) mais n'apparaissent pas au portefeuille.
+- **Mon entité** (barre latérale, sous « Mes tâches ») :
+  - le **responsable** voit l'onglet **Suivi des agents** : chiffres clés (agents suivis, tâches ouvertes, en retard,
+    dues sous 7 jours, terminées en 30 jours), un tableau par agent, puis la liste des tâches filtrable par agent et
+    par état (ouvertes, en retard, terminées). Le suivi couvre l'entité **et les entités rattachées**, et compte les
+    tâches portées dans les **projets**, dans la limite des projets que le responsable peut lire ;
+  - **Confier une tâche** : intitulé, précisions, agent, échéance, priorité. L'agent est prévenu (notification et
+    courriel) et la retrouve dans « Mes tâches », marquée « Tâche d'entité ». Confiée à un agent d'une entité
+    rattachée, la tâche se range dans le registre de l'entité de cet agent ;
+  - l'**agent** voit l'onglet **Tâches de l'entité** et peut **noter une tâche** pour lui-même.
+- **Mes tâches** propose aussi « Tâche hors projet », rangée dans le registre de l'entité de la personne.
+- Règles contrôlées par le serveur : seul le responsable (de l'entité ou d'une entité au-dessus) confie une tâche à
+  quelqu'un d'autre ou modifie la tâche d'un autre agent ; un agent fait avancer les tâches qui lui sont confiées et
+  celles qu'il a notées ; une tâche d'entité ne peut être confiée qu'à une personne de l'entité ; une personne
+  extérieure à l'entité n'ouvre ni son registre ni son suivi, et les agents ne voient pas le suivi de leurs collègues.
 
 ### 5.2 Projets
 
@@ -335,7 +347,6 @@ analysable.
 
 | Sujet | État |
 | --- | --- |
-| Tâches d'entité (hors projet) et vue « Tâches de mon entité » pour le responsable | À construire — prochain lot proposé (§ 5.1) |
 | Finance des partenariats : engagements, échéancier des décaissements, tableau des bailleurs | Reporté à la demande (PA4) |
 | Obligations de rapport d'un accord devenant des tâches du point focal | À construire (PA5) |
 | CRUD complet sur les grilles hors partenariats (décisions, parapheur, plans, équipes, structure) | Partiel |

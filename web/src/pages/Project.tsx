@@ -109,6 +109,8 @@ export function ProjectPage() {
       (e) => toast.error(e.message),
     );
   const props: ViewProps = { project, tasks, aiActive, canEdit };
+  const unitBoard = project.kind === "unit";
+  const views = unitBoard ? VIEWS.filter((v) => ["list", "board", "calendar", "timeline"].includes(v.id)) : VIEWS;
   const addTask = async () => {
     if (!canEdit) return;
     const t = await api.post<Task>("/api/tasks", { project_id: project.id, title: "Nouvelle tâche" }).catch((e) => {
@@ -141,54 +143,77 @@ export function ProjectPage() {
           <ProjectIcon icon={project.icon} color={project.color} size={40} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <ProjectTitle project={project} canEdit={canEdit} onSave={(name) => patch({ name })} />
-              <Menu>
-                <MenuTrigger asChild disabled={!canEdit}>
-                  <button
-                    className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-medium"
-                    style={{ background: STATUS[project.status].soft, color: STATUS[project.status].color }}
-                  >
-                    <span className="size-1.5 rounded-full bg-current" />
-                    {STATUS[project.status].label}
-                    {canEdit && <ChevronDown className="size-3" />}
-                  </button>
-                </MenuTrigger>
-                <MenuContent>
-                  {(Object.keys(STATUS) as ProjectStatus[]).map((s) => (
-                    <MenuItem
-                      key={s}
-                      onSelect={() => patch({ status: s })}
-                      icon={<span className="size-2 rounded-full" style={{ background: STATUS[s].color }} />}
-                      right={project.status === s ? <Check className="size-3.5" /> : undefined}
-                    >
-                      {STATUS[s].label}
-                    </MenuItem>
-                  ))}
-                </MenuContent>
-              </Menu>
-              <DuePicker value={project.due_on} onChange={(d) => canEdit && patch({ due_on: d })}>
-                <button disabled={!canEdit} className="flex h-7 items-center rounded-lg px-1.5 hover:bg-hover">
-                  <DueChip due={project.due_on} empty={<span className="text-[12.5px] text-faint">Échéance</span>} />
-                </button>
-              </DuePicker>
-            </div>
-            <p className="mt-1 flex flex-wrap items-center gap-x-3 text-[12.5px] text-muted">
-              <span className="font-mono text-faint">{project.key}</span>
-              {project.team_id && (
-                <NavLink to={`/teams/${project.team_id}`} className="hover:text-fg">
-                  Équipe {project.team_name}
-                </NavLink>
+              {unitBoard ? (
+                <h1 className="text-[22px] font-semibold tracking-[-0.01em]">{project.name}</h1>
+              ) : (
+                <ProjectTitle project={project} canEdit={canEdit} onSave={(name) => patch({ name })} />
               )}
-              <span>{project.access === "private" ? "Accès privé" : "Accès : toute l'équipe"}</span>
-            </p>
+              {!unitBoard && (
+                <>
+                  <Menu>
+                    <MenuTrigger asChild disabled={!canEdit}>
+                      <button
+                        className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-medium"
+                        style={{ background: STATUS[project.status].soft, color: STATUS[project.status].color }}
+                      >
+                        <span className="size-1.5 rounded-full bg-current" />
+                        {STATUS[project.status].label}
+                        {canEdit && <ChevronDown className="size-3" />}
+                      </button>
+                    </MenuTrigger>
+                    <MenuContent>
+                      {(Object.keys(STATUS) as ProjectStatus[]).map((s) => (
+                        <MenuItem
+                          key={s}
+                          onSelect={() => patch({ status: s })}
+                          icon={<span className="size-2 rounded-full" style={{ background: STATUS[s].color }} />}
+                          right={project.status === s ? <Check className="size-3.5" /> : undefined}
+                        >
+                          {STATUS[s].label}
+                        </MenuItem>
+                      ))}
+                    </MenuContent>
+                  </Menu>
+                  <DuePicker value={project.due_on} onChange={(d) => canEdit && patch({ due_on: d })}>
+                    <button disabled={!canEdit} className="flex h-7 items-center rounded-lg px-1.5 hover:bg-hover">
+                      <DueChip
+                        due={project.due_on}
+                        empty={<span className="text-[12.5px] text-faint">Échéance</span>}
+                      />
+                    </button>
+                  </DuePicker>
+                </>
+              )}
+            </div>
+            {unitBoard ? (
+              <p className="mt-1 text-[12.5px] text-muted">
+                Registre des tâches de l'entité, hors projet.{" "}
+                {project.role === "admin"
+                  ? "Vous en êtes responsable : vous confiez les tâches à vos agents."
+                  : "Vous y notez vos tâches et faites avancer celles qui vous sont confiées."}{" "}
+                <NavLink to={`/entite?unite=${project.unit_id ?? ""}`} className="font-medium text-fg hover:underline">
+                  Suivi de l'entité
+                </NavLink>
+              </p>
+            ) : (
+              <p className="mt-1 flex flex-wrap items-center gap-x-3 text-[12.5px] text-muted">
+                <span className="font-mono text-faint">{project.key}</span>
+                {project.team_id && (
+                  <NavLink to={`/teams/${project.team_id}`} className="hover:text-fg">
+                    Équipe {project.team_name}
+                  </NavLink>
+                )}
+                <span>{project.access === "private" ? "Accès privé" : "Accès : toute l'équipe"}</span>
+              </p>
+            )}
             {project.description && (
               <p className="mt-1 line-clamp-2 max-w-3xl text-[13px] text-muted">{project.description}</p>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Members project={project} />
-            <ProjectMenu project={project} />
-            {canEdit && (
+            {!unitBoard && <Members project={project} />}
+            {!unitBoard && <ProjectMenu project={project} />}
+            {canEdit && !unitBoard && (
               <Button variant="ai" icon={<Sparkles className="size-3.5" />} onClick={() => setStatusOpen(true)}>
                 Point d'avancement
               </Button>
@@ -211,7 +236,7 @@ export function ProjectPage() {
           </div>
         </div>
         <nav className="-mb-px mt-5 flex gap-1 overflow-x-auto">
-          {VIEWS.map((v) => (
+          {views.map((v) => (
             <NavLink
               key={v.id}
               to={`/projects/${project.id}/${v.id === "list" ? "" : v.id}`}

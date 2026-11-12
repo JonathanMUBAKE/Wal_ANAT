@@ -16,9 +16,7 @@ import {
   Gauge,
   Plus,
   Scale,
-  ShieldAlert,
   Sparkles,
-  Target,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -541,7 +539,7 @@ export function PilotagePage() {
         <Bento
           className="md:col-span-3 xl:col-span-7"
           title="Indicateurs stratégiques"
-          action={<Target className="size-4 text-faint" />}
+          action={<CircleAction to="/risques?onglet=indicateurs" label="Gérer les indicateurs" />}
         >
           <ul className="grid gap-x-8 gap-y-4 px-5 pb-5 pt-1 sm:grid-cols-2">
             {[
@@ -582,7 +580,7 @@ export function PilotagePage() {
         <Bento
           className="md:col-span-3 xl:col-span-5"
           title="Risques majeurs"
-          action={<ShieldAlert className="size-4 text-faint" />}
+          action={<CircleAction to="/risques" label="Gérer les risques" />}
         >
           {o.risks.length ? (
             <ul className="px-2 pb-3">

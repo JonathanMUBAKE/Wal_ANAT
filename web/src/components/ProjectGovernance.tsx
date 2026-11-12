@@ -1,3 +1,4 @@
+import { ProjectRisks } from "@/pages/Risks";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Scale, Wallet } from "lucide-react";
@@ -131,6 +132,7 @@ export function ProjectGovernance({ projectId, canEdit }: { projectId: string; c
           </div>
         </div>
       </Section>
+      <ProjectRisks projectId={projectId} />
       <ProjectArbitrations projectId={projectId} canAsk={canEdit || (!!me && g.lead_id === me.id)} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Section title={`Équipe projet · ${g.team.length}`}>

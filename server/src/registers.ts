@@ -51,6 +51,7 @@ export interface RiskInput {
   owner_id?: string | null;
   mitigation?: string;
   status?: "open" | "mitigated" | "closed";
+  project_id?: string | null;
 }
 export interface IndicatorInput {
   name?: string;
@@ -59,6 +60,7 @@ export interface IndicatorInput {
   target?: number;
   result?: number;
   source?: string;
+  plan_activity_id?: string | null;
 }
 const mailRef = (m: Pick<Mail, "direction" | "year" | "seq">) =>
   `${m.direction === "entrant" ? "ENT" : "SOR"}/${m.year}/${String(m.seq).padStart(4, "0")}`;
@@ -516,12 +518,36 @@ export class Registers {
   }
 
   // ---------------------------------------------------------------- risques
-  async risks(actorId: string, orgId: string) {
-    await this.svc.requirePerm(actorId, orgId, "pilotage.view");
+  /** Les risques : le registre complet (pilotage), ou ceux d'un projet pour son équipe. */
+  async risks(actorId: string, orgId: string, projectId?: string) {
+    if (projectId) await this.svc.require(actorId, projectId, "viewer");
+    else await this.svc.requirePerm(actorId, orgId, "pilotage.view");
     return this.svc.db.query(
-      "SELECT r.*, r.probability * r.impact AS score, u.name AS owner_name FROM risks r LEFT JOIN users u ON u.id = r.owner_id WHERE r.org_id = $1 ORDER BY r.status, score DESC",
-      [orgId],
+      `SELECT r.*, r.probability * r.impact AS score, u.name AS owner_name, p.name AS project_name
+         FROM risks r LEFT JOIN users u ON u.id = r.owner_id LEFT JOIN projects p ON p.id = r.project_id
+        WHERE r.org_id = $1 AND ($2::text IS NULL OR r.project_id = $2)
+        ORDER BY r.status, score DESC, r.created_at DESC`,
+      [orgId, projectId ?? null],
     );
+  }
+  private async riskRow(id: string) {
+    return this.svc.db.one(
+      `SELECT r.*, r.probability * r.impact AS score, u.name AS owner_name, p.name AS project_name
+         FROM risks r LEFT JOIN users u ON u.id = r.owner_id LEFT JOIN projects p ON p.id = r.project_id WHERE r.id = $1`,
+      [id],
+    );
+  }
+  private async assertRiskRefs(orgId: string, i: RiskInput) {
+    if (i.owner_id && !(await this.svc.orgRole(i.owner_id, orgId)))
+      throw badRequest("Le responsable doit être membre de l'organisation");
+    if (
+      i.project_id &&
+      !(await this.svc.db.one("SELECT 1 FROM projects WHERE org_id = $1 AND id = $2 AND kind = 'project'", [
+        orgId,
+        i.project_id,
+      ]))
+    )
+      throw badRequest("Projet inconnu");
   }
   async createRisk(
     actorId: string,
@@ -529,24 +555,41 @@ export class Registers {
     i: RiskInput & { title: string; probability: number; impact: number },
   ) {
     await this.svc.requirePerm(actorId, orgId, "risks.manage");
-    if (i.owner_id && !(await this.svc.orgRole(i.owner_id, orgId)))
-      throw badRequest("Le responsable doit être membre de l'organisation");
+    await this.assertRiskRefs(orgId, i);
     const id = uid("rsk");
     await this.svc.db.query(
-      "INSERT INTO risks (id, org_id, title, probability, impact, owner_id, mitigation) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-      [id, orgId, i.title.trim(), i.probability, i.impact, i.owner_id ?? null, i.mitigation ?? ""],
+      "INSERT INTO risks (id, org_id, title, probability, impact, owner_id, mitigation, project_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+      [
+        id,
+        orgId,
+        i.title.trim(),
+        i.probability,
+        i.impact,
+        i.owner_id ?? null,
+        i.mitigation ?? "",
+        i.project_id ?? null,
+      ],
     );
-    await this.svc.log(actorId, "risk.created", { orgId, data: { id } });
-    return this.svc.db.one("SELECT * FROM risks WHERE id = $1", [id]);
+    await this.svc.log(actorId, "risk.created", {
+      orgId,
+      projectId: i.project_id ?? null,
+      data: { id, title: i.title },
+    });
+    return this.riskRow(id);
   }
   async updateRisk(actorId: string, id: string, i: RiskInput) {
-    const r = await this.svc.db.one<{ org_id: string }>("SELECT org_id FROM risks WHERE id = $1", [id]);
+    const r = await this.svc.db.one<{ org_id: string; project_id: string | null }>(
+      "SELECT org_id, project_id FROM risks WHERE id = $1",
+      [id],
+    );
     if (!r) throw notFound("Risque introuvable");
     await this.svc.requirePerm(actorId, r.org_id, "risks.manage");
-    if (i.owner_id && !(await this.svc.orgRole(i.owner_id, r.org_id)))
-      throw badRequest("Le responsable doit être membre de l'organisation");
-    return this.svc.db.one(
-      "UPDATE risks SET title = COALESCE($1, title), probability = COALESCE($2, probability), impact = COALESCE($3, impact), owner_id = COALESCE($4, owner_id), mitigation = COALESCE($5, mitigation), status = COALESCE($6, status) WHERE id = $7 RETURNING *",
+    await this.assertRiskRefs(r.org_id, i);
+    await this.svc.db.query(
+      `UPDATE risks SET title = COALESCE($1, title), probability = COALESCE($2, probability), impact = COALESCE($3, impact),
+         owner_id = CASE WHEN $8 THEN $4 ELSE owner_id END, mitigation = COALESCE($5, mitigation), status = COALESCE($6, status),
+         project_id = CASE WHEN $9 THEN $10 ELSE project_id END
+       WHERE id = $7`,
       [
         i.title?.trim() ?? null,
         i.probability ?? null,
@@ -555,37 +598,58 @@ export class Registers {
         i.mitigation ?? null,
         i.status ?? null,
         id,
+        i.owner_id !== undefined,
+        i.project_id !== undefined,
+        i.project_id ?? null,
       ],
     );
+    await this.svc.log(actorId, "risk.updated", { orgId: r.org_id, projectId: r.project_id, data: { id, ...i } });
+    return this.riskRow(id);
   }
 
-  // ---------------------------------------------------------------- indicateurs
+  private static INDICATOR =
+    `SELECT i.id, i.name, i.unit_label, i.source, i.baseline::float8 AS baseline, i.target::float8 AS target,
+      i.result::float8 AS result, i.plan_activity_id, pa.title AS plan_activity_title, wp.year AS plan_year, ou.name AS plan_unit_name
+    FROM indicators i LEFT JOIN plan_activities pa ON pa.id = i.plan_activity_id LEFT JOIN work_plans wp ON wp.id = pa.plan_id
+    LEFT JOIN org_units ou ON ou.id = wp.unit_id`;
   async indicators(actorId: string, orgId: string) {
     await this.svc.requirePerm(actorId, orgId, "pilotage.view");
-    return this.svc.db.query(
-      "SELECT id, name, unit_label, source, baseline::float8 AS baseline, target::float8 AS target, result::float8 AS result FROM indicators WHERE org_id = $1 ORDER BY name",
-      [orgId],
-    );
+    return this.svc.db.query(`${Registers.INDICATOR} WHERE i.org_id = $1 ORDER BY i.name`, [orgId]);
+  }
+  private async assertPlanActivity(orgId: string, id: string | null | undefined) {
+    if (id && !(await this.svc.db.one("SELECT 1 FROM plan_activities WHERE org_id = $1 AND id = $2", [orgId, id])))
+      throw badRequest("Activité du plan inconnue");
   }
   async createIndicator(actorId: string, orgId: string, i: IndicatorInput & { name: string; target: number }) {
     await this.svc.requirePerm(actorId, orgId, "risks.manage");
+    await this.assertPlanActivity(orgId, i.plan_activity_id);
     const id = uid("ind");
     await this.svc.db.query(
-      "INSERT INTO indicators (id, org_id, name, unit_label, baseline, target, result, source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
-      [id, orgId, i.name.trim(), i.unit_label ?? "", i.baseline ?? 0, i.target, i.result ?? 0, i.source ?? ""],
+      "INSERT INTO indicators (id, org_id, name, unit_label, baseline, target, result, source, plan_activity_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+      [
+        id,
+        orgId,
+        i.name.trim(),
+        i.unit_label ?? "",
+        i.baseline ?? 0,
+        i.target,
+        i.result ?? 0,
+        i.source ?? "",
+        i.plan_activity_id ?? null,
+      ],
     );
-    await this.svc.log(actorId, "indicator.created", { orgId, data: { id } });
-    return this.svc.db.one(
-      "SELECT id, name, unit_label, source, baseline::float8 AS baseline, target::float8 AS target, result::float8 AS result FROM indicators WHERE id = $1",
-      [id],
-    );
+    await this.svc.log(actorId, "indicator.created", { orgId, data: { id, name: i.name } });
+    return this.svc.db.one(`${Registers.INDICATOR} WHERE i.id = $1`, [id]);
   }
   async updateIndicator(actorId: string, id: string, i: IndicatorInput) {
     const r = await this.svc.db.one<{ org_id: string }>("SELECT org_id FROM indicators WHERE id = $1", [id]);
     if (!r) throw notFound("Indicateur introuvable");
     await this.svc.requirePerm(actorId, r.org_id, "risks.manage");
-    return this.svc.db.one(
-      "UPDATE indicators SET name = COALESCE($1, name), unit_label = COALESCE($2, unit_label), baseline = COALESCE($3, baseline), target = COALESCE($4, target), result = COALESCE($5, result), source = COALESCE($6, source) WHERE id = $7 RETURNING id, name, unit_label, source, baseline::float8 AS baseline, target::float8 AS target, result::float8 AS result",
+    await this.assertPlanActivity(r.org_id, i.plan_activity_id);
+    await this.svc.db.query(
+      `UPDATE indicators SET name = COALESCE($1, name), unit_label = COALESCE($2, unit_label), baseline = COALESCE($3, baseline),
+         target = COALESCE($4, target), result = COALESCE($5, result), source = COALESCE($6, source),
+         plan_activity_id = CASE WHEN $8 THEN $9 ELSE plan_activity_id END WHERE id = $7`,
       [
         i.name?.trim() ?? null,
         i.unit_label ?? null,
@@ -594,7 +658,11 @@ export class Registers {
         i.result ?? null,
         i.source ?? null,
         id,
+        i.plan_activity_id !== undefined,
+        i.plan_activity_id ?? null,
       ],
     );
+    await this.svc.log(actorId, "indicator.updated", { orgId: r.org_id, data: { id, ...i } });
+    return this.svc.db.one(`${Registers.INDICATOR} WHERE i.id = $1`, [id]);
   }
 }

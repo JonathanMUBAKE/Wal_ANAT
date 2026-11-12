@@ -24,6 +24,7 @@ import {
   Network,
   ScrollText,
   Search,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Sun,
@@ -166,6 +167,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           {(can("agenda.view") || can("projects.create")) && link("/activites", Briefcase, "Portefeuille")}
           {(can("decisions.view") || can("decisions.record")) && link("/decisions", Scale, "Décisions")}
           {can("meetings.view") && link("/reunions", CalendarDays, "Réunions")}
+          {can("pilotage.view") && link("/risques", ShieldAlert, "Risques et indicateurs")}
         </NavSection>
 
         {/* Livrables et contrats vivent dans leur projet (docs/PARCOURS-METIER.md) : plus de module à part */}

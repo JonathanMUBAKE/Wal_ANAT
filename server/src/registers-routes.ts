@@ -27,6 +27,7 @@ const Risk = z.object({
   owner_id: id.nullable().optional(),
   mitigation: z.string().max(2000).optional(),
   status: z.enum(["open", "mitigated", "closed"]).optional(),
+  project_id: id.nullable().optional(),
 });
 const Indicator = z.object({
   name: title.optional(),
@@ -35,6 +36,7 @@ const Indicator = z.object({
   target: num.optional(),
   result: num.optional(),
   source: z.string().max(300).optional(),
+  plan_activity_id: id.nullable().optional(),
 });
 
 export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers, g: Gaps) {
@@ -142,7 +144,9 @@ export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers,
     ),
   );
 
-  r.get("/api/risks", async (req) => reg.risks(req.userId, req.orgId));
+  r.get("/api/risks", async (req) =>
+    reg.risks(req.userId, req.orgId, z.object({ project_id: id.optional() }).parse(req.query ?? {}).project_id),
+  );
   r.post("/api/risks", async (req) =>
     reg.createRisk(req.userId, req.orgId, Risk.extend({ title, probability: score, impact: score }).parse(req.body)),
   );

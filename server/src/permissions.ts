@@ -189,6 +189,7 @@ const AGENT: Permission[] = [
 ];
 const CHEF_ENTITE: Permission[] = [
   ...AGENT,
+  "risks.manage",
   "projects.import",
   "projects.archive",
   "projects.members",

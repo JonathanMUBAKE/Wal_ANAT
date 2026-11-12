@@ -165,6 +165,23 @@ Le projet est le **dossier complet** d'une action de l'Agence. Sa fiche (Pilotag
 Le portefeuille liste projets et activités, filtrables par statut, entité, province ; les droits de chaque
 projet s'appliquent (un projet privé n'apparaît qu'à ses membres).
 
+**Revue de portefeuille** (Portefeuille › Revue de portefeuille, profils de pilotage) : pour chaque projet, la santé
+**déclarée** par son chef et la santé **calculée** d'après les faits, avec ses raisons écrites :
+- *en difficulté* : échéance du projet dépassée, avancement inférieur de 30 points à l'attendu à date (au prorata
+  du temps entre la création du projet et son échéance), deux livrables en retard ou plus, budget consommé au-delà
+  de 110 % ;
+- *à surveiller* : 15 points de retard sur l'attendu, un livrable en retard, budget consommé plus vite que le temps
+  (20 points d'avance), tâches en retard, arbitrage attendu.
+Un projet est **en écart** quand les faits sont plus graves que ce qui est déclaré : il vient en tête.
+
+**Arbitrages** : depuis le tableau de bord du projet, son chef (ou un administrateur du projet) **demande un
+arbitrage** à la DG — question, contexte, au moins deux options et leurs conséquences, l'option recommandée, la date
+souhaitée. La question devient la *décision attendue* du projet sur le tableau de bord DG, et les personnes qui
+enregistrent les décisions sont prévenues. Dans Portefeuille › Arbitrages, la DG choisit l'option, ajoute ses
+observations et une échéance, puis **tranche** : la décision s'inscrit au **registre des décisions** (rattachée au
+projet, son chef chargé de l'exécution) et le demandeur est prévenu. **Celui qui demande ne tranche pas.** Le
+demandeur peut retirer sa demande tant qu'elle est en attente ; un seul arbitrage en attente par projet.
+
 ### 5.3 Partenariats
 
 **Partenaires** (Partenariats › Partenaires) est l'**annuaire unique des tiers** : ministères, collectivités,

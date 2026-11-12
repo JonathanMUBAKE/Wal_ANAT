@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { Button, Dialog, cn } from "./ui";
 import { DomainSelect, Field, Input, PlanActivitySelect, ProgressBar, Section, Select, Status, frDate } from "./gov";
 import { api } from "@/lib/api";
-import { useUnits, useUsers } from "@/lib/hooks";
+import { useMe, useUnits, useUsers } from "@/lib/hooks";
+import { ProjectArbitrations } from "./portfolio";
 import { useShell } from "@/lib/shell";
 import { PartnerSelect } from "./partners";
 
@@ -44,6 +45,7 @@ export function ProjectGovernance({ projectId, canEdit }: { projectId: string; c
   const qc = useQueryClient();
   const shell = useShell();
   const [editing, setEditing] = useState(false);
+  const { data: me } = useMe();
   const { data: g } = useQuery({
     queryKey: ["governance", projectId],
     queryFn: () => api.get<Gov>(`/api/projects/${projectId}/governance`),
@@ -129,6 +131,7 @@ export function ProjectGovernance({ projectId, canEdit }: { projectId: string; c
           </div>
         </div>
       </Section>
+      <ProjectArbitrations projectId={projectId} canAsk={canEdit || (!!me && g.lead_id === me.id)} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Section title={`Équipe projet · ${g.team.length}`}>
           <ul className="stagger p-2">

@@ -189,6 +189,17 @@ async function boot(kind: Kind) {
       const p = await X.submittedByKarim();
       return (await inj(a, "POST", `/api/plans/${p.id}/approve`)).body;
     },
+    /** Arbitrage en attente, demandé par Karim sur un projet du propriétaire (la DG le tranche). */
+    arbitration: async () => {
+      const p = await X.project();
+      const id = u("arb_matrice");
+      await ctx.db.query(
+        `INSERT INTO project_arbitrations (id, org_id, project_id, question, options, requested_by)
+         VALUES ($1, $2, $3, 'Question ?', '[{"label":"A"},{"label":"B"}]', 'u_karim')`,
+        [id, org, p.id],
+      );
+      return { id, project: p };
+    },
     /** Revue trimestrielle d'un plan approuvé ; « prête » a sa synthèse ; « soumise » l'a été par Karim. */
     review: async () => {
       const p = await X.approvedPlan();
@@ -698,6 +709,24 @@ const TABLE = [
   R_("POST", "/api/plans/:id/activities", async (X) => ({
     url: `/api/plans/${(await X.plan()).id}/activities`,
     body: { title: "A" },
+  })),
+  // Portefeuille de projets : revue et arbitrages
+  R_("GET", "/api/portfolio/review"),
+  R_("GET", "/api/arbitrations"),
+  R_("GET", "/api/projects/:id/arbitrations", async (X) => ({
+    url: `/api/projects/${(await X.project()).id}/arbitrations`,
+  })),
+  R_("POST", "/api/projects/:id/arbitrations", async (X) => ({
+    url: `/api/projects/${(await X.project()).id}/arbitrations`,
+    body: { question: "Quelle option ?", options: [{ label: "A" }, { label: "B" }] },
+  })),
+  R_("POST", "/api/arbitrations/:id/decide", async (X) => ({
+    url: `/api/arbitrations/${(await X.arbitration()).id}/decide`,
+    body: { option: 0 },
+  })),
+  R_("POST", "/api/arbitrations/:id/withdraw", async (X) => ({
+    url: `/api/arbitrations/${(await X.arbitration()).id}/withdraw`,
+    body: {},
   })),
   // Revue trimestrielle du plan
   R_("POST", "/api/plans/:id/reviews", async (X) => ({

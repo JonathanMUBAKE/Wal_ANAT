@@ -43,6 +43,7 @@ import { Signature } from "./signature.js";
 import { Pilotage } from "./pilotage.js";
 import { Directions, directionRoutes } from "./pilotage-directions.js";
 import { PlanReviews, planReviewRoutes } from "./plan-reviews.js";
+import { Portfolio, portfolioRoutes } from "./portfolio.js";
 import { Plans } from "./plans.js";
 import { planRoutes } from "./plans-routes.js";
 import { UnitTasks, unitTaskRoutes } from "./unit-tasks.js";
@@ -311,6 +312,7 @@ export async function buildApp(opts: AppOptions = {}) {
     activityRoutes(r, new Activities(svc), new Pilotage(svc));
     directionRoutes(r, new Directions(svc));
     planReviewRoutes(r, new PlanReviews(svc));
+    portfolioRoutes(r, new Portfolio(svc));
     planRoutes(r, new Plans(svc), new Deliverables(svc));
     unitTaskRoutes(r, new UnitTasks(svc));
     hrRoutes(r, new Hr(svc, provisioning));

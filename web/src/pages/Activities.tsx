@@ -35,6 +35,7 @@ import { useCan, useMe, useProjects, useUnits, useUsers } from "@/lib/hooks";
 import { type RefValue, useForms, useReferentials } from "@/lib/referentials";
 import { HEALTH } from "./Pilotage";
 import { ContractsPayments } from "./ProjectDossier";
+import { ArbitrationsBoard, PortfolioReview } from "@/components/portfolio";
 
 /** Code d'un type d'activité du référentiel de l'institution. */
 type Kind = string;
@@ -80,7 +81,11 @@ export function ActivitiesPage() {
   const can = useCan();
   const nav = useNavigate();
   const shell = useShell();
-  const [tab, setTab] = useState<Kind | "all" | "projects" | "contracts">("all");
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState<Kind | "all" | "projects" | "contracts" | "revue" | "arbitrages">(
+    params.get("onglet") === "arbitrages" ? "arbitrages" : params.get("onglet") === "revue" ? "revue" : "all",
+  );
+  const steering = can("pilotage.view") || can("decisions.record");
   const [creating, setCreating] = useState(false);
   const [removing, setRemoving] = useState<Activity | null>(null);
   const { data: me } = useMe();
@@ -114,7 +119,7 @@ export function ActivitiesPage() {
         title="Portefeuille"
         subtitle="Projets internes et confiés, commissions, conférences, rendez-vous et activités internes, suivis jusqu'à leurs suites."
         actions={
-          tab === "contracts" ? null : tab === "projects" ? (
+          tab === "contracts" || tab === "revue" || tab === "arbitrages" ? null : tab === "projects" ? (
             <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => shell.setNewProject(true)}>
               Nouveau projet
             </Button>
@@ -131,6 +136,12 @@ export function ActivitiesPage() {
         value={tab}
         onChange={setTab}
         items={[
+          ...(steering
+            ? [
+                { id: "revue" as const, label: "Revue de portefeuille" },
+                { id: "arbitrages" as const, label: "Arbitrages" },
+              ]
+            : []),
           { id: "all" as const, label: "Toutes les activités" },
           { id: "projects" as const, label: "Projets", badge: projects?.length },
           ...types.map((t) => ({
@@ -143,7 +154,11 @@ export function ActivitiesPage() {
         ]}
       />
       <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
-        {tab === "contracts" ? (
+        {tab === "revue" ? (
+          <PortfolioReview />
+        ) : tab === "arbitrages" ? (
+          <ArbitrationsBoard />
+        ) : tab === "contracts" ? (
           <ContractsPayments />
         ) : tab === "projects" ? (
           <ProjectsList projects={projects} />

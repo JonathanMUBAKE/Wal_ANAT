@@ -119,10 +119,11 @@ Partenaires ──► Conventions, projets, courrier, réunions
 
 ## 4. Mon dossier (RH, côté agent)
 
-- **À quoi il sert** : l'agent consulte son dossier et met à jour ses coordonnées.
+- **À quoi il sert** : l'agent consulte son dossier, en lecture seule.
 - **Qui** : l'agent lui-même.
 - **Fonctionnalités** : identité, situation administrative, affectation et historique, diplômes, personnes à
-  prévenir ; l'agent modifie téléphone, adresse, courriel personnel, diplômes et personnes à prévenir.
+  prévenir. L'agent ne modifie rien : une correction se demande au service RH. Un gestionnaire RH ne modifie pas
+  non plus son propre dossier ; un autre gestionnaire s'en charge.
 
 ## 5. Coéquipiers IA
 

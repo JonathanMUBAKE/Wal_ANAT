@@ -505,7 +505,7 @@ function AgentForm({
   );
 }
 
-/** Fiche d'un agent : lecture d'abord ; le service RH modifie, l'agent tient ses coordonnées. */
+/** Fiche d'un agent : lecture d'abord ; seul le service RH modifie, et jamais son propre dossier. */
 export function AgentPage({ self }: { self?: boolean }) {
   const { id } = useParams();
   const nav = useNavigate();
@@ -514,7 +514,6 @@ export function AgentPage({ self }: { self?: boolean }) {
     queryFn: () => api.get<AgentDetail | null>(self ? "/api/hr/me" : `/api/hr/agents/${id}`),
   });
   const [editing, setEditing] = useState(false);
-  const [contactsEdit, setContactsEdit] = useState(false);
   if (error) return <Empty title="Dossier inaccessible">{(error as Error).message}</Empty>;
   if (a === undefined) return <Spinner />;
   if (a === null)
@@ -538,11 +537,6 @@ export function AgentPage({ self }: { self?: boolean }) {
                 Registre
               </Button>
             )}
-            {a.can.self && !a.can.manage && (
-              <Button icon={<Phone className="size-4" />} onClick={() => setContactsEdit(true)}>
-                Mettre à jour mes coordonnées
-              </Button>
-            )}
             {a.can.manage && (
               <Button variant="primary" icon={<Pencil className="size-4" />} onClick={() => setEditing(true)}>
                 Modifier
@@ -553,6 +547,12 @@ export function AgentPage({ self }: { self?: boolean }) {
       />
       <div className="mx-auto grid max-w-[1480px] gap-4 px-4 pb-16 pt-2 sm:px-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-4">
+          {a.can.self && (
+            <p className="rounded-lg border border-line bg-hover px-4 py-3 text-[13px] text-muted">
+              Votre dossier est tenu par le service des ressources humaines. Pour corriger une information, adressez-vous
+              à lui : vous ne pouvez pas la modifier vous-même.
+            </p>
+          )}
           <Section title="Identité">
             <Facts>
               <Fact label="Matricule">{a.matricule}</Fact>
@@ -650,7 +650,6 @@ export function AgentPage({ self }: { self?: boolean }) {
         </div>
       </div>
       {editing && <AgentForm agent={a} onClose={() => setEditing(false)} />}
-      {contactsEdit && <SelfContacts agent={a} onClose={() => setContactsEdit(false)} />}
     </div>
   );
 }
@@ -673,7 +672,7 @@ function ListBlock({
 }) {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
-  const canEdit = agent.can.manage || agent.can.self;
+  const canEdit = agent.can.manage;
   const [f, setF] = useState<Form>({});
   const refresh = () => qc.invalidateQueries({ queryKey: ["hr-agent"] });
   const fields =
@@ -779,55 +778,5 @@ function ListBlock({
         </Drawer>
       )}
     </Section>
-  );
-}
-
-function SelfContacts({ agent, onClose }: { agent: AgentDetail; onClose: () => void }) {
-  const qc = useQueryClient();
-  const [f, setF] = useState({ phone: agent.phone, address: agent.address, personal_email: agent.personal_email });
-  const save = () =>
-    api.patch("/api/hr/me", f).then(() => {
-      toast.success("Coordonnées mises à jour");
-      qc.invalidateQueries({ queryKey: ["hr-agent"] });
-      onClose();
-    }, fail);
-  return (
-    <Drawer
-      open
-      onClose={onClose}
-      width={520}
-      subtitle="Mon dossier"
-      title="Mes coordonnées"
-      footer={
-        <>
-          <Button onClick={onClose}>Annuler</Button>
-          <Button variant="primary" onClick={save}>
-            Enregistrer
-          </Button>
-        </>
-      }
-    >
-      <p className="mb-4 text-[13px] text-muted">
-        Vous tenez vos coordonnées. Identité, grade, fonction et affectation relèvent du service des ressources
-        humaines.
-      </p>
-      <div className="grid gap-3">
-        <Field label="Téléphone">
-          {(a) => <Input {...a} value={f.phone} onChange={(e) => setF((x) => ({ ...x, phone: e.target.value }))} />}
-        </Field>
-        <Field label="Courriel personnel">
-          {(a) => (
-            <Input
-              {...a}
-              value={f.personal_email}
-              onChange={(e) => setF((x) => ({ ...x, personal_email: e.target.value }))}
-            />
-          )}
-        </Field>
-        <Field label="Adresse">
-          {(a) => <Input {...a} value={f.address} onChange={(e) => setF((x) => ({ ...x, address: e.target.value }))} />}
-        </Field>
-      </div>
-    </Drawer>
   );
 }

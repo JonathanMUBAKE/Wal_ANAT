@@ -7,7 +7,7 @@ import { boot, type GovCtx } from "./gov-test-helpers.js";
  * Toute personne créée comme agent devient utilisateur : un compte est ouvert, elle reçoit un lien pour choisir son
  * mot de passe et n'a accès qu'à la vue Agent. Son dossier réunit identité, situation administrative (statut,
  * grade, fonction), affectation et son historique, diplômes et personnes à prévenir. Le service RH tient les
- * dossiers ; l'agent consulte le sien et met à jour ses coordonnées ; le chef d'entité consulte ceux de ses agents.
+ * dossiers ; l'agent consulte le sien sans le modifier ; le chef d'entité consulte ceux de ses agents.
  */
 let g: GovCtx;
 beforeEach(async () => {
@@ -102,7 +102,7 @@ describe("module RH : créer un agent", () => {
     expect((await g.api("u_alice", "DELETE", `/api/hr/contacts/${contact.body.id}`)).status).toBe(200);
   });
 
-  it("l'agent lit son dossier et met à jour ses coordonnées ; le chef d'entité lit ceux de ses agents ; les autres non", async () => {
+  it("l'agent lit son dossier sans pouvoir le modifier ; le chef d'entité lit ceux de ses agents ; les autres non", async () => {
     // Hugo devient agent (dossier ouvert pour un compte existant)
     const units = (await g.api("u_alice", "GET", "/api/org/units")).body as Any[];
     const unit = units[1].id;
@@ -118,16 +118,43 @@ describe("module RH : créer un agent", () => {
     const mine = await g.api("u_hugo", "GET", "/api/hr/me");
     expect(mine.status).toBe(200);
     expect(mine.body.last_name).toBe("Lefèvre");
-    expect(
-      (await g.api("u_hugo", "PATCH", "/api/hr/me", { phone: "+000 22 22 22", address: "Rue fictive" })).status,
-    ).toBe(200);
-    // Ses coordonnées seulement : le grade relève du service RH
-    expect((await g.api("u_hugo", "PATCH", "/api/hr/me", { grade: "Directeur" })).status).toBe(400);
+    // Lecture seule : l'agent ne modifie rien de son dossier, le service RH le tient
+    expect(mine.body.can).toMatchObject({ manage: false, self: true });
+    expect((await g.api("u_hugo", "PATCH", "/api/hr/me", { phone: "+000 22 22 22" })).status).toBe(404);
+    expect((await g.api("u_hugo", "PATCH", "/api/hr/agents/u_hugo", { phone: "+000 22 22 22" })).status).toBe(403);
+    expect((await g.api("u_hugo", "POST", "/api/hr/agents/u_hugo/diplomas", { title: "Doctorat" })).status).toBe(403);
+    expect((await g.api("u_hugo", "POST", "/api/hr/agents/u_hugo/contacts", { name: "Proche" })).status).toBe(403);
+    const dip = await g.api("u_alice", "POST", "/api/hr/agents/u_hugo/diplomas", { title: "Licence" });
+    const ctc = await g.api("u_alice", "POST", "/api/hr/agents/u_hugo/contacts", { name: "Proche" });
+    expect((await g.api("u_hugo", "DELETE", `/api/hr/diplomas/${dip.body.id}`)).status).toBe(403);
+    expect((await g.api("u_hugo", "DELETE", `/api/hr/contacts/${ctc.body.id}`)).status).toBe(403);
     expect((await g.api("u_karim", "GET", "/api/hr/agents/u_hugo")).status).toBe(200);
     expect((await g.api("u_karim", "PATCH", "/api/hr/agents/u_hugo", { grade: "x" })).status).toBe(403);
     expect((await g.api("u_karim", "GET", "/api/hr/agents")).status).toBe(403);
     const list = (await g.api("u_alice", "GET", "/api/hr/agents")).body as Any[];
     expect(list.map((a) => a.user_id)).toContain("u_hugo");
+  });
+
+  it("le service RH ne modifie pas son propre dossier : un autre gestionnaire s'en charge", async () => {
+    // Alice tient les dossiers ; Karim reçoit aussi le droit, pour pouvoir tenir celui d'Alice
+    await g.ctx.db.query(
+      `UPDATE org_members SET permission_overrides = '{"hr.manage": true}'::jsonb WHERE user_id = 'u_karim'`,
+    );
+    expect(
+      (await g.api("u_karim", "POST", "/api/hr/agents", { user_id: "u_alice", last_name: "Martin" })).status,
+    ).toBe(200);
+    // Ouvrir son propre dossier lui est aussi refusé
+    expect(
+      (await g.api("u_karim", "POST", "/api/hr/agents", { user_id: "u_karim", last_name: "Benali" })).status,
+    ).toBe(403);
+    const mine = (await g.api("u_alice", "GET", "/api/hr/me")).body;
+    expect(mine.can).toMatchObject({ manage: false, self: true });
+    expect((await g.api("u_alice", "PATCH", "/api/hr/agents/u_alice", { grade: "Directrice" })).status).toBe(403);
+    expect((await g.api("u_alice", "POST", "/api/hr/agents/u_alice/diplomas", { title: "Doctorat" })).status).toBe(
+      403,
+    );
+    expect((await g.api("u_alice", "POST", "/api/hr/agents/u_alice/contacts", { name: "Proche" })).status).toBe(403);
+    expect((await g.api("u_karim", "PATCH", "/api/hr/agents/u_alice", { grade: "Directrice" })).status).toBe(200);
   });
 });
 

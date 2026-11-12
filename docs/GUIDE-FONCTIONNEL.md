@@ -368,8 +368,8 @@ Réservée à l'administrateur système. Onglets :
   l'affectation en cours et en ouvre une nouvelle (**historique des affectations**, avec l'acte). **Diplômes** et
   **personnes à prévenir** s'ajoutent et se retirent.
 - **Qui voit quoi** : le service RH (droits « Consulter / tenir les dossiers ») voit tout ; l'agent voit son dossier
-  et met à jour ses coordonnées, diplômes et personnes à prévenir ; le **chef d'entité** consulte les dossiers de ses
-  agents. Onglet **À identifier** : les personnes sans dossier.
+  sans pouvoir le modifier (une correction se demande au service RH) ; le **chef d'entité** consulte les dossiers de
+  ses agents. Personne ne modifie son propre dossier, pas même un gestionnaire RH : un autre gestionnaire s'en charge. Onglet **À identifier** : les personnes sans dossier.
 
 ### 5.14 L'accueil selon le profil
 

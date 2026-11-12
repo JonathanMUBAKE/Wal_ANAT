@@ -555,6 +555,16 @@ async function seedHr(svc: Services, org: string) {
       [org, user_id],
     );
     if (!unit) continue;
+    // Personne n'ouvre son propre dossier : celui d'Alice, seule gestionnaire RH de la démo, est posé directement
+    if (user_id === "u_alice") {
+      await svc.db.query(
+        `INSERT INTO agent_records (org_id, user_id, matricule, created_by, civility, first_names, last_name, status,
+           grade, category, function_title, hired_on, function_since, nationality)
+         VALUES ($1, $2, 'AG-DEMO-0001', $2, $3, $4, $5, $6, $7, $8, $9, $10, $10, 'Fictivienne') ON CONFLICT DO NOTHING`,
+        [org, user_id, civility, first_names, last_name, status, grade, category, function_title, hired_on],
+      );
+      continue;
+    }
     await hr
       .create(
         "u_alice",

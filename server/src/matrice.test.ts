@@ -20,7 +20,7 @@ const PNG = "data:image/png;base64,iVBORw0KGgo=",
 const PUBLIC = /^\/api\/auth\/(login|logout|config|users$|mfa$|token|activate|reset|forgot|request-access)/;
 /** Écritures qui ne concernent que son propre compte : un lecteur y a droit. */
 const PERSONAL =
-  /^(POST \/api\/auth\/(password|mfa\/setup|mfa\/confirm|mfa\/disable)|DELETE \/api\/auth\/sessions|POST \/api\/notifications\/read|PUT \/api\/me\/notification-prefs|PATCH \/api\/hr\/me|POST \/api\/export$|POST \/api\/orgs\/:id\/switch|POST \/api\/invitations\/)/;
+  /^(POST \/api\/auth\/(password|mfa\/setup|mfa\/confirm|mfa\/disable)|DELETE \/api\/auth\/sessions|POST \/api\/notifications\/read|PUT \/api\/me\/notification-prefs|POST \/api\/export$|POST \/api\/orgs\/:id\/switch|POST \/api\/invitations\/)/;
 const DEMO_ONLY = "POST /api/orgs"; // Hors mode démo, réservé à l'administrateur système (voir auth.test.ts)
 /** Réponses normales du propriétaire : l'essai vise volontairement un refus métier. */
 const OWNER_EXPECTED =
@@ -407,10 +407,6 @@ async function boot(kind: Kind) {
       (await inj(a, "POST", `/api/hr/agents/${await X.agent()}/diplomas`, { title: "Master" })).body.id as string,
     hrContact: async () =>
       (await inj(a, "POST", `/api/hr/agents/${await X.agent()}/contacts`, { name: "Proche" })).body.id as string,
-    selfAgent: async () => {
-      const me = (await inj(a, "GET", "/api/hr/me")).body;
-      if (!me) await inj(a, "POST", "/api/hr/agents", { user_id: a, last_name: "Titulaire" });
-    },
     mdoc: async () => {
       const m = await X.meeting();
       return JSON.parse(
@@ -472,10 +468,6 @@ const TABLE = [
     body: { last_name: u("Agent"), email: `${u("rh")}@exemple.test`, status: "contractuel" },
   })),
   R_("GET", "/api/hr/me"),
-  R_("PATCH", "/api/hr/me", async (X) => {
-    await X.selfAgent();
-    return { body: { phone: "+000" } };
-  }),
   R_("GET", "/api/hr/agents/:id", async (X) => ({ url: `/api/hr/agents/${await X.agent()}` })),
   R_("PATCH", "/api/hr/agents/:id", async (X) => ({ url: `/api/hr/agents/${await X.agent()}`, body: { grade: "A1" } })),
   R_("POST", "/api/hr/agents/:id/diplomas", async (X) => ({

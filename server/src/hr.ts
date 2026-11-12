@@ -13,7 +13,8 @@ import { badRequest, forbidden, localDate, notFound, type Services } from "./ser
  * grade, catégorie, échelon, fonction), l'affectation et son historique, les diplômes et les personnes à prévenir.
  *
  * Qui fait quoi : le service RH (hr.manage) crée et tient les dossiers ; hr.view les consulte tous ; l'agent lit
- * le sien et met à jour ses coordonnées ; le chef d'une entité (ou d'une entité au-dessus) lit ceux de ses agents.
+ * le sien sans pouvoir le modifier ; le chef d'une entité (ou d'une entité au-dessus) lit ceux de ses agents.
+ * Personne ne modifie son propre dossier, pas même un gestionnaire RH : un autre gestionnaire s'en charge.
  * Toute écriture est journalisée.
  */
 
@@ -58,10 +59,6 @@ const Patch = Identity.partial().extend({
   unit_id: z.string().max(100).nullable().optional(),
   assignment_reference: txt(300).optional(),
 });
-/** Ce que l'agent met à jour lui-même : ses coordonnées. Le reste relève du service RH. */
-const SelfPatch = z
-  .object({ phone: txt(60).optional(), address: txt(500).optional(), personal_email: txt(320).optional() })
-  .strict();
 const Diploma = z.object({
   title: txt(300).min(1, "L'intitulé du diplôme est obligatoire"),
   field: txt().optional(),
@@ -92,6 +89,12 @@ export class Hr {
   }
   private async requireManage(actorId: string, orgId: string) {
     if (!(await this.perms(actorId, orgId)).manage) throw forbidden("Réservé au service des ressources humaines");
+  }
+  /** Écrire dans le dossier d'un agent : réservé au service RH, et jamais dans le sien. */
+  private async requireWrite(actorId: string, orgId: string, userId: string) {
+    await this.requireManage(actorId, orgId);
+    if (actorId === userId)
+      throw forbidden("Vous ne pouvez pas modifier votre propre dossier : un autre gestionnaire RH s'en charge");
   }
   /** Le chef de l'entité de l'agent, ou d'une entité au-dessus. */
   private async heads(actorId: string, orgId: string, userId: string) {
@@ -191,7 +194,7 @@ export class Hr {
       diplomas,
       contacts,
       assignments,
-      can: { manage: p.manage, self: actorId === userId },
+      can: { manage: p.manage && actorId !== userId, self: actorId === userId },
     };
   }
 
@@ -235,6 +238,7 @@ export class Hr {
     let link: { sent: boolean; link?: string } | null = null;
     const name = [input.first_names, input.last_name].filter(Boolean).join(" ").trim();
     if (userId) {
+      await this.requireWrite(actorId, orgId, userId);
       if (!(await this.svc.db.one("SELECT 1 FROM org_members WHERE org_id = $1 AND user_id = $2", [orgId, userId])))
         throw badRequest("Cette personne n'est pas membre de l'institution");
     } else {
@@ -300,7 +304,7 @@ export class Hr {
   }
 
   async update(actorId: string, orgId: string, userId: string, input: z.infer<typeof Patch>) {
-    await this.requireManage(actorId, orgId);
+    await this.requireWrite(actorId, orgId, userId);
     const before = await this.row(orgId, userId);
     await this.assertUnit(orgId, input.unit_id);
     const cols = FIELDS.filter((k) => (input as Record<string, unknown>)[k] !== undefined);
@@ -358,21 +362,9 @@ export class Hr {
     return this.get(actorId, orgId, userId);
   }
 
-  async updateSelf(actorId: string, orgId: string, input: z.infer<typeof SelfPatch>) {
-    await this.row(orgId, actorId);
-    const cols = Object.keys(input).filter((k) => (input as Record<string, unknown>)[k] !== undefined);
-    if (cols.length)
-      await this.svc.db.query(
-        `UPDATE agent_records SET ${cols.map((c, i) => `${c} = $${i + 3}`).join(", ")}, updated_at = now() WHERE org_id = $1 AND user_id = $2`,
-        [orgId, actorId, ...cols.map((c) => (input as Record<string, unknown>)[c])],
-      );
-    await this.svc.log(actorId, "hr.agent.self", { orgId, data: { user_id: actorId, fields: cols } });
-    return this.get(actorId, orgId, actorId);
-  }
-
-  /** Diplômes et personnes à prévenir : le service RH, ou l'agent pour lui-même. */
+  /** Diplômes et personnes à prévenir : le service RH, pour le dossier d'un autre. */
   private async canEditLists(actorId: string, orgId: string, userId: string) {
-    if (actorId !== userId) await this.requireManage(actorId, orgId);
+    await this.requireWrite(actorId, orgId, userId);
     await this.row(orgId, userId);
   }
   async addDiploma(actorId: string, orgId: string, userId: string, i: z.infer<typeof Diploma>) {
@@ -421,7 +413,6 @@ export function hrRoutes(r: FastifyInstance, hr: Hr) {
   r.get("/api/hr/unregistered", async (req) => hr.unregistered(req.userId, req.orgId));
   r.post("/api/hr/agents", async (req) => hr.create(req.userId, req.orgId, Create.parse(req.body), info(req)));
   r.get("/api/hr/me", async (req) => hr.mine(req.userId, req.orgId));
-  r.patch("/api/hr/me", async (req) => hr.updateSelf(req.userId, req.orgId, SelfPatch.parse(req.body ?? {})));
   r.get<Id>("/api/hr/agents/:id", async (req) => hr.get(req.userId, req.orgId, req.params.id));
   r.patch<Id>("/api/hr/agents/:id", async (req) =>
     hr.update(req.userId, req.orgId, req.params.id, Patch.parse(req.body ?? {})),

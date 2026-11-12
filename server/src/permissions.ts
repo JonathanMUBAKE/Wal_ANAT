@@ -101,6 +101,13 @@ export const PERMISSION_GROUPS = [
     ],
   },
   {
+    group: "Ressources humaines",
+    items: [
+      { key: "hr.view", label: "Consulter les dossiers des agents" },
+      { key: "hr.manage", label: "Créer les agents et tenir leurs dossiers" },
+    ],
+  },
+  {
     group: "Administration de l'organisation",
     items: [
       { key: "org.settings", label: "Modifier l'organisation" },
@@ -136,6 +143,8 @@ const GOVERNANCE = new Set<Permission>([
   "partners.manage",
   "risks.manage",
   "agenda.manage",
+  "hr.view",
+  "hr.manage",
 ]);
 const ADMIN_ONLY = (p: Permission) => p.startsWith("org.") || GOVERNANCE.has(p);
 const NOT_FOR_GUESTS = new Set<Permission>([
@@ -155,7 +164,86 @@ const NOT_FOR_GUESTS = new Set<Permission>([
   "teams.manage",
 ]);
 
-/** Droits des quatre profils créés avec chaque organisation : ils reproduisent les rôles historiques. */
+/*
+ * Profils de l'institution (docs/MODELE-INSTITUTIONNEL.md) : qui voit quoi, qui fait quoi, qui valide quoi.
+ * Un profil se règle ensuite dans « Profils et droits » ; ceux-ci sont créés avec chaque organisation.
+ */
+const AGENT: Permission[] = [
+  "projects.create",
+  "projects.edit",
+  "sections.manage",
+  "tasks.create",
+  "tasks.edit",
+  "tasks.move",
+  "tasks.comment",
+  "attachments.upload",
+  "ai.assistant",
+  "meetings.view",
+  "attributions.view",
+  "plans.view",
+  "signature.use",
+  "decisions.view",
+  "partners.view",
+  "agenda.view",
+  "teams.join",
+];
+const CHEF_ENTITE: Permission[] = [
+  ...AGENT,
+  "projects.import",
+  "projects.archive",
+  "projects.members",
+  "tasks.delete",
+  "attachments.delete",
+  "ai.delegate",
+  "ai.approve",
+  "attributions.manage",
+  "plans.manage",
+  "deliverables.view",
+  "deliverables.manage",
+  "deliverables.validate",
+  "consultants.manage",
+  "correspondence.view",
+  "risks.manage",
+  "teams.create",
+  "teams.manage",
+];
+const DGA: Permission[] = [
+  ...CHEF_ENTITE,
+  "meetings.manage",
+  "meetings.validate",
+  "attributions.approve",
+  "plans.approve",
+  "correspondence.manage",
+  "pilotage.view",
+  "agenda.manage",
+  "partners.manage",
+  "hr.view",
+];
+const DG: Permission[] = [...DGA, "projects.delete", "decisions.record", "ai.rules"];
+const INFORMATIQUE: Permission[] = [
+  ...AGENT,
+  "projects.members",
+  "ai.rules",
+  "teams.create",
+  "teams.manage",
+  "org.settings",
+  "org.structure",
+  "org.members",
+  "org.profiles",
+  "org.mail",
+];
+const STAGIAIRE: Permission[] = [
+  "tasks.create",
+  "tasks.edit",
+  "tasks.comment",
+  "attachments.upload",
+  "ai.assistant",
+  "meetings.view",
+  "attributions.view",
+];
+const CONSULTANT: Permission[] = ["tasks.create", "tasks.edit", "tasks.comment", "attachments.upload", "ai.assistant"];
+
+/** Droits des profils créés avec chaque organisation : les rôles historiques, puis ceux de l'institution. */
 export const SYSTEM_PROFILES: {
   role: BaseRole;
   slug?: string;
@@ -193,6 +281,62 @@ export const SYSTEM_PROFILES: {
     name: "Lecture seule",
     description: "Consulte ce qui lui est partagé, sans rien pouvoir modifier.",
     permissions: [],
+  },
+  {
+    role: "member",
+    slug: "agent",
+    name: "Agent",
+    description:
+      "Agent de l'institution : ses tâches et celles de son entité, ses projets, ses réunions ; consulte décisions, plans et partenaires ; vise au parapheur quand il est dans le circuit.",
+    permissions: AGENT,
+  },
+  {
+    role: "member",
+    slug: "stagiaire",
+    name: "Stagiaire",
+    description:
+      "Stagiaire : travaille sur les tâches et projets qui lui sont ouverts, consulte les réunions ; ne crée pas de projet.",
+    permissions: STAGIAIRE,
+  },
+  {
+    role: "guest",
+    slug: "consultant",
+    name: "Consultant",
+    description:
+      "Consultant extérieur sous contrat : n'accède qu'aux projets de sa mission, y produit tâches et livrables ; son accès s'arrête avec le contrat.",
+    permissions: CONSULTANT,
+  },
+  {
+    role: "member",
+    slug: "chef_entite",
+    name: "Chef d'entité",
+    description:
+      "Responsable d'une direction, d'un service ou d'une cellule : confie les tâches et suit ses agents, prépare le plan de travail, porte les projets, valide les livrables, tient les réunions de son entité.",
+    permissions: CHEF_ENTITE,
+  },
+  {
+    role: "admin",
+    slug: "dga",
+    name: "DGA",
+    description:
+      "Directeur général adjoint : pilote l'ensemble, approuve les plans, gère les réunions et le courrier, consulte les dossiers RH ; n'enregistre pas les décisions de la DG.",
+    permissions: DGA,
+  },
+  {
+    role: "admin",
+    slug: "dg",
+    name: "DG",
+    description:
+      "Directeur général : voit tout le pilotage, tranche et enregistre les décisions, approuve, signe ; ne règle pas la technique (messagerie, profils).",
+    permissions: DG,
+  },
+  {
+    role: "member",
+    slug: "informatique",
+    name: "Responsable informatique",
+    description:
+      "Administre l'outil (personnes, structure, profils, messagerie, règles IA) sans accès au pilotage, aux décisions ni au courrier confidentiel.",
+    permissions: INFORMATIQUE,
   },
 ];
 

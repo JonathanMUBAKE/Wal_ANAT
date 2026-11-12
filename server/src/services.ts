@@ -1,4 +1,5 @@
 import { now, uid, type Db, type Queryable, type Row } from "./db.js";
+import { NOTIFICATION_CATEGORIES, categoryOfKind, type NotificationCategory } from "./notification-categories.js";
 import type { Bus } from "./bus.js";
 import {
   SYSTEM_PROFILES,
@@ -462,7 +463,7 @@ export class Services {
   private async insertSystemProfiles(q: Queryable, orgId: string) {
     for (const p of SYSTEM_PROFILES) {
       await q.query(
-        "INSERT INTO access_profiles (id, org_id, name, description, base_role, permissions, is_system) VALUES ($1,$2,$3,$4,$5,$6,TRUE) ON CONFLICT (id) DO NOTHING",
+        "INSERT INTO access_profiles (id, org_id, name, description, base_role, permissions, is_system) VALUES ($1,$2,$3,$4,$5,$6,TRUE) ON CONFLICT DO NOTHING",
         [
           p.slug ? `prf_${p.slug}_${orgId}` : systemProfileId(orgId, p.role),
           orgId,
@@ -479,6 +480,9 @@ export class Services {
     for (const o of await this.db.query<{ id: string }>(
       "SELECT o.id FROM organizations o WHERE NOT EXISTS (SELECT 1 FROM access_profiles p WHERE p.org_id = o.id AND p.is_system)",
     ))
+      await this.insertSystemProfiles(this.db, o.id);
+    // Profils de l'institution ajoutés depuis (Agent, Chef d'entité, DG…) : chaque organisation les reçoit une fois
+    for (const o of await this.db.query<{ id: string }>("SELECT id FROM organizations"))
       await this.insertSystemProfiles(this.db, o.id);
     await this.db.query("UPDATE org_members SET profile_id = 'prf_' || role || '_' || org_id WHERE profile_id IS NULL");
   }
@@ -1640,6 +1644,7 @@ export class Services {
     }
     if (changes.includes("assignee_id") && after.assignee_id && after.assignee_id !== actorId)
       await this.notifyAssigned(actorId, after);
+    await this.notifyTaskChanges(actorId, before, after, changes);
     if (changes.includes("completed") && after.completed && after.creator_id && after.creator_id !== actorId) {
       await this.notify(after.creator_id, await this.orgOfProject(after.project_id), {
         kind: "task.completed",
@@ -1931,12 +1936,22 @@ export class Services {
       project_id?: string | null;
       approval_id?: string | null;
       actor_id?: string | null;
+      /** Domaine (tâches, réunions…) : déduit du genre d'avis s'il n'est pas donné. */
+      category?: NotificationCategory;
+      /** Où agir : déduit de la tâche ou du domaine s'il n'est pas donné. */
+      link?: string | null;
     },
   ) {
     const id = uid("ntf");
+    const category = n.category ?? categoryOfKind(n.kind);
+    const link =
+      n.link ??
+      (n.task_id && n.project_id
+        ? `/projects/${n.project_id}?task=${n.task_id}`
+        : (NOTIFICATION_CATEGORIES.find((c) => c.id === category)?.route ?? "/inbox"));
     await this.db.query(
-      `INSERT INTO notifications (id, org_id, user_id, kind, title, body, task_id, project_id, approval_id, actor_id)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      `INSERT INTO notifications (id, org_id, user_id, kind, title, body, task_id, project_id, approval_id, actor_id, category, link)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
       [
         id,
         orgId || null,
@@ -1948,10 +1963,14 @@ export class Services {
         n.project_id ?? null,
         n.approval_id ?? null,
         n.actor_id ?? null,
+        category,
+        link,
       ],
     );
     this.bus.emit({
       type: "notification",
+      category,
+      link,
       userId,
       notificationId: id,
       orgId: orgId || null,
@@ -1961,6 +1980,53 @@ export class Services {
       projectId: n.project_id ?? null,
       taskId: n.task_id ?? null,
       actorId: n.actor_id ?? null,
+    });
+  }
+  /** Ce qui a changé sur une tâche, dit à ceux que cela concerne (jamais à l'auteur du changement). */
+  private async notifyTaskChanges(actorId: string, before: Task, after: Task, changes: string[]) {
+    const orgId = await this.orgOfProject(after.project_id);
+    const actor = (await this.user(actorId)).name;
+    if (changes.includes("assignee_id") && before.assignee_id && before.assignee_id !== actorId) {
+      const prev = await this.userOrNull(before.assignee_id);
+      if (prev && !prev.is_ai)
+        await this.notify(before.assignee_id, orgId, {
+          kind: "task.unassigned",
+          title: `${actor} vous a retiré « ${after.title} »`,
+          body: after.assignee_id ? `Elle est désormais confiée à ${(await this.user(after.assignee_id)).name}.` : "",
+          task_id: after.id,
+          project_id: after.project_id,
+          actor_id: actorId,
+        });
+    }
+    // Le chargé (inchangé) est prévenu de ce qui touche sa tâche
+    if (!after.assignee_id || after.assignee_id === actorId || changes.includes("assignee_id")) return;
+    const fr = (d: unknown) => (d ? String(d).slice(0, 10).split("-").reverse().join("/") : "aucune");
+    const PRIO: Record<string, string> = {
+      none: "aucune",
+      low: "basse",
+      medium: "moyenne",
+      high: "haute",
+      urgent: "urgente",
+    };
+    const lines: string[] = [];
+    if (changes.includes("due_on")) lines.push(`Échéance : ${fr(before.due_on)} → ${fr(after.due_on)}`);
+    if (changes.includes("start_on")) lines.push(`Début : ${fr(before.start_on)} → ${fr(after.start_on)}`);
+    if (changes.includes("priority"))
+      lines.push(`Priorité : ${PRIO[before.priority] ?? before.priority} → ${PRIO[after.priority] ?? after.priority}`);
+    if (changes.includes("title")) lines.push(`Intitulé : « ${before.title} » → « ${after.title} »`);
+    if (changes.includes("description")) lines.push("Description modifiée");
+    if (changes.includes("completed") && !after.completed) lines.push("Tâche rouverte");
+    if (changes.includes("section_id")) lines.push("Tâche déplacée dans une autre colonne");
+    if (!lines.length) return;
+    const assignee = await this.userOrNull(after.assignee_id);
+    if (!assignee || assignee.is_ai) return;
+    await this.notify(after.assignee_id, orgId, {
+      kind: "task.changed",
+      title: `${actor} a modifié « ${after.title} »`,
+      body: lines.join("\n"),
+      task_id: after.id,
+      project_id: after.project_id,
+      actor_id: actorId,
     });
   }
   private async notifyAssigned(actorId: string, task: Task) {

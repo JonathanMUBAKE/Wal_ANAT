@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { openDb, type Db } from "./db.js";
 import { Bus, type DomainEvent } from "./bus.js";
-import { HttpError, Services, forbidden, withAvatar } from "./services.js";
+import { HttpError, Services, badRequest, forbidden, withAvatar } from "./services.js";
 import { MailService } from "./mail.js";
 import { AiEngine } from "./ai/engine.js";
 import { AnthropicProvider, MODEL, type AiProvider } from "./ai/provider.js";
@@ -44,6 +44,8 @@ import { Pilotage } from "./pilotage.js";
 import { Plans } from "./plans.js";
 import { planRoutes } from "./plans-routes.js";
 import { UnitTasks, unitTaskRoutes } from "./unit-tasks.js";
+import { Hr, hrRoutes } from "./hr.js";
+import { NOTIFICATION_CATEGORIES } from "./notification-categories.js";
 import { Attributions } from "./attributions.js";
 import { attributionRoutes } from "./attributions-routes.js";
 import { Meetings } from "./meetings.js";
@@ -306,6 +308,7 @@ export async function buildApp(opts: AppOptions = {}) {
     activityRoutes(r, new Activities(svc), new Pilotage(svc));
     planRoutes(r, new Plans(svc), new Deliverables(svc));
     unitTaskRoutes(r, new UnitTasks(svc));
+    hrRoutes(r, new Hr(svc, provisioning));
     registerRoutes(r, new Signature(svc), new Registers(svc), new Gaps(svc));
     decisionRoutes(r, new Decisions(svc));
     referentialRoutes(r, new Referentials(svc));
@@ -773,6 +776,30 @@ export async function buildApp(opts: AppOptions = {}) {
 
     // ---------------------------------------------------------------- boîte de réception & recherche
     r.get("/api/notifications", async (req) => svc.listNotifications(me(req), org(req)));
+    // Préférences de notification : par domaine, recevoir aussi un courriel ou non (l'avis dans l'outil reste)
+    r.get("/api/me/notification-prefs", async (req) => {
+      const row = await db.one<{ p: Record<string, { email?: boolean }> }>(
+        "SELECT notification_prefs AS p FROM users WHERE id = $1",
+        [me(req)],
+      );
+      return {
+        categories: NOTIFICATION_CATEGORIES,
+        prefs: Object.fromEntries(
+          NOTIFICATION_CATEGORIES.map((c) => [c.id, { email: row?.p?.[c.id]?.email !== false }]),
+        ),
+      };
+    });
+    r.put("/api/me/notification-prefs", async (req) => {
+      const ids = new Set<string>(NOTIFICATION_CATEGORIES.map((c) => c.id));
+      const body = z.record(z.string(), z.object({ email: z.boolean() })).parse(req.body);
+      const unknown = Object.keys(body).filter((k) => !ids.has(k));
+      if (unknown.length) throw badRequest(`Domaine de notification inconnu : ${unknown.join(", ")}`);
+      await db.query("UPDATE users SET notification_prefs = notification_prefs || $1::jsonb WHERE id = $2", [
+        JSON.stringify(body),
+        me(req),
+      ]);
+      return { ok: true };
+    });
     r.post("/api/notifications/read", async (req) => {
       const b = z.object({ ids: z.array(z.string()).optional(), all: z.boolean().optional() }).parse(req.body);
       await svc.markRead(me(req), org(req), b.all ? "all" : (b.ids ?? []));

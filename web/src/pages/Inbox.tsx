@@ -1,12 +1,31 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { AtSign, BellRing, CheckCheck, CircleCheck, FileText, MessageSquare, Sparkles, UserPlus } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  AlarmClock,
+  AtSign,
+  BellRing,
+  CalendarX,
+  CheckCheck,
+  CircleCheck,
+  FileText,
+  Landmark,
+  MessageSquare,
+  Pencil,
+  Settings2,
+  Sparkles,
+  UserMinus,
+  UserPlus,
+} from "lucide-react";
+import { Drawer } from "@/components/drawer";
 import { Avatar, Button, Empty, cn } from "@/components/ui";
 import { ApprovalCard } from "@/components/ai";
 import { useApprovals, useNotifications, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { ago } from "@/lib/format";
 import { api } from "@/lib/api";
-import type { Notification } from "@/lib/types";
+import type { Notification, NotificationPrefs } from "@/lib/types";
 
 const KIND_ICON: Record<string, typeof AtSign> = {
   mention: AtSign,
@@ -15,23 +34,57 @@ const KIND_ICON: Record<string, typeof AtSign> = {
   "task.completed": CircleCheck,
   approval: Sparkles,
   "project.update": FileText,
+  "task.changed": Pencil,
+  "task.unassigned": UserMinus,
+  "deadline.soon": AlarmClock,
+  "deadline.late": AlarmClock,
+  "meeting.convened": Landmark,
+  "meeting.changed": Landmark,
+  "meeting.cancelled": CalendarX,
 };
+/** Domaines proposés en filtre, dans l'ordre de la vie de l'institution. */
+const FILTERS: [string, string][] = [
+  ["tout", "Tout"],
+  ["non-lues", "Non lues"],
+  ["taches", "Tâches"],
+  ["reunions", "Réunions"],
+  ["courrier", "Courrier"],
+  ["decisions", "Décisions"],
+  ["parapheur", "Parapheur"],
+  ["equipe", "Équipe"],
+  ["projets", "Projets"],
+  ["partenariats", "Partenariats"],
+];
 
 export function InboxPage() {
   const { data: notifs } = useNotifications();
   const { data: approvals } = useApprovals();
   const users = useUserMap();
   const shell = useShell();
+  const nav = useNavigate();
   const qc = useQueryClient();
+  const [filter, setFilter] = useState("tout");
+  const [settings, setSettings] = useState(false);
   const read = async (ids: string[] | "all") => {
     await api.post("/api/notifications/read", ids === "all" ? { all: true } : { ids });
     qc.invalidateQueries({ queryKey: ["notifications"] });
   };
   const open = (n: Notification) => {
     if (!n.read) read([n.id]);
+    // La tâche s'ouvre sur place ; le reste mène à l'endroit où agir
     if (n.task_id) shell.openTask(n.task_id);
+    else if (n.link) nav(n.link);
   };
-  const list = (notifs ?? []).filter((n) => n.kind !== "approval" || !n.read);
+  const all = (notifs ?? []).filter((n) => n.kind !== "approval" || !n.read);
+  const list = all.filter((n) =>
+    filter === "tout" ? true : filter === "non-lues" ? !n.read : (n.category ?? "autres") === filter,
+  );
+  const count = (f: string) =>
+    f === "tout"
+      ? all.length
+      : f === "non-lues"
+        ? all.filter((n) => !n.read).length
+        : all.filter((n) => n.category === f).length;
   const unread = list.filter((n) => !n.read).length;
 
   return (
@@ -41,12 +94,34 @@ export function InboxPage() {
           <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Boîte de réception</h1>
           <p className="mt-1 text-[13px] text-muted">{unread ? `${unread} non lue(s)` : "Tout est lu."}</p>
         </div>
-        {unread > 0 && (
-          <Button size="sm" className="ml-auto" icon={<CheckCheck className="size-3.5" />} onClick={() => read("all")}>
-            Tout marquer comme lu
+        <span className="ml-auto flex gap-2">
+          {unread > 0 && (
+            <Button size="sm" icon={<CheckCheck className="size-3.5" />} onClick={() => read("all")}>
+              Tout marquer comme lu
+            </Button>
+          )}
+          <Button size="sm" icon={<Settings2 className="size-3.5" />} onClick={() => setSettings(true)}>
+            Préférences
           </Button>
-        )}
+        </span>
       </header>
+      <nav aria-label="Domaines" className="mb-4 flex flex-wrap gap-1.5">
+        {FILTERS.filter(([f]) => f === "tout" || f === "non-lues" || count(f) > 0).map(([f, label]) => (
+          <button
+            key={f}
+            type="button"
+            aria-pressed={filter === f}
+            onClick={() => setFilter(f)}
+            className={cn(
+              "rounded-full border px-3 py-1 text-[12.5px]",
+              filter === f ? "border-fg bg-fg text-bg" : "border-line text-muted hover:text-fg",
+            )}
+          >
+            {label} <span className="tabular-nums opacity-70">{count(f)}</span>
+          </button>
+        ))}
+      </nav>
+      {settings && <PrefsDrawer onClose={() => setSettings(false)} />}
 
       {!!approvals?.length && (
         <section className="mb-8">
@@ -98,7 +173,7 @@ export function InboxPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className={cn("text-[13.5px] leading-snug", !n.read && "font-medium")}>{n.title}</p>
-                {n.body && <p className="mt-0.5 line-clamp-2 text-[12.5px] text-muted">{n.body}</p>}
+                {n.body && <p className="mt-0.5 line-clamp-3 whitespace-pre-line text-[12.5px] text-muted">{n.body}</p>}
                 <p className="mt-1 text-[11.5px] text-faint">{ago(n.created_at)}</p>
               </div>
               {!n.read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-ai" />}
@@ -107,5 +182,56 @@ export function InboxPage() {
         })}
       </section>
     </div>
+  );
+}
+
+/** Préférences : par domaine, recevoir aussi un courriel. L'avis dans l'outil reste toujours. */
+function PrefsDrawer({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["notification-prefs"],
+    queryFn: () => api.get<NotificationPrefs>("/api/me/notification-prefs"),
+  });
+  const toggle = (id: string, email: boolean) =>
+    api.put("/api/me/notification-prefs", { [id]: { email } }).then(
+      () => {
+        qc.invalidateQueries({ queryKey: ["notification-prefs"] });
+        toast.success(email ? "Vous recevrez aussi un courriel" : "Plus de courriel pour ce domaine");
+      },
+      (e: Error) => toast.error(e.message),
+    );
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      width={560}
+      subtitle="Boîte de réception"
+      title="Préférences de notification"
+      footer={<Button onClick={onClose}>Fermer</Button>}
+    >
+      <p className="mb-4 text-[13px] text-muted">
+        Chaque avis arrive toujours ici. Choisissez les domaines pour lesquels vous recevez aussi un courriel.
+      </p>
+      {data ? (
+        <ul className="divide-y divide-line rounded-xl border border-line">
+          {data.categories.map((c) => (
+            <li key={c.id} className="flex items-center gap-3 px-4 py-3">
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13.5px] font-medium">{c.label}</span>
+                <span className="block text-[12px] text-muted">{c.hint}</span>
+              </span>
+              <label className="flex items-center gap-2 text-[12.5px] text-muted">
+                <input
+                  type="checkbox"
+                  checked={data.prefs[c.id]?.email !== false}
+                  onChange={(e) => toggle(c.id, e.target.checked)}
+                />
+                Courriel
+              </label>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </Drawer>
   );
 }

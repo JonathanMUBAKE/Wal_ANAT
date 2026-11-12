@@ -148,6 +148,14 @@ const LABELS: Record<string, string> = {
   "dossier.document.updated": "Document de dossier modifié",
   "dossier.document.deleted": "Document de dossier supprimé",
   "dossier.document.read": "Document de dossier consulté",
+  // Ressources humaines
+  "hr.agent.created": "Agent créé (dossier et compte)",
+  "hr.agent.updated": "Dossier d'agent modifié",
+  "hr.agent.self": "Coordonnées mises à jour par l'agent",
+  "hr.diploma.added": "Diplôme ajouté",
+  "hr.diploma.deleted": "Diplôme retiré",
+  "hr.contact.added": "Personne à prévenir ajoutée",
+  "hr.contact.deleted": "Personne à prévenir retirée",
   // Organisation et paramétrage
   "org.created": "Institution créée",
   "org.member": "Membre de l'institution mis à jour",
@@ -220,6 +228,7 @@ const CATEGORY_OF: Record<string, string> = {
   activity: "Activités",
   plan: "Plans de travail",
   dossier: "Documents",
+  hr: "Ressources humaines",
   org: "Organisation",
   unit: "Organisation",
   domain: "Organisation",
@@ -240,6 +249,7 @@ export const AUDIT_CATEGORIES = [
   "Activités",
   "Plans de travail",
   "Documents",
+  "Ressources humaines",
   "Organisation",
   "Paramétrage",
   "Sécurité",
@@ -313,6 +323,8 @@ const IMPORTANT = new Set([
   "org.member",
   "audit.analysed",
   "audit.exported",
+  "hr.agent.created",
+  "hr.agent.updated",
 ]);
 export const severityOf = (kind: string): Severity =>
   CRITICAL.has(kind) || kind.endsWith(".deleted") || kind.endsWith(".removed")

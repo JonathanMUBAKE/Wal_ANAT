@@ -11,6 +11,8 @@ import { Plans } from "./plans.js";
 import { Registers } from "./registers.js";
 import { Signature } from "./signature.js";
 import { UnitTasks } from "./unit-tasks.js";
+import { Hr } from "./hr.js";
+import type { Provisioning } from "./auth/provisioning.js";
 import type { Services } from "./services.js";
 
 /** Données d'illustration, entièrement fictives, pour présenter la version ANAT (ANAT_DEMO=1 uniquement). */
@@ -415,6 +417,108 @@ export async function seedGovDemo(svc: Services) {
   await seedAgreements(svc, org, me);
   await seedPartnerLinks(svc, org, me);
   await seedUnitTasks(svc, org);
+  await seedHr(svc, org);
+}
+
+/** Dossiers RH fictifs des personnes de démonstration (module RH). */
+async function seedHr(svc: Services, org: string) {
+  const hr = new Hr(svc, null as unknown as Provisioning);
+  const info = { ip: "127.0.0.1", userAgent: "démonstration" };
+  for (const [user_id, civility, first_names, last_name, status, grade, category, function_title, hired_on] of [
+    [
+      "u_alice",
+      "Mme",
+      "Alice",
+      "Martin",
+      "fonctionnaire",
+      "Administrateur civil principal",
+      "A",
+      "Directrice",
+      "2012-09-03",
+    ],
+    [
+      "u_karim",
+      "M.",
+      "Karim",
+      "Benali",
+      "fonctionnaire",
+      "Ingénieur en chef",
+      "A",
+      "Chef du département Ingénierie",
+      "2015-02-02",
+    ],
+    ["u_chloe", "Mme", "Chloé", "Dubois", "contractuel", "Attachée", "A", "Responsable Produit & Design", "2019-06-17"],
+    [
+      "u_theo",
+      "M.",
+      "Théo",
+      "Garnier",
+      "fonctionnaire",
+      "Ingénieur des travaux",
+      "A",
+      "Chef du service Qualité",
+      "2018-01-08",
+    ],
+    [
+      "u_hugo",
+      "M.",
+      "Hugo",
+      "Lefèvre",
+      "fonctionnaire",
+      "Attaché principal",
+      "A",
+      "Directeur du marketing",
+      "2016-04-11",
+    ],
+    [
+      "u_ines",
+      "Mme",
+      "Inès",
+      "Moreau",
+      "fonctionnaire",
+      "Attachée principale",
+      "A",
+      "Cheffe du service RH",
+      "2014-10-01",
+    ],
+  ] as const) {
+    const unit = await svc.db.one<{ unit_id: string | null }>(
+      "SELECT unit_id FROM org_members WHERE org_id = $1 AND user_id = $2",
+      [org, user_id],
+    );
+    if (!unit) continue;
+    await hr
+      .create(
+        "u_alice",
+        org,
+        {
+          user_id,
+          civility,
+          first_names,
+          last_name,
+          status,
+          grade,
+          category,
+          function_title,
+          hired_on,
+          function_since: hired_on,
+          nationality: "Fictivienne",
+          unit_id: unit.unit_id,
+        },
+        info,
+      )
+      .catch(() => undefined);
+  }
+  await hr
+    .addDiploma("u_alice", org, "u_karim", {
+      title: "Diplôme d'ingénieur (exemple fictif)",
+      level: "Bac+5",
+      year: 2012,
+    })
+    .catch(() => undefined);
+  await hr
+    .addContact("u_alice", org, "u_karim", { name: "Contact fictif", relation: "Conjoint", phone: "+000 00 00 00" })
+    .catch(() => undefined);
 }
 
 /**

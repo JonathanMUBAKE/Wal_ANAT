@@ -407,6 +407,12 @@ export class MailService {
     if (!m?.notifications || !m.smtp.host) return;
     const user = await this.svc.userOrNull(e.userId);
     if (!user || user.is_ai || !user.email) return;
+    // Chacun choisit, par domaine, s'il reçoit aussi un courriel ; l'avis reste dans l'outil
+    const prefs = await this.db.one<{ p: Record<string, { email?: boolean }> }>(
+      "SELECT notification_prefs AS p FROM users WHERE id = $1",
+      [e.userId],
+    );
+    if (e.category && prefs?.p?.[e.category]?.email === false) return;
     const task = e.taskId
       ? await this.db.one<{ key: string; title: string }>(
           "SELECT p.key || '-' || t.number AS key, t.title FROM tasks t JOIN projects p ON p.id = t.project_id WHERE t.id = $1",
@@ -423,7 +429,7 @@ export class MailService {
       body: e.body || undefined,
       orgName: org?.name,
       link: base
-        ? `${base}${e.taskId && e.projectId ? `/projects/${e.projectId}?task=${e.taskId}` : "/inbox"}`
+        ? `${base}${e.link ?? (e.taskId && e.projectId ? `/projects/${e.projectId}?task=${e.taskId}` : "/inbox")}`
         : undefined,
     });
     await this.send(e.orgId, { to: user.email, subject, text, projectId: e.projectId });

@@ -14,6 +14,7 @@ import {
   Gauge,
   Handshake,
   House,
+  IdCard,
   Inbox,
   KeyRound,
   LogOut,
@@ -155,6 +156,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           {link("/", House, "Accueil")}
           {link("/my-tasks", CheckCircle2, "Mes tâches")}
           {!!myUnits?.length && link("/entite", Users, "Mon entité")}
+          {link("/mon-dossier", IdCard, "Mon dossier")}
           {link("/ai", Sparkles, "Coéquipiers IA", approvals?.length, true)}
         </nav>
 
@@ -188,6 +190,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <NavSection title="Organisation">
           {link("/org", Network, "Structure")}
           {link("/teams", Users, "Équipes")}
+          {(can("hr.view") || can("hr.manage")) && link("/rh", IdCard, "Ressources humaines")}
           {me?.platform_role && link("/admin", ShieldCheck, "Administration système")}
         </NavSection>
       </div>

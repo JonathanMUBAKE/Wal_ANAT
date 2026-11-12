@@ -34,6 +34,8 @@ export type DomainEvent =
       projectId?: string | null;
       taskId?: string | null;
       actorId?: string | null;
+      category?: string;
+      link?: string | null;
     }
   | { type: "ai.run"; runId: string; projectId: string | null; taskId: string | null; agentId: string; status: string }
   | { type: "ai.step"; runId: string; projectId: string | null; taskId: string | null }

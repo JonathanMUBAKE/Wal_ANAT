@@ -363,8 +363,16 @@ export interface Notification {
   project_id: string | null;
   approval_id: string | null;
   actor_id: string | null;
+  /** Domaine : taches, reunions, courrier, decisions, parapheur, projets, partenariats, equipe, ia, autres. */
+  category?: string;
+  /** Où agir. */
+  link?: string | null;
   read: boolean;
   created_at: string;
+}
+export interface NotificationPrefs {
+  categories: { id: string; label: string; hint: string; route: string }[];
+  prefs: Record<string, { email: boolean }>;
 }
 export interface Stats {
   total: number;

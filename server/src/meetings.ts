@@ -820,7 +820,41 @@ export class Meetings {
         vals,
       );
     }
+    // Après la convocation, les convoqués sont prévenus de ce qui change pour eux : date, horaire, lieu, lien
+    if (m.convened_at && m.status === "planned") {
+      const fr = (d: unknown) => (d ? String(d).slice(0, 10).split("-").reverse().join("/") : "—");
+      const lines: string[] = [];
+      if (patch.meeting_date && patch.meeting_date !== String(m.meeting_date).slice(0, 10))
+        lines.push(`Date : ${fr(m.meeting_date)} → ${fr(patch.meeting_date)}`);
+      if (patch.start_time !== undefined && (patch.start_time ?? "") !== (m.start_time ?? ""))
+        lines.push(`Heure : ${m.start_time ?? "—"} → ${patch.start_time ?? "—"}`);
+      if (patch.location !== undefined && patch.location !== m.location)
+        lines.push(`Lieu : ${m.location || "—"} → ${patch.location || "—"}`);
+      if (patch.video_link !== undefined && patch.video_link.trim() !== m.video_link)
+        lines.push("Lien de visioconférence modifié");
+      if (lines.length)
+        await this.notifyInvited(actorId, m, {
+          kind: "meeting.changed",
+          title: `Réunion modifiée : ${m.title || m.meeting_type}`,
+          body: lines.join("\n"),
+        });
+    }
     return this.get(actorId, id);
+  }
+
+  /** Prévient chaque convoqué (personne de l'institution), sauf l'auteur. */
+  private async notifyInvited(actorId: string, m: MeetingRow, n: { kind: string; title: string; body: string }) {
+    const invited = await this.svc.db.query<{ user_id: string }>(
+      "SELECT DISTINCT user_id FROM meeting_attendees WHERE meeting_id = $1 AND invited AND user_id IS NOT NULL",
+      [m.id],
+    );
+    for (const a of invited)
+      if (a.user_id !== actorId)
+        await this.svc.notify(a.user_id, m.org_id, {
+          ...n,
+          actor_id: actorId,
+          link: n.kind === "meeting.cancelled" ? "/reunions" : `/reunions/${m.id}`,
+        });
   }
 
   async saveContent(actorId: string, id: string, input: ContentInput) {
@@ -994,6 +1028,13 @@ export class Meetings {
     const { m, can } = await this.readable(actorId, id);
     if (!can.manage) throw forbidden("Seuls les gestionnaires des réunions suppriment une réunion");
     if (m.status === "validated") throw locked();
+    // Une séance convoquée qui disparaît : les convoqués sont prévenus de l'annulation
+    if (m.convened_at && m.status === "planned")
+      await this.notifyInvited(actorId, m, {
+        kind: "meeting.cancelled",
+        title: `Réunion annulée : ${m.title || m.meeting_type}`,
+        body: `La séance du ${String(m.meeting_date).slice(0, 10).split("-").reverse().join("/")} n'aura pas lieu.`,
+      });
     await this.svc.db.query("DELETE FROM meetings WHERE id = $1", [id]);
     await this.svc.log(actorId, "meeting.deleted", { orgId: m.org_id, data: { reference: meetingReference(m) } });
   }

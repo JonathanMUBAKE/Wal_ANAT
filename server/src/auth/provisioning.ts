@@ -253,6 +253,19 @@ export class Provisioning {
     return this.enrol(actorId, orgId, input, info);
   }
 
+  /**
+   * Ouverture du compte d'un agent par le service RH (module RH) : le droit hr.manage est vérifié par l'appelant.
+   * Même parcours qu'une invitation : lien personnel, l'agent choisit son mot de passe.
+   */
+  enrolAgent(
+    actorId: string,
+    orgId: string,
+    input: { email: string; name: string; profile_id: string; unit_id?: string | null; title?: string },
+    info: RequestInfo,
+  ) {
+    return this.enrol(actorId, orgId, input, info);
+  }
+
   /** Crée le compte s'il n'existe pas, l'invite dans l'institution et envoie le lien de finalisation. */
   private async enrol(
     actorId: string,

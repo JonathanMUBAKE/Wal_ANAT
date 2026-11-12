@@ -1,3 +1,4 @@
+import { categoryOfReminder } from "./notification-categories.js";
 import { today, type Services } from "./services.js";
 
 /*
@@ -60,6 +61,32 @@ const frDate = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4
 export class Reminders {
   constructor(private svc: Services) {}
 
+  /**
+   * Un retard est signalé une fois au chef de l'entité du chargé (ou de l'entité au-dessus si le chargé la dirige) :
+   * il peut relancer, réattribuer ou ajuster l'échéance.
+   */
+  private async escalate(s: (typeof SOURCES)[number], r: Due) {
+    const head = await this.svc.db.one<{ manager_id: string; name: string }>(
+      `WITH RECURSIVE up(id, manager_id, parent_id, depth) AS (
+         SELECT u.id, u.manager_id, u.parent_id, 0 FROM org_units u
+           JOIN org_members om ON om.unit_id = u.id AND om.org_id = $1 AND om.user_id = $2
+         UNION SELECT p.id, p.manager_id, p.parent_id, up.depth + 1 FROM org_units p JOIN up ON p.id = up.parent_id
+       )
+       SELECT up.manager_id, us.name FROM up JOIN users us ON us.id = $2
+        WHERE up.manager_id IS NOT NULL AND up.manager_id <> $2 ORDER BY up.depth LIMIT 1`,
+      [r.org_id, r.user_id],
+    );
+    if (!head) return;
+    await this.svc.notify(head.manager_id, r.org_id, {
+      kind: `${s.kind}.late.manager`,
+      title: `${head.name} est en retard : ${r.label}`,
+      body: `${s.noun} attendue le ${frDate(r.due_on)}. Vous pouvez relancer, réattribuer ou ajuster l'échéance.`,
+      project_id: r.project_id ?? null,
+      task_id: r.task_id ?? null,
+      category: "equipe",
+    });
+  }
+
   async sweep(now = today()) {
     for (const s of SOURCES) {
       const rows = await this.svc.db.query<Due>(s.sql, [addDays(now, s.ahead)]);
@@ -82,7 +109,9 @@ export class Reminders {
             : `${s.noun} à rendre ${when}.`,
           project_id: r.project_id ?? null,
           task_id: r.task_id ?? null,
+          category: categoryOfReminder[s.kind],
         });
+        if (late) await this.escalate(s, r);
       }
     }
   }

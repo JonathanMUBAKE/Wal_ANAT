@@ -119,6 +119,24 @@ export interface AdminOrg {
   id: string;
   name: string;
   profiles: { id: string; name: string; base_role: BaseRole }[];
+  units: { id: string; name: string; kind: string }[];
+}
+export interface AuditEntry {
+  id: string;
+  source: "activity" | "security";
+  created_at: string;
+  kind: string;
+  label: string;
+  category: string;
+  severity: Severity;
+  actor_id: string | null;
+  actor_name: string;
+  target_id: string | null;
+  object_id: string | null;
+  summary: string;
+  org_id: string | null;
+  org_name: string | null;
+  ip: string | null;
 }
 export interface SecurityEvent {
   id: string;
@@ -388,4 +406,47 @@ export interface ParsedTask {
   due_on: string | null;
   priority: Priority;
   section_id: string | null;
+}
+
+export type Severity = "critique" | "importante" | "normale";
+export interface UserJournalData {
+  user: { id: string; name: string; email: string; status: string; title: string | null };
+  stats: {
+    logins: number;
+    failed_logins: number;
+    last_login_at: string | null;
+    addresses: number;
+    activities: number;
+    critical: number;
+  };
+  connections: AuditEntry[];
+  activities: AuditEntry[];
+}
+export interface AuditSignal {
+  code: string;
+  severity: Severity;
+  title: string;
+  detail: string;
+  count: number;
+  evidence: { id: string; created_at: string; actor_name: string; label: string; summary: string }[];
+}
+export interface AuditAnalysis {
+  generated_at: string;
+  provider: string;
+  stats: {
+    total: number;
+    critique: number;
+    importante: number;
+    normale: number;
+    actors: number;
+    by_category: { category: string; count: number }[];
+    top_actors: { actor_id: string | null; actor_name: string; count: number }[];
+  };
+  signals: AuditSignal[];
+  ai: {
+    summary: string;
+    points: { severity: Severity; title: string; detail: string }[];
+    recommendations: string[];
+  } | null;
+  ai_error?: string;
 }

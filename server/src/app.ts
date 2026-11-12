@@ -26,6 +26,7 @@ import { Activities } from "./activities.js";
 import { activityRoutes } from "./activities-routes.js";
 import { Deliverables } from "./deliverables.js";
 import { Gaps } from "./gaps.js";
+import { Audit } from "./audit.js";
 import { Registers } from "./registers.js";
 import { registerRoutes } from "./registers-routes.js";
 import { decisionRoutes } from "./decisions-routes.js";
@@ -257,6 +258,7 @@ export async function buildApp(opts: AppOptions = {}) {
       const u = await svc.user(body.user_id);
       if (u.is_ai) throw forbidden("Un coéquipier IA ne peut pas se connecter");
       sessionCookie(reply, await authService.createSession(u.id, requestInfo(req)), secureCookies);
+      await authService.record("login.success", { userId: u.id, ip: req.ip, data: { demo: true } });
       reply.clearCookie(ORG_COOKIE, { path: "/" });
       return u;
     }
@@ -269,6 +271,7 @@ export async function buildApp(opts: AppOptions = {}) {
     auth: authService,
     provisioning,
     access,
+    audit: new Audit(svc, provider, authService),
     secureCookies,
     demoLogin,
     invitationLimit,

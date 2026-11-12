@@ -435,6 +435,24 @@ export class DemoProvider implements AiProvider {
     await sleep(this.delayMs);
     const d = req.hint.data as Record<string, unknown>;
     switch (req.hint.kind) {
+      case "audit": {
+        const st = d.stats as { total: number; critique: number; importante: number; actors: number };
+        const sig = (d.signals as { severity: string; title: string; detail: string }[]) ?? [];
+        const crit = sig.filter((x) => x.severity === "critique");
+        return {
+          summary:
+            `Sur ${st.total} trace(s) laissées par ${st.actors} personne(s), ${st.critique} action(s) critiques et ${st.importante} importantes. ` +
+            (sig.length
+              ? `${sig.length} signal(aux) méritent une vérification${crit.length ? `, dont ${crit.length} critique(s)` : ""}.`
+              : "Aucun signal particulier : l'activité paraît régulière."),
+          points: sig.map((x) => ({ severity: x.severity, title: x.title, detail: x.detail })),
+          recommendations: [
+            ...(crit.length ? ["Vérifier chaque signal critique avec la personne concernée et son responsable."] : []),
+            "Activer la double authentification pour tous les comptes à droits élevés.",
+            "Conserver une copie datée du journal exporté avec le procès-verbal de contrôle.",
+          ],
+        } as T;
+      }
       case "subtasks": {
         const title = String(d.title ?? "la tâche");
         return {

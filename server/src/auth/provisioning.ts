@@ -12,7 +12,7 @@ type TokenKind = "invite" | "reset" | "setup";
 export type Registration = "invite" | "approval";
 const PATH: Record<TokenKind, string> = { invite: "/activation", setup: "/activation", reset: "/reinitialisation" };
 const LINK_EXPIRED = "Ce lien n'est plus valable : demandez-en un nouveau";
-const INVITATION_COLUMNS = "i.id, i.org_id, i.email, i.name, i.profile_id, i.created_account";
+const INVITATION_COLUMNS = "i.id, i.org_id, i.email, i.name, i.profile_id, i.created_account, i.unit_id, i.title";
 interface OrgInvitation {
   id: string;
   org_id: string;
@@ -20,6 +20,9 @@ interface OrgInvitation {
   name: string;
   profile_id: string;
   created_account: boolean;
+  /** Entité et fonction renseignées par l'administrateur, appliquées quand la personne finalise son accès. */
+  unit_id?: string | null;
+  title?: string;
 }
 
 /** Vie des comptes : invitations, demandes d'accès, réinitialisation, et console de l'administrateur système. */
@@ -85,6 +88,14 @@ export class Provisioning {
       "INSERT INTO org_members (org_id, user_id, role, profile_id) SELECT $1, $2, p.base_role, p.id FROM access_profiles p WHERE p.id = $3 ON CONFLICT (org_id, user_id) DO NOTHING",
       [inv.org_id, userId, inv.profile_id],
     );
+    if (inv.unit_id)
+      await q.query("UPDATE org_members SET unit_id = $1 WHERE org_id = $2 AND user_id = $3 AND unit_id IS NULL", [
+        inv.unit_id,
+        inv.org_id,
+        userId,
+      ]);
+    if (inv.title)
+      await q.query("UPDATE users SET title = $1 WHERE id = $2 AND (title IS NULL OR title = '')", [inv.title, userId]);
   }
 
   async peek(token: string) {
@@ -161,7 +172,12 @@ export class Provisioning {
     if (!process.env.SMTP_URL) return false;
     try {
       const transport = nodemailer.createTransport(process.env.SMTP_URL);
-      await transport.sendMail({ from: process.env.SMTP_FROM ?? "Cadence <no-reply@localhost>", to, subject, text });
+      await transport.sendMail({
+        from: process.env.SMTP_FROM ?? "ANAT Pilotage <no-reply@localhost>",
+        to,
+        subject,
+        text,
+      });
       transport.close();
       return true;
     } catch {
@@ -190,7 +206,7 @@ export class Provisioning {
       await this.deliver(
         inv.email,
         `Invitation à rejoindre ${org.name}`,
-        `Bonjour ${u.name},\n\n${org.name} vous invite à rejoindre son espace sur Cadence.\nConnectez-vous pour accepter ou refuser : ${this.publicUrl ?? ""}/login\n\nSi vous n'attendiez pas ce message, ignorez-le.\n\n— Cadence`,
+        `Bonjour ${u.name},\n\n${org.name} vous invite à rejoindre son espace sur ANAT Pilotage.\nConnectez-vous pour accepter ou refuser : ${this.publicUrl ?? ""}/login\n\nSi vous n'attendiez pas ce message, ignorez-le.\n\n— ANAT Pilotage`,
       );
       return { sent: true };
     }
@@ -199,7 +215,7 @@ export class Provisioning {
     const sent = await this.deliver(
       inv.email,
       `Votre accès à ${org.name}`,
-      `Bonjour ${u.name},\n\nVous êtes invité(e) à rejoindre ${org.name} sur Cadence.\nChoisissez votre mot de passe en ouvrant ce lien, valable ${INVITE_HOURS} heures :\n\n${link}\n\nSi vous n'attendiez pas ce message, ignorez-le.\n\n— Cadence`,
+      `Bonjour ${u.name},\n\nVous êtes invité(e) à rejoindre ${org.name} sur ANAT Pilotage.\nChoisissez votre mot de passe en ouvrant ce lien, valable ${INVITE_HOURS} heures :\n\n${link}\n\nSi vous n'attendiez pas ce message, ignorez-le.\n\n— ANAT Pilotage`,
     );
     return { sent, link: !sent && !process.env.SMTP_URL && inv.created_account ? link : undefined };
   }
@@ -207,8 +223,20 @@ export class Provisioning {
   private async createInvitation(input: Omit<OrgInvitation, "id">, invitedBy: string, q: Queryable = this.svc.db) {
     const inv: OrgInvitation = { id: uid("inv"), ...input };
     await q.query(
-      `INSERT INTO org_invitations (id, org_id, email, name, profile_id, invited_by, created_account, expires_at) VALUES ($1,$2,$3,$4,$5,$6,$7, now() + ($8 || ' hours')::interval)`,
-      [inv.id, inv.org_id, inv.email, inv.name, inv.profile_id, invitedBy, inv.created_account, String(INVITE_HOURS)],
+      `INSERT INTO org_invitations (id, org_id, email, name, profile_id, invited_by, created_account, expires_at, unit_id, title)
+       VALUES ($1,$2,$3,$4,$5,$6,$7, now() + ($8 || ' hours')::interval, $9, $10)`,
+      [
+        inv.id,
+        inv.org_id,
+        inv.email,
+        inv.name,
+        inv.profile_id,
+        invitedBy,
+        inv.created_account,
+        String(INVITE_HOURS),
+        inv.unit_id ?? null,
+        inv.title ?? "",
+      ],
     );
     return inv;
   }
@@ -221,8 +249,18 @@ export class Provisioning {
     info: RequestInfo,
   ) {
     await this.svc.requirePerm(actorId, orgId, "org.members");
-    const email = input.email.trim().toLowerCase();
     await this.access.assertCanAssign(actorId, orgId, input.profile_id);
+    return this.enrol(actorId, orgId, input, info);
+  }
+
+  /** Crée le compte s'il n'existe pas, l'invite dans l'institution et envoie le lien de finalisation. */
+  private async enrol(
+    actorId: string,
+    orgId: string,
+    input: { email: string; name: string; profile_id: string; unit_id?: string | null; title?: string },
+    info: RequestInfo,
+  ) {
+    const email = input.email.trim().toLowerCase();
     if (
       await this.svc.db.one(
         "SELECT 1 FROM org_members om JOIN users u ON u.id = om.user_id WHERE om.org_id = $1 AND lower(u.email) = $2",
@@ -244,13 +282,22 @@ export class Provisioning {
     const userId = existing?.id ?? uid("usr");
     const inv = await this.svc.db.tx(async (q) => {
       if (!existing)
-        await q.query("INSERT INTO users (id, name, email, status) VALUES ($1,$2,$3,'invited')", [
+        await q.query("INSERT INTO users (id, name, email, status, title) VALUES ($1,$2,$3,'invited',$4)", [
           userId,
           input.name.trim(),
           email,
+          input.title?.trim() || null,
         ]);
       return this.createInvitation(
-        { org_id: orgId, email, name: input.name.trim(), profile_id: input.profile_id, created_account: !existing },
+        {
+          org_id: orgId,
+          email,
+          name: input.name.trim(),
+          profile_id: input.profile_id,
+          created_account: !existing,
+          unit_id: input.unit_id ?? null,
+          title: input.title?.trim() ?? "",
+        },
         actorId,
         q,
       );
@@ -400,7 +447,7 @@ export class Provisioning {
     const sent = await this.deliver(
       u.email,
       "Réinitialiser votre mot de passe",
-      `Bonjour ${u.name},\n\nPour choisir un nouveau mot de passe, ouvrez ce lien, valable ${RESET_MINUTES} minutes :\n\n${link}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\n— Cadence`,
+      `Bonjour ${u.name},\n\nPour choisir un nouveau mot de passe, ouvrez ce lien, valable ${RESET_MINUTES} minutes :\n\n${link}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\n— ANAT Pilotage`,
     );
     if (!sent && process.env.NODE_ENV !== "production")
       console.info(`[auth] aucun SMTP configuré : lien de réinitialisation pour ${u.email} : ${link}`);
@@ -443,6 +490,50 @@ export class Provisioning {
     );
   }
 
+  /**
+   * Création d'un compte par l'administrateur système : la personne est renseignée (nom, adresse, fonction, entité,
+   * profil) et reçoit un lien pour choisir son mot de passe. Sans messagerie (usage local), le lien est montré ici ;
+   * l'administrateur ne choisit jamais le mot de passe d'un autre.
+   */
+  async adminCreateAccount(
+    actorId: string,
+    input: { org_id: string; name: string; email: string; title?: string; unit_id?: string | null; profile_id: string },
+    info: RequestInfo,
+  ) {
+    await this.requireSuperAdmin(actorId);
+    if (!(await this.svc.db.one("SELECT 1 FROM organizations WHERE id = $1", [input.org_id])))
+      throw badRequest("Institution inconnue");
+    if (
+      !(await this.svc.db.one("SELECT 1 FROM access_profiles WHERE id = $1 AND org_id = $2", [
+        input.profile_id,
+        input.org_id,
+      ]))
+    )
+      throw badRequest("Profil inconnu dans cette institution");
+    if (
+      input.unit_id &&
+      !(await this.svc.db.one("SELECT 1 FROM org_units WHERE id = $1 AND org_id = $2", [input.unit_id, input.org_id]))
+    )
+      throw badRequest("Entité inconnue dans cette institution");
+    return this.enrol(actorId, input.org_id, input, info);
+  }
+
+  /** Renvoyer le lien de finalisation : le précédent n'est plus valable. */
+  async adminResendInvitation(actorId: string, userId: string) {
+    await this.requireSuperAdmin(actorId);
+    const inv = await this.svc.db.one<OrgInvitation>(
+      `SELECT ${INVITATION_COLUMNS} FROM org_invitations i JOIN users u ON lower(u.email) = i.email
+       WHERE u.id = $1 AND i.status = 'pending' ORDER BY i.created_at DESC LIMIT 1`,
+      [userId],
+    );
+    if (!inv) throw new HttpError(409, "Aucune invitation en attente pour ce compte");
+    await this.svc.db.query(
+      "UPDATE org_invitations SET expires_at = now() + ($1 || ' hours')::interval WHERE id = $2",
+      [String(INVITE_HOURS), inv.id],
+    );
+    return { invitation_id: inv.id, ...(await this.notifyInvitee(inv, actorId)) };
+  }
+
   async adminOrgs(actorId: string) {
     await this.requireSuperAdmin(actorId);
     const orgs = await this.svc.db.query<{ id: string; name: string }>(
@@ -454,6 +545,10 @@ export class Provisioning {
         ...o,
         profiles: await this.svc.db.query(
           "SELECT id, name, base_role FROM access_profiles WHERE org_id = $1 ORDER BY created_at",
+          [o.id],
+        ),
+        units: await this.svc.db.query(
+          "SELECT id, name, kind FROM org_units WHERE org_id = $1 ORDER BY position, name",
           [o.id],
         ),
       });
@@ -564,7 +659,7 @@ export class Provisioning {
     const sent = await this.deliver(
       u.email,
       "Réinitialiser votre mot de passe",
-      `Bonjour ${u.name},\n\nUn administrateur vous envoie ce lien pour choisir un nouveau mot de passe, valable ${RESET_MINUTES} minutes :\n\n${link}\n\n— Cadence`,
+      `Bonjour ${u.name},\n\nUn administrateur vous envoie ce lien pour choisir un nouveau mot de passe, valable ${RESET_MINUTES} minutes :\n\n${link}\n\n— ANAT Pilotage`,
     );
     await this.auth.record("password.reset_requested", { userId, actorId, ip: info.ip, data: { clear_mfa: clearMfa } });
     return { sent, link: sent ? undefined : link };

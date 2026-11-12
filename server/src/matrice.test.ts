@@ -908,13 +908,23 @@ const TABLE = [
     url: "/api/org/members/u_karim/permissions",
     body: { overrides: { "tasks.create": false } },
   })),
-  ...["users", "orgs", "events", "settings"].map((p) => R_("GET", `/api/admin/${p}`)),
+  ...["users", "orgs", "events", "settings", "audit", "audit.csv"].map((p) => R_("GET", `/api/admin/${p}`)),
   R_("PATCH", "/api/admin/settings", () => ({ body: { registration: "invite" } })),
   R_("POST", "/api/admin/users/:id/approve", (X) => ({
     url: "/api/admin/users/u_karim/approve",
     body: { org_id: X.org, profile_id: X.prof("Membre") },
   })),
-  ...["reject", "suspend", "reactivate", "revoke-sessions", "reset"].map((p) =>
+  R_("POST", "/api/admin/audit/analysis", () => ({ body: {} })),
+  R_("GET", "/api/admin/users/:id/journal", () => ({ url: "/api/admin/users/u_karim/journal" })),
+  R_("POST", "/api/admin/accounts", (X) => ({
+    body: {
+      org_id: X.org,
+      name: "Compte matrice",
+      email: u("matrice") + "@exemple.test",
+      profile_id: X.prof("Membre"),
+    },
+  })),
+  ...["reject", "suspend", "reactivate", "revoke-sessions", "reset", "resend-invitation"].map((p) =>
     R_("POST", `/api/admin/users/:id/${p}`, () => ({ url: `/api/admin/users/u_karim/${p}`, body: {} })),
   ),
   R_("PUT", "/api/admin/users/:id/platform-role", () => ({

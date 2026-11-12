@@ -1,5 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
+import type { Audit } from "../audit.js";
+import { notFound } from "../services.js";
 import type { Access } from "./access.js";
 import type { Provisioning } from "./provisioning.js";
 import { SESSION_COOKIE, SESSION_MAX_AGE, type Auth, type RequestInfo } from "./service.js";
@@ -8,6 +10,7 @@ export interface AuthDeps {
   auth: Auth;
   provisioning: Provisioning;
   access: Access;
+  audit: Audit;
   secureCookies: boolean;
   demoLogin: boolean;
   invitationLimit: (req: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
@@ -188,6 +191,46 @@ export function privateAuthRoutes(r: FastifyInstance, d: AuthDeps) {
   r.get("/api/admin/users", async (req) => provisioning.adminUsers(me(req)));
   r.get("/api/admin/orgs", async (req) => provisioning.adminOrgs(me(req)));
   r.get("/api/admin/events", async (req) => provisioning.adminEvents(me(req)));
+  // Journal d'audit : activité métier et sécurité réunies, filtrables et exportables
+  const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+  const filterSchema = z.object({
+    from: day.optional(),
+    to: day.optional(),
+    actor_id: z.string().max(100).optional(),
+    category: z.string().max(60).optional(),
+    kind: z.string().max(100).optional(),
+    org_id: z.string().max(100).optional(),
+    q: z.string().max(200).optional(),
+    severity: z.enum(["critique", "importante", "normale"]).optional(),
+    user_id: z.string().max(100).optional(),
+    source: z.enum(["activity", "security"]).optional(),
+    limit: z.coerce.number().int().min(1).max(5000).optional(),
+  });
+  const auditFilter = (req: FastifyRequest) => filterSchema.parse(req.query ?? {});
+  r.get("/api/admin/audit", async (req) => {
+    await provisioning.requireSuperAdmin(me(req));
+    return d.audit.list(auditFilter(req));
+  });
+  // Analyse : signaux calculés puis appréciation de l'IA ; l'administrateur décide des suites
+  r.post("/api/admin/audit/analysis", async (req) => {
+    await provisioning.requireSuperAdmin(me(req));
+    return d.audit.analysis(me(req), filterSchema.parse(req.body ?? {}), req.ip);
+  });
+  // Journal d'une personne : ses connexions, ses activités, et ce qui a été fait sur son compte
+  r.get<Id>("/api/admin/users/:id/journal", async (req) => {
+    await provisioning.requireSuperAdmin(me(req));
+    const j = await d.audit.journal(req.params.id, filterSchema.parse(req.query ?? {}));
+    if (!j) throw notFound("Compte introuvable");
+    return j;
+  });
+  r.get("/api/admin/audit.csv", async (req, reply) => {
+    await provisioning.requireSuperAdmin(me(req));
+    const body = await d.audit.csv(auditFilter(req), me(req), req.ip);
+    return reply
+      .header("Content-Type", "text/csv; charset=utf-8")
+      .header("Content-Disposition", 'attachment; filename="journal-audit.csv"')
+      .send(body);
+  });
   r.get("/api/admin/settings", async (req) => {
     await provisioning.requireSuperAdmin(me(req));
     return { registration: await provisioning.registration() };
@@ -200,6 +243,23 @@ export function privateAuthRoutes(r: FastifyInstance, d: AuthDeps) {
     );
     return { ok: true };
   });
+  // Créer un compte : la personne est renseignée et reçoit un lien pour finaliser (choix du mot de passe)
+  r.post("/api/admin/accounts", async (req) => {
+    const b = z
+      .object({
+        org_id: z.string().min(1),
+        name: z.string().trim().min(1, "Le nom est obligatoire").max(200),
+        email: z.string().trim().toLowerCase().email("Adresse électronique invalide").max(320),
+        title: z.string().trim().max(200).optional(),
+        unit_id: z.string().nullish(),
+        profile_id: z.string().min(1, "Le profil est obligatoire"),
+      })
+      .parse(req.body);
+    return provisioning.adminCreateAccount(me(req), b, info(req));
+  });
+  r.post<Id>("/api/admin/users/:id/resend-invitation", async (req) =>
+    provisioning.adminResendInvitation(me(req), req.params.id),
+  );
   r.post<Id>("/api/admin/users/:id/approve", async (req) => {
     const b = z.object({ org_id: z.string(), profile_id: z.string() }).parse(req.body);
     return provisioning.approve(me(req), req.params.id, b.org_id, b.profile_id, info(req));

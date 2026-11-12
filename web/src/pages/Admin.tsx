@@ -2,14 +2,25 @@ import { useState } from "react";
 import { Navigate } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, ShieldCheck } from "lucide-react";
-import { Button, Chip, Dialog, Menu, MenuContent, MenuItem, MenuTrigger, Spinner, cn } from "@/components/ui";
+import { AlertTriangle, Download, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { Button, Chip, Dialog, Empty, Menu, MenuContent, MenuItem, MenuTrigger, Spinner, cn } from "@/components/ui";
+import { Drawer, DrawerSection } from "@/components/drawer";
 import { useMe } from "@/lib/hooks";
 import { ago } from "@/lib/format";
 import { api } from "@/lib/api";
-import type { AdminOrg, AdminUser, InviteResult, SecurityEvent } from "@/lib/types";
+import type {
+  AdminOrg,
+  AdminUser,
+  AuditAnalysis,
+  AuditEntry,
+  InviteResult,
+  Severity,
+  UserJournalData,
+} from "@/lib/types";
 import { LinkResult } from "./OrgAccess";
-import { PageHeader, Tabs } from "@/components/gov";
+import { Field, Input, PageHeader, Select, Tabs } from "@/components/gov";
 import { InstitutionSettings } from "./AdminReferentials";
 
 const STATUS: Record<
@@ -23,36 +34,6 @@ const STATUS: Record<
   rejected: { label: "Refusé", tone: "muted" },
 };
 const failure = (e: unknown) => toast.error((e as Error).message);
-const EVENT: Record<string, string> = {
-  "login.success": "Connexion réussie",
-  "login.failed": "Échec de connexion",
-  "account.locked": "Compte verrouillé",
-  "account.activated": "Compte activé",
-  "account.invited": "Invitation envoyée",
-  "account.suspended": "Compte suspendu",
-  "account.reactivated": "Compte réactivé",
-  "access.requested": "Demande d'accès",
-  "access.approved": "Demande validée",
-  "access.rejected": "Demande refusée",
-  "password.changed": "Mot de passe changé",
-  "password.reset": "Mot de passe réinitialisé",
-  "password.forgot": "Mot de passe oublié",
-  "password.reset_requested": "Réinitialisation demandée par un administrateur",
-  "mfa.enabled": "Double authentification activée",
-  "mfa.disabled": "Double authentification désactivée",
-  "mfa.failed": "Code de vérification erroné",
-  "mfa.recovery_used": "Code de secours utilisé",
-  "sessions.revoked": "Sessions fermées",
-  "platform.granted": "Rôle d'administrateur système accordé",
-  "platform.revoked": "Rôle d'administrateur système retiré",
-  "settings.registration": "Mode d'inscription modifié",
-  "profile.created": "Profil créé",
-  "profile.updated": "Profil modifié",
-  "profile.deleted": "Profil supprimé",
-  "member.profile": "Profil attribué",
-  "member.permissions": "Droits individuels modifiés",
-  "invitation.cancelled": "Invitation annulée",
-};
 
 /** Console de l'administrateur système : tous les comptes, inscriptions et journal de sécurité. */
 export function AdminPage() {
@@ -65,7 +46,7 @@ export function AdminPage() {
         Icon={ShieldCheck}
         crumbs={["Administration système"]}
         title="Administration système"
-        subtitle="Réservée à l'administrateur système : paramètres de l'institution, comptes, inscriptions et journal de sécurité."
+        subtitle="Réservée à l'administrateur système : paramètres de l'institution, comptes, inscriptions et journal d'audit."
       />
       <Tabs
         value={tab}
@@ -74,7 +55,7 @@ export function AdminPage() {
           { id: "institution", label: "Paramètres de l'institution" },
           { id: "users", label: "Comptes" },
           { id: "settings", label: "Inscriptions" },
-          { id: "events", label: "Journal de sécurité" },
+          { id: "events", label: "Journal d'audit" },
         ]}
       />
       <div className="mx-auto max-w-[1240px] px-4 pb-16 pt-5 sm:px-8">
@@ -91,7 +72,7 @@ export function AdminPage() {
         ) : tab === "settings" ? (
           <Settings />
         ) : (
-          <Events />
+          <AuditJournal />
         )}
       </div>
     </div>
@@ -105,6 +86,8 @@ function Users({ meId }: { meId?: string }) {
     queryFn: () => api.get<AdminUser[]>("/api/admin/users"),
   });
   const [approving, setApproving] = useState<AdminUser | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [journal, setJournal] = useState<string | null>(null);
   const [link, setLink] = useState<InviteResult | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin-users"] });
   const act = (id: string, action: string, ok: string, body: unknown = {}) =>
@@ -123,103 +106,259 @@ function Users({ meId }: { meId?: string }) {
       refresh();
       toast.success("Rôle modifié");
     }, failure);
+  const resend = (u: AdminUser) =>
+    api.post<InviteResult>(`/api/admin/users/${u.id}/resend-invitation`).then((r) => {
+      if (r.link) setLink(r);
+      else toast.success("Nouveau lien envoyé par e-mail ; le précédent n'est plus valable");
+      refresh();
+    }, failure);
   if (!users) return <Spinner />;
   return (
-    <div className="overflow-x-auto rounded-2xl border border-line bg-panel shadow-sm">
-      {link && <LinkResult result={link} onClose={() => setLink(null)} />}
-      {approving && (
-        <Approve
-          user={approving}
-          onClose={() => setApproving(null)}
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[13px] text-muted">
+          {users.length} compte(s). Un compte créé ici reste « Invité » tant que la personne n'a pas choisi son mot de
+          passe.
+        </p>
+        <Button variant="primary" icon={<UserPlus className="size-4" />} onClick={() => setCreating(true)}>
+          Créer un compte
+        </Button>
+      </div>
+      {journal && <UserJournal userId={journal} onClose={() => setJournal(null)} />}
+      {creating && (
+        <CreateAccount
+          onClose={() => setCreating(false)}
           onDone={(r) => {
-            setApproving(null);
+            setCreating(false);
             refresh();
             if (r.link) setLink(r);
-            else toast.success("Invitation envoyée");
+            else toast.success("Compte créé : le lien de finalisation est parti par e-mail");
           }}
         />
       )}
-      <table className="w-full min-w-[820px] text-left text-[13px]">
-        <thead className="border-b border-line text-[12px] text-muted">
-          <tr>
-            <th className="px-4 py-2.5 font-medium">Compte</th>
-            <th className="px-2 font-medium">État</th>
-            <th className="px-2 font-medium">Organisations</th>
-            <th className="px-2 font-medium">Sécurité</th>
-            <th className="px-2 font-medium">Dernière connexion</th>
-            <th className="px-2 font-medium" />
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((u) => (
-            <tr key={u.id} className="border-b border-line last:border-b-0">
-              <td className="px-4 py-2.5">
-                <span className="block font-medium">
-                  {u.name}
-                  {u.platform_role && <span className="ml-1.5 text-[11px] text-ai-fg">Admin système</span>}
-                </span>
-                <span className="block text-[12px] text-faint">{u.email}</span>
-                {u.access_request_note && (
-                  <span className="block text-[12px] text-muted">« {u.access_request_note} »</span>
-                )}
-              </td>
-              <td className="px-2">
-                <Chip tone={STATUS[u.status].tone}>{STATUS[u.status].label}</Chip>
-              </td>
-              <td className="max-w-[200px] truncate px-2 text-[12.5px] text-muted">
-                {u.orgs.map((o) => o.org_name).join(", ") || "—"}
-              </td>
-              <td className="px-2 text-[12.5px] text-muted">
-                {u.totp_enabled ? "2FA active" : "Sans 2FA"} · {u.active_sessions} session(s)
-              </td>
-              <td className="px-2 text-[12.5px] text-muted">{u.last_login_at ? ago(u.last_login_at) : "Jamais"}</td>
-              <td className="px-2 py-2 text-right">
-                {u.status === "pending" ? (
-                  <span className="flex justify-end gap-1">
-                    <Button size="sm" variant="primary" onClick={() => setApproving(u)}>
-                      Valider
-                    </Button>
-                    <Button size="sm" onClick={() => act(u.id, "reject", "Demande refusée")}>
-                      Refuser
-                    </Button>
-                  </span>
-                ) : (
-                  u.id !== meId && (
-                    <Menu>
-                      <MenuTrigger asChild>
-                        <Button size="sm">Actions</Button>
-                      </MenuTrigger>
-                      <MenuContent align="end">
-                        {u.status === "suspended" && (
-                          <MenuItem onSelect={() => act(u.id, "reactivate", "Compte réactivé")}>Réactiver</MenuItem>
-                        )}
-                        {u.status === "active" && (
-                          <>
-                            <MenuItem onSelect={() => reset(u, false)}>Envoyer un lien de mot de passe</MenuItem>
-                            {u.totp_enabled && (
-                              <MenuItem onSelect={() => reset(u, true)}>Réinitialiser aussi la 2FA</MenuItem>
-                            )}
-                            <MenuItem onSelect={() => act(u.id, "revoke-sessions", "Sessions fermées")}>
-                              Fermer ses sessions
-                            </MenuItem>
-                            <MenuItem onSelect={() => setRole(u, !u.platform_role)}>
-                              {u.platform_role ? "Retirer le rôle système" : "Nommer administrateur système"}
-                            </MenuItem>
-                            <MenuItem danger onSelect={() => act(u.id, "suspend", "Compte suspendu")}>
-                              Suspendre
-                            </MenuItem>
-                          </>
-                        )}
-                      </MenuContent>
-                    </Menu>
-                  )
-                )}
-              </td>
+      <div className="overflow-x-auto rounded-2xl border border-line bg-panel shadow-sm">
+        {link && <LinkResult result={link} onClose={() => setLink(null)} />}
+        {approving && (
+          <Approve
+            user={approving}
+            onClose={() => setApproving(null)}
+            onDone={(r) => {
+              setApproving(null);
+              refresh();
+              if (r.link) setLink(r);
+              else toast.success("Invitation envoyée");
+            }}
+          />
+        )}
+        <table className="w-full min-w-[820px] text-left text-[13px]">
+          <thead className="border-b border-line text-[12px] text-muted">
+            <tr>
+              <th className="px-4 py-2.5 font-medium">Compte</th>
+              <th className="px-2 font-medium">État</th>
+              <th className="px-2 font-medium">Organisations</th>
+              <th className="px-2 font-medium">Sécurité</th>
+              <th className="px-2 font-medium">Dernière connexion</th>
+              <th className="px-2 font-medium" />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id} className="border-b border-line last:border-b-0">
+                <td className="px-4 py-2.5">
+                  <button
+                    type="button"
+                    className="block text-left font-medium hover:underline"
+                    onClick={() => setJournal(u.id)}
+                  >
+                    {u.name}
+                    {u.platform_role && <span className="ml-1.5 text-[11px] text-ai-fg">Admin système</span>}
+                  </button>
+                  <span className="block text-[12px] text-faint">{u.email}</span>
+                  {u.access_request_note && (
+                    <span className="block text-[12px] text-muted">« {u.access_request_note} »</span>
+                  )}
+                </td>
+                <td className="px-2">
+                  <Chip tone={STATUS[u.status].tone}>{STATUS[u.status].label}</Chip>
+                </td>
+                <td className="max-w-[200px] truncate px-2 text-[12.5px] text-muted">
+                  {u.orgs.map((o) => o.org_name).join(", ") || "—"}
+                </td>
+                <td className="px-2 text-[12.5px] text-muted">
+                  {u.totp_enabled ? "2FA active" : "Sans 2FA"} · {u.active_sessions} session(s)
+                </td>
+                <td className="px-2 text-[12.5px] text-muted">{u.last_login_at ? ago(u.last_login_at) : "Jamais"}</td>
+                <td className="px-2 py-2 text-right">
+                  {u.status === "pending" ? (
+                    <span className="flex justify-end gap-1">
+                      <Button size="sm" variant="primary" onClick={() => setApproving(u)}>
+                        Valider
+                      </Button>
+                      <Button size="sm" onClick={() => act(u.id, "reject", "Demande refusée")}>
+                        Refuser
+                      </Button>
+                    </span>
+                  ) : (
+                    u.id !== meId && (
+                      <Menu>
+                        <MenuTrigger asChild>
+                          <Button size="sm">Actions</Button>
+                        </MenuTrigger>
+                        <MenuContent align="end">
+                          <MenuItem onSelect={() => setJournal(u.id)}>Journal de la personne</MenuItem>
+                          {u.status === "invited" && (
+                            <MenuItem onSelect={() => resend(u)}>Renvoyer le lien de finalisation</MenuItem>
+                          )}
+                          {u.status === "suspended" && (
+                            <MenuItem onSelect={() => act(u.id, "reactivate", "Compte réactivé")}>Réactiver</MenuItem>
+                          )}
+                          {u.status === "active" && (
+                            <>
+                              <MenuItem onSelect={() => reset(u, false)}>Envoyer un lien de mot de passe</MenuItem>
+                              {u.totp_enabled && (
+                                <MenuItem onSelect={() => reset(u, true)}>Réinitialiser aussi la 2FA</MenuItem>
+                              )}
+                              <MenuItem onSelect={() => act(u.id, "revoke-sessions", "Sessions fermées")}>
+                                Fermer ses sessions
+                              </MenuItem>
+                              <MenuItem onSelect={() => setRole(u, !u.platform_role)}>
+                                {u.platform_role ? "Retirer le rôle système" : "Nommer administrateur système"}
+                              </MenuItem>
+                              <MenuItem danger onSelect={() => act(u.id, "suspend", "Compte suspendu")}>
+                                Suspendre
+                              </MenuItem>
+                            </>
+                          )}
+                        </MenuContent>
+                      </Menu>
+                    )
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
+  );
+}
+
+/**
+ * Créer un compte : l'administrateur renseigne la personne (identité, fonction, entité, profil). Elle reçoit un lien
+ * personnel, valable une durée limitée, pour choisir elle-même son mot de passe. Personne d'autre ne le connaît.
+ */
+function CreateAccount({ onClose, onDone }: { onClose: () => void; onDone: (r: InviteResult) => void }) {
+  const { data: orgs } = useQuery({ queryKey: ["admin-orgs"], queryFn: () => api.get<AdminOrg[]>("/api/admin/orgs") });
+  const [f, setF] = useState({ org_id: "", name: "", email: "", title: "", unit_id: "", profile_id: "" });
+  const [busy, setBusy] = useState(false);
+  const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
+  const org = orgs?.find((o) => o.id === f.org_id) ?? orgs?.[0];
+  const profiles = org?.profiles.filter((p) => p.base_role !== "owner") ?? [];
+  const profile =
+    profiles.find((p) => p.id === f.profile_id) ?? profiles.find((p) => p.base_role === "member") ?? profiles[0];
+  const emailError =
+    f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim()) ? "Adresse électronique invalide" : null;
+  const ready = !!org && !!profile && !!f.name.trim() && !!f.email.trim() && !emailError;
+  const dirty = !!(f.name || f.email || f.title);
+  const submit = () => {
+    setBusy(true);
+    api
+      .post<InviteResult>("/api/admin/accounts", {
+        org_id: org!.id,
+        name: f.name.trim(),
+        email: f.email.trim(),
+        title: f.title.trim() || undefined,
+        unit_id: f.unit_id || null,
+        profile_id: profile!.id,
+      })
+      .then(onDone, failure)
+      .finally(() => setBusy(false));
+  };
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      dirty={dirty && !busy}
+      width={560}
+      subtitle="Administration système · Comptes"
+      title="Créer un compte"
+      footer={
+        <>
+          <Button onClick={onClose}>Annuler</Button>
+          <Button variant="primary" disabled={!ready || busy} onClick={submit}>
+            Créer et envoyer le lien
+          </Button>
+        </>
+      }
+    >
+      {!orgs ? (
+        <Spinner />
+      ) : (
+        <div className="space-y-5">
+          <p className="rounded-[10px] bg-info-soft px-3 py-2 text-[13px] text-info">
+            La personne reçoit un lien personnel pour choisir son mot de passe et finaliser son accès. Le compte reste «
+            Invité » jusque-là ; vous pouvez renvoyer le lien depuis la liste, l'ancien cesse alors d'être valable.
+          </p>
+          <DrawerSection title="Identité">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Nom complet" required className="sm:col-span-2">
+                {(a) => <Input {...a} value={f.name} onChange={set("name")} placeholder="Prénom et nom" autoFocus />}
+              </Field>
+              <Field label="Adresse électronique" required error={emailError} hint="Le lien y sera envoyé.">
+                {(a) => <Input {...a} type="email" value={f.email} onChange={set("email")} autoComplete="off" />}
+              </Field>
+              <Field label="Fonction">
+                {(a) => <Input {...a} value={f.title} onChange={set("title")} placeholder="Ex. Chargé d'études" />}
+              </Field>
+            </div>
+          </DrawerSection>
+          <DrawerSection title="Rattachement et droits">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {orgs.length > 1 && (
+                <Field label="Institution" required className="sm:col-span-2">
+                  {(a) => (
+                    <Select
+                      {...a}
+                      value={org?.id ?? ""}
+                      onChange={(e) => setF((x) => ({ ...x, org_id: e.target.value, unit_id: "", profile_id: "" }))}
+                    >
+                      {orgs.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+              )}
+              <Field label="Entité" hint="Direction, service ou cellule de la personne.">
+                {(a) => (
+                  <Select {...a} value={f.unit_id} onChange={set("unit_id")}>
+                    <option value="">Non rattachée pour l'instant</option>
+                    {(org?.units ?? []).map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+              <Field label="Profil d'accès" required hint="Détermine ce que la personne peut voir et faire.">
+                {(a) => (
+                  <Select {...a} value={profile?.id ?? ""} onChange={set("profile_id")}>
+                    {profiles.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            </div>
+          </DrawerSection>
+        </div>
+      )}
+    </Drawer>
   );
 }
 
@@ -365,36 +504,467 @@ function NewOrganization() {
   );
 }
 
-function Events() {
-  const { data } = useQuery({
-    queryKey: ["admin-events"],
-    queryFn: () => api.get<SecurityEvent[]>("/api/admin/events"),
+const when = (iso: string) => format(new Date(iso), "d MMM yyyy 'à' HH:mm", { locale: fr });
+
+const SEVERITY: Record<Severity, { label: string; tone: "danger" | "warning" | "muted" }> = {
+  critique: { label: "Critique", tone: "danger" },
+  importante: { label: "Importante", tone: "warning" },
+  normale: { label: "Normale", tone: "muted" },
+};
+const EMPTY_FILTER = { from: "", to: "", category: "", severity: "", actor_id: "", q: "" };
+type AuditFilterState = typeof EMPTY_FILTER;
+const queryOf = (f: Partial<AuditFilterState> & { user_id?: string }) =>
+  new URLSearchParams(Object.entries(f).filter(([, v]) => !!v?.trim()) as [string, string][]).toString();
+
+/**
+ * Journal d'audit : tout ce que l'outil trace, métier et sécurité, en clair. Lecture seule : une trace ne se modifie
+ * ni ne se supprime. Filtres par période, domaine, gravité, auteur et texte ; export tableur et analyse avec les
+ * mêmes filtres. Consulter un export ou lancer une analyse laisse aussi une trace.
+ */
+function AuditJournal() {
+  const { data: users } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: () => api.get<AdminUser[]>("/api/admin/users"),
   });
-  if (!data) return <Spinner />;
+  const [f, setF] = useState<AuditFilterState>(EMPTY_FILTER);
+  const [open, setOpen] = useState<AuditEntry | null>(null);
+  const [person, setPerson] = useState<string | null>(null);
+  const [analysing, setAnalysing] = useState(false);
+  const query = queryOf(f);
+  const { data, isFetching } = useQuery({
+    queryKey: ["admin-audit", query],
+    queryFn: () =>
+      api.get<{ entries: AuditEntry[]; categories: string[]; truncated: boolean }>(`/api/admin/audit?${query}`),
+    placeholderData: (prev) => prev,
+  });
+  const set = (k: keyof AuditFilterState) => (e: { target: { value: string } }) =>
+    setF((x) => ({ ...x, [k]: e.target.value }));
+  const filtered = Object.values(f).some((v) => v.trim());
+  return (
+    <div className="space-y-3">
+      <div className="grid gap-3 rounded-2xl border border-line bg-panel p-4 sm:grid-cols-2 xl:grid-cols-6 xl:items-end">
+        <Field label="Rechercher" className="sm:col-span-2">
+          {(a) => <Input {...a} type="search" value={f.q} onChange={set("q")} placeholder="Action, objet, auteur…" />}
+        </Field>
+        <Field label="Domaine">
+          {(a) => (
+            <Select {...a} value={f.category} onChange={set("category")}>
+              <option value="">Tous les domaines</option>
+              {(data?.categories ?? []).map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <Field label="Gravité">
+          {(a) => (
+            <Select {...a} value={f.severity} onChange={set("severity")}>
+              <option value="">Toutes</option>
+              {(Object.keys(SEVERITY) as Severity[]).map((s) => (
+                <option key={s} value={s}>
+                  {SEVERITY[s].label}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <Field label="Auteur">
+          {(a) => (
+            <Select {...a} value={f.actor_id} onChange={set("actor_id")}>
+              <option value="">Tous</option>
+              {(users ?? []).map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Du">
+            {(a) => <Input {...a} type="date" value={f.from} max={f.to || undefined} onChange={set("from")} />}
+          </Field>
+          <Field label="Au">
+            {(a) => <Input {...a} type="date" value={f.to} min={f.from || undefined} onChange={set("to")} />}
+          </Field>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 sm:col-span-2 xl:col-span-6">
+          <Button variant="primary" icon={<Sparkles className="size-4" />} onClick={() => setAnalysing(true)}>
+            Analyser avec l'IA
+          </Button>
+          <a
+            href={`/api/admin/audit.csv?${query}`}
+            download="journal-audit.csv"
+            className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line px-3 text-[13px] font-medium hover:bg-hover"
+          >
+            <Download className="size-4" />
+            Exporter
+          </a>
+          {filtered && <Button onClick={() => setF(EMPTY_FILTER)}>Effacer les filtres</Button>}
+          <span className="ml-auto text-[12.5px] text-muted" aria-live="polite">
+            {!data
+              ? ""
+              : isFetching
+                ? "Mise à jour…"
+                : `${data.entries.length} trace(s)${data.truncated ? " — les plus récentes ; affinez ou exportez" : ""}`}
+          </span>
+        </div>
+      </div>
+      {!data ? <Spinner /> : <AuditTable entries={data.entries} onOpen={setOpen} onPerson={setPerson} />}
+      {open && <EntryDrawer entry={open} onClose={() => setOpen(null)} onPerson={setPerson} />}
+      {person && <UserJournal userId={person} onClose={() => setPerson(null)} />}
+      {analysing && (
+        <AnalysisDrawer
+          filter={f}
+          scope={filtered ? "Traces correspondant aux filtres en cours" : "Toutes les traces"}
+          onClose={() => setAnalysing(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function AuditTable({
+  entries,
+  onOpen,
+  onPerson,
+  hideActor,
+}: {
+  entries: AuditEntry[];
+  onOpen: (e: AuditEntry) => void;
+  onPerson?: (id: string) => void;
+  hideActor?: boolean;
+}) {
+  if (!entries.length)
+    return (
+      <div className="rounded-2xl border border-line bg-panel">
+        <Empty title="Aucune trace">Aucune action ne correspond à ces critères.</Empty>
+      </div>
+    );
   return (
     <div className="overflow-x-auto rounded-2xl border border-line bg-panel shadow-sm">
-      <table className="w-full min-w-[640px] text-left text-[13px]">
+      <table className="w-full min-w-[860px] text-left text-[13px]">
         <thead className="border-b border-line text-[12px] text-muted">
           <tr>
-            <th className="px-4 py-2.5 font-medium">Événement</th>
-            <th className="px-2 font-medium">Compte</th>
-            <th className="px-2 font-medium">Par</th>
-            <th className="px-2 font-medium">Adresse</th>
-            <th className="px-2 font-medium">Quand</th>
+            <th className="px-4 py-2.5 font-medium">Date</th>
+            {!hideActor && <th className="px-2 font-medium">Auteur</th>}
+            <th className="px-2 font-medium">Gravité</th>
+            <th className="px-2 font-medium">Domaine</th>
+            <th className="px-2 font-medium">Action</th>
+            <th className="px-2 font-medium">Objet</th>
           </tr>
         </thead>
         <tbody>
-          {data.map((e) => (
-            <tr key={e.id} className="border-b border-line last:border-b-0">
-              <td className="px-4 py-2">{EVENT[e.kind] ?? e.kind}</td>
-              <td className="px-2 text-muted">{e.user_name ?? String(e.data.email ?? "—")}</td>
-              <td className="px-2 text-muted">{e.actor_name ?? "—"}</td>
-              <td className="px-2 font-mono text-[12px] text-faint">{e.ip ?? "—"}</td>
-              <td className="px-2 text-muted">{ago(e.created_at)}</td>
+          {entries.map((e) => (
+            <tr
+              key={`${e.source}-${e.id}`}
+              tabIndex={0}
+              onClick={() => onOpen(e)}
+              onKeyDown={(k) => k.key === "Enter" && onOpen(e)}
+              className="cursor-pointer border-b border-line last:border-b-0 hover:bg-hover focus-visible:bg-hover focus-visible:outline-none"
+            >
+              <td className="whitespace-nowrap px-4 py-2 text-muted">{when(e.created_at)}</td>
+              {!hideActor && (
+                <td className="px-2">
+                  {e.actor_id && onPerson ? (
+                    <button
+                      type="button"
+                      className="text-left hover:underline"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        onPerson(e.actor_id!);
+                      }}
+                    >
+                      {e.actor_name}
+                    </button>
+                  ) : (
+                    e.actor_name
+                  )}
+                </td>
+              )}
+              <td className="px-2">
+                <Chip tone={SEVERITY[e.severity].tone}>{SEVERITY[e.severity].label}</Chip>
+              </td>
+              <td className="px-2 text-muted">{e.category}</td>
+              <td className="px-2 font-medium">{e.label}</td>
+              <td className="max-w-[360px] truncate px-2 text-muted">{e.summary || "—"}</td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function EntryDrawer({
+  entry,
+  onClose,
+  onPerson,
+}: {
+  entry: AuditEntry;
+  onClose: () => void;
+  onPerson?: (id: string) => void;
+}) {
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      subtitle={`Journal d'audit · ${entry.category}`}
+      title={entry.label}
+      badges={<Chip tone={SEVERITY[entry.severity].tone}>Gravité {SEVERITY[entry.severity].label.toLowerCase()}</Chip>}
+      footer={
+        <>
+          {entry.actor_id && onPerson && (
+            <Button
+              onClick={() => {
+                onClose();
+                onPerson(entry.actor_id!);
+              }}
+            >
+              Journal de {entry.actor_name}
+            </Button>
+          )}
+          <Button onClick={onClose}>Fermer</Button>
+        </>
+      }
+    >
+      <dl className="grid grid-cols-[140px_1fr] gap-x-4 gap-y-2.5 text-[13.5px]">
+        <dt className="text-muted">Date</dt>
+        <dd>{when(entry.created_at)}</dd>
+        <dt className="text-muted">Auteur</dt>
+        <dd>{entry.actor_name}</dd>
+        <dt className="text-muted">Objet</dt>
+        <dd>{entry.summary || "—"}</dd>
+        <dt className="text-muted">Institution</dt>
+        <dd>{entry.org_name ?? "—"}</dd>
+        {entry.ip && (
+          <>
+            <dt className="text-muted">Adresse IP</dt>
+            <dd className="font-mono text-[12.5px]">{entry.ip}</dd>
+          </>
+        )}
+        <dt className="text-muted">Source</dt>
+        <dd>{entry.source === "security" ? "Journal de sécurité" : "Fil d'activité"}</dd>
+        <dt className="text-muted">Code</dt>
+        <dd className="font-mono text-[12.5px] text-faint">{entry.kind}</dd>
+      </dl>
+      <p className="mt-5 text-[12.5px] text-muted">Une trace ne se modifie ni ne se supprime.</p>
+    </Drawer>
+  );
+}
+
+/** Journal d'une personne : ses connexions et tout ce qui touche à son compte, puis ses activités. */
+function UserJournal({ userId, onClose }: { userId: string; onClose: () => void }) {
+  const [tab, setTab] = useState<"connections" | "activities">("connections");
+  const [open, setOpen] = useState<AuditEntry | null>(null);
+  const [analysing, setAnalysing] = useState(false);
+  const { data } = useQuery({
+    queryKey: ["admin-user-journal", userId],
+    queryFn: () => api.get<UserJournalData>(`/api/admin/users/${userId}/journal`),
+  });
+  const st = data?.stats;
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      width={980}
+      subtitle="Journal d'audit · par personne"
+      title={data?.user.name ?? "Journal"}
+      badges={
+        data && (
+          <span className="text-[12.5px] text-muted">
+            {[data.user.title, data.user.email].filter(Boolean).join(" · ")}
+          </span>
+        )
+      }
+      footer={
+        <>
+          <a
+            href={`/api/admin/audit.csv?${queryOf({ user_id: userId })}`}
+            download={`journal-${userId}.csv`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line px-3 text-[13px] font-medium hover:bg-hover"
+          >
+            <Download className="size-4" />
+            Exporter
+          </a>
+          <Button icon={<Sparkles className="size-4" />} onClick={() => setAnalysing(true)}>
+            Analyser avec l'IA
+          </Button>
+          <Button onClick={onClose}>Fermer</Button>
+        </>
+      }
+    >
+      {!data || !st ? (
+        <Spinner />
+      ) : (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {(
+              [
+                ["Connexions", st.logins],
+                ["Échecs de connexion", st.failed_logins],
+                ["Adresses distinctes", st.addresses],
+                ["Actions métier", st.activities],
+                ["Traces critiques", st.critical],
+              ] as const
+            ).map(([label, v]) => (
+              <div key={label} className="rounded-[10px] border border-line px-3 py-2">
+                <p className="text-[12px] text-muted">{label}</p>
+                <p className="text-[18px] font-semibold tabular-nums">{v}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[12.5px] text-muted">
+            Dernière connexion : {st.last_login_at ? when(st.last_login_at) : "jamais"}.
+          </p>
+          <Tabs
+            value={tab}
+            onChange={setTab}
+            items={[
+              { id: "connections", label: `Connexions et sécurité (${data.connections.length})` },
+              { id: "activities", label: `Activités (${data.activities.length})` },
+            ]}
+          />
+          <AuditTable entries={tab === "connections" ? data.connections : data.activities} onOpen={setOpen} />
+        </div>
+      )}
+      {open && <EntryDrawer entry={open} onClose={() => setOpen(null)} />}
+      {analysing && data && (
+        <AnalysisDrawer
+          filter={{ user_id: userId }}
+          scope={`Traces de ${data.user.name} et de son compte`}
+          onClose={() => setAnalysing(false)}
+        />
+      )}
+    </Drawer>
+  );
+}
+
+/**
+ * Analyse : les signaux sont calculés par l'outil, à partir des traces, et se vérifient une à une ; l'IA en rédige
+ * une appréciation. Elle propose, l'administrateur apprécie et décide des suites. L'analyse est elle-même tracée.
+ */
+function AnalysisDrawer({
+  filter,
+  scope,
+  onClose,
+}: {
+  filter: Partial<AuditFilterState> & { user_id?: string };
+  scope: string;
+  onClose: () => void;
+}) {
+  const body = Object.fromEntries(Object.entries(filter).filter(([, v]) => !!v?.trim()));
+  const { data, isFetching, error, refetch } = useQuery({
+    queryKey: ["admin-audit-analysis", JSON.stringify(body)],
+    queryFn: () => api.post<AuditAnalysis>("/api/admin/audit/analysis", body),
+    staleTime: Number.POSITIVE_INFINITY,
+    gcTime: 0,
+    retry: false,
+  });
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      width={760}
+      subtitle="Journal d'audit · Analyse"
+      title="Analyse du journal"
+      badges={<span className="text-[12.5px] text-muted">{scope}</span>}
+      footer={
+        <>
+          <Button disabled={isFetching} onClick={() => refetch()}>
+            Relancer l'analyse
+          </Button>
+          <Button onClick={onClose}>Fermer</Button>
+        </>
+      }
+    >
+      {isFetching && !data ? (
+        <div className="flex items-center gap-2 text-[13px] text-muted">
+          <Spinner /> Lecture des traces et rédaction de l'appréciation…
+        </div>
+      ) : error ? (
+        <p className="text-[13px] text-danger">{(error as Error).message}</p>
+      ) : data ? (
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {(
+              [
+                ["Traces lues", data.stats.total],
+                ["Critiques", data.stats.critique],
+                ["Importantes", data.stats.importante],
+                ["Personnes", data.stats.actors],
+              ] as const
+            ).map(([label, v]) => (
+              <div key={label} className="rounded-[10px] border border-line px-3 py-2">
+                <p className="text-[12px] text-muted">{label}</p>
+                <p className="text-[18px] font-semibold tabular-nums">{v}</p>
+              </div>
+            ))}
+          </div>
+          <DrawerSection title="Appréciation de l'IA">
+            {data.ai ? (
+              <div className="space-y-3 rounded-[10px] border border-ai-line bg-ai-soft/40 p-3 text-[13.5px]">
+                <p className="leading-relaxed">{data.ai.summary}</p>
+                {data.ai.recommendations.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[12.5px] font-medium text-muted">Mesures suggérées</p>
+                    <ul className="list-disc space-y-1 pl-5">
+                      {data.ai.recommendations.map((r) => (
+                        <li key={r}>{r}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <p className="text-[12px] text-muted">
+                  Proposition de l'IA, rédigée à partir des seuls signaux ci-dessous : elle ne conclut à aucune faute.
+                  Vous appréciez et décidez des suites.
+                </p>
+              </div>
+            ) : (
+              <p className="text-[13px] text-muted">
+                L'appréciation n'a pas pu être rédigée{data.ai_error ? ` : ${data.ai_error}` : ""}. Les signaux calculés
+                restent valables.
+              </p>
+            )}
+          </DrawerSection>
+          <DrawerSection title={`Signaux relevés (${data.signals.length})`}>
+            {data.signals.length === 0 ? (
+              <p className="text-[13px] text-muted">Aucun signal : rien d'inhabituel dans ces traces.</p>
+            ) : (
+              <ul className="space-y-2">
+                {data.signals.map((s) => (
+                  <li key={`${s.code}-${s.title}-${s.detail}`} className="rounded-[10px] border border-line p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Chip tone={SEVERITY[s.severity].tone}>{SEVERITY[s.severity].label}</Chip>
+                      <span className="text-[13.5px] font-medium">{s.title}</span>
+                    </div>
+                    <p className="mt-1 text-[13px] text-muted">{s.detail}</p>
+                    {s.evidence.length > 0 && (
+                      <details className="mt-2 text-[12.5px]">
+                        <summary className="cursor-pointer text-muted">Traces à l'appui ({s.evidence.length})</summary>
+                        <ul className="mt-1 space-y-0.5">
+                          {s.evidence.map((e) => (
+                            <li key={e.id} className="text-muted">
+                              {when(e.created_at)} · {e.actor_name} · {e.label}
+                              {e.summary ? ` · ${e.summary}` : ""}
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </DrawerSection>
+          <p className="text-[12px] text-faint">
+            Analyse du {when(data.generated_at)} · moteur : {data.provider === "demo" ? "démonstration" : data.provider}
+            . Cette analyse est inscrite au journal.
+          </p>
+        </div>
+      ) : null}
+    </Drawer>
   );
 }

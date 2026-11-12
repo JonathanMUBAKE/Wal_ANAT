@@ -1,3 +1,4 @@
+import { todayIso } from "@/lib/format";
 import { useState } from "react";
 import { Link } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -713,7 +714,7 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
     direction,
     subject: "",
     correspondent: "",
-    received_on: new Date().toISOString().slice(0, 10),
+    received_on: todayIso(),
     due_on: "",
     confidential: false,
     reply_to_id: "",

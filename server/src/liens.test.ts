@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { boot, type GovCtx } from "./gov-test-helpers.js";
+import { localDate } from "./services.js";
 
 /*
  * Lot P3a (docs/PARCOURS-METIER.md) : la séance alimente le registre et le projet.
@@ -15,7 +16,7 @@ beforeEach(async () => {
 });
 afterEach(() => g.ctx.app.close());
 
-const day = (offset = 0) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+const day = (offset = 0) => localDate(new Date(Date.now() + offset * 864e5));
 const year = () => day().slice(0, 4);
 type Note = { kind: string; title: string };
 const notes = async (who: string) => (await g.api(who, "GET", "/api/notifications")).body as Note[];

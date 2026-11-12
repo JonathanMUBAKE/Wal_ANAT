@@ -1,3 +1,4 @@
+import { localDate } from "./services.js";
 import { Activities } from "./activities.js";
 import { Agreements } from "./agreements.js";
 import { Attributions } from "./attributions.js";
@@ -12,7 +13,7 @@ import { Signature } from "./signature.js";
 import type { Services } from "./services.js";
 
 /** Données d'illustration, entièrement fictives, pour présenter la version ANAT (ANAT_DEMO=1 uniquement). */
-const day = (offset: number) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+const day = (offset: number) => localDate(new Date(Date.now() + offset * 864e5));
 
 export async function seedGovDemo(svc: Services) {
   const db = svc.db;

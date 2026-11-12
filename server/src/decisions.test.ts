@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Decisions } from "./decisions.js";
 import { boot, type GovCtx } from "./gov-test-helpers.js";
+import { localDate } from "./services.js";
 
 /*
  * Registre des décisions de la DG (docs/SCENARIOS.md § 9) : une décision est numérotée, figée,
@@ -15,7 +16,7 @@ beforeEach(async () => {
 });
 afterEach(() => g.ctx.app.close());
 
-const day = (offset = 0) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+const day = (offset = 0) => localDate(new Date(Date.now() + offset * 864e5));
 const year = () => day().slice(0, 4);
 type Note = { kind: string };
 const notes = async (who: string) => (await g.api(who, "GET", "/api/notifications")).body as Note[];

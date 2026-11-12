@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { boot, type GovCtx } from "./gov-test-helpers.js";
+import { localDate } from "./services.js";
 
 /*
  * Lot P1 (docs/PARCOURS-METIER.md) : le projet est le dossier complet.
@@ -13,7 +14,7 @@ beforeEach(async () => {
 });
 afterEach(() => g.ctx.app.close());
 
-const day = (offset = 0) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+const day = (offset = 0) => localDate(new Date(Date.now() + offset * 864e5));
 const contract = (patch: Record<string, unknown> = {}) =>
   g.api("u_alice", "POST", "/api/contracts", {
     project_id: prj,

@@ -114,7 +114,8 @@ Une seule échelle : **32 px** (compacte : pagination, actions de ligne), **36 p
 2. **Consulter** : le clic sur la ligne ouvre la fiche en lecture.
 3. **Modifier, supprimer** : boutons-icônes en bout de ligne (`RowActions` : œil, crayon, corbeille), puis les actions propres à l'objet (archiver, télécharger).
 4. **Selon les droits** : un bouton n'apparaît que si le profil peut agir ; le serveur refuse de toute façon ce qui n'est pas permis. Ce qui ne se supprime pas par règle (pièce officielle, acte numéroté, fiche qui a une histoire) se clôt, s'archive ou se remplace : la corbeille n'apparaît pas et la fiche dit pourquoi.
-5. **Contrôles** : toute règle de saisie (champ obligatoire selon le type, dates cohérentes, doublon) est vérifiée par le serveur ; l'écran la montre sous le champ avant l'envoi.
+5. **Documents** : le clic sur la ligne ouvre la fiche du document dans le tiroir ; l'**œil** affiche l'aperçu du fichier, à la demande (PDF et images dans la page, Word, Excel et texte en texte structuré) ; aucune fiche ne charge un aperçu d'office.
+6. **Contrôles** : toute règle de saisie (champ obligatoire selon le type, dates cohérentes, doublon) est vérifiée par le serveur ; l'écran la montre sous le champ avant l'envoi.
 
 ### Où s'ouvre quoi — page, tiroir, modal (`components/drawer.tsx`)
 | Surface | Pour | Exemples |

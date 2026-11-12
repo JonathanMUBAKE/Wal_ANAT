@@ -1,6 +1,7 @@
+import { todayIso } from "@/lib/format";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Download, FileText, Lock, Paperclip, Pencil, Upload } from "lucide-react";
+import { Download, Eye, EyeOff, FileText, Lock, Paperclip, Pencil, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button, ConfirmDialog, Empty, cn } from "./ui";
 import { RoundBtn } from "./collection";
@@ -58,7 +59,7 @@ export const dossierDocs = (owner: "project" | "activity" | "mail", ownerId: str
 });
 
 const fail = (e: unknown) => toast.error((e as Error).message);
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayIso();
 const kb = (n: number) =>
   n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} Ko` : `${(n / 1024 / 1024).toFixed(1)} Mo`;
 
@@ -98,7 +99,7 @@ export function DocumentsPanel({
   const { data: me } = useMe();
   const can = useCan();
   const natures = refs?.partner_doc_nature ?? [];
-  const [open, setOpen] = useState<{ doc: PartnerDocument | null; editing: boolean } | null>(null);
+  const [open, setOpen] = useState<{ doc: PartnerDocument | null; editing: boolean; preview?: boolean } | null>(null);
   const [removing, setRemoving] = useState<PartnerDocument | null>(null);
   const remove = useMutation({
     mutationFn: (id: string) => api.del(ends.item(id)),
@@ -152,12 +153,17 @@ export function DocumentsPanel({
                 <Td>
                   <RowActions
                     label={doc.title || doc.filename}
-                    onView={() => setOpen({ doc, editing: false })}
                     onEdit={() => setOpen({ doc, editing: true })}
                     canEdit={canEdit(doc)}
                     onDelete={() => setRemoving(doc)}
                     canDelete={canDelete(doc)}
                   >
+                    <RoundBtn
+                      label={`Aperçu de ${doc.filename}`}
+                      onClick={() => setOpen({ doc, editing: false, preview: true })}
+                    >
+                      <Eye className="size-4" />
+                    </RoundBtn>
                     <RoundBtn label={`Télécharger ${doc.filename}`} href={ends.item(doc.id)}>
                       <Download className="size-4" />
                     </RoundBtn>
@@ -180,6 +186,7 @@ export function DocumentsPanel({
           agreements={agreements}
           doc={open.doc}
           startEditing={open.editing}
+          startPreview={!!open.preview}
           canEdit={open.doc ? canEdit(open.doc) : canAdd}
           onClose={() => setOpen(null)}
           onSaved={onChange}
@@ -215,6 +222,7 @@ function DocumentDialog({
   agreements,
   doc,
   startEditing,
+  startPreview = false,
   canEdit,
   onClose,
   onSaved,
@@ -224,6 +232,7 @@ function DocumentDialog({
   agreements?: { id: string; reference: string | null; title: string }[];
   doc: PartnerDocument | null;
   startEditing: boolean;
+  startPreview?: boolean;
   canEdit: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -231,6 +240,8 @@ function DocumentDialog({
   const { data: refs } = useReferentials();
   const natures = refs?.partner_doc_nature ?? [];
   const [editing, setEditing] = useState(startEditing || !doc);
+  // L'aperçu ne se charge qu'à la demande : un document se consulte d'abord par sa fiche
+  const [previewing, setPreviewing] = useState(startPreview);
   const [file, setFile] = useState<File | null>(null);
   const [f, setF] = useState<DocForm>({
     nature: doc?.nature_code ?? "",
@@ -320,6 +331,14 @@ function DocumentDialog({
           </>
         ) : (
           <>
+            {doc && (
+              <Button
+                icon={previewing ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                onClick={() => setPreviewing(!previewing)}
+              >
+                {previewing ? "Masquer l'aperçu" : "Aperçu"}
+              </Button>
+            )}
             {doc && (
               <a
                 href={ends.item(doc.id)}
@@ -463,11 +482,13 @@ function DocumentDialog({
                 {doc.notes && <span className="whitespace-pre-wrap font-normal">{doc.notes}</span>}
               </Fact>
             </Facts>
-            <div className="mt-5">
-              <DrawerSection title="Aperçu">
-                <FilePreview url={ends.item(doc.id)} name={doc.filename} />
-              </DrawerSection>
-            </div>
+            {previewing && (
+              <div className="mt-5">
+                <DrawerSection title="Aperçu">
+                  <FilePreview url={ends.item(doc.id)} name={doc.filename} />
+                </DrawerSection>
+              </div>
+            )}
           </>
         )
       )}

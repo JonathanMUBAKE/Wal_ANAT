@@ -1,3 +1,4 @@
+import { todayIso } from "@/lib/format";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -142,7 +143,7 @@ interface Detail extends Partner, PartnerLinks {
 }
 
 const fail = (e: unknown) => toast.error((e as Error).message);
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayIso();
 
 // ------------------------------------------------------------------ pays (norme ISO, noms en français)
 const REGIONS = new Intl.DisplayNames(["fr"], { type: "region" });

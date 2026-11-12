@@ -1,3 +1,4 @@
+import { localDate } from "./services.js";
 import { Decisions } from "./decisions.js";
 import { meetingReference } from "./meetings.js";
 import { Referentials } from "./referentials.js";
@@ -18,7 +19,7 @@ export interface PilotageItem {
   decision_needed: string;
   href: string;
 }
-const day = (offset = 0) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+const day = (offset = 0) => localDate(new Date(Date.now() + offset * 864e5));
 const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
 
 /** Le grand tableau de bord : une seule lecture de toutes les formes d'activité auxquelles la personne a accès. */
@@ -77,8 +78,7 @@ export class Pilotage {
     // L'état affiché tient compte des retards : une activité en retard n'est jamais « dans les temps »
     const types = await new Referentials(this.svc).values(orgId, "activity_type");
     const tracked = new Set(types.filter((t) => t.props.tracks_progress === true).map((t) => t.code));
-    const effective = (h: PilotageItem["health"], overdue: number) =>
-      h === "on_track" && overdue > 0 ? "at_risk" : h;
+    const effective = (h: PilotageItem["health"], overdue: number) => (h === "on_track" && overdue > 0 ? "at_risk" : h);
     const items: PilotageItem[] = [
       ...projects.map((p) => {
         const g = gov.get(p.id);

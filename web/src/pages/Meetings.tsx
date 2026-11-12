@@ -1,3 +1,4 @@
+import { todayIso } from "@/lib/format";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -213,7 +214,7 @@ export function NewMeeting({
   const qc = useQueryClient();
   const [f, setF] = useState({
     meeting_type: "",
-    meeting_date: new Date().toISOString().slice(0, 10),
+    meeting_date: todayIso(),
     start_time: "09:00",
     end_time: "10:00",
     location: "",

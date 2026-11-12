@@ -4,6 +4,7 @@ import { buildApp } from "./app.js";
 import { Deliverables } from "./deliverables.js";
 import { seedGovDemo } from "./gov-demo.js";
 import { Agreements } from "./agreements.js";
+import { Reminders } from "./reminders.js";
 import { Registers } from "./registers.js";
 import { loadLocalSecret, startupProblems } from "./secrets.js";
 
@@ -42,8 +43,12 @@ const contracts = new Deliverables(svc);
 const mailRegister = new Registers(svc);
 // Échéances des accords avec les partenaires : alertes à 90, 30 et 7 jours
 const agreements = new Agreements(svc);
+// Rappels d'échéance : tâches, courrier imputé, décisions, recommandations, livrables
+const reminders = new Reminders(svc);
 const sweepContracts = () =>
-  Promise.all([contracts.sweep(), mailRegister.sweep(), agreements.sweep()]).catch((e) => app.log.error(e));
+  Promise.all([contracts.sweep(), mailRegister.sweep(), agreements.sweep(), reminders.sweep()]).catch((e) =>
+    app.log.error(e),
+  );
 void sweepContracts();
 setInterval(sweepContracts, 60 * 60 * 1000).unref();
 await app.listen({ port, host });

@@ -1,6 +1,6 @@
 import { uid } from "./db.js";
 import { linkPartner } from "./partner-links.js";
-import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
+import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services, localDate } from "./services.js";
 
 export type DeliverableStatus = "prevu" | "en_cours" | "soumis" | "en_revue" | "a_corriger" | "valide";
 export interface Deliverable {
@@ -72,7 +72,7 @@ export type ContractInput = {
 };
 const WARNING_DAYS = 15;
 const frozen = () => new HttpError(409, "Ce livrable est validé : il ne peut plus être modifié");
-const day = (offset = 0) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+const day = (offset = 0) => localDate(new Date(Date.now() + offset * 864e5));
 
 export class Deliverables {
   constructor(private svc: Services) {}

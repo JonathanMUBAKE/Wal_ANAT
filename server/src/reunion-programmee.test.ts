@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { boot, type GovCtx } from "./gov-test-helpers.js";
+import { localDate } from "./services.js";
 
 /*
  * Lot P2 (docs/PARCOURS-METIER.md, parcours 1) : programmer, convoquer, répondre, joindre les pièces,
@@ -11,7 +12,7 @@ beforeEach(async () => {
 });
 afterEach(() => g.ctx.app.close());
 
-const day = (offset = 0) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+const day = (offset = 0) => localDate(new Date(Date.now() + offset * 864e5));
 type Note = { kind: string };
 const notes = async (who: string) => (await g.api(who, "GET", "/api/notifications")).body as Note[];
 const program = (body: Record<string, unknown> = {}) =>
@@ -108,10 +109,14 @@ describe("convoquer et répondre", () => {
     const r = await g.api("u_alice", "POST", `/api/meetings/${soon.id}/convene`, {});
     expect(r.status).toBe(400);
     expect(r.body.error).toMatch(/48/);
-    expect((await g.api("u_alice", "POST", `/api/meetings/${soon.id}/convene`, { short_notice: true })).status).toBe(200);
+    expect((await g.api("u_alice", "POST", `/api/meetings/${soon.id}/convene`, { short_notice: true })).status).toBe(
+      200,
+    );
     const past = (await program({ meeting_date: day(-1) })).body;
     await agenda(past.id);
-    expect((await g.api("u_alice", "POST", `/api/meetings/${past.id}/convene`, { short_notice: true })).status).toBe(400);
+    expect((await g.api("u_alice", "POST", `/api/meetings/${past.id}/convene`, { short_notice: true })).status).toBe(
+      400,
+    );
   });
 
   it("seul le convoqué répond ; « représenté » exige le nom du représentant", async () => {
@@ -159,7 +164,11 @@ describe("convoquer et répondre", () => {
 describe("pièces de l'ordre du jour", () => {
   it("se joignent, se lisent par qui voit la réunion, et se figent avec le compte rendu", async () => {
     const m = (await program({ confidential: true, chair_id: null })).body;
-    const up = await g.upload("u_alice", `/api/meetings/${m.id}/documents?name=note.txt`, Buffer.from("Note de cadrage"));
+    const up = await g.upload(
+      "u_alice",
+      `/api/meetings/${m.id}/documents?name=note.txt`,
+      Buffer.from("Note de cadrage"),
+    );
     expect(up.status).toBe(200);
     const doc = up.body.id as string;
     expect((await g.api("u_karim", "GET", `/api/meeting-documents/${doc}`)).raw.toString()).toBe("Note de cadrage");

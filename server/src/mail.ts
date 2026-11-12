@@ -79,11 +79,38 @@ export function smtpError(e: unknown): string {
   }
 }
 
+/**
+ * Texte du courriel d'une notification : sobre, signé de l'outil et de l'institution, avec le lien pour agir.
+ * Le courriel est un avis : on agit dans l'outil, jamais en y répondant.
+ */
+export function notificationText(n: {
+  userName: string;
+  title: string;
+  body?: string;
+  orgName?: string;
+  link?: string;
+}) {
+  return [
+    `Bonjour ${n.userName},`,
+    "",
+    n.title,
+    ...(n.body ? ["", n.body] : []),
+    "",
+    n.link ? `Pour consulter et agir : ${n.link}` : "Pour consulter et agir, ouvrez ANAT Pilotage.",
+    "",
+    "—",
+    `ANAT Pilotage${n.orgName ? ` · ${n.orgName}` : ""}`,
+    "Message automatique : merci de ne pas y répondre.",
+  ].join("\n");
+}
+
 export class MailService {
   private queue: Promise<unknown> = Promise.resolve();
   private addressSync: Promise<unknown> = Promise.resolve();
   /** Sur un serveur exposé, un SMTP saisi par un client ne peut pas viser le réseau interne. */
   blockPrivateHosts = false;
+  /** Adresse publique de l'outil, pour le lien des courriels de notification. */
+  publicUrl: string | undefined;
   private detach: (() => void) | null = null;
   private closed = false;
 
@@ -387,16 +414,18 @@ export class MailService {
         )
       : undefined;
     // Un fil par tâche : « [APP-12] Titre de la tâche »
-    const subject = task ? `[${task.key}] ${task.title}` : (e.title ?? "Notification Cadence");
-    const text = [
-      `Bonjour ${user.name},`,
-      "",
-      e.title ?? "",
-      e.body ? `\n${e.body}` : "",
-      "",
-      "Répondez à cet e-mail pour joindre l'équipe concernée.",
-      "— Cadence",
-    ].join("\n");
+    const subject = task ? `[${task.key}] ${task.title}` : (e.title ?? "Notification ANAT Pilotage");
+    const org = await this.db.one<{ name: string }>("SELECT name FROM organizations WHERE id = $1", [e.orgId]);
+    const base = this.publicUrl?.replace(/\/+$/, "");
+    const text = notificationText({
+      userName: user.name,
+      title: e.title ?? "",
+      body: e.body || undefined,
+      orgName: org?.name,
+      link: base
+        ? `${base}${e.taskId && e.projectId ? `/projects/${e.projectId}?task=${e.taskId}` : "/inbox"}`
+        : undefined,
+    });
     await this.send(e.orgId, { to: user.email, subject, text, projectId: e.projectId });
   }
 }

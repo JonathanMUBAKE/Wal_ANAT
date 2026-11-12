@@ -1,3 +1,4 @@
+import { todayIso } from "@/lib/format";
 import {
   type InputHTMLAttributes,
   type ReactNode,
@@ -376,4 +377,4 @@ export function PeopleSelect({
 }
 
 export const frDate = (d?: string | null) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}` : "—");
-export const isLate = (d?: string | null, today = new Date().toISOString().slice(0, 10)) => !!d && d < today;
+export const isLate = (d?: string | null, today = todayIso()) => !!d && d < today;

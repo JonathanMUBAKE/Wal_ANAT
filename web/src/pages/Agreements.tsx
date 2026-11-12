@@ -1,3 +1,4 @@
+import { todayIso } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -99,7 +100,7 @@ interface Detail extends AgreementRow {
 }
 
 const fail = (e: unknown) => toast.error((e as Error).message);
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayIso();
 const daysTo = (d: string) => Math.round((Date.parse(`${d}T00:00:00Z`) - Date.parse(`${today()}T00:00:00Z`)) / 864e5);
 
 function TypeTag({ value, code }: { value?: RefValue; code: string }) {

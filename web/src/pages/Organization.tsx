@@ -354,7 +354,8 @@ function UnitDetail({
               )}
             </div>
             <p className="mt-2 text-[12px] leading-snug text-muted">
-              Ce dont l'entité répond, avec qui elle travaille : c'est la référence pour repérer les écarts de participation.
+              Ce dont l'entité répond, avec qui elle travaille : c'est la référence pour repérer les écarts de
+              participation.
             </p>
             {(approved || draft || can("attributions.manage")) && (
               <Button

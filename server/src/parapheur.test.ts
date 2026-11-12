@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { boot, type GovCtx } from "./gov-test-helpers.js";
+import { localDate } from "./services.js";
 
 let g: GovCtx;
 beforeEach(async () => {
@@ -85,7 +86,7 @@ describe("parapheur", () => {
     expect(notes.some((n) => n.kind === "signature.rejected")).toBe(true);
   });
   it("un délégataire agit à la place du titulaire, avec une trace à son nom", async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDate();
     await g.api("u_karim", "POST", "/api/delegations", { to_user: "u_hugo", start_on: today, end_on: today });
     const d = await doc({ steps: [{ actor_id: "u_karim", action: "signature" }] });
     await g.api("u_alice", "POST", `/api/signature/${d.id}/start`);
@@ -109,7 +110,7 @@ describe("parapheur", () => {
     expect((await g.api("u_hugo", "GET", `/api/signature/${d.id}`)).status).toBe(404);
   });
   it("seul l'auteur retire sa délégation", async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDate();
     const { id } = (
       await g.api("u_karim", "POST", "/api/delegations", { to_user: "u_hugo", start_on: today, end_on: today })
     ).body;
@@ -275,7 +276,7 @@ describe("écarts de participation", () => {
     const m = (
       await g.api("u_alice", "POST", "/api/meetings", {
         meeting_type: "Comité",
-        meeting_date: new Date().toISOString().slice(0, 10),
+        meeting_date: localDate(),
         writer_id: "u_karim",
       })
     ).body;

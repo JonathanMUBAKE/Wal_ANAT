@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { uid } from "./db.js";
-import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
+import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services, localDate } from "./services.js";
 
 export interface SignDoc {
   id: string;
@@ -36,7 +36,7 @@ export interface SignInput {
   due_on?: string | null;
   steps: { actor_id: string; action: Step["action"] }[];
 }
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDate();
 const reference = (d: Pick<SignDoc, "year" | "seq">) => `PAR/${d.year}/${String(d.seq).padStart(4, "0")}`;
 export const signReference = reference;
 

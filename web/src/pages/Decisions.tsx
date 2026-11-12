@@ -1,3 +1,4 @@
+import { todayIso } from "@/lib/format";
 import { useState } from "react";
 import { Link } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -80,7 +81,7 @@ const HUE: Record<Tone, string> = {
 };
 const SOURCE_LABEL = { project: "Projet", activity: "Activité", meeting: "Réunion" } as const;
 const fail = (e: unknown) => toast.error((e as Error).message);
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayIso();
 
 export function DecisionsPage() {
   const can = useCan();

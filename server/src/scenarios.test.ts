@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { boot, type GovCtx } from "./gov-test-helpers.js";
+import { localDate } from "./services.js";
 
 /*
  * Scénarios de fonctionnement, module par module (docs/SCENARIOS.md).
@@ -11,7 +12,7 @@ beforeEach(async () => {
 });
 afterEach(() => g.ctx.app.close());
 
-const day = (offset = 0) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+const day = (offset = 0) => localDate(new Date(Date.now() + offset * 864e5));
 const year = () => day().slice(0, 4);
 type Note = { kind: string };
 const notes = async (who: string) => (await g.api(who, "GET", "/api/notifications")).body as Note[];
@@ -98,7 +99,7 @@ describe("livrables et missions : réception, paiement, durée de la mission", (
         responsible_id: "u_karim",
         validator_id: "u_alice",
         contract_id: c.id,
-      project_id: c.project_id,
+        project_id: c.project_id,
       })
     ).body;
     await g.ctx.db.query("UPDATE deliverables SET status = 'en_revue' WHERE id = $1", [d.id]);
@@ -181,9 +182,9 @@ describe("courrier : un registre officiel ne se contredit pas", () => {
   it("le délai de réponse ne précède pas la réception", async () => {
     expect((await reg({ due_on: "2026-03-01" })).status).toBe(400);
     const m = (await reg()).body;
-    expect((await g.api("u_alice", "POST", `/api/correspondence/${m.id}/assign`, { due_on: "2026-02-01" })).status).toBe(
-      400,
-    );
+    expect(
+      (await g.api("u_alice", "POST", `/api/correspondence/${m.id}/assign`, { due_on: "2026-02-01" })).status,
+    ).toBe(400);
   });
   it("un retard sans responsable d'entité remonte à la personne imputée", async () => {
     const [unit] = await g.units(1);
@@ -216,7 +217,9 @@ describe("activités : dates et responsabilités cohérentes", () => {
   });
   it("le responsable rend compte, mais ne transfère pas l'activité ni ne lève sa confidentialité", async () => {
     const a = await activity({ confidential: true });
-    expect((await g.api("u_karim", "PATCH", `/api/activities/${a.id}`, { outcome: "Avis favorable" })).status).toBe(200);
+    expect((await g.api("u_karim", "PATCH", `/api/activities/${a.id}`, { outcome: "Avis favorable" })).status).toBe(
+      200,
+    );
     expect((await g.api("u_karim", "PATCH", `/api/activities/${a.id}`, { lead_id: "u_hugo" })).status).toBe(403);
     expect((await g.api("u_karim", "PATCH", `/api/activities/${a.id}`, { confidential: false })).status).toBe(403);
   });

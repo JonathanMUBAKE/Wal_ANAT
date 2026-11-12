@@ -1,6 +1,6 @@
 import { uid } from "./db.js";
 import { linkContact, linkPartner } from "./partner-links.js";
-import { HttpError, badRequest, isRealDate, notFound, type Services } from "./services.js";
+import { HttpError, badRequest, isRealDate, notFound, type Services, localDate } from "./services.js";
 
 interface Mail {
   id: string;
@@ -60,7 +60,7 @@ export interface IndicatorInput {
 }
 const mailRef = (m: Pick<Mail, "direction" | "year" | "seq">) =>
   `${m.direction === "entrant" ? "ENT" : "SOR"}/${m.year}/${String(m.seq).padStart(4, "0")}`;
-const day = () => new Date().toISOString().slice(0, 10);
+const day = () => localDate();
 
 /** Registre officiel du courrier, risques et indicateurs de performance. */
 export class Registers {

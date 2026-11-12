@@ -3,7 +3,7 @@ import { uid, type Queryable } from "./db.js";
 import { Decisions, decisionRef } from "./decisions.js";
 import { ALLOWED_FORMATS, detectType } from "./documents/filetypes.js";
 import { linkContact, linkPartner } from "./partner-links.js";
-import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
+import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services, localDate } from "./services.js";
 
 export type ActionStatus = "a_faire" | "en_cours" | "soumis" | "realise" | "reporte" | "annule";
 export type MeetingStatus = "planned" | "held" | "submitted" | "validated" | "cancelled";
@@ -216,7 +216,7 @@ const assertDate = (v: string | null | undefined) => {
 const locked = () => new HttpError(409, "Ce compte rendu est validé : rouvrez-le pour le modifier");
 const pending = () =>
   new HttpError(409, "Ce compte rendu est soumis à validation : demandez son retour pour le modifier");
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDate();
 const cleanName = (name: string) =>
   name
     .replace(/[\u0000-\u001f\u007f]/g, "")
@@ -1035,7 +1035,7 @@ export class Meetings {
     );
     if (!n?.n) throw badRequest("Le compte rendu doit contenir au moins un point à l'ordre du jour");
     // Un compte rendu officiel rend compte d'une réunion tenue, et chaque recommandation y a un porteur et un délai
-    if (m.meeting_date > new Date().toISOString().slice(0, 10))
+    if (m.meeting_date > today())
       throw badRequest("Cette réunion n'a pas encore eu lieu : son compte rendu ne peut pas être validé");
     const incomplete = await this.svc.db.query<{ text: string }>(
       "SELECT text FROM meeting_actions WHERE meeting_id = $1 AND status NOT IN ('realise','annule') AND (responsible_id IS NULL AND responsible_name = '' OR due_on IS NULL) ORDER BY position",

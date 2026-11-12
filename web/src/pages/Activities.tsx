@@ -1,3 +1,4 @@
+import { todayIso } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -225,7 +226,7 @@ function ProjectsList({ projects }: { projects: ProjectSummary[] | undefined }) 
         </Empty>
       </Section>
     );
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   return (
     <Section>
       <Table head={["Projet", "Équipe", "Avancement", "Échéance", "Tâches en retard", "État"]}>

@@ -22,13 +22,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Empty, cn } from "@/components/ui";
-import {
-  CountUp,
-  LoadingRows,
-  frDate,
-  isLate,
-  type Tone,
-} from "@/components/gov";
+import { CountUp, LoadingRows, frDate, isLate, type Tone } from "@/components/gov";
 import { HealthRing } from "@/components/territory";
 import { CollectionHeader } from "@/components/collection";
 
@@ -212,7 +206,11 @@ export function PilotagePage() {
         />
 
         {/* 2. Santé du portefeuille */}
-        <Bento className="md:col-span-3 xl:col-span-4" title="Santé du portefeuille" action={<CircleAction to="/activites" label="Voir les activités" />}>
+        <Bento
+          className="md:col-span-3 xl:col-span-4"
+          title="Santé du portefeuille"
+          action={<CircleAction to="/activites" label="Voir les activités" />}
+        >
           <div className="flex items-center gap-5 px-5 pb-2 pt-1">
             <HealthRing
               size={112}
@@ -244,7 +242,10 @@ export function PilotagePage() {
               ] as const
             ).map(([h, I, tile]) => (
               <li key={h}>
-                <Link to="/activites" className="flex items-center gap-3 rounded-[10px] px-2 py-2 transition-colors hover:bg-hover">
+                <Link
+                  to="/activites"
+                  className="flex items-center gap-3 rounded-[10px] px-2 py-2 transition-colors hover:bg-hover"
+                >
                   <span className={cn("flex size-8 items-center justify-center rounded-[10px]", tile)}>
                     <I className="size-4" />
                   </span>
@@ -263,7 +264,9 @@ export function PilotagePage() {
           title="Décisions attendues"
           action={
             <span className="flex items-center gap-2">
-              <span className="rounded-md bg-hover px-2 py-0.5 text-[12px] font-medium tabular text-muted">{o.decisions.length}</span>
+              <span className="rounded-md bg-hover px-2 py-0.5 text-[12px] font-medium tabular text-muted">
+                {o.decisions.length}
+              </span>
               <CircleAction to="/decisions" label="Ouvrir le registre des décisions" />
             </span>
           }
@@ -339,9 +342,15 @@ export function PilotagePage() {
             <p className="mt-4 text-[12px] font-medium text-muted">Demander</p>
             <div className="mt-2 flex flex-col gap-2">
               {[
-                ["Résumer la semaine", "Résume la semaine de la Direction générale : faits marquants, retards et décisions attendues."],
+                [
+                  "Résumer la semaine",
+                  "Résume la semaine de la Direction générale : faits marquants, retards et décisions attendues.",
+                ],
                 ["Proposer les priorités", "Quelles sont les trois priorités de la DG cette semaine, et pourquoi ?"],
-                ["Préparer le comité", "Prépare l'ordre du jour du prochain comité de direction à partir des dossiers en cours."],
+                [
+                  "Préparer le comité",
+                  "Prépare l'ordre du jour du prochain comité de direction à partir des dossiers en cours.",
+                ],
               ].map(([l, p]) => (
                 <button
                   key={l}
@@ -366,7 +375,11 @@ export function PilotagePage() {
         </Bento>
 
         {/* 5. La semaine de la DG : graphique et prochains rendez-vous dans la même carte */}
-        <Bento className="md:col-span-6 xl:col-span-5" title="Agenda de la semaine" action={<CircleAction to="/activites" label="Tout l'agenda" />}>
+        <Bento
+          className="md:col-span-6 xl:col-span-5"
+          title="Agenda de la semaine"
+          action={<CircleAction to="/activites" label="Tout l'agenda" />}
+        >
           <div className="grid gap-4 px-5 pb-5 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
             <div>
               <p className="flex items-baseline gap-2">
@@ -378,7 +391,11 @@ export function PilotagePage() {
               <div className="relative mt-4 h-[124px]">
                 <div aria-hidden className="absolute inset-x-0 bottom-6 top-0">
                   {[0, 1, 2].map((g) => (
-                    <span key={g} className="absolute inset-x-0 border-t border-dashed border-line" style={{ bottom: `${(g / 2) * 100}%` }} />
+                    <span
+                      key={g}
+                      className="absolute inset-x-0 border-t border-dashed border-line"
+                      style={{ bottom: `${(g / 2) * 100}%` }}
+                    />
                   ))}
                 </div>
                 <div className="relative flex h-full items-end gap-2">
@@ -406,7 +423,12 @@ export function PilotagePage() {
                           }}
                         />
                       </span>
-                      <span className={cn("mt-1.5 h-4 text-[11px] capitalize", w.key === o.today ? "font-semibold text-fg" : "text-muted")}>
+                      <span
+                        className={cn(
+                          "mt-1.5 h-4 text-[11px] capitalize",
+                          w.key === o.today ? "font-semibold text-fg" : "text-muted",
+                        )}
+                      >
                         {format(w.d, "EEEEE", { locale: fr })}
                       </span>
                     </button>
@@ -418,14 +440,21 @@ export function PilotagePage() {
               {dayList.length ? (
                 dayList.map((a) => (
                   <li key={a.id}>
-                    <Link to={a.href} className="flex items-center gap-3 rounded-[10px] bg-bg/70 px-3 py-2 transition-colors hover:bg-hover">
+                    <Link
+                      to={a.href}
+                      className="flex items-center gap-3 rounded-[10px] bg-bg/70 px-3 py-2 transition-colors hover:bg-hover"
+                    >
                       <span className="w-8 shrink-0 text-center leading-none">
                         <span className="block text-[15px] font-semibold">{format(parseISO(a.date), "d")}</span>
-                        <span className="text-[10px] uppercase text-faint">{format(parseISO(a.date), "MMM", { locale: fr })}</span>
+                        <span className="text-[10px] uppercase text-faint">
+                          {format(parseISO(a.date), "MMM", { locale: fr })}
+                        </span>
                       </span>
                       <span className="min-w-0">
                         <span className="block truncate text-[12.5px] font-medium">{a.title}</span>
-                        <span className="text-[11.5px] text-muted">{a.form === "reunion" ? "Réunion" : form(a.form).label}</span>
+                        <span className="text-[11.5px] text-muted">
+                          {a.form === "reunion" ? "Réunion" : form(a.form).label}
+                        </span>
                       </span>
                     </Link>
                   </li>
@@ -435,7 +464,10 @@ export function PilotagePage() {
               )}
               {day && (
                 <li>
-                  <button onClick={() => setDay(null)} className="px-1 text-[12px] font-medium text-primary hover:underline">
+                  <button
+                    onClick={() => setDay(null)}
+                    className="px-1 text-[12px] font-medium text-primary hover:underline"
+                  >
                     Toute la semaine
                   </button>
                 </li>
@@ -449,7 +481,10 @@ export function PilotagePage() {
           className="md:col-span-6 xl:col-span-4"
           title="À suivre en priorité"
           action={
-            <Link to="/activites" className="inline-flex items-center gap-0.5 text-[12px] font-medium text-muted hover:text-fg">
+            <Link
+              to="/activites"
+              className="inline-flex items-center gap-0.5 text-[12px] font-medium text-muted hover:text-fg"
+            >
               Tout voir <ChevronRight className="size-3.5" />
             </Link>
           }
@@ -459,8 +494,15 @@ export function PilotagePage() {
               const late = isLate(i.next_due, o.today);
               return (
                 <li key={i.id}>
-                  <Link to={i.href} className="flex items-center gap-3 rounded-[10px] px-3 py-2 transition-colors hover:bg-hover">
-                    <span className="size-2 shrink-0 rounded-full" style={{ background: HEALTH[i.health].color }} title={HEALTH[i.health].label} />
+                  <Link
+                    to={i.href}
+                    className="flex items-center gap-3 rounded-[10px] px-3 py-2 transition-colors hover:bg-hover"
+                  >
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ background: HEALTH[i.health].color }}
+                      title={HEALTH[i.health].label}
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] font-medium">{i.title}</span>
                       <span className="block truncate text-[11.5px] text-muted">
@@ -478,7 +520,11 @@ export function PilotagePage() {
         </Bento>
 
         {/* 7. Suivi-évaluation */}
-        <Bento className="md:col-span-3 xl:col-span-7" title="Indicateurs stratégiques" action={<Target className="size-4 text-faint" />}>
+        <Bento
+          className="md:col-span-3 xl:col-span-7"
+          title="Indicateurs stratégiques"
+          action={<Target className="size-4 text-faint" />}
+        >
           <ul className="grid gap-x-8 gap-y-4 px-5 pb-5 pt-1 sm:grid-cols-2">
             {[
               ...o.indicators.map((i) => ({
@@ -515,7 +561,11 @@ export function PilotagePage() {
         </Bento>
 
         {/* 8. Risques */}
-        <Bento className="md:col-span-3 xl:col-span-5" title="Risques majeurs" action={<ShieldAlert className="size-4 text-faint" />}>
+        <Bento
+          className="md:col-span-3 xl:col-span-5"
+          title="Risques majeurs"
+          action={<ShieldAlert className="size-4 text-faint" />}
+        >
           {o.risks.length ? (
             <ul className="px-2 pb-3">
               {o.risks.map((r) => (
@@ -523,7 +573,11 @@ export function PilotagePage() {
                   <span
                     className={cn(
                       "flex size-8 shrink-0 items-center justify-center rounded-[10px] text-[12px] font-semibold tabular",
-                      r.score >= 15 ? "bg-danger-soft text-danger" : r.score >= 8 ? "bg-warning-soft text-warning" : "bg-hover text-muted",
+                      r.score >= 15
+                        ? "bg-danger-soft text-danger"
+                        : r.score >= 8
+                          ? "bg-warning-soft text-warning"
+                          : "bg-hover text-muted",
                     )}
                     title="Probabilité × impact"
                   >
@@ -531,7 +585,9 @@ export function PilotagePage() {
                   </span>
                   <span className="min-w-0">
                     <span className="block truncate text-[13px] font-medium">{r.title}</span>
-                    <span className="block truncate text-[11.5px] text-muted">{r.owner_name ?? "Sans responsable"}</span>
+                    <span className="block truncate text-[11.5px] text-muted">
+                      {r.owner_name ?? "Sans responsable"}
+                    </span>
                   </span>
                 </li>
               ))}
@@ -546,7 +602,7 @@ export function PilotagePage() {
   );
 }
 
-const rank =(i: Item) =>
+const rank = (i: Item) =>
   ({ off_track: 0, at_risk: 1, on_track: 2, done: 3 })[i.health] - (i.decision_needed ? 0.5 : 0);
 /** Détail des retards en une ligne : « 2 tâches, 1 livrable, 1 courrier ». */
 const LATE_LABEL: Record<string, [string, string]> = {
@@ -565,7 +621,6 @@ const lateFoot = (detail: Record<string, number> | undefined, items: number) => 
 };
 const rate = (r: { open: number; done: number }) =>
   r.open + r.done ? Math.round((r.done / (r.open + r.done)) * 100) : 0;
-
 
 function CircleAction({ to, label }: { to: string; label: string }) {
   return (
@@ -674,4 +729,3 @@ function Stat({
     <div className={cls}>{body}</div>
   );
 }
-

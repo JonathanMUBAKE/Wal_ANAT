@@ -1,5 +1,5 @@
 import { uid } from "./db.js";
-import { notFound, type Services } from "./services.js";
+import { notFound, type Services, localDate } from "./services.js";
 
 export type GapKind =
   | "absence"
@@ -57,7 +57,7 @@ export class Gaps {
 
   private async findAll(orgId: string, days: number): Promise<Found[]> {
     const db = this.svc.db;
-    const since = new Date(Date.now() - days * 864e5).toISOString().slice(0, 10);
+    const since = localDate(new Date(Date.now() - days * 864e5));
     const holders = await db.query<Holder>(
       `SELECT s.unit_id, ou.name AS unit_name, sd.domain_id, d.name AS domain_name, sd.role FROM attribution_sheets s
        JOIN sheet_domains sd ON sd.sheet_id = s.id JOIN activity_domains d ON d.id = sd.domain_id JOIN org_units ou ON ou.id = s.unit_id

@@ -100,6 +100,7 @@ export async function buildApp(opts: AppOptions = {}) {
   await ai.init();
   const detach = ai.attach();
   const mail = new MailService(db, svc, bus);
+  mail.publicUrl = opts.publicUrl;
   const detachMail = mail.attach();
   const attachments = new Attachments(svc);
   const importer = new Importer(svc, provider);

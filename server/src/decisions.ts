@@ -1,5 +1,5 @@
 import { uid } from "./db.js";
-import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
+import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services, localDate } from "./services.js";
 
 export type DecisionStatus = "a_executer" | "en_cours" | "executee" | "remplacee";
 interface Decision {
@@ -38,7 +38,7 @@ export interface DecisionInput {
 }
 
 export const decisionRef = (d: Pick<Decision, "year" | "seq">) => `DEC/${d.year}/${String(d.seq).padStart(4, "0")}`;
-const day = () => new Date().toISOString().slice(0, 10);
+const day = () => localDate();
 /** L'exécution n'avance que dans un sens. */
 const STEP: Record<DecisionStatus, number> = { a_executer: 0, en_cours: 1, executee: 2, remplacee: 3 };
 

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { boot, type GovCtx } from "./gov-test-helpers.js";
+import { localDate } from "./services.js";
 
 let g: GovCtx;
 let app: string;
@@ -8,7 +9,7 @@ beforeEach(async () => {
   app = (await g.ctx.db.one<{ id: string }>("SELECT id FROM projects WHERE name LIKE '%Application mobile%'"))!.id;
 });
 afterEach(() => g.ctx.app.close());
-const today = new Date().toISOString().slice(0, 10);
+const today = localDate();
 const add = async (patch: Record<string, unknown> = {}) =>
   (await g.api("u_alice", "POST", "/api/activities", { kind: "commission", title: "Commission nationale", ...patch }))
     .body;

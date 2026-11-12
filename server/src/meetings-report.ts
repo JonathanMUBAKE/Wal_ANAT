@@ -17,6 +17,7 @@ import {
   WidthType,
 } from "docx";
 import type { ActionStatus, MeetingDetail } from "./meetings.js";
+import type { ExportDoc } from "./export-doc.js";
 
 // Charte relevée sur le modèle officiel de compte rendu de l'ANAT
 const FONT = "Montserrat";
@@ -128,6 +129,119 @@ function logoHeader() {
 
 export function reportFileName(m: Pick<MeetingDetail, "reference">) {
   return `CR-${m.reference.replace(/[^A-Za-z0-9-]+/g, "-")}.docx`;
+}
+
+/** Le compte rendu, mêmes rubriques que le modèle Word, pour l'export PDF. */
+export function meetingExportDoc(m: MeetingDetail): ExportDoc {
+  const present = m.attendees
+    .filter((a) => a.presence === "present" || a.presence === "represente")
+    .map((a) => (a.function_label ? `${a.name} (${a.function_label})` : a.name));
+  const excused = m.attendees.filter((a) => a.presence === "excuse" || a.presence === "absent").map((a) => a.name);
+  return {
+    title: `Compte rendu de réunion · ${m.title}`,
+    reference: `Compte rendu N° ${m.reference}`,
+    filename: reportFileName(m).replace(/\.docx$/, ""),
+    sections: [
+      {
+        heading: "Informations générales",
+        blocks: [
+          {
+            kind: "facts",
+            rows: [
+              ["Date de la réunion", shortDate(m.meeting_date)],
+              ["Horaire", [hour(m.start_time), hour(m.end_time)].filter(Boolean).join(" à ")],
+              ["Lieu", m.location],
+              ["Réunion convoquée par", m.convened_by],
+              ["Type de réunion", m.meeting_type],
+              ["Animateur", m.facilitator],
+              ["Rédacteur", m.writer_name],
+              ["Maître du temps", m.timekeeper],
+              ["Participants", present.join(", ") || m.attendance_note || "Cfr liste des présences"],
+              ...(excused.length ? ([["Absents ou excusés", excused.join(", ")]] as [string, string][]) : []),
+            ],
+          },
+        ],
+      },
+      {
+        heading: "Précédente réunion",
+        blocks: [
+          {
+            kind: "facts",
+            rows: [
+              ["Date", m.previous ? shortDate(m.previous.meeting_date) : ""],
+              ["Synthèse des points abordés", m.previous_summary],
+            ],
+          },
+        ],
+      },
+      {
+        heading: "Ordre du jour",
+        blocks: [
+          {
+            kind: "table",
+            head: ["N°", "Sujets à aborder", "Intervenants"],
+            widths: [1, 7, 4],
+            rows: m.agenda.map((i, n) => [`${n + 1}.`, i.subject, i.speakers]),
+          },
+        ],
+      },
+      ...m.agenda.map((i, n) => ({
+        heading: `Ordre du jour ${n + 1} : ${i.subject}`,
+        blocks: [
+          ...(i.notes ? [{ kind: "text" as const, text: i.notes }] : []),
+          {
+            kind: "table" as const,
+            head: ["Recommandation", "Responsable", "Échéance", "Statut"],
+            widths: [6, 3, 2, 2],
+            rows: i.actions.length
+              ? i.actions.map((a) => [a.text, a.responsible_name, shortDate(a.due_on), STATUS[a.status]])
+              : [["Aucune recommandation", "", "", ""]],
+          },
+          ...(i.decisions.length
+            ? [
+                {
+                  kind: "table" as const,
+                  head: ["Décision de la séance", "Chargé d'exécution", "Échéance", "Registre"],
+                  widths: [6, 3, 2, 2],
+                  rows: i.decisions.map((d) => [
+                    d.text,
+                    d.owner_name ?? "",
+                    shortDate(d.due_on),
+                    d.decision_reference ?? "À inscrire",
+                  ]),
+                },
+              ]
+            : []),
+        ],
+      })),
+      { heading: "Conclusion", blocks: [{ kind: "text", text: m.summary || "-" }] },
+      {
+        heading: "Prochaine réunion",
+        blocks: [
+          {
+            kind: "facts",
+            rows: [
+              ["Date et heure", [longDate(m.next_date), hour(m.next_time)].filter(Boolean).join(", ") || "N/D"],
+              ["Lieu", m.next_location || "N/D"],
+              ["Points à aborder", m.next_topics || "N/D"],
+            ],
+          },
+        ],
+      },
+      {
+        heading: "Rédigé par",
+        blocks: [
+          {
+            kind: "facts",
+            rows: [
+              ["Rédacteur", m.writer_name],
+              ["Signature", ""],
+            ],
+          },
+        ],
+      },
+    ],
+  };
 }
 
 /** Compte rendu officiel, dans l'ordre et les intitulés du modèle de l'agence. */

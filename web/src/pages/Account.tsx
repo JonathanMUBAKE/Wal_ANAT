@@ -28,7 +28,7 @@ function Card({ icon, title, children }: { icon: React.ReactNode; title: string;
 /** Sécurité du compte : mot de passe, double authentification, appareils connectés. */
 export function AccountPage() {
   return (
-    <div className="mx-auto max-w-[760px] space-y-5 px-4 pb-16 pt-8 sm:px-8">
+    <div className="mx-auto max-w-[1480px] space-y-5 px-4 pb-16 pt-8 sm:px-8 [&>*]:max-w-[860px]">
       <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Sécurité du compte</h1>
       <PasswordCard />
       <MfaCard />

@@ -1,3 +1,4 @@
+import { type ExportDoc, formatOf, sendExport } from "./export-doc.js";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { Provisioning } from "./auth/provisioning.js";
@@ -203,7 +204,8 @@ export class AdminPlus {
     };
   }
 
-  async accountsCsv(actorId: string, ip: string) {
+  /** Les comptes de la plateforme, en tableau : l'export, quel que soit son format, est tracé. */
+  async accountsTable(actorId: string, ip: string) {
     await this.provisioning.requireSuperAdmin(actorId);
     const rows = await this.svc.db.query<Record<string, unknown>>(
       `SELECT u.name, u.email, u.status, u.totp_enabled,
@@ -219,28 +221,37 @@ export class AdminPlus {
       suspended: "Suspendu",
       rejected: "Refusé",
     };
-    const lines = [
-      "Nom;Adresse;État;Institutions;Profils;Double authentification;Dernière connexion",
-      ...rows.map((r) =>
-        [
-          r.name,
-          r.email,
-          STATUS[String(r.status)] ?? r.status,
-          r.orgs,
-          r.profiles,
-          r.totp_enabled ? "Oui" : "Non",
-          r.last_login ? new Date(String(r.last_login)).toISOString().slice(0, 16).replace("T", " ") : "Jamais",
-        ]
-          .map(csvCell)
-          .join(";"),
-      ),
-    ];
+    const head = ["Nom", "Adresse", "État", "Institutions", "Profils", "Double authentification", "Dernière connexion"];
+    const table = rows.map((r) => [
+      String(r.name ?? ""),
+      String(r.email ?? ""),
+      STATUS[String(r.status)] ?? String(r.status),
+      String(r.orgs ?? ""),
+      String(r.profiles ?? ""),
+      r.totp_enabled ? "Oui" : "Non",
+      r.last_login ? new Date(String(r.last_login)).toISOString().slice(0, 16).replace("T", " ") : "Jamais",
+    ]);
     await this.auth.record("accounts.exported", { actorId, ip, data: { lines: rows.length } });
-    return `﻿${lines.join("\n")}\n`;
+    return { head, rows: table };
+  }
+
+  async accountsCsv(actorId: string, ip: string) {
+    const t = await this.accountsTable(actorId, ip);
+    return `﻿${[t.head, ...t.rows].map((r) => r.map(csvCell).join(";")).join("\n")}\n`;
   }
 }
 
 type Id = { Params: { id: string } };
+/** Les comptes de la plateforme, au format choisi (Excel, PDF, Word, CSV) : l'export est tracé. */
+async function accountsDoc(a: AdminPlus, actorId: string, ip: string): Promise<ExportDoc> {
+  const { head, rows } = await a.accountsTable(actorId, ip);
+  return {
+    title: "Comptes de la plateforme",
+    filename: "comptes",
+    landscape: true,
+    sections: [{ heading: "Comptes", blocks: [{ kind: "table", head, rows, widths: [3, 4, 1.5, 4, 3, 2, 2.5] }] }],
+  };
+}
 export function adminPlusRoutes(r: FastifyInstance, a: AdminPlus) {
   r.get("/api/admin/health", async (req) => a.health(req.userId));
   r.get("/api/admin/sessions", async (req) => a.sessions(req.userId));
@@ -254,6 +265,9 @@ export function adminPlusRoutes(r: FastifyInstance, a: AdminPlus) {
     ),
   );
   r.get("/api/admin/roles-matrix", async (req) => a.rolesMatrix(req.userId));
+  r.get("/api/admin/accounts/export", async (req, reply) =>
+    sendExport(reply, await accountsDoc(a, req.userId, req.ip), formatOf(req.query, ["xlsx", "pdf", "docx", "csv"])),
+  );
   r.get("/api/admin/accounts.csv", async (req, reply) =>
     reply
       .header("Content-Type", "text/csv; charset=utf-8")

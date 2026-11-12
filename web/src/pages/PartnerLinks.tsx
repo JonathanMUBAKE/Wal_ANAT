@@ -254,7 +254,7 @@ export function ReconcilePage() {
         }
         subtitle="Les noms de tiers saisis en texte libre avant l'annuaire (commanditaires, interlocuteurs, correspondants, prestataires). Relisez chaque suggestion avant de relier : le texte d'origine est conservé. Le courrier et les activités confidentiels n'y figurent pas."
       />
-      <div className="mx-auto max-w-[1240px] space-y-3 p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1480px] space-y-3 p-4 sm:px-8 sm:py-6">
         <Select
           aria-label="Origine"
           className="max-w-xs"

@@ -73,7 +73,7 @@ export function TeamsPage() {
   const guest = me?.orgs.find((o) => o.id === me.org_id)?.role === "guest";
   const unitName = (id: string | null) => units?.find((u) => u.id === id)?.name;
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-16 pt-8 sm:px-8">
+    <div className="mx-auto max-w-[1480px] px-4 pb-16 pt-8 sm:px-8">
       <header className="mb-6 flex flex-wrap items-end gap-3">
         <div className="flex-1">
           <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Équipes</h1>
@@ -284,7 +284,7 @@ export function TeamPage() {
     .map((u) => u.id);
 
   return (
-    <div className="mx-auto max-w-[1100px] px-4 pb-16 pt-8 sm:px-8">
+    <div className="mx-auto max-w-[1480px] px-4 pb-16 pt-8 sm:px-8">
       <header className="mb-8 flex flex-wrap items-start gap-4">
         <span
           className="flex size-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm"

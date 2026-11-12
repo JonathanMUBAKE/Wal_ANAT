@@ -885,6 +885,54 @@ export class Audit {
   }
 
   /** Export tableur (point-virgule, UTF-8 avec BOM pour Excel), mêmes filtres que l'écran. */
+  /** Le journal filtré, au format choisi : l'export est tracé comme le CSV. */
+  async exportDoc(f: AuditFilter, actorId: string, ip: string | null) {
+    const { entries } = await this.list({ ...f, limit: f.limit ?? 5000 });
+    await this.auth?.record("audit.exported", {
+      actorId,
+      userId: f.user_id ?? null,
+      ip,
+      data: { filters: f, lines: entries.length },
+    });
+    const when = (iso: string) => {
+      const d = new Date(iso);
+      const p = (n: number) => String(n).padStart(2, "0");
+      return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    };
+    const filters = Object.entries(f)
+      .filter(([, v]) => v !== undefined && v !== "")
+      .map(([k, v]) => `${k} : ${v}`)
+      .join(" · ");
+    return {
+      title: "Journal d'audit",
+      subtitle: filters ? `Filtres : ${filters}` : "Sans filtre",
+      filename: "journal-audit",
+      landscape: true,
+      sections: [
+        {
+          heading: `Événements (${entries.length})`,
+          blocks: [
+            {
+              kind: "table" as const,
+              head: ["Date", "Auteur", "Domaine", "Action", "Objet", "Gravité", "Institution", "Adresse IP"],
+              widths: [2, 2.5, 2, 3, 5, 1.5, 2.5, 2],
+              rows: entries.map((e) => [
+                when(e.created_at),
+                e.actor_name,
+                e.category,
+                e.label,
+                e.summary,
+                e.severity,
+                e.org_name,
+                e.ip,
+              ]),
+            },
+          ],
+        },
+      ],
+    };
+  }
+
   async csv(f: AuditFilter, actorId?: string, ip?: string | null) {
     const { entries } = await this.list({ ...f, limit: f.limit ?? 5000 });
     // Rien ne sort du journal sans laisser de trace

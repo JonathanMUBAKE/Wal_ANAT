@@ -136,7 +136,7 @@ export function PilotagePage() {
   const dayList = (day ? o.agenda.filter((a) => a.date === day) : o.agenda).slice(0, 3);
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-5 p-4 sm:px-8 sm:py-6">
+    <div className="mx-auto max-w-[1480px] space-y-5 p-4 sm:px-8 sm:py-6">
       <CollectionHeader
         Icon={Gauge}
         crumbs={["Pilotage", "Tableau de bord DG"]}

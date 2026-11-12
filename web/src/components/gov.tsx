@@ -84,7 +84,7 @@ export function PageHeader({
   crumbs?: string[];
 }) {
   return (
-    <header className="mx-auto w-full max-w-[1240px] px-4 pb-4 pt-6 sm:px-8">
+    <header className="mx-auto w-full max-w-[1480px] px-4 pb-4 pt-6 sm:px-8">
       {crumbs && (
         <p className="mb-3 flex items-center gap-1.5 text-[12.5px] text-muted">
           {crumbs.map((c, i) => (
@@ -262,7 +262,7 @@ export function Tabs<T extends string>({
   items: { id: T; label: string; badge?: number }[];
 }) {
   return (
-    <div className="mx-auto w-full max-w-[1240px] px-4 sm:px-8">
+    <div className="mx-auto w-full max-w-[1480px] px-4 sm:px-8">
       <div role="tablist" className="flex overflow-x-auto border-b border-line">
         {items.map((t) => {
           const on = value === t.id;

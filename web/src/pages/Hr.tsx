@@ -1,3 +1,4 @@
+import { ExportMenu, tableDoc } from "@/components/export-menu";
 import { useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -114,11 +115,44 @@ export function HrPage() {
         title="Ressources humaines"
         subtitle="Le dossier de chaque agent : identité, situation administrative, affectation, diplômes et personnes à prévenir. Créer un agent ouvre son compte : il reçoit un lien et accède à la vue Agent."
         actions={
-          pending !== undefined && (
-            <Button variant="primary" icon={<UserPlus className="size-4" />} onClick={() => setCreating({})}>
-              Nouvel agent
-            </Button>
-          )
+          <>
+            <ExportMenu
+              disabled={!rows.length}
+              build={() =>
+                tableDoc(
+                  "Registre des agents",
+                  [
+                    "Matricule",
+                    "Agent",
+                    "Adresse",
+                    "Entité",
+                    "Fonction",
+                    "Grade",
+                    "Statut",
+                    "Entrée",
+                    "Fin de contrat",
+                  ],
+                  rows.map((a) => [
+                    a.matricule,
+                    fullName(a),
+                    a.email,
+                    a.unit_name,
+                    a.function_title,
+                    [a.grade, a.category].filter(Boolean).join(" · "),
+                    STATUS_LABEL[a.status] ?? a.status,
+                    frDate(a.hired_on),
+                    a.contract_end_on ? frDate(a.contract_end_on) : "",
+                  ]),
+                  { filename: "registre-des-agents", widths: [1.6, 3, 3, 2.5, 2.5, 2, 1.6, 1.4, 1.5] },
+                )
+              }
+            />
+            {pending !== undefined && (
+              <Button variant="primary" icon={<UserPlus className="size-4" />} onClick={() => setCreating({})}>
+                Nouvel agent
+              </Button>
+            )}
+          </>
         }
       />
       <Tabs
@@ -129,7 +163,7 @@ export function HrPage() {
           ...(pending ? [{ id: "a-identifier" as const, label: "À identifier", badge: pending.length }] : []),
         ]}
       />
-      <div className="mx-auto max-w-[1240px] space-y-3 px-4 pb-16 pt-5 sm:px-8">
+      <div className="mx-auto max-w-[1480px] space-y-3 px-4 pb-16 pt-5 sm:px-8">
         {error ? (
           <p className="text-[13px] text-danger">{(error as Error).message}</p>
         ) : !data ? (
@@ -517,7 +551,7 @@ export function AgentPage({ self }: { self?: boolean }) {
           </div>
         }
       />
-      <div className="mx-auto grid max-w-[1240px] gap-4 px-4 pb-16 pt-2 sm:px-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="mx-auto grid max-w-[1480px] gap-4 px-4 pb-16 pt-2 sm:px-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-4">
           <Section title="Identité">
             <Facts>

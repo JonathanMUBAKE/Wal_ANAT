@@ -1,8 +1,9 @@
+import { ExportMenu } from "@/components/export-menu";
 import { useState } from "react";
 import { Navigate } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, Download, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
+import { AlertTriangle, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Button, Chip, Dialog, Empty, Menu, MenuContent, MenuItem, MenuTrigger, Spinner, cn } from "@/components/ui";
@@ -64,7 +65,7 @@ export function AdminPage() {
           { id: "events", label: "Journal d'audit" },
         ]}
       />
-      <div className="mx-auto max-w-[1240px] px-4 pb-16 pt-5 sm:px-8">
+      <div className="mx-auto max-w-[1480px] px-4 pb-16 pt-5 sm:px-8">
         {me && !me.mfa_enabled && (
           <p className="mb-4 flex items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-[13px] text-warning">
             <AlertTriangle className="size-4 shrink-0" />
@@ -132,14 +133,9 @@ function Users({ meId }: { meId?: string }) {
           {users.length} compte(s). Un compte créé ici reste « Invité » tant que la personne n'a pas choisi son mot de
           passe.
         </p>
-        <a
-          href="/api/admin/accounts.csv"
-          download="comptes.csv"
-          className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line px-3 text-[13px] font-medium hover:bg-hover"
-        >
-          <Download className="size-4" />
-          Exporter les comptes
-        </a>
+        <span className="ml-auto">
+          <ExportMenu label="Exporter les comptes" href={(f) => `/api/admin/accounts/export?format=${f}`} />
+        </span>
         <Button variant="primary" icon={<UserPlus className="size-4" />} onClick={() => setCreating(true)}>
           Créer un compte
         </Button>
@@ -614,14 +610,7 @@ function AuditJournal() {
           <Button variant="primary" icon={<Sparkles className="size-4" />} onClick={() => setAnalysing(true)}>
             Analyser avec l'IA
           </Button>
-          <a
-            href={`/api/admin/audit.csv?${query}`}
-            download="journal-audit.csv"
-            className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line px-3 text-[13px] font-medium hover:bg-hover"
-          >
-            <Download className="size-4" />
-            Exporter
-          </a>
+          <ExportMenu href={(fmt) => `/api/admin/audit/export?${query}${query ? "&" : ""}format=${fmt}`} />
           {filtered && <Button onClick={() => setF(EMPTY_FILTER)}>Effacer les filtres</Button>}
           <span className="ml-auto text-[12.5px] text-muted" aria-live="polite">
             {!data
@@ -801,14 +790,7 @@ function UserJournal({ userId, onClose }: { userId: string; onClose: () => void 
       }
       footer={
         <>
-          <a
-            href={`/api/admin/audit.csv?${queryOf({ user_id: userId })}`}
-            download={`journal-${userId}.csv`}
-            className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line px-3 text-[13px] font-medium hover:bg-hover"
-          >
-            <Download className="size-4" />
-            Exporter
-          </a>
+          <ExportMenu href={(fmt) => `/api/admin/audit/export?${queryOf({ user_id: userId })}&format=${fmt}`} />
           <Button icon={<Sparkles className="size-4" />} onClick={() => setAnalysing(true)}>
             Analyser avec l'IA
           </Button>

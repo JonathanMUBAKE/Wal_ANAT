@@ -1,3 +1,4 @@
+import { DOCUMENT_FORMATS, ExportMenu } from "@/components/export-menu";
 import { todayIso } from "@/lib/format";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -6,7 +7,6 @@ import {
   ArrowLeft,
   CalendarDays,
   CornerUpLeft,
-  Download,
   Eye,
   FolderOpen,
   Megaphone,
@@ -889,9 +889,7 @@ export function MeetingPage() {
         subtitle={<span className="font-mono text-[12.5px]">N° {draft.reference}</span>}
         actions={
           <>
-            <a href={`/api/meetings/${id}/report.docx`} className="contents">
-              <Button icon={<Download className="size-4" />}>Export Word</Button>
-            </a>
+            <ExportMenu formats={DOCUMENT_FORMATS} href={(f) => `/api/meetings/${id}/report?format=${f}`} />
             {!editing && draft.can.edit && draft.status !== "validated" && (
               <IconButton label="Supprimer la réunion" onClick={() => setRemoving(true)}>
                 <Trash2 className="size-4" />
@@ -971,7 +969,7 @@ export function MeetingPage() {
           </>
         }
       />
-      <div className="mx-auto max-w-[1040px] space-y-4 p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1480px] space-y-4 p-4 sm:px-8 sm:py-6">
         {draft.return_comment && draft.status !== "validated" && draft.status !== "submitted" && (
           <p className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft px-4 py-3 text-[13px]">
             <CornerUpLeft className="mt-0.5 size-4 shrink-0 text-warning" />

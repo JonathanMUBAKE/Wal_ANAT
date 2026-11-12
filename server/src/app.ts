@@ -44,6 +44,7 @@ import { Pilotage } from "./pilotage.js";
 import { Directions, directionRoutes } from "./pilotage-directions.js";
 import { PlanReviews, planReviewRoutes } from "./plan-reviews.js";
 import { Portfolio, portfolioRoutes } from "./portfolio.js";
+import { ExportDocSchema, FORMATS, sendExport } from "./export-doc.js";
 import { Plans } from "./plans.js";
 import { planRoutes } from "./plans-routes.js";
 import { UnitTasks, unitTaskRoutes } from "./unit-tasks.js";
@@ -313,6 +314,20 @@ export async function buildApp(opts: AppOptions = {}) {
     directionRoutes(r, new Directions(svc));
     planReviewRoutes(r, new PlanReviews(svc));
     portfolioRoutes(r, new Portfolio(svc));
+    // Export d'un tableau d'écran au format choisi : rien d'autre ne sort que ce que la personne voit ; c'est tracé
+    r.post("/api/export", async (req, reply) => {
+      const b = z.object({ format: z.enum(FORMATS), doc: ExportDocSchema }).parse(req.body);
+      await svc.requireOrg(me(req), org(req));
+      const rows = b.doc.sections.reduce(
+        (n, s) => n + s.blocks.reduce((m, x) => m + (x.kind === "table" ? x.rows.length : 0), 0),
+        0,
+      );
+      await svc.log(me(req), "export.generated", {
+        orgId: org(req),
+        data: { title: b.doc.title, format: b.format, rows },
+      });
+      return sendExport(reply, b.doc, b.format);
+    });
     planRoutes(r, new Plans(svc), new Deliverables(svc));
     unitTaskRoutes(r, new UnitTasks(svc));
     hrRoutes(r, new Hr(svc, provisioning));

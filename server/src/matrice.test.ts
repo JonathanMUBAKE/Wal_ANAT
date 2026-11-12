@@ -20,7 +20,7 @@ const PNG = "data:image/png;base64,iVBORw0KGgo=",
 const PUBLIC = /^\/api\/auth\/(login|logout|config|users$|mfa$|token|activate|reset|forgot|request-access)/;
 /** Écritures qui ne concernent que son propre compte : un lecteur y a droit. */
 const PERSONAL =
-  /^(POST \/api\/auth\/(password|mfa\/setup|mfa\/confirm|mfa\/disable)|DELETE \/api\/auth\/sessions|POST \/api\/notifications\/read|PUT \/api\/me\/notification-prefs|PATCH \/api\/hr\/me|POST \/api\/orgs\/:id\/switch|POST \/api\/invitations\/)/;
+  /^(POST \/api\/auth\/(password|mfa\/setup|mfa\/confirm|mfa\/disable)|DELETE \/api\/auth\/sessions|POST \/api\/notifications\/read|PUT \/api\/me\/notification-prefs|PATCH \/api\/hr\/me|POST \/api\/export$|POST \/api\/orgs\/:id\/switch|POST \/api\/invitations\/)/;
 const DEMO_ONLY = "POST /api/orgs"; // Hors mode démo, réservé à l'administrateur système (voir auth.test.ts)
 /** Réponses normales du propriétaire : l'essai vise volontairement un refus métier. */
 const OWNER_EXPECTED =
@@ -710,6 +710,15 @@ const TABLE = [
     url: `/api/plans/${(await X.plan()).id}/activities`,
     body: { title: "A" },
   })),
+  // Export d'un tableau d'écran (rendu seul, tracé) et exports d'administration au format choisi
+  R_("POST", "/api/export", () => ({
+    body: {
+      format: "csv",
+      doc: { title: "Essai", sections: [{ blocks: [{ kind: "table", head: ["A"], rows: [["1"]] }] }] },
+    },
+  })),
+  R_("GET", "/api/admin/accounts/export"),
+  R_("GET", "/api/admin/audit/export"),
   // Portefeuille de projets : revue et arbitrages
   R_("GET", "/api/portfolio/review"),
   R_("GET", "/api/arbitrations"),
@@ -1006,6 +1015,9 @@ const TABLE = [
     url: `/api/meetings/${(await X.submitted()).id}/validate`,
   })),
   R_("POST", "/api/meetings/:id/reopen", async (X) => ({ url: `/api/meetings/${(await X.validated()).id}/reopen` })),
+  R_("GET", "/api/meetings/:id/report", async (X) => ({
+    url: `/api/meetings/${(await X.filled()).id}/report?format=pdf`,
+  })),
   R_("GET", "/api/meetings/:id/report.docx", async (X) => ({
     url: `/api/meetings/${(await X.filled()).id}/report.docx`,
   })),

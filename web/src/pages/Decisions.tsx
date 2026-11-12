@@ -1,3 +1,4 @@
+import { ExportMenu, tableDoc } from "@/components/export-menu";
 import { todayIso } from "@/lib/format";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -105,11 +106,36 @@ export function DecisionsPage() {
         title="Registre des décisions"
         subtitle="Chaque décision de la DG est numérotée, figée et suivie jusqu'à son exécution."
         actions={
-          can("decisions.record") && (
-            <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
-              Enregistrer une décision
-            </Button>
-          )
+          <>
+            <ExportMenu
+              disabled={!rows.length}
+              build={() =>
+                tableDoc(
+                  "Registre des décisions",
+                  ["Référence", "Décision", "Décidée le", "Source", "Chargé d'exécution", "Échéance", "État"],
+                  rows.map((d) => [
+                    d.reference,
+                    d.title,
+                    frDate(d.decided_on),
+                    d.source ? `${SOURCE_LABEL[d.source.kind]} · ${d.source.label}` : "",
+                    d.owner_name,
+                    frDate(d.due_on),
+                    DECISION_STATE[d.status].label + (d.late ? " (en retard)" : ""),
+                  ]),
+                  {
+                    filename: "registre-des-decisions",
+                    subtitle: tab === "mine" ? "À exécuter par moi" : "Toutes les décisions",
+                    widths: [2, 5, 1.5, 3, 2.5, 1.5, 2],
+                  },
+                )
+              }
+            />
+            {can("decisions.record") && (
+              <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
+                Enregistrer une décision
+              </Button>
+            )}
+          </>
         }
       />
       <Tabs
@@ -120,7 +146,7 @@ export function DecisionsPage() {
           { id: "mine", label: "À exécuter par moi", badge: mine.length },
         ]}
       />
-      <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1480px] p-4 sm:px-8 sm:py-6">
         {isLoading ? (
           <LoadingRows />
         ) : (

@@ -265,7 +265,7 @@ export function ProjectPage() {
         {view === "contrats" && <ProjectContracts projectId={project.id} />}
         {view === "reunions" && <ProjectMeetings projectId={project.id} />}
         {view === "documents" && (
-          <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
+          <div className="mx-auto max-w-[1480px] p-4 sm:px-8 sm:py-6">
             <DossierDocuments owner="project" ownerId={project.id} title="Documents du projet" />
           </div>
         )}

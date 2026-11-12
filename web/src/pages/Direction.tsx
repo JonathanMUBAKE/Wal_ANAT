@@ -84,7 +84,7 @@ export function DirectionPage() {
           </nav>
         }
       />
-      <div className="mx-auto max-w-[1240px] space-y-4 px-4 pb-16 sm:px-8">
+      <div className="mx-auto max-w-[1480px] space-y-4 px-4 pb-16 sm:px-8">
         <section
           aria-label="Appréciation"
           className={cn(

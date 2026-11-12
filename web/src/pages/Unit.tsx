@@ -123,7 +123,7 @@ export function UnitPage() {
       />
       <nav
         aria-label="Vues de l'entité"
-        className="mx-auto -mb-px flex w-full max-w-[1240px] gap-1 overflow-x-auto border-b border-line px-4 sm:px-8"
+        className="mx-auto -mb-px flex w-full max-w-[1480px] gap-1 overflow-x-auto border-b border-line px-4 sm:px-8"
       >
         {views.map((v) => (
           <button
@@ -156,7 +156,7 @@ export function UnitPage() {
         ) : view === "reunions" ? (
           <UnitMeetings board={board} onNew={() => setMeeting(true)} />
         ) : view === "suivi" ? (
-          <div className="mx-auto max-w-[1240px] space-y-4 px-4 pb-16 pt-5 sm:px-8">
+          <div className="mx-auto max-w-[1480px] space-y-4 px-4 pb-16 pt-5 sm:px-8">
             <FollowUp unitId={unitId} />
           </div>
         ) : (
@@ -217,7 +217,7 @@ function Overview({
     queryFn: () => api.get<UnitDashboard>(`/api/units/${unitId}/dashboard`),
   });
   return (
-    <div className="mx-auto max-w-[1240px] px-4 pb-16 pt-5 sm:px-8">
+    <div className="mx-auto max-w-[1480px] px-4 pb-16 pt-5 sm:px-8">
       {error ? (
         <p className="text-[13px] text-danger">{(error as Error).message}</p>
       ) : !data ? (

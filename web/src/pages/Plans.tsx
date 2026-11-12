@@ -1,3 +1,4 @@
+import { ExportMenu, tableDoc } from "@/components/export-menu";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -103,14 +104,35 @@ export function PlansPage() {
         title="Plans de travail"
         subtitle="Un plan annuel par entité. Une fois approuvé, il devient la référence et toute révision reste tracée."
         actions={
-          can("plans.manage") && (
-            <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
-              Nouveau plan
-            </Button>
-          )
+          <>
+            <ExportMenu
+              disabled={!data?.length}
+              build={() =>
+                tableDoc(
+                  "Plans de travail",
+                  ["Plan", "Entité", "Année", "Activités", "Avancement", "Activités échues", "Statut"],
+                  (data ?? []).map((p) => [
+                    p.title,
+                    p.unit_name,
+                    p.year,
+                    p.activity_count,
+                    `${p.progress} %`,
+                    p.late,
+                    STATE[p.status].label,
+                  ]),
+                  { filename: "plans-de-travail", widths: [4, 3, 1, 1.2, 1.5, 1.5, 2] },
+                )
+              }
+            />
+            {can("plans.manage") && (
+              <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
+                Nouveau plan
+              </Button>
+            )}
+          </>
         }
       />
-      <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1480px] p-4 sm:px-8 sm:py-6">
         <Section>
           {isLoading ? (
             <LoadingRows />
@@ -299,7 +321,7 @@ export function PlanPage() {
           </>
         }
       />
-      <div className="mx-auto max-w-[1240px] space-y-4 p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1480px] space-y-4 p-4 sm:px-8 sm:py-6">
         {p.return_comment && (
           <p className="rounded-xl border border-warning/30 bg-warning-soft px-4 py-3 text-[13px]">
             <strong>Plan retourné :</strong> {p.return_comment}

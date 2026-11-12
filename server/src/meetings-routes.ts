@@ -3,7 +3,8 @@ import { z } from "zod";
 import { ATTACHMENT_MAX_BYTES } from "./attachments.js";
 import { previewDocument } from "./documents/extract.js";
 import { sendFile } from "./file-reply.js";
-import { buildMeetingReport, reportFileName } from "./meetings-report.js";
+import { buildMeetingReport, meetingExportDoc, reportFileName } from "./meetings-report.js";
+import { formatOf, sendExport } from "./export-doc.js";
 import type { Meetings } from "./meetings.js";
 
 type Id = { Params: { id: string } };
@@ -206,6 +207,16 @@ export function meetingRoutes(r: FastifyInstance, meetings: Meetings) {
   );
   r.post<Id>("/api/meetings/:id/validate", async (req) => meetings.validate(req.userId, req.params.id));
   r.post<Id>("/api/meetings/:id/reopen", async (req) => meetings.reopen(req.userId, req.params.id));
+  r.get<Id>("/api/meetings/:id/report", async (req, reply) => {
+    const format = formatOf(req.query, ["docx", "pdf"]);
+    const m = await meetings.get(req.userId, req.params.id);
+    if (format === "pdf") return sendExport(reply, meetingExportDoc(m), "pdf");
+    return reply
+      .header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+      .header("Content-Disposition", `attachment; filename="${reportFileName(m)}"`)
+      .header("Cache-Control", "private, no-store")
+      .send(await buildMeetingReport(m));
+  });
   r.get<Id>("/api/meetings/:id/report.docx", async (req, reply) => {
     const m = await meetings.get(req.userId, req.params.id);
     return reply

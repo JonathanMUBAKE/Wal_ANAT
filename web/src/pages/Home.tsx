@@ -48,7 +48,7 @@ export function HomePage() {
   const activeRuns = runs?.filter((r) => isActive(r.status)) ?? [];
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-16 pt-8 sm:px-8 sm:pt-12">
+    <div className="mx-auto max-w-[1480px] px-4 pb-16 pt-8 sm:px-8 sm:pt-12">
       <motion.header initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <p className="text-[13px] text-muted first-letter:uppercase">{longDate(todayIso())}</p>
         <h1 className="mt-1 font-serif text-[40px] leading-[1.05] tracking-[-0.02em] sm:text-[52px]">

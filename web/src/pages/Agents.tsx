@@ -19,7 +19,7 @@ export function AgentsPage() {
   const run = selected ?? runs?.[0]?.id ?? null;
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-16 pt-8 sm:px-8">
+    <div className="mx-auto max-w-[1480px] px-4 pb-16 pt-8 sm:px-8">
       <header className="mb-8">
         <p className="flex items-center gap-1.5 text-[12px] font-medium uppercase tracking-wider text-ai-fg">
           <Sparkles className="size-3.5" />

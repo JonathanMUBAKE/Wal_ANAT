@@ -1,3 +1,4 @@
+import { type ExportDoc, ExportMenu, tableDoc } from "@/components/export-menu";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -96,8 +97,68 @@ export function PortfolioReview() {
   if (error) return <p className="text-[13px] text-danger">{(error as Error).message}</p>;
   if (!data) return <Spinner />;
   const s = data.summary;
+  const exportDoc = (): ExportDoc => ({
+    title: "Revue de portefeuille",
+    subtitle: `${s.total} projets · ${s.divergent} en écart avec le déclaré · ${s.arbitrations} arbitrage(s) attendu(s)`,
+    filename: "revue-de-portefeuille",
+    landscape: true,
+    sections: [
+      {
+        heading: "Synthèse",
+        blocks: [
+          {
+            kind: "facts",
+            rows: [
+              ["Projets suivis", s.total],
+              ["Dans les temps", s.on_track],
+              ["À surveiller", s.at_risk],
+              ["En difficulté", s.off_track],
+              ["En écart avec le déclaré", s.divergent],
+              ["Arbitrages attendus", s.arbitrations],
+            ],
+          },
+        ],
+      },
+      {
+        heading: "Projets",
+        blocks: [
+          {
+            kind: "table",
+            head: [
+              "Projet",
+              "Chef de projet",
+              "Déclarée",
+              "Calculée",
+              "Pourquoi",
+              "Avancement",
+              "Échéance",
+              "Livrables en retard",
+              "Budget consommé",
+            ],
+            widths: [3, 2, 1.6, 1.8, 5, 1.6, 1.4, 1.4, 1.4],
+            rows: data.projects.map((p) => [
+              p.name,
+              p.lead_name,
+              HEALTH[p.health_declared].label,
+              HEALTH[p.health_computed].label + (p.divergent ? " (en écart)" : ""),
+              p.reasons.join(" · "),
+              p.schedule.expected !== null
+                ? `${p.schedule.progress} % / ${p.schedule.expected} % attendus`
+                : `${p.schedule.progress} %`,
+              frDate(p.schedule.due_on),
+              p.deliverables.late,
+              p.budget.consumed !== null ? `${p.budget.consumed} %` : "",
+            ]),
+          },
+        ],
+      },
+    ],
+  });
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <ExportMenu build={exportDoc} />
+      </div>
       <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Tile label="Projets suivis" value={s.total} />
         <Tile label="Dans les temps" value={s.on_track} />
@@ -200,7 +261,31 @@ export function ArbitrationsBoard() {
   if (error) return <p className="text-[13px] text-danger">{(error as Error).message}</p>;
   if (!data) return <Spinner />;
   return (
-    <Section>
+    <Section
+      aside={
+        <ExportMenu
+          size="sm"
+          disabled={!data.length}
+          build={() =>
+            tableDoc(
+              "Arbitrages demandés à la DG",
+              ["Question", "Projet", "Demandé par", "Souhaité pour", "État", "Option retenue", "Registre"],
+              data.map((a) => [
+                a.question,
+                a.project_name,
+                a.requested_by_name,
+                frDate(a.wanted_by),
+                ARB_STATUS[a.status].label,
+                a.decided_option !== null ? a.options[a.decided_option]?.label : "",
+                decisionRef(a),
+              ]),
+              { filename: "arbitrages", widths: [5, 3, 2, 1.5, 2, 3, 2] },
+            )
+          }
+        />
+      }
+      title="Arbitrages"
+    >
       {data.length ? (
         <Table head={["Question", "Projet", "Demandé par", "Souhaité pour", "État"]}>
           {data.map((a) => (

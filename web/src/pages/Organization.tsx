@@ -68,7 +68,7 @@ export function OrganizationPage() {
         subtitle={`${units?.length ?? 0} entités · ${humans.length} personnes · chaque entité porte sa fiche d'attributions et ses rapports avec les autres.${isAdmin ? "" : " Lecture seule."}`}
       />
       <Tabs value={tab} onChange={setTab} items={tabs} />
-      <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1480px] p-4 sm:px-8 sm:py-6">
         {isLoading ? (
           <Spinner />
         ) : tab === "tree" ? (

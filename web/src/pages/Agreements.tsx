@@ -198,7 +198,7 @@ export function AgreementsPage() {
           { id: "resilie" as const, label: "Résiliés", badge: count("resilie") },
         ]}
       />
-      <div className="mx-auto max-w-[1240px] space-y-3 p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1480px] space-y-3 p-4 sm:px-8 sm:py-6">
         {soon > 0 && (
           <p className="flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-2.5 text-[13px]">
             <CalendarDays className="size-4 shrink-0 text-warning" />
@@ -566,7 +566,7 @@ export function AgreementPage() {
           </>
         }
       />
-      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-4 px-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="mx-auto grid max-w-[1480px] grid-cols-1 gap-4 px-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-4">
           {d.state === "signature" && d.sign_document && (
             <p className="rounded-xl border border-line bg-hover/50 px-4 py-3 text-[13px]">

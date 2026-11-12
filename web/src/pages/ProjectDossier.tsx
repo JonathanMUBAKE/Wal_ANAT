@@ -155,7 +155,7 @@ export function ProjectDeliverables({ projectId }: { projectId: string }) {
   });
   const rows = [...(data ?? [])].sort((a, b) => (a.due_on ?? "9").localeCompare(b.due_on ?? "9"));
   return (
-    <div className="mx-auto max-w-[1240px] space-y-4 p-4 sm:px-8 sm:py-6">
+    <div className="mx-auto max-w-[1480px] space-y-4 p-4 sm:px-8 sm:py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[13px] text-muted">
           Chaque livrable est validé par une autre personne que son auteur. Un livrable de contrat porte sa tranche de
@@ -544,7 +544,7 @@ export function ProjectContracts({ projectId }: { projectId: string }) {
     queryFn: () => api.get<DeliverableRow[]>(`/api/deliverables?project_id=${projectId}`),
   });
   return (
-    <div className="mx-auto max-w-[1240px] space-y-4 p-4 sm:px-8 sm:py-6">
+    <div className="mx-auto max-w-[1480px] space-y-4 p-4 sm:px-8 sm:py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[13px] text-muted">
           Consultants et cabinets engagés pour ce projet : termes de référence, durée, montant et échéancier de paiement
@@ -918,7 +918,7 @@ export function ProjectMeetings({ projectId }: { projectId: string }) {
     queryFn: () => api.get<MeetingRow[]>(`/api/meetings?project_id=${projectId}`),
   });
   return (
-    <div className="mx-auto max-w-[1240px] space-y-4 p-4 sm:px-8 sm:py-6">
+    <div className="mx-auto max-w-[1480px] space-y-4 p-4 sm:px-8 sm:py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[13px] text-muted">
           Les réunions de ce dossier : comité de pilotage, démarrage, revues. Leur compte rendu suit le circuit officiel

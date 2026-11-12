@@ -1,3 +1,4 @@
+import { formatOf, sendExport } from "../export-doc.js";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import type { Audit } from "../audit.js";
@@ -222,6 +223,12 @@ export function privateAuthRoutes(r: FastifyInstance, d: AuthDeps) {
     const j = await d.audit.journal(req.params.id, filterSchema.parse(req.query ?? {}));
     if (!j) throw notFound("Compte introuvable");
     return j;
+  });
+  r.get("/api/admin/audit/export", async (req, reply) => {
+    await provisioning.requireSuperAdmin(me(req));
+    const { format, ...rest } = (req.query ?? {}) as Record<string, unknown>;
+    const doc = await d.audit.exportDoc(filterSchema.parse(rest), me(req), req.ip);
+    return sendExport(reply, doc, formatOf({ format }, ["xlsx", "pdf", "docx", "csv"]));
   });
   r.get("/api/admin/audit.csv", async (req, reply) => {
     await provisioning.requireSuperAdmin(me(req));

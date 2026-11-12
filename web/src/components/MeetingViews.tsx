@@ -1,3 +1,4 @@
+import { DOCUMENT_FORMATS, ExportMenu, tableDoc } from "@/components/export-menu";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -18,8 +19,6 @@ import {
   ChevronRight,
   Clock,
   Columns3,
-  Download,
-  FileSpreadsheet,
   List,
   Lock,
   MapPin,
@@ -398,23 +397,18 @@ function ListView({ rows, filtered, onClear }: { rows: MeetingRow[]; filtered: b
       onOpen={(m) => nav(`/reunions/${m.id}`)}
       actions={(m) => (
         <>
-          <RoundBtn label="Exporter au format Word" href={`/api/meetings/${m.id}/report.docx`}>
-            <Download className="size-3.5" />
-          </RoundBtn>
+          <ExportMenu
+            compact
+            label="Exporter le compte rendu"
+            formats={DOCUMENT_FORMATS}
+            href={(f) => `/api/meetings/${m.id}/report?format=${f}`}
+          />
           <RoundBtn label="Ouvrir le compte rendu" onClick={() => nav(`/reunions/${m.id}`)}>
             <ArrowUpRight className="size-3.5" />
           </RoundBtn>
         </>
       )}
-      bulk={(sel) => (
-        <button
-          onClick={() => exportCsv(sel)}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-[12.5px] font-semibold text-on-primary"
-        >
-          <FileSpreadsheet className="size-3.5" />
-          Exporter la sélection
-        </button>
-      )}
+      bulk={(sel) => <ExportMenu size="sm" label="Exporter la sélection" build={() => selectionDoc(sel)} />}
       empty={
         filtered ? (
           <Empty title="Aucune réunion ne correspond à ces filtres.">
@@ -430,8 +424,8 @@ function ListView({ rows, filtered, onClear }: { rows: MeetingRow[]; filtered: b
   );
 }
 
-/** Tableur pour Excel : point-virgule, accents conservés. Données de la sélection seulement. */
-function exportCsv(rows: MeetingRow[]) {
+/** La sélection, en registre exportable (Excel, PDF, Word, CSV). Données de la sélection seulement. */
+function selectionDoc(rows: MeetingRow[]) {
   const head = [
     "Numéro",
     "Réunion",
@@ -444,9 +438,10 @@ function exportCsv(rows: MeetingRow[]) {
     "Recommandations ouvertes",
     "Recommandations",
   ];
-  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const lines = rows.map((m) =>
-    [
+  return tableDoc(
+    "Réunions",
+    head,
+    rows.map((m) => [
       m.reference,
       m.meeting_type,
       m.meeting_date,
@@ -457,16 +452,9 @@ function exportCsv(rows: MeetingRow[]) {
       STAGE[stageOf(m)].label,
       m.open_actions,
       m.action_count,
-    ]
-      .map(esc)
-      .join(";"),
+    ]),
+    { filename: `reunions-${today()}`, widths: [3, 3, 1.5, 1, 1, 2, 2, 1.5, 1.5, 1.5] },
   );
-  const blob = new Blob([`﻿${[head.map(esc).join(";"), ...lines].join("\r\n")}`], { type: "text/csv;charset=utf-8" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `reunions-${today()}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
 }
 
 // ------------------------------------------------------------------ Tableau (kanban par étape)
@@ -804,13 +792,9 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
         )}
       </div>
       <div className="mt-auto flex gap-2 border-t border-line p-4">
-        <a
-          href={`/api/meetings/${m.id}/report.docx`}
-          className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-line-strong text-[12.5px] font-medium hover:bg-hover"
-        >
-          <Download className="size-3.5" />
-          Export Word
-        </a>
+        <span className="flex flex-1 [&>button]:w-full">
+          <ExportMenu formats={DOCUMENT_FORMATS} href={(f) => `/api/meetings/${m.id}/report?format=${f}`} />
+        </span>
         <button
           onClick={() => nav(`/reunions/${m.id}`)}
           className="flex h-9 flex-[1.4] items-center justify-center gap-1.5 rounded-[10px] bg-night text-[12.5px] font-semibold text-white dark:bg-primary dark:text-on-primary"

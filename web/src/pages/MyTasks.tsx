@@ -46,7 +46,7 @@ export function MyTasksPage() {
     .sort((a, b) => ((b.completed_at ?? "") < (a.completed_at ?? "") ? -1 : 1));
 
   return (
-    <div className="mx-auto max-w-[1100px] pb-16">
+    <div className="mx-auto max-w-[1480px] pb-16">
       <header className="flex flex-wrap items-end gap-3 px-4 pb-5 pt-8 sm:px-8">
         <div>
           <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Mes tâches</h1>

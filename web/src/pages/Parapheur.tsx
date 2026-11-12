@@ -1,3 +1,4 @@
+import { ExportMenu, tableDoc } from "@/components/export-menu";
 import { todayIso } from "@/lib/format";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -115,7 +116,7 @@ export function ParapheurPage() {
           { id: "delegations", label: "Délégations" },
         ]}
       />
-      <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1480px] p-4 sm:px-8 sm:py-6">
         {tab === "delegations" ? <Delegations /> : <Box box={tab} />}
       </div>
       {creating && <NewDoc onClose={() => setCreating(false)} />}
@@ -623,11 +624,36 @@ export function CourrierPage() {
         title="Courrier"
         subtitle="Le circuit du courrier : enregistrement, annotation et imputation par la direction, imputation par le chef d'entité, prise en charge, traitement ou classement motivé. Chaque étape est tracée ; un retard remonte à l'entité."
         actions={
-          can("correspondence.manage") && (
-            <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
-              Enregistrer un courrier
-            </Button>
-          )
+          <>
+            <ExportMenu
+              disabled={!data?.length}
+              build={() =>
+                tableDoc(
+                  tab === "mine"
+                    ? "Mon courrier"
+                    : tab === "entrant"
+                      ? "Registre du courrier entrant"
+                      : "Registre du courrier sortant",
+                  ["Numéro", "Objet", "Correspondant", "Reçu le", "Imputé à", "Délai", "État"],
+                  (data ?? []).map((m) => [
+                    m.reference,
+                    m.subject,
+                    m.partner_name ?? m.correspondent,
+                    frDate(m.received_on),
+                    [m.unit_name, m.assignee_name].filter(Boolean).join(" · "),
+                    frDate(m.due_on),
+                    MAIL[m.status].label,
+                  ]),
+                  { filename: `courrier-${tab}`, widths: [2, 5, 3, 1.5, 3, 1.5, 1.8] },
+                )
+              }
+            />
+            {can("correspondence.manage") && (
+              <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
+                Enregistrer un courrier
+              </Button>
+            )}
+          </>
         }
       />
       <Tabs
@@ -643,7 +669,7 @@ export function CourrierPage() {
             : []),
         ]}
       />
-      <div className="mx-auto max-w-[1240px] space-y-4 p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1480px] space-y-4 p-4 sm:px-8 sm:py-6">
         {summary && (
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             {(

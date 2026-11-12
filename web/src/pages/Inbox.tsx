@@ -88,7 +88,7 @@ export function InboxPage() {
   const unread = list.filter((n) => !n.read).length;
 
   return (
-    <div className="mx-auto max-w-[860px] px-4 pb-16 pt-8 sm:px-8">
+    <div className="mx-auto max-w-[1480px] px-4 pb-16 pt-8 sm:px-8 [&>*]:max-w-[960px]">
       <header className="mb-6 flex flex-wrap items-end gap-3">
         <div>
           <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Boîte de réception</h1>

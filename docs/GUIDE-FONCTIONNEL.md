@@ -395,6 +395,18 @@ y descend d'un clic), ce qui a dépassé son échéance, la charge et les retard
 plan de travail activité par activité (achevée, dans le calendrier, en décalage, échue). Les éléments confidentiels
 ne sont ni comptés ni montrés ; un projet n'est listé qu'à ceux qui y ont accès. Réservé aux profils de pilotage.
 
+### 5.16 Exporter
+
+Partout, le bouton **Exporter** ouvre le choix du **format du fichier** :
+- un **document officiel** (compte rendu de réunion) : **Word** (.docx, modèle officiel de l'agence, à retravailler)
+  ou **PDF** (.pdf, à diffuser ou imprimer) ;
+- un **registre ou un tableau** (réunions sélectionnées, décisions, courrier, plans de travail, agents, revue de
+  portefeuille, arbitrages, comptes, journal d'audit) : **Excel** (.xlsx), **PDF**, **Word** ou **CSV**.
+Les fichiers portent la charte de l'agence (logo, titres en bleu ANAT, pied de page daté et paginé). Un tableau
+d'écran est exporté tel qu'il est affiché (filtres et onglet compris) : rien d'autre ne sort que ce que la personne
+voit. **Chaque export est tracé** au journal (titre, format, nombre de lignes) ; les exports des comptes et du journal
+d'audit le sont dans les événements de sécurité.
+
 ## 6. Le journal d'audit
 
 **Administration système › Journal d'audit** réunit les deux traces que l'outil tient : le **fil d'activité**

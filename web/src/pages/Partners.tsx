@@ -265,7 +265,7 @@ export function PartnersPage() {
           { id: "clos" as const, label: "Clos", badge: count("clos") },
         ]}
       />
-      <div className="mx-auto max-w-[1240px] space-y-3 p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1480px] space-y-3 p-4 sm:px-8 sm:py-6">
         <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_220px_260px]">
           <Input
             aria-label="Rechercher un partenaire"
@@ -703,7 +703,7 @@ export function PartnerPage() {
         }
       />
       {d.merged_into && (
-        <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
+        <div className="mx-auto max-w-[1480px] px-4 sm:px-8">
           <p className="mb-3 rounded-xl border border-line bg-hover/50 px-4 py-3 text-[13px]">
             Cette fiche a été fusionnée dans{" "}
             <Link to={`/partenaires/${d.merged_into}`} className="font-medium text-primary hover:underline">
@@ -730,13 +730,13 @@ export function PartnerPage() {
         />
       )}
       {editing && (
-        <p className="mx-auto max-w-[1240px] px-4 text-[13px] text-muted sm:px-8">
+        <p className="mx-auto max-w-[1480px] px-4 text-[13px] text-muted sm:px-8">
           Modification de la fiche : enregistrez pour valider, ou annulez pour revenir à la lecture sans rien changer.
         </p>
       )}
       <div
         className={cn(
-          "mx-auto grid max-w-[1240px] grid-cols-1 gap-4 p-4 sm:px-8",
+          "mx-auto grid max-w-[1480px] grid-cols-1 gap-4 p-4 sm:px-8",
           tab === "overview" && "lg:grid-cols-[minmax(0,1fr)_340px]",
         )}
       >

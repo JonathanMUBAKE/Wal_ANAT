@@ -153,7 +153,7 @@ export function ActivitiesPage() {
           ...(can("consultants.manage") ? [{ id: "contracts" as const, label: "Contrats et paiements" }] : []),
         ]}
       />
-      <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1480px] p-4 sm:px-8 sm:py-6">
         {tab === "revue" ? (
           <PortfolioReview />
         ) : tab === "arbitrages" ? (
@@ -533,7 +533,7 @@ export function ActivityPage() {
           </>
         }
       />
-      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-4 p-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="mx-auto grid max-w-[1480px] grid-cols-1 gap-4 p-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-4">
           <Section title="Fiche">
             {!editing ? (

@@ -163,7 +163,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         {/* Architecture : voir docs/ARCHITECTURE-INFORMATION.md — une information, un seul domicile */}
         <NavSection title="Pilotage">
           {can("pilotage.view") && link("/pilotage", Gauge, "Tableau de bord DG")}
-          {link("/activites", Briefcase, "Portefeuille")}
+          {(can("agenda.view") || can("projects.create")) && link("/activites", Briefcase, "Portefeuille")}
           {(can("decisions.view") || can("decisions.record")) && link("/decisions", Scale, "Décisions")}
           {can("meetings.view") && link("/reunions", CalendarDays, "Réunions")}
         </NavSection>

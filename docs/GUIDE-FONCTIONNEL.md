@@ -5,7 +5,7 @@
 > Il décrit l'état réel de la branche `lot-partenaires` au 12 novembre 2026 ; ce qui n'existe pas encore est signalé
 > comme tel (« **À construire** »).
 >
-> Documents voisins : `CONCEPTION.md` (vision et conception des modules), `PARCOURS-METIER.md` (parcours détaillés),
+> Documents voisins : `MODELE-INSTITUTIONNEL.md` (concepts, rôles, diagnostic), `CONCEPTION.md` (vision et conception des modules), `PARCOURS-METIER.md` (parcours détaillés),
 > `PARAMETRAGE.md` (listes paramétrables), `DESIGN-SYSTEM.md` (règles d'écran), `PLAN-DE-TRAVAIL.md` (lots et journal).
 
 ---
@@ -250,15 +250,25 @@ juridique.
 
 ### 5.7 Courrier
 
-**Secrétariat › Courrier** — courrier **entrant** et **sortant**.
+**Secrétariat › Courrier** — le circuit du courrier d'une institution, du bureau d'ordre à la réponse.
+
 1. **Enregistrer** (bureau d'ordre) : expéditeur (partenaire de l'annuaire et contact), date et référence de la
    lettre, objet, réception, **pièce numérisée** → numéro `ENT/AAAA/NNNN`.
-2. **Annoter et imputer** (DG) : entité et agent chargés, **instruction** (pour traitement, pour avis, pour
-   information), **délai** de réponse → l'agent est prévenu, le délai court.
-3. **Traiter** : l'agent instruit, rattache au besoin un dossier (projet, activité).
-4. **Répondre** : projet de réponse au parapheur ; une fois signée, la réponse est enregistrée en sortie
-   (`SOR/AAAA/NNNN`), **liée** à l'entrant, qui est **clôturé**.
-5. **Rappels** : deux jours avant le délai, puis en retard.
+2. **Annoter et imputer** (direction) : à une **entité** (son chef est prévenu) et/ou à un agent, avec une
+   **instruction** (pour traitement, pour avis, pour information), un **délai**, une **annotation** libre et des
+   **copies** pour information ou pour avis (chaque destinataire est prévenu et voit le courrier).
+3. **Imputer en cascade** (chef d'entité) : le chef de l'entité imputée confie le courrier à un agent de son entité.
+   Un agent ne réimpute pas.
+4. **Prendre en charge** (agent) : le courrier passe « en traitement ».
+5. **Traiter** : instruire, annoter, rattacher un dossier ; **répondre** par un projet de réponse au parapheur ; la
+   réponse enregistrée en sortie (`SOR/AAAA/NNNN`) clôt l'entrant.
+6. **Clôturer** (agent, chef ou direction) ou **classer sans suite** (direction, motif obligatoire).
+
+Chaque étape s'inscrit au **fil du courrier** (enregistrement, imputations, annotations, copies, prise en charge,
+clôture). **Chacun voit le courrier qui le concerne** — imputé, chef de l'entité imputée, en copie — même sans
+accès au registre : c'est l'onglet **Mon courrier**. Le **tableau de bord** compte ce qui est à imputer, en cours,
+en retard, traité ce mois, et ce qui vous attend. Rappels deux jours avant le délai, puis en retard ; le retard
+remonte au chef de l'entité.
 
 ### 5.8 Parapheur
 
@@ -284,45 +294,56 @@ structurée. Ouvrir ou télécharger une pièce sensible est tracé ; une pièce
 
 ### 5.11 Notifications et rappels
 
-Chaque notification apparaît dans l'outil (cloche) **et part par courriel** signé « ANAT Pilotage » avec le lien
-direct.
+Chaque avis arrive dans la **boîte de réception** (cloche) et, selon vos préférences, **par courriel** signé
+« ANAT Pilotage » avec le lien direct. Chaque avis porte son **domaine** (tâches, réunions, courrier, décisions,
+parapheur, projets, partenariats, équipe) : la boîte se filtre par domaine, et **Préférences** permet de couper le
+courriel d'un domaine (l'avis dans l'outil reste toujours). Un clic mène à l'endroit où agir.
 
 | Événement | Qui est prévenu |
 | --- | --- |
-| Tâche attribuée / terminée | L'agent / le créateur |
-| Échéance de tâche (veille, puis retard) | Le responsable de la tâche |
-| Courrier imputé ; délai proche ou dépassé | L'agent imputé |
-| Réunion convoquée ; compte rendu soumis, retourné, validé | Convoqués ; présidence ; rédacteur ; participants |
-| Recommandation à exécuter ; échéance proche ou dépassée | Son responsable |
-| Décision enregistrée ; échéance d'exécution | Le chargé d'exécution |
-| Document en attente au parapheur ; signé ; rejeté | Le signataire du tour ; le déposant |
-| Livrable soumis, à corriger, à payer | Validateur ; auteur ; service concerné |
-| Plan soumis ou renvoyé | Approbateurs ; entité |
-| Accord : échéance à 90, 30, 7 jours ; entrée en vigueur ; rejet | Point focal, gestionnaires |
-| Point focal désigné ; état du partenaire changé | Points focaux |
-
-Sans messagerie configurée (usage local), les notifications restent dans l'outil.
+| Tâche attribuée ; tâche retirée ; tâche **modifiée** (échéance, priorité, intitulé, réouverture, colonne), en un seul avis qui résume les changements | Le nouveau chargé ; l'ancien chargé ; le chargé (jamais l'auteur du changement) |
+| Échéance de tâche (veille, puis retard) | Le chargé ; **puis le chef de son entité**, une fois |
+| Courrier imputé à l'entité ; imputé à un agent ; en copie ; nouvelle annotation ; délai proche ou dépassé | Le chef de l'entité ; l'agent ; la personne en copie ; l'agent ; l'agent puis son chef |
+| Réunion convoquée ; **modifiée après convocation** (date, heure, lieu, lien) ; **annulée** ; compte rendu soumis, retourné, validé | Les convoqués ; présidence ; rédacteur ; participants |
+| Recommandation, décision, livrable, plan, parapheur, accord, partenaire | Le responsable concerné (comme avant) |
 
 ### 5.12 Administration système
 
-Réservée à l'administrateur système (double authentification recommandée, signalée sinon).
+Réservée à l'administrateur système. Onglets :
+- **État du système** : comptes (actifs, en attente, suspendus, jamais connectés), sessions ouvertes, messagerie
+  (configurée, envois et échecs sur 7 jours), documents stockés, volumes (projets, tâches et retards, réunions,
+  courrier et retards…), sécurité (échecs de connexion, verrouillages), **alertes** à traiter (droits élevés sans
+  double authentification, messagerie absente…), et le **bandeau d'information** affiché à tous (maintenance,
+  annonce, incident).
+- **Paramètres de l'institution** : toutes les listes et leurs propriétés.
+- **Comptes** : créer un compte (lien de finalisation), renvoyer le lien, réinitialiser, suspendre, nommer
+  administrateur ; **exporter les comptes** en tableur ; le nom ouvre le **journal de la personne**.
+- **Sessions** : les sessions ouvertes de toute la plateforme ; « Fermer » déconnecte la personne (tracé).
+- **Rôles et droits** : la **matrice** des profils (en colonnes) et des droits (en lignes) : qui voit, fait et valide
+  quoi.
+- **Inscriptions** et **Journal d'audit** (§ 6).
 
-- **Paramètres de l'institution** : toutes les listes (types d'activités, d'entités, de partenaires, d'accords,
-  natures de documents…), avec leurs propriétés. Les gestionnaires de module peuvent aussi créer un type via
-  « Autre… ».
-- **Comptes** : tous les comptes, leur état, leurs organisations, leur sécurité (2FA, sessions), leur dernière
-  connexion.
-  - **Créer un compte** : nom, adresse, fonction, institution, **entité**, **profil d'accès**. La personne reçoit
-    un **lien personnel** pour choisir elle-même son mot de passe ; le compte reste « Invité » jusque-là. À
-    l'activation, elle est rangée dans son entité avec son profil. **Renvoyer le lien** annule le précédent.
-    Sans messagerie, le lien s'affiche une seule fois à l'administrateur, à transmettre par un canal sûr.
-  - Actions : envoyer un lien de mot de passe, réinitialiser la 2FA, fermer les sessions, nommer ou retirer un
-    administrateur système, suspendre, réactiver.
-  - Cliquer sur le **nom** ouvre le **journal de la personne**.
-- **Inscriptions** : sur invitation seulement (recommandé) ou demande d'accès avec validation.
-- **Journal d'audit** (§ 6).
+### 5.13 Ressources humaines
 
----
+**Organisation › Ressources humaines** (service RH) et **Mon dossier** (chaque agent).
+- **Créer un agent** : identité (civilité, nom, prénoms, naissance, nationalité, situation de famille, pièce
+  d'identité), coordonnées, situation administrative (statut, matricule attribué automatiquement, grade,
+  catégorie, échelon, date d'entrée, fin de contrat), affectation (entité, fonction). **Créer un agent ouvre son
+  compte** : il reçoit un lien pour choisir son mot de passe et accède à la **vue Agent** (profil Agent ; Stagiaire
+  ou Consultant selon le statut).
+- **Fiche de l'agent** : lecture d'abord, « Modifier » pour le service RH. Changer d'entité ou de fonction ferme
+  l'affectation en cours et en ouvre une nouvelle (**historique des affectations**, avec l'acte). **Diplômes** et
+  **personnes à prévenir** s'ajoutent et se retirent.
+- **Qui voit quoi** : le service RH (droits « Consulter / tenir les dossiers ») voit tout ; l'agent voit son dossier
+  et met à jour ses coordonnées, diplômes et personnes à prévenir ; le **chef d'entité** consulte les dossiers de ses
+  agents. Onglet **À identifier** : les personnes sans dossier.
+
+### 5.14 L'accueil selon le profil
+
+L'accueil met en avant **ce qui vous attend** selon votre profil : courrier à imputer (direction) ou Mon courrier
+(agent), documents à viser ou signer, retards de l'entité que vous dirigez, décisions à exécuter ; puis vos tâches et
+**vos prochaines réunions** (convocations à répondre). Le détail « qui voit quoi » par profil est dans
+`MODELE-INSTITUTIONNEL.md`.
 
 ## 6. Le journal d'audit
 

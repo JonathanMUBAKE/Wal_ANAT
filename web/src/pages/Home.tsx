@@ -6,6 +6,7 @@ import { Avatar, Button, Empty, ProgressRing, ProjectIcon, cn } from "@/componen
 import { ApprovalCard, RUN_STATUS, isActive } from "@/components/ai";
 import { TaskRow } from "@/components/TaskRow";
 import { MyMeetingsCard } from "@/components/upcoming-meetings";
+import { RoleFocus } from "@/components/role-focus";
 import {
   useApprovals,
   useArchivedProjects,
@@ -75,6 +76,7 @@ export function HomePage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-6">
+          <RoleFocus />
           <section className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
             <div className="flex items-center gap-1 overflow-x-auto border-b border-line px-4 pt-3">
               <h2 className="mr-3 hidden shrink-0 pb-2.5 text-[14px] font-semibold sm:block">Mes tâches</h2>

@@ -53,10 +53,16 @@ export class UnitTasks {
       const r = rows.find((x) => x.id === id);
       return r && seen < 20 ? 1 + depth(r.parent_id, seen + 1) : 0;
     };
+    // À profondeur égale, l'entité qui en porte le plus d'autres passe devant (le département avant l'antenne)
+    const below = (id: string) => rows.filter((x) => x.parent_id === id).length;
     return rows
       .map((r) => ({ id: r.id, name: r.name, role: r.role as "responsable" | "agent", depth: depth(r.parent_id) }))
       .sort((a, b) =>
-        a.role === b.role ? a.depth - b.depth || a.name.localeCompare(b.name) : a.role === "responsable" ? -1 : 1,
+        a.role === b.role
+          ? a.depth - b.depth || below(b.id) - below(a.id) || a.name.localeCompare(b.name)
+          : a.role === "responsable"
+            ? -1
+            : 1,
       );
   }
 

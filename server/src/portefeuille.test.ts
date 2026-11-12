@@ -206,3 +206,45 @@ describe("une seule porte pour les décisions", () => {
     expect(hist[0]).toMatchObject({ id: a.body.id, status: "tranche" });
   });
 });
+
+describe("une seule santé, un seul retard", () => {
+  it("le tableau de bord DG et la vue par direction reprennent la santé calculée de la revue", async () => {
+    const p = await mkProject("Projet échu déclaré serein (essai)");
+    await g.ctx.db.query(
+      "UPDATE projects SET status = 'on_track', due_on = $2, created_at = now() - interval '60 days' WHERE id = $1",
+      [p, day(-3)],
+    );
+    const review = (await g.api("u_alice", "GET", "/api/portfolio/review")).body;
+    expect(review.projects.find((x: Any) => x.id === p).health_computed).toBe("off_track");
+    const pil = (await g.api("u_alice", "GET", "/api/pilotage")).body;
+    const item = pil.items.find((x: Any) => x.id === p);
+    expect(item).toMatchObject({ health: "off_track", health_declared: "on_track" });
+  });
+
+  it("un retard est une tâche principale échue : les sous-tâches ne comptent pas en double", async () => {
+    const [unit] = await g.units(1);
+    await g.ctx.db.query("UPDATE org_members SET unit_id = $1 WHERE org_id = $2 AND user_id = 'u_karim'", [
+      unit,
+      g.org,
+    ]);
+    await g.ctx.db.query("UPDATE tasks SET assignee_id = NULL WHERE assignee_id = 'u_karim'");
+    const p = await mkProject("Projet aux sous-tâches (essai)");
+    const t = (
+      await g.api("u_alice", "POST", "/api/tasks", {
+        project_id: p,
+        title: "Mère",
+        assignee_id: "u_karim",
+        due_on: day(-2),
+      })
+    ).body;
+    await g.api("u_alice", "POST", "/api/tasks", {
+      project_id: p,
+      parent_id: t.id,
+      title: "Fille",
+      assignee_id: "u_karim",
+      due_on: day(-2),
+    });
+    const d = (await g.api("u_alice", "GET", `/api/pilotage/directions/${unit}`)).body;
+    expect(d.stats.tasks).toMatchObject({ open: 1, overdue: 1 });
+  });
+});

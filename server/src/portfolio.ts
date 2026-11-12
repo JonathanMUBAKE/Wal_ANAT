@@ -75,6 +75,105 @@ const FROM = `project_arbitrations a LEFT JOIN projects p ON p.id = a.project_id
   LEFT JOIN users rq ON rq.id = a.requested_by LEFT JOIN users dc ON dc.id = a.decided_by
   LEFT JOIN dg_decisions d ON d.id = a.decision_id`;
 
+/**
+ * La santé d'un projet, calculée d'après les faits — calendrier, livrables, budget, tâches, arbitrage attendu —, avec
+ * ses raisons écrites. C'est la santé de référence partout : revue de portefeuille, tableau de bord DG, vue par
+ * direction (docs/FONCTIONNEMENT-PAR-MODULE.md, I-10). La santé déclarée par le chef de projet reste affichée à côté.
+ */
+export async function assessProjects(
+  svc: Services,
+  projects: Awaited<ReturnType<Services["listProjects"]>>,
+  now = today(),
+) {
+  const ids = projects.map((p) => p.id);
+  const gov = new Map(
+    (
+      await svc.db.query<{
+        id: string;
+        lead_name: string | null;
+        unit_name: string | null;
+        budget_planned: number | null;
+        budget_spent: number | null;
+        created_on: string;
+      }>(
+        `SELECT p.id, COALESCE(l.name, o.name) AS lead_name, ou.name AS unit_name, p.budget_planned::float8 AS budget_planned,
+                  p.budget_spent::float8 AS budget_spent, to_char(p.created_at, 'YYYY-MM-DD') AS created_on
+             FROM projects p LEFT JOIN users l ON l.id = p.lead_id LEFT JOIN users o ON o.id = p.owner_id
+             LEFT JOIN org_units ou ON ou.id = p.unit_id WHERE p.id = ANY($1)`,
+        [ids],
+      )
+    ).map((r) => [r.id, r]),
+  );
+  const deliverables = new Map(
+    (
+      await svc.db.query<{ project_id: string; total: number; late: number }>(
+        `SELECT project_id, count(*)::int AS total,
+                  count(*) FILTER (WHERE status <> 'valide' AND due_on < $2::date)::int AS late
+             FROM deliverables WHERE project_id = ANY($1) GROUP BY project_id`,
+        [ids, now],
+      )
+    ).map((r) => [r.project_id, r]),
+  );
+  const pending = new Map(
+    (
+      await svc.db.query<{ project_id: string; id: string; question: string }>(
+        "SELECT project_id, id, question FROM project_arbitrations WHERE project_id = ANY($1) AND status = 'en_attente'",
+        [ids],
+      )
+    ).map((r) => [r.project_id, r]),
+  );
+  return projects.map((p) => {
+    const g = gov.get(p.id);
+    const progress = p.task_count ? Math.round((100 * p.done_count) / p.task_count) : 0;
+    const expected = p.due_on && g ? expectedProgress(g.created_on, p.due_on, now) : null;
+    const dl = deliverables.get(p.id) ?? { total: 0, late: 0 };
+    const planned = g?.budget_planned ?? null;
+    const spent = g?.budget_spent ?? null;
+    const consumed = planned && spent !== null ? Math.round((100 * spent) / planned) : null;
+    const arbitration = pending.get(p.id) ?? null;
+    const red: string[] = [];
+    const amber: string[] = [];
+    if (p.status !== "done") {
+      if (p.due_on && p.due_on < now && progress < 100)
+        red.push(`échéance du projet dépassée (${p.due_on.split("-").reverse().join("/")})`);
+      else if (expected !== null && expected - progress >= 30)
+        red.push(`avancement ${progress} % pour ${expected} % attendus`);
+      else if (expected !== null && expected - progress >= 15)
+        amber.push(`avancement ${progress} % pour ${expected} % attendus`);
+      if (dl.late >= 2) red.push(plural(dl.late, "livrable en retard", "livrables en retard"));
+      else if (dl.late) amber.push("1 livrable en retard");
+      if (consumed !== null && consumed > 110) red.push(`budget consommé à ${consumed} %`);
+      else if (consumed !== null && expected !== null && consumed - expected >= 20)
+        amber.push(`budget consommé à ${consumed} % pour ${expected} % du temps écoulé`);
+      if (p.overdue_count) amber.push(plural(p.overdue_count, "tâche en retard", "tâches en retard"));
+      if (arbitration) amber.push("arbitrage attendu de la DG");
+    }
+    const computed: Health =
+      p.status === "done" ? "done" : red.length ? "off_track" : amber.length ? "at_risk" : "on_track";
+    const declared = p.status as Health;
+    // Le chef de projet qui déclare une difficulté est cru : on retient la plus grave des deux santés
+    const worse = declared !== "done" && RANK[declared] > RANK[computed];
+    if (worse) (declared === "off_track" ? red : amber).push("déclaré par le chef de projet");
+    const health = worse ? declared : computed;
+    return {
+      id: p.id,
+      name: p.name,
+      color: p.color,
+      lead_name: g?.lead_name ?? null,
+      unit_name: g?.unit_name ?? null,
+      health_declared: declared,
+      health_computed: health,
+      divergent: RANK[computed] > RANK[declared],
+      reasons: [...red, ...amber],
+      schedule: { progress, expected, due_on: p.due_on ?? null },
+      deliverables: dl,
+      budget: { planned, spent, consumed },
+      tasks: { open: p.task_count - p.done_count, overdue: p.overdue_count },
+      arbitration,
+    };
+  });
+}
+
 export class Portfolio {
   constructor(private svc: Services) {}
 
@@ -89,89 +188,7 @@ export class Portfolio {
     await this.requireView(actorId, orgId);
     const now = today();
     const projects = await this.svc.listProjects(actorId, orgId);
-    const ids = projects.map((p) => p.id);
-    const gov = new Map(
-      (
-        await this.svc.db.query<{
-          id: string;
-          lead_name: string | null;
-          unit_name: string | null;
-          budget_planned: number | null;
-          budget_spent: number | null;
-          created_on: string;
-        }>(
-          `SELECT p.id, COALESCE(l.name, o.name) AS lead_name, ou.name AS unit_name, p.budget_planned::float8 AS budget_planned,
-                  p.budget_spent::float8 AS budget_spent, to_char(p.created_at, 'YYYY-MM-DD') AS created_on
-             FROM projects p LEFT JOIN users l ON l.id = p.lead_id LEFT JOIN users o ON o.id = p.owner_id
-             LEFT JOIN org_units ou ON ou.id = p.unit_id WHERE p.id = ANY($1)`,
-          [ids],
-        )
-      ).map((r) => [r.id, r]),
-    );
-    const deliverables = new Map(
-      (
-        await this.svc.db.query<{ project_id: string; total: number; late: number }>(
-          `SELECT project_id, count(*)::int AS total,
-                  count(*) FILTER (WHERE status <> 'valide' AND due_on < $2::date)::int AS late
-             FROM deliverables WHERE project_id = ANY($1) GROUP BY project_id`,
-          [ids, now],
-        )
-      ).map((r) => [r.project_id, r]),
-    );
-    const pending = new Map(
-      (
-        await this.svc.db.query<{ project_id: string; id: string; question: string }>(
-          "SELECT project_id, id, question FROM project_arbitrations WHERE project_id = ANY($1) AND status = 'en_attente'",
-          [ids],
-        )
-      ).map((r) => [r.project_id, r]),
-    );
-    const rows = projects.map((p) => {
-      const g = gov.get(p.id);
-      const progress = p.task_count ? Math.round((100 * p.done_count) / p.task_count) : 0;
-      const expected = p.due_on && g ? expectedProgress(g.created_on, p.due_on, now) : null;
-      const dl = deliverables.get(p.id) ?? { total: 0, late: 0 };
-      const planned = g?.budget_planned ?? null;
-      const spent = g?.budget_spent ?? null;
-      const consumed = planned && spent !== null ? Math.round((100 * spent) / planned) : null;
-      const arbitration = pending.get(p.id) ?? null;
-      const red: string[] = [];
-      const amber: string[] = [];
-      if (p.status !== "done") {
-        if (p.due_on && p.due_on < now && progress < 100)
-          red.push(`échéance du projet dépassée (${p.due_on.split("-").reverse().join("/")})`);
-        else if (expected !== null && expected - progress >= 30)
-          red.push(`avancement ${progress} % pour ${expected} % attendus`);
-        else if (expected !== null && expected - progress >= 15)
-          amber.push(`avancement ${progress} % pour ${expected} % attendus`);
-        if (dl.late >= 2) red.push(plural(dl.late, "livrable en retard", "livrables en retard"));
-        else if (dl.late) amber.push("1 livrable en retard");
-        if (consumed !== null && consumed > 110) red.push(`budget consommé à ${consumed} %`);
-        else if (consumed !== null && expected !== null && consumed - expected >= 20)
-          amber.push(`budget consommé à ${consumed} % pour ${expected} % du temps écoulé`);
-        if (p.overdue_count) amber.push(plural(p.overdue_count, "tâche en retard", "tâches en retard"));
-        if (arbitration) amber.push("arbitrage attendu de la DG");
-      }
-      const computed: Health =
-        p.status === "done" ? "done" : red.length ? "off_track" : amber.length ? "at_risk" : "on_track";
-      const declared = p.status as Health;
-      return {
-        id: p.id,
-        name: p.name,
-        color: p.color,
-        lead_name: g?.lead_name ?? null,
-        unit_name: g?.unit_name ?? null,
-        health_declared: declared,
-        health_computed: computed,
-        divergent: RANK[computed] > RANK[declared],
-        reasons: [...red, ...amber],
-        schedule: { progress, expected, due_on: p.due_on ?? null },
-        deliverables: dl,
-        budget: { planned, spent, consumed },
-        tasks: { open: p.task_count - p.done_count, overdue: p.overdue_count },
-        arbitration,
-      };
-    });
+    const rows = await assessProjects(this.svc, projects, now);
     rows.sort(
       (a, b) =>
         Number(b.divergent) - Number(a.divergent) ||

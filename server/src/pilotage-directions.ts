@@ -1,3 +1,4 @@
+import { assessProjects } from "./portfolio.js";
 import type { FastifyInstance } from "fastify";
 import { notFound, today, type Services } from "./services.js";
 
@@ -85,7 +86,8 @@ export class Directions {
     const tasks = await db.query<{ user_id: string; open: number; overdue: number }>(
       `SELECT t.assignee_id AS user_id, count(*)::int AS open, count(*) FILTER (WHERE t.due_on < $2::date)::int AS overdue
          FROM tasks t JOIN projects p ON p.id = t.project_id
-        WHERE t.org_id = $1 AND NOT t.completed AND t.assignee_id IS NOT NULL AND NOT p.archived GROUP BY t.assignee_id`,
+        WHERE t.org_id = $1 AND NOT t.completed AND t.assignee_id IS NOT NULL AND t.parent_id IS NULL AND NOT p.archived
+        GROUP BY t.assignee_id`,
       [orgId, now],
     );
     const decisions = await db.query<{
@@ -139,9 +141,12 @@ export class Directions {
       [orgId, Number(now.slice(0, 4))],
     );
     const unitOf = new Map(members.map((m) => [m.user_id, m.unit_id]));
-    const projects = (await this.svc.listProjects(actorId, orgId)).map((p) => {
+    const listed = await this.svc.listProjects(actorId, orgId);
+    // Une seule santé : celle calculée d'après les faits, comme dans la revue de portefeuille
+    const assessed = new Map((await assessProjects(this.svc, listed, now)).map((r) => [r.id, r]));
+    const projects = listed.map((p) => {
       const raw = p as unknown as { unit_id: string | null; lead_id: string | null; owner_id: string | null };
-      const health = (p.status === "on_track" && p.overdue_count > 0 ? "at_risk" : p.status) as Health;
+      const health = (assessed.get(p.id)?.health_computed ?? p.status) as Health;
       return {
         id: p.id,
         name: p.name,

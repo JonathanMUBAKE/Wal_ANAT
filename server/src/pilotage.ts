@@ -1,3 +1,4 @@
+import { assessProjects } from "./portfolio.js";
 import { localDate } from "./services.js";
 import { Decisions } from "./decisions.js";
 import { meetingReference } from "./meetings.js";
@@ -13,6 +14,8 @@ export interface PilotageItem {
   lead_name: string | null;
   unit_name: string | null;
   health: "on_track" | "at_risk" | "off_track" | "done";
+  /** La santé déclarée par le responsable, affichée à côté de la santé calculée. */
+  health_declared: "on_track" | "at_risk" | "off_track" | "done";
   progress: number | null;
   next_due: string | null;
   overdue: number;
@@ -34,6 +37,8 @@ export class Pilotage {
     const db = this.svc.db;
     const today = day();
     const projects = await this.svc.listProjects(actorId, orgId);
+    // Une seule santé : celle calculée d'après les faits, comme dans la revue de portefeuille
+    const assessed = new Map((await assessProjects(this.svc, projects, today)).map((r) => [r.id, r]));
     const ids = projects.map((p) => p.id);
     const gov = new Map(
       (
@@ -98,7 +103,8 @@ export class Pilotage {
           title: p.name,
           lead_name: g?.lead_name ?? null,
           unit_name: g?.unit_name ?? p.team_name,
-          health: effective(p.status, p.overdue_count),
+          health: assessed.get(p.id)?.health_computed ?? effective(p.status, p.overdue_count),
+          health_declared: p.status as PilotageItem["health"],
           progress: p.task_count ? Math.round((p.done_count / p.task_count) * 100) : 0,
           next_due: nextDue.get(p.id) ?? p.due_on,
           overdue: p.overdue_count,
@@ -114,6 +120,7 @@ export class Pilotage {
         lead_name: a.lead_name,
         unit_name: a.unit_name,
         health: effective(a.health, a.overdue),
+        health_declared: a.health,
         progress: tracked.has(a.kind) ? a.progress : null,
         next_due: a.next_due_on ?? a.start_on,
         overdue: a.overdue,

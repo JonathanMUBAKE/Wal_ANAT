@@ -288,15 +288,7 @@ export class Directions {
             ["off_track", "at_risk", "on_track", "done"].indexOf(a.health) -
             ["off_track", "at_risk", "on_track", "done"].indexOf(b.health),
         ),
-      agents: people
-        .map((m) => ({
-          id: m.user_id,
-          name: m.name,
-          unit_name: unitName(m.unit_id),
-          open: taskOf.get(m.user_id)?.open ?? 0,
-          overdue: taskOf.get(m.user_id)?.overdue ?? 0,
-        }))
-        .sort((a, b) => b.overdue - a.overdue || b.open - a.open || a.name.localeCompare(b.name)),
+      // La DG voit la synthèse ; la charge nominative des agents relève du chef d'entité (Mon entité)
       plan_activities: data.plan
         .filter((a) => scope.has(a.unit_id))
         .map((a) => {

@@ -1,3 +1,4 @@
+import { useOpenFromUrl } from "@/components/quick-entry";
 import { todayIso } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
@@ -87,6 +88,7 @@ export function ActivitiesPage() {
   );
   const steering = can("pilotage.view") || can("decisions.record");
   const [creating, setCreating] = useState(false);
+  useOpenFromUrl(() => setCreating(true));
   const [removing, setRemoving] = useState<Activity | null>(null);
   const { data: me } = useMe();
   const qc = useQueryClient();

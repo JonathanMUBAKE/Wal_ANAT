@@ -1,3 +1,4 @@
+import { QuickEntry } from "@/components/quick-entry";
 import { useState } from "react";
 import { Link } from "react-router";
 import { addDays } from "date-fns";
@@ -157,6 +158,9 @@ export function PilotagePage() {
           </>
         }
       />
+
+      {/* Saisir : les saisies de la direction, sans détour (la DG ou son assistant) */}
+      <QuickEntry />
 
       {/* Grille bento : 12 colonnes, chaque carte occupe la place que mérite son importance */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-6 xl:grid-cols-12 xl:grid-flow-row-dense">

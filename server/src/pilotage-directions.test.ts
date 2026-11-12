@@ -132,7 +132,7 @@ describe("vue par direction", () => {
     expect(r.body.children.map((c: Any) => c.id)).toEqual([svc]);
     expect(r.body.children[0]).toMatchObject({ tasks: { overdue: 1 } });
     expect(r.body.projects.map((x: Any) => x.id)).toContain(p);
-    expect(r.body.agents).toEqual([expect.objectContaining({ id: "u_hugo", overdue: 1, open: 1 })]);
+    expect(r.body.agents).toBeUndefined();
     expect(r.body.late.some((x: Any) => x.kind === "decision" && x.title === "Valider la méthode")).toBe(true);
     // On descend au service
     const s = await g.api("u_alice", "GET", `/api/pilotage/directions/${svc}`);
@@ -142,5 +142,31 @@ describe("vue par direction", () => {
 
   it("une entité inconnue n'existe pas (le refus aux profils sans pilotage est vérifié par la matrice)", async () => {
     expect((await g.api("u_alice", "GET", "/api/pilotage/directions/inconnue")).status).toBe(404);
+  });
+});
+
+describe("la vue de la DG", () => {
+  it("la fiche d'une direction donne la synthèse, pas la charge nominative des agents", async () => {
+    const r = (await g.api("u_alice", "GET", `/api/pilotage/directions/${dir}`)).body;
+    expect(r.agents).toBeUndefined();
+    expect(r.stats).toMatchObject({ agents: 1 });
+  });
+
+  it("le profil Assistant(e) de direction saisit pour la DG : décisions, courrier, réunions, agenda", async () => {
+    const profiles = (await g.api("u_alice", "GET", "/api/org/profiles")).body as Any[];
+    const a = profiles.find((p) => p.name === "Assistant(e) de direction");
+    expect(a).toBeTruthy();
+    expect(a.permissions).toEqual(
+      expect.arrayContaining([
+        "decisions.record",
+        "correspondence.manage",
+        "meetings.manage",
+        "agenda.manage",
+        "pilotage.view",
+      ]),
+    );
+    // Il prépare et enregistre ; il ne signe ni n'approuve à la place de la DG
+    expect(a.permissions).not.toContain("plans.approve");
+    expect(a.permissions).not.toContain("meetings.validate");
   });
 });

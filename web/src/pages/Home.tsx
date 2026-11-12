@@ -1,3 +1,4 @@
+import { QuickEntry } from "@/components/quick-entry";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { motion } from "motion/react";
@@ -76,6 +77,7 @@ export function HomePage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-6">
+          <QuickEntry />
           <RoleFocus />
           <section className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
             <div className="flex items-center gap-1 overflow-x-auto border-b border-line px-4 pt-3">

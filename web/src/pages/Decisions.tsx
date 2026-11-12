@@ -1,3 +1,4 @@
+import { useOpenFromUrl } from "@/components/quick-entry";
 import { ExportMenu, tableDoc } from "@/components/export-menu";
 import { todayIso } from "@/lib/format";
 import { useState } from "react";
@@ -90,6 +91,7 @@ export function DecisionsPage() {
   const [tab, setTab] = useState<"all" | "mine">("all");
   const [open, setOpen] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  useOpenFromUrl(() => setCreating(true));
   const { data, isLoading } = useQuery({
     queryKey: ["decisions"],
     queryFn: () => api.get<Decision[]>("/api/decisions"),

@@ -1,3 +1,4 @@
+import { useOpenFromUrl } from "@/components/quick-entry";
 import { ExportMenu, tableDoc } from "@/components/export-menu";
 import { todayIso } from "@/lib/format";
 import { useState } from "react";
@@ -594,6 +595,7 @@ export function CourrierPage() {
     queryFn: () => api.get<MailSummary>("/api/correspondence/summary"),
   });
   const [creating, setCreating] = useState(false);
+  useOpenFromUrl(() => setCreating(true));
   const [assign, setAssign] = useState<MailRow | null>(null);
   const [open, setOpen] = useState<MailRow | null>(null);
   const qc = useQueryClient();

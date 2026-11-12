@@ -220,6 +220,22 @@ const DGA: Permission[] = [
   "hr.view",
 ];
 const DG: Permission[] = [...DGA, "projects.delete", "decisions.record", "ai.rules"];
+/** L'assistant(e) de la DG saisit pour elle (courrier, agenda, réunions, décisions dictées) ; il ne signe ni n'approuve. */
+const ASSISTANT_DG: Permission[] = [
+  ...new Set<Permission>([
+    ...AGENT,
+    "pilotage.view",
+    "agenda.view",
+    "agenda.manage",
+    "correspondence.view",
+    "correspondence.manage",
+    "decisions.view",
+    "decisions.record",
+    "meetings.manage",
+    "partners.view",
+    "deliverables.view",
+  ]),
+];
 const INFORMATIQUE: Permission[] = [
   ...AGENT,
   "projects.members",
@@ -329,6 +345,14 @@ export const SYSTEM_PROFILES: {
     description:
       "Directeur général : voit tout le pilotage, tranche et enregistre les décisions, approuve, signe ; ne règle pas la technique (messagerie, profils).",
     permissions: DG,
+  },
+  {
+    role: "member",
+    slug: "assistant_dg",
+    name: "Assistant(e) de direction",
+    description:
+      "Assiste la DG : enregistre le courrier et l'impute sur instruction, tient l'agenda et les réunions, inscrit au registre les décisions prises par la DG ; ne signe pas, n'approuve pas, ne valide pas les comptes rendus.",
+    permissions: ASSISTANT_DG,
   },
   {
     role: "member",

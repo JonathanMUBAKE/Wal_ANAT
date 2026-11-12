@@ -1,3 +1,4 @@
+import { useOpenFromUrl } from "@/components/quick-entry";
 import { DOCUMENT_FORMATS, ExportMenu } from "@/components/export-menu";
 import { todayIso } from "@/lib/format";
 import { useEffect, useRef, useState } from "react";
@@ -173,6 +174,7 @@ const fail = (e: unknown) => toast.error((e as Error).message);
 export function MeetingsPage() {
   const can = useCan();
   const [creating, setCreating] = useState(false);
+  useOpenFromUrl(() => setCreating(true));
   const { data, isLoading } = useQuery({
     queryKey: ["meetings"],
     queryFn: () => api.get<MeetingRow[]>("/api/meetings"),

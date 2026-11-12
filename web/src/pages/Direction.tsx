@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 
 /*
  * Une direction vue par la DG : son appréciation et ses raisons, ses services, ses projets, son plan de travail face
- * au calendrier, la charge et les retards de ses agents, ce qui a dépassé son échéance. On descend aux services.
+ * au calendrier, la synthèse du travail des équipes, ce qui a dépassé son échéance. On descend aux services.
  */
 
 interface Detail {
@@ -26,7 +26,6 @@ interface Detail {
     due_on: string | null;
     unit_name: string | null;
   }[];
-  agents: { id: string; name: string; unit_name: string | null; open: number; overdue: number }[];
   plan_activities: {
     id: string;
     title: string;
@@ -154,22 +153,14 @@ export function DirectionPage() {
               <p className="px-5 pb-5 text-[13px] text-muted">Rien n'est en retard.</p>
             )}
           </Section>
-          <Section title="Charge et retards des agents">
-            {d.agents.length ? (
-              <Table head={["Agent", "Entité", "Ouvertes", "En retard"]}>
-                {d.agents.map((a) => (
-                  <Tr key={a.id}>
-                    <Td className="font-medium">{a.name}</Td>
-                    <Td className="text-muted">{a.unit_name ?? "—"}</Td>
-                    <Td className="tabular-nums">{a.open}</Td>
-                    <Td className={cn("tabular-nums", a.overdue > 0 && "font-semibold text-danger")}>{a.overdue}</Td>
-                  </Tr>
-                ))}
-              </Table>
-            ) : (
-              <p className="px-5 pb-5 text-[13px] text-muted">Aucun agent rattaché.</p>
-            )}
-            <div className="h-3" />
+          {/* La charge nominative des agents relève du chef d'entité (Mon entité) : la DG voit la synthèse */}
+          <Section title="Travail des équipes">
+            <p className="px-5 pb-5 text-[13px] text-muted">
+              {d.stats.agents} agent{d.stats.agents > 1 ? "s" : ""} · {d.stats.tasks.open} tâche
+              {d.stats.tasks.open > 1 ? "s" : ""} ouverte{d.stats.tasks.open > 1 ? "s" : ""}, dont{" "}
+              <b className={cn("font-semibold", d.stats.tasks.overdue > 0 && "text-danger")}>{d.stats.tasks.overdue}</b>{" "}
+              en retard. Le détail par agent est suivi par le chef de l'entité, dans « Mon entité ».
+            </p>
           </Section>
         </div>
 

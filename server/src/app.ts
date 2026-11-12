@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { openDb, type Db } from "./db.js";
 import { Bus, type DomainEvent } from "./bus.js";
-import { HttpError, Services, badRequest, forbidden, withAvatar } from "./services.js";
+import { HttpError, RECURRENCES, Services, badRequest, forbidden, withAvatar } from "./services.js";
 import { MailService } from "./mail.js";
 import { AiEngine } from "./ai/engine.js";
 import { AnthropicProvider, MODEL, type AiProvider } from "./ai/provider.js";
@@ -614,6 +614,7 @@ export async function buildApp(opts: AppOptions = {}) {
       start_on: date.optional(),
       due_on: date.optional(),
       tags: z.array(z.string().max(40)).max(12).optional(),
+      recurrence: z.enum(RECURRENCES).nullable().optional(),
     });
     r.get("/api/tasks", async (req) => {
       const q = z

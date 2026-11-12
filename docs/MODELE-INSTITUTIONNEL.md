@@ -200,7 +200,7 @@ manques identifiés) · **Partiel** (une partie du cycle manque) · **À constru
 | 4 | **Évaluation des agents** : objectifs, entretien annuel, appuyé sur les tâches tenues et les délais (appréciation humaine) | Demandé ; s'appuie sur des données déjà présentes | Moyen |
 | 5 | **Finance des partenariats** (PA4) : engagements, échéancier des décaissements, tableau des bailleurs | Reporté à la demande | Élevé |
 | 6 | **Politique de sécurité** par institution : mot de passe, durée de session, 2FA obligatoire pour les droits élevés | Robustesse | Faible |
-| 7 | **Tâches récurrentes et modèles** | Le travail courant d'une entité se répète | Faible |
+| 7 | **Tâches récurrentes** (fait) ; modèles de tâches à venir | Le travail courant d'une entité se répète | Faible |
 
 **Décisions à prendre** : faut-il que le DGA enregistre des décisions par délégation (aujourd'hui non) ? Le
 responsable informatique doit-il être administrateur système de droit (aujourd'hui non, c'est un rôle à part) ?

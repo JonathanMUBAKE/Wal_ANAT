@@ -577,6 +577,18 @@ async function seedUnitTasks(svc: Services, org: string) {
     );
     await backdate(t.id, -4);
   }
+  // Le travail courant se répète : la terminer fait naître celle de la semaine suivante
+  await svc.createTask(
+    "u_karim",
+    {
+      project_id: i.project_id,
+      title: "Consolider le rapport hebdomadaire de l'entité",
+      assignee_id: "u_karim",
+      due_on: day(4),
+      recurrence: "weekly",
+    },
+    { silent: true },
+  );
   // La réunion hebdomadaire de l'entité : toujours en tête de son espace et de l'accueil des convoqués
   const monday = new Date();
   monday.setDate(monday.getDate() + ((8 - monday.getDay()) % 7 || 7));

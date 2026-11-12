@@ -260,6 +260,7 @@ export interface UnitFollowUp {
     overdue: boolean;
   }[];
 }
+export type Recurrence = "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
 export interface Task {
   id: string;
   number: number;
@@ -278,6 +279,8 @@ export interface Task {
   completed_at: string | null;
   position: number;
   tags: string[];
+  recurrence: Recurrence | null;
+  next_occurrence_id: string | null;
   created_at: string;
   updated_at: string;
   subtask_count?: number;

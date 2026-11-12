@@ -112,6 +112,8 @@ export interface Task {
   completed_at: string | null;
   position: number;
   tags: string[];
+  recurrence: Recurrence | null;
+  next_occurrence_id: string | null;
   created_at: string;
   updated_at: string;
   subtask_count?: number;
@@ -171,6 +173,32 @@ const ORG_RANK: Record<OrgRole, number> = { guest: 1, member: 2, admin: 3, owner
 export const localDate = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 export const today = () => localDate();
+
+/** Périodicités d'une tâche récurrente. */
+export const RECURRENCES = ["daily", "weekly", "biweekly", "monthly", "quarterly", "yearly"] as const;
+export type Recurrence = (typeof RECURRENCES)[number];
+const addDays = (iso: string, n: number) => {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+const addMonths = (iso: string, n: number) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  const target = new Date(Date.UTC(y, m - 1 + n, 1, 12));
+  const last = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0, 12)).getUTCDate();
+  target.setUTCDate(Math.min(d, last));
+  return target.toISOString().slice(0, 10);
+};
+/** L'échéance suivante d'une tâche récurrente (une fin de mois reste dans le mois visé). */
+export const nextOccurrence = (iso: string, r: Recurrence) =>
+  r === "daily"
+    ? addDays(iso, 1)
+    : r === "weekly"
+      ? addDays(iso, 7)
+      : r === "biweekly"
+        ? addDays(iso, 14)
+        : addMonths(iso, r === "monthly" ? 1 : r === "quarterly" ? 3 : 12);
+const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
 export const systemProfileId = (orgId: string, role: BaseRole) => `prf_${role}_${orgId}`;
 export const isRealDate = (v: string) => {
   const t = Date.parse(`${v}T00:00:00Z`);
@@ -287,6 +315,7 @@ export interface TaskInput {
   start_on?: string | null;
   due_on?: string | null;
   tags?: string[];
+  recurrence?: Recurrence | null;
 }
 export type TaskPatch = Partial<Omit<TaskInput, "project_id" | "parent_id">> & {
   completed?: boolean;
@@ -1475,6 +1504,8 @@ export class Services {
       const s = await this.db.one<Section>("SELECT * FROM sections WHERE id = $1", [sectionId]);
       if (!s || s.project_id !== input.project_id) throw badRequest("Section invalide");
     }
+    if (input.recurrence && parentId) throw badRequest("Une sous-tâche ne peut pas être récurrente");
+    if (input.recurrence && !RECURRENCES.includes(input.recurrence)) throw badRequest("Périodicité invalide");
     if (input.assignee_id) await this.checkAssignee(input.project_id, input.assignee_id);
     await this.checkUnitBoard(actorId, input.project_id, { assignee: input.assignee_id ?? null });
     if (input.assignee_id && !opts.silent) await this.assertCanDelegate(actorId, input.project_id, [input.assignee_id]);
@@ -1488,8 +1519,8 @@ export class Services {
         [input.project_id],
       );
       await q.query(
-        `INSERT INTO tasks (id, number, project_id, section_id, parent_id, title, description, assignee_id, creator_id, priority, start_on, due_on, position, tags)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        `INSERT INTO tasks (id, number, project_id, section_id, parent_id, title, description, assignee_id, creator_id, priority, start_on, due_on, position, tags, recurrence)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
         [
           id,
           task_seq,
@@ -1505,6 +1536,7 @@ export class Services {
           input.due_on ?? null,
           await this.endPosition(q, input.project_id, sectionId, parentId),
           JSON.stringify(input.tags ?? []),
+          input.recurrence ?? null,
         ],
       );
     });
@@ -1596,6 +1628,7 @@ export class Services {
       "completed",
       "position",
       "tags",
+      "recurrence",
     ] as const;
     const sets: string[] = [];
     const vals: unknown[] = [];
@@ -1614,6 +1647,8 @@ export class Services {
         const s = await this.db.one<Section>("SELECT * FROM sections WHERE id = $1", [v]);
         if (!s || s.project_id !== before.project_id) throw badRequest("Section invalide");
       }
+      if (k === "recurrence" && v && before.parent_id) throw badRequest("Une sous-tâche ne peut pas être récurrente");
+      if (k === "recurrence" && v && !RECURRENCES.includes(v as Recurrence)) throw badRequest("Périodicité invalide");
       if (k === "priority" && !["none", "low", "medium", "high", "urgent"].includes(String(v)))
         throw badRequest("Priorité invalide");
       const same =
@@ -1633,7 +1668,11 @@ export class Services {
     sets.push(`updated_at = $${vals.length}`);
     vals.push(before.id);
     await this.db.query(`UPDATE tasks SET ${sets.join(", ")} WHERE id = $${vals.length}`, vals);
-    const after = await this.taskRow(before.id);
+    let after = await this.taskRow(before.id);
+    if (changes.includes("completed") && after.completed && after.recurrence && !after.next_occurrence_id) {
+      await this.spawnOccurrence(actorId, after);
+      after = await this.taskRow(before.id);
+    }
     for (const k of changes) {
       if (k === "position") continue;
       await this.log(actorId, `task.${k}`, {
@@ -1674,6 +1713,72 @@ export class Services {
     }
     this.bus.emit({ type: "task.updated", actorId, projectId: after.project_id, taskId: after.id, changes, previous });
     return after;
+  }
+
+  /**
+   * L'occurrence suivante d'une tâche récurrente : mêmes intitulé, description, chargé, priorité, étiquettes, colonne
+   * et sous-tâches (à refaire), échéance décalée d'une période (depuis l'échéance, ou depuis aujourd'hui sans
+   * échéance), début décalé d'autant. Créée une seule fois : le lien next_occurrence_id empêche les doublons.
+   */
+  private async spawnOccurrence(actorId: string, t: Task) {
+    const r = t.recurrence as Recurrence;
+    const base = t.due_on ?? today();
+    const due = nextOccurrence(base, r);
+    const start = t.start_on ? addDays(due, -Math.max(0, daysBetween(t.start_on, base))) : null;
+    const id = uid("tsk");
+    const subs = await this.db.query<Task>("SELECT * FROM tasks WHERE parent_id = $1 ORDER BY position", [t.id]);
+    let created = false;
+    await this.db.tx(async (q) => {
+      // Verrou : une seule occurrence, même si deux personnes terminent la tâche au même instant
+      const claimed = await q.query<{ id: string }>(
+        "SELECT id FROM tasks WHERE id = $1 AND next_occurrence_id IS NULL FOR UPDATE",
+        [t.id],
+      );
+      if (!claimed.length) return;
+      const insert = async (row: Partial<Task>, parentId: string | null, taskId: string) => {
+        const [{ task_seq }] = await q.query<{ task_seq: number }>(
+          "UPDATE projects SET task_seq = task_seq + 1 WHERE id = $1 RETURNING task_seq",
+          [t.project_id],
+        );
+        await q.query(
+          `INSERT INTO tasks (id, number, project_id, section_id, parent_id, title, description, assignee_id, creator_id, priority, start_on, due_on, position, tags, recurrence)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+          [
+            taskId,
+            task_seq,
+            t.project_id,
+            row.section_id ?? null,
+            parentId,
+            row.title,
+            row.description ?? "",
+            row.assignee_id ?? null,
+            row.creator_id ?? actorId,
+            row.priority ?? "none",
+            row.start_on ?? null,
+            row.due_on ?? null,
+            await this.endPosition(q, t.project_id, row.section_id ?? null, parentId),
+            JSON.stringify(row.tags ?? []),
+            row.recurrence ?? null,
+          ],
+        );
+      };
+      await insert({ ...t, start_on: start, due_on: due }, null, id);
+      for (const sub of subs)
+        await insert(
+          { ...sub, section_id: t.section_id, start_on: null, due_on: null, recurrence: null },
+          id,
+          uid("tsk"),
+        );
+      await q.query("UPDATE tasks SET next_occurrence_id = $2 WHERE id = $1", [t.id, id]);
+      created = true;
+    });
+    if (!created) return;
+    await this.log(actorId, "task.recurred", {
+      projectId: t.project_id,
+      taskId: t.id,
+      data: { next_id: id, due_on: due, recurrence: r },
+    });
+    this.bus.emit({ type: "task.created", actorId, projectId: t.project_id, taskId: id });
   }
 
   async moveTask(

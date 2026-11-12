@@ -28,6 +28,7 @@ import {
   CopyPlus,
   FolderInput,
   Pencil,
+  Repeat,
 } from "lucide-react";
 import {
   Avatar,
@@ -65,7 +66,7 @@ import {
 } from "@/lib/hooks";
 import { ago, dueLabel, shortDate } from "@/lib/format";
 import { api } from "@/lib/api";
-import type { Task, TaskDetail } from "@/lib/types";
+import type { Recurrence, Task, TaskDetail } from "@/lib/types";
 
 export function TaskDrawer({
   taskId,
@@ -344,6 +345,15 @@ function DrawerBody({
                 </SectionPicker>
               </Field>
             )}
+            {!t.parent_id && (
+              <Field icon={<Repeat className="size-3.5" />} label="Répétition">
+                <RecurrencePicker
+                  value={t.recurrence}
+                  disabled={!canEdit}
+                  onChange={(recurrence) => save({ recurrence })}
+                />
+              </Field>
+            )}
             <Field icon={<Tag className="size-3.5" />} label="Étiquettes">
               <TagEditor tags={t.tags} disabled={!canEdit} onChange={(tags) => save({ tags })} />
             </Field>
@@ -370,6 +380,48 @@ function DrawerBody({
         </div>
       </div>
     </>
+  );
+}
+
+export const RECURRENCE_LABELS: Record<Recurrence, string> = {
+  daily: "Chaque jour",
+  weekly: "Chaque semaine",
+  biweekly: "Toutes les deux semaines",
+  monthly: "Chaque mois",
+  quarterly: "Chaque trimestre",
+  yearly: "Chaque année",
+};
+
+/** Une tâche récurrente renaît, une fois terminée, à la période suivante (même chargé, sous-tâches à refaire). */
+function RecurrencePicker({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: Recurrence | null;
+  disabled: boolean;
+  onChange: (r: Recurrence | null) => void;
+}) {
+  return (
+    <Menu>
+      <MenuTrigger asChild>
+        <button
+          disabled={disabled}
+          className="flex h-8 items-center gap-2 rounded-md px-1.5 hover:bg-hover disabled:hover:bg-transparent"
+        >
+          {value ? RECURRENCE_LABELS[value] : <span className="text-faint">Ne se répète pas</span>}
+        </button>
+      </MenuTrigger>
+      <MenuContent align="start">
+        <MenuItem onSelect={() => onChange(null)}>Ne se répète pas</MenuItem>
+        <MenuSeparator />
+        {(Object.keys(RECURRENCE_LABELS) as Recurrence[]).map((r) => (
+          <MenuItem key={r} onSelect={() => onChange(r)}>
+            {RECURRENCE_LABELS[r]}
+          </MenuItem>
+        ))}
+      </MenuContent>
+    </Menu>
   );
 }
 
@@ -1190,6 +1242,11 @@ export function SubtaskProgress({ t }: { t: Task }) {
 export function TaskMetaRow({ t }: { t: Task }) {
   return (
     <span className="flex items-center gap-2">
+      {t.recurrence && (
+        <span title={RECURRENCE_LABELS[t.recurrence]} className="inline-flex text-faint">
+          <Repeat className="size-3.5" aria-label={RECURRENCE_LABELS[t.recurrence]} />
+        </span>
+      )}
       <SubtaskProgress t={t} />
       {t.comment_count ? (
         <span className="inline-flex items-center gap-1 text-[12px] tabular text-faint">

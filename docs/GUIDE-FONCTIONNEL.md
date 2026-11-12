@@ -137,6 +137,11 @@ décider (confirmer, motiver, valider).
 - **Plus tard** : un module d'**évaluation** des agents pourra s'appuyer sur ces données (tâches tenues, délais,
   charge), toujours sous appréciation humaine.
 - **Mes tâches** propose aussi « Tâche hors projet », rangée dans le registre de l'entité de la personne.
+- **Tâches récurrentes** : dans la fiche d'une tâche, « Répétition » (chaque jour, chaque semaine, toutes les deux
+  semaines, chaque mois, chaque trimestre, chaque année). La terminer fait naître **l'occurrence suivante**, une seule
+  fois : mêmes intitulé, chargé, priorité, étiquettes et colonne, sous-tâches à refaire, échéance décalée d'une
+  période (depuis l'échéance, ou depuis le jour même sans échéance). Choisir « Ne se répète pas » arrête la série.
+  Une sous-tâche ne se répète pas seule : c'est la tâche qui la porte.
 - Règles contrôlées par le serveur : seul le responsable (de l'entité ou d'une entité au-dessus) confie une tâche à
   quelqu'un d'autre ou modifie la tâche d'un autre agent ; un agent fait avancer les tâches qui lui sont confiées et
   celles qu'il a notées ; une tâche d'entité ne peut être confiée qu'à une personne de l'entité ; une personne

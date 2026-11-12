@@ -55,10 +55,15 @@
   --hue-indigo: #4A5FC1;
   --hue-violet: #7A4FC1;
   --hue-slate: #56677F;
+  /* Séries des graphiques (validées daltonisme et contraste : skill dataviz) */
+  --viz-1: #007BC4;
+  --viz-2: #EB6834;
   color-scheme: light;
 }
 
 .dark {
+  --viz-1: #3987E5;
+  --viz-2: #D95926;
   --night: #0E3556;
   --ring: rgba(79, 176, 236, 0.28);
   --brand-soft: rgba(79, 176, 236, 0.11);

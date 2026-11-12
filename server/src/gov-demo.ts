@@ -10,6 +10,7 @@ import { Partners } from "./partners.js";
 import { Plans } from "./plans.js";
 import { Registers } from "./registers.js";
 import { Signature } from "./signature.js";
+import { UnitTasks } from "./unit-tasks.js";
 import type { Services } from "./services.js";
 
 /** Données d'illustration, entièrement fictives, pour présenter la version ANAT (ANAT_DEMO=1 uniquement). */
@@ -413,6 +414,79 @@ export async function seedGovDemo(svc: Services) {
   await seedPartners(svc, org, me);
   await seedAgreements(svc, org, me);
   await seedPartnerLinks(svc, org, me);
+  await seedUnitTasks(svc, org);
+}
+
+/**
+ * Tâches d'entité (lot T1), fictives : le registre du service Qualité vit depuis deux mois (tâches créées et
+ * terminées semaine après semaine), le département Ingénierie porte un projet et note quelques tâches hors projet.
+ * De quoi lire le tableau de bord de « Mon entité » en démonstration.
+ */
+async function seedUnitTasks(svc: Services, org: string) {
+  const ut = new UnitTasks(svc);
+  const unitId = async (name: string) =>
+    (await svc.db.one<{ id: string }>("SELECT id FROM org_units WHERE org_id = $1 AND name = $2", [org, name]))?.id;
+  const [inge, qualite] = [await unitId("Ingénierie"), await unitId("Qualité")];
+  if (!inge || !qualite) return;
+  const backdate = async (id: string, created: number, completed?: number) => {
+    await svc.db.query("UPDATE tasks SET created_at = now() + ($1 || ' days')::interval WHERE id = $2", [
+      String(created),
+      id,
+    ]);
+    if (completed !== undefined)
+      await svc.db.query("UPDATE tasks SET completed_at = now() + ($1 || ' days')::interval WHERE id = $2", [
+        String(completed),
+        id,
+      ]);
+  };
+  const q = await ut.board("u_karim", org, qualite);
+  for (const [title, created, due, done, priority] of [
+    ["Recenser les anomalies du trimestre", -54, -45, -44, "medium"],
+    ["Rédiger la procédure de recette", -49, -38, -36, "high"],
+    ["Mettre à jour le plan de tests", -41, -30, -31, "medium"],
+    ["Former l'équipe aux tests de charge", -33, -22, -20, "low"],
+    ["Auditer les tests automatisés", -26, -15, -14, "high"],
+    ["Préparer la revue qualité mensuelle", -19, -8, -9, "medium"],
+    ["Analyser les retours des usagers", -12, -2, null, "urgent"],
+    ["Consolider les indicateurs qualité", -8, -1, null, "high"],
+    ["Vérifier la conformité d'accessibilité", -5, 2, null, "medium"],
+    ["Planifier la campagne de tests d'été", -3, 5, null, "low"],
+    ["Relire la charte de qualité", -1, 12, null, "none"],
+  ] as const) {
+    const t = await svc.createTask(
+      "u_karim",
+      { project_id: q.project_id, title, assignee_id: "u_theo", priority, due_on: day(due) },
+      { silent: true },
+    );
+    if (done !== null) await svc.updateTask("u_karim", t.id, { completed: true });
+    await backdate(t.id, created, done ?? undefined);
+  }
+  const i = await ut.board("u_karim", org, inge);
+  for (const [title, due] of [
+    ["Arbitrer le budget des licences", 3],
+    ["Préparer l'entretien annuel de l'équipe", 9],
+  ] as const) {
+    const t = await svc.createTask(
+      "u_karim",
+      { project_id: i.project_id, title, assignee_id: "u_karim", due_on: day(due) },
+      { silent: true },
+    );
+    await backdate(t.id, -4);
+  }
+  const p = await ut.createProject("u_karim", org, inge, {
+    name: "Plateforme de tests automatisés",
+    description: "Exemple fictif : outiller les tests de non-régression de l'Ingénierie.",
+    due_on: day(60),
+  });
+  for (const [title, done] of [
+    ["Choisir l'outil de tests", true],
+    ["Écrire les premiers scénarios", true],
+    ["Brancher la chaîne d'intégration", false],
+    ["Former les développeurs", false],
+  ] as const) {
+    const t = await svc.createTask("u_karim", { project_id: p.id, title }, { silent: true });
+    if (done) await svc.updateTask("u_karim", t.id, { completed: true });
+  }
 }
 
 /** Liens fictifs (lot PA3) : réunion avec le bailleur et sa chargée de programme, courrier du ministère. */

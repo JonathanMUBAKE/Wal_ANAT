@@ -204,7 +204,8 @@ const ACCESS_SQL = `
         CASE WHEN om.role <> 'guest' AND p.access = 'team' AND t.visibility <> 'private' AND t.unit_id IN (SELECT id FROM managed) THEN 1 ELSE 0 END,
         CASE WHEN om.role <> 'guest' AND p.access = 'team' AND t.visibility = 'public' THEN 1 ELSE 0 END
       )),
-    CASE WHEN p.kind = 'unit' AND om.role <> 'guest' AND p.unit_id IN (SELECT id FROM managed) THEN 4
+    CASE WHEN p.kind = 'project' AND p.access = 'team' AND om.role <> 'guest' AND p.unit_id IN (SELECT id FROM managed) THEN 1
+         WHEN p.kind = 'unit' AND om.role <> 'guest' AND p.unit_id IN (SELECT id FROM managed) THEN 4
          WHEN p.kind = 'unit' AND om.role <> 'guest' AND om.unit_id = p.unit_id THEN 3 ELSE 0 END
   ) AS rank
   FROM projects p

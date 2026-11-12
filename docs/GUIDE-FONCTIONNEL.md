@@ -74,7 +74,7 @@ du journal.
 
 La **barre latérale** regroupe les espaces :
 
-- **Accueil** (ce qui m'attend aujourd'hui), **Mes tâches**, **Mon entité** (tâches hors projet et suivi des agents), **Coéquipiers IA** ;
+- **Accueil** (ce qui m'attend aujourd'hui), **Mes tâches**, **Mon entité** (espace de l'entité : tableau de bord, tâches hors projet, projets, suivi des agents), **Coéquipiers IA** ;
 - **Pilotage** : Tableau de bord DG, Portefeuille, Décisions, Réunions ;
 - **Suivi-évaluation** : Plans de travail ;
 - **Partenariats** : Partenaires, Conventions ;
@@ -110,15 +110,25 @@ décider (confirmer, motiver, valider).
 - Une tâche n'est pas forcément dans un projet : chaque entité (direction, service, cellule) a son **registre de
   tâches**, créé à la première ouverture. Ses tâches ont tout ce qu'ont les autres (vues liste, tableau, calendrier,
   chronologie ; sous-tâches, commentaires, pièces, rappels, traces) mais n'apparaissent pas au portefeuille.
-- **Mon entité** (barre latérale, sous « Mes tâches ») :
-  - le **responsable** voit l'onglet **Suivi des agents** : chiffres clés (agents suivis, tâches ouvertes, en retard,
-    dues sous 7 jours, terminées en 30 jours), un tableau par agent, puis la liste des tâches filtrable par agent et
-    par état (ouvertes, en retard, terminées). Le suivi couvre l'entité **et les entités rattachées**, et compte les
-    tâches portées dans les **projets**, dans la limite des projets que le responsable peut lire ;
-  - **Confier une tâche** : intitulé, précisions, agent, échéance, priorité. L'agent est prévenu (notification et
-    courriel) et la retrouve dans « Mes tâches », marquée « Tâche d'entité ». Confiée à un agent d'une entité
-    rattachée, la tâche se range dans le registre de l'entité de cet agent ;
-  - l'**agent** voit l'onglet **Tâches de l'entité** et peut **noter une tâche** pour lui-même.
+- **Mon entité** (barre latérale, sous « Mes tâches ») est l'espace de travail de l'entité, à la manière d'Asana :
+  - **Vue d'ensemble** — le tableau de bord : tâches ouvertes (et non attribuées), en retard, dues sous 7 jours,
+    terminées en 30 jours, taux d'achèvement ; **activité des 8 dernières semaines** (tâches créées et terminées,
+    semaine par semaine, avec infobulle et données en tableau) ; **échéances** (en retard, sous 7 jours, plus tard,
+    sans échéance) ; **tâches ouvertes par priorité** ; pour le responsable, la **charge de chaque agent** (en retard
+    et autres tâches ouvertes) ; listes « En retard » et « Cette semaine » (un clic ouvre la tâche) ; **projets de
+    l'entité** avec leur avancement ;
+  - **Liste, Tableau, Calendrier, Chronologie** — les vues des tâches de l'entité, comme dans un projet : on crée
+    une tâche directement dans une colonne, sans passer par un projet ;
+  - **Projets** — les projets portés par l'entité ; « Projet » en crée un nouveau, rattaché à l'entité, ouvert ou
+    non à ses agents (ils en deviennent membres). Le responsable lit d'office les projets ouverts de son entité ;
+  - **Suivi des agents** (responsable) : tableau par agent et liste des tâches filtrable par agent et par état. Le
+    suivi couvre l'entité **et les entités rattachées**, et compte les tâches portées dans les **projets**, dans la
+    limite des projets que le responsable peut lire ;
+  - **Confier une tâche** (responsable) ou **Tâche** (agent) : intitulé, précisions, agent, échéance, priorité. L'agent
+    est prévenu (notification et courriel) et la retrouve dans « Mes tâches », marquée « Tâche d'entité ». Confiée à
+    un agent d'une entité rattachée, la tâche se range dans le registre de l'entité de cet agent.
+- **Plus tard** : un module d'**évaluation** des agents pourra s'appuyer sur ces données (tâches tenues, délais,
+  charge), toujours sous appréciation humaine.
 - **Mes tâches** propose aussi « Tâche hors projet », rangée dans le registre de l'entité de la personne.
 - Règles contrôlées par le serveur : seul le responsable (de l'entité ou d'une entité au-dessus) confie une tâche à
   quelqu'un d'autre ou modifie la tâche d'un autre agent ; un agent fait avancer les tâches qui lui sont confiées et

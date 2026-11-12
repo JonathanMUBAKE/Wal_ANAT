@@ -416,6 +416,11 @@ const TABLE = [
   R_("POST", "/api/org/units", () => ({ body: { name: u("U") } })),
   R_("GET", "/api/me/units"),
   R_("GET", "/api/units/:id/board", async (X) => ({ url: `/api/units/${(await X.unit()).id}/board` })),
+  R_("GET", "/api/units/:id/dashboard", async (X) => ({ url: `/api/units/${(await X.unit()).id}/dashboard` })),
+  R_("POST", "/api/units/:id/projects", async (X) => ({
+    url: `/api/units/${(await X.unit()).id}/projects`,
+    body: { name: u("Projet entité") },
+  })),
   R_("GET", "/api/units/:id/follow-up", async (X) => ({ url: `/api/units/${(await X.unit()).id}/follow-up` })),
   R_("PATCH", "/api/units/:id", async (X) => ({ url: `/api/units/${(await X.unit()).id}`, body: { name: u("U") } })),
   R_("DELETE", "/api/units/:id", async (X) => ({ url: `/api/units/${(await X.unit()).id}` })),

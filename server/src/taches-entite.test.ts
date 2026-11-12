@@ -160,3 +160,61 @@ describe("registre des tâches d'une entité", () => {
     expect((await g.api("u_ines", "GET", `/api/units/${unit}/follow-up`)).status).toBe(403);
   });
 });
+
+describe("espace de l'entité : projets et tableau de bord", () => {
+  it("un agent crée un projet rattaché à son entité, ouvert à ses collègues ; le responsable le voit", async () => {
+    const r = await g.api("u_hugo", "POST", `/api/units/${unit}/projects`, {
+      name: "Atlas des communes",
+      open_to_unit: true,
+    });
+    expect(r.status).toBe(200);
+    const p = (await g.api("u_hugo", "GET", `/api/projects/${r.body.id}`)).body;
+    expect(p).toMatchObject({ unit_id: unit, kind: "project" });
+    // Collègue de l'entité : membre ; responsable : lecteur au moins ; extérieure : rien
+    expect((await g.api("u_chloe", "GET", `/api/projects/${r.body.id}`)).status).toBe(200);
+    expect((await g.api("u_karim", "GET", `/api/projects/${r.body.id}`)).status).toBe(200);
+    expect((await g.api("u_ines", "GET", `/api/projects/${r.body.id}`)).status).toBe(403);
+    expect((await g.api("u_ines", "POST", `/api/units/${unit}/projects`, { name: "Intrus" })).status).toBe(403);
+    expect(
+      await g.ctx.db.one("SELECT 1 FROM activity WHERE kind = 'project.created' AND project_id = $1", [r.body.id]),
+    ).toBeTruthy();
+  });
+
+  it("le tableau de bord réunit chiffres, tendance, état, échéances, projets ; la charge des agents pour le responsable", async () => {
+    const pid = (await board("u_karim")).body.project_id;
+    const late = (
+      await g.api("u_karim", "POST", "/api/tasks", {
+        project_id: pid,
+        title: "Rapport en retard",
+        assignee_id: "u_hugo",
+        due_on: day(-1),
+        priority: "high",
+      })
+    ).body;
+    const soon = (
+      await g.api("u_karim", "POST", "/api/tasks", {
+        project_id: pid,
+        title: "Bientôt",
+        assignee_id: "u_chloe",
+        due_on: day(2),
+      })
+    ).body;
+    await g.api("u_chloe", "PATCH", `/api/tasks/${soon.id}`, { completed: true });
+    await g.api("u_hugo", "POST", `/api/units/${unit}/projects`, { name: "Projet de l'entité", open_to_unit: true });
+    const d = await g.api("u_karim", "GET", `/api/units/${unit}/dashboard`);
+    expect(d.status).toBe(200);
+    expect(d.body.kpis.overdue).toBeGreaterThanOrEqual(1);
+    expect(d.body.kpis.done_30).toBeGreaterThanOrEqual(1);
+    expect(d.body.trend).toHaveLength(8);
+    expect(d.body.trend.at(-1).completed).toBeGreaterThanOrEqual(1);
+    expect(d.body.by_status.length).toBeGreaterThan(0);
+    expect(d.body.overdue.map((t: Any) => t.id)).toContain(late.id);
+    expect(d.body.projects.map((p: Any) => p.name)).toContain("Projet de l'entité");
+    expect(d.body.workload.find((a: Any) => a.user_id === "u_hugo")?.overdue).toBeGreaterThanOrEqual(1);
+    // L'agent a le tableau de bord de son entité, sans la charge nominative de ses collègues
+    const agent = await g.api("u_hugo", "GET", `/api/units/${unit}/dashboard`);
+    expect(agent.status).toBe(200);
+    expect(agent.body.workload).toBeNull();
+    expect((await g.api("u_ines", "GET", `/api/units/${unit}/dashboard`)).status).toBe(403);
+  });
+});

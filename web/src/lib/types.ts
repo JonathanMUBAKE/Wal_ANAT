@@ -495,3 +495,56 @@ export interface AuditAnalysis {
   } | null;
   ai_error?: string;
 }
+export interface UnitDashboardTask {
+  id: string;
+  key: string;
+  title: string;
+  assignee_name: string | null;
+  project_name: string | null;
+  priority: string;
+  due_on: string | null;
+}
+export interface UnitDashboard {
+  unit: { id: string; name: string };
+  role: "responsable" | "agent";
+  board_id: string;
+  kpis: {
+    open: number;
+    overdue: number;
+    due_week: number;
+    done_30: number;
+    unassigned: number;
+    completion_rate: number;
+    projects: number;
+    agents: number | null;
+  };
+  trend: { week: string; created: number; completed: number }[];
+  by_status: { key: string; label: string; count: number }[];
+  by_priority: { priority: string; count: number }[];
+  overdue: UnitDashboardTask[];
+  upcoming: UnitDashboardTask[];
+  projects: {
+    id: string;
+    name: string;
+    color: string;
+    icon: string;
+    status: string;
+    due_on: string | null;
+    owner_name: string | null;
+    task_count: number;
+    done_count: number;
+    overdue_count: number;
+    progress: number;
+  }[];
+  workload:
+    | {
+        user_id: string;
+        name: string;
+        unit_name: string;
+        open: number;
+        overdue: number;
+        due_soon: number;
+        done_30: number;
+      }[]
+    | null;
+}

@@ -154,8 +154,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <nav className="space-y-0.5 px-3">
           {link("/", House, "Accueil")}
           {link("/my-tasks", CheckCircle2, "Mes tâches")}
-          {!!myUnits?.length &&
-            link("/entite", Users, myUnits.some((u) => u.role === "responsable") ? "Mon entité" : "Tâches de l'entité")}
+          {!!myUnits?.length && link("/entite", Users, "Mon entité")}
           {link("/ai", Sparkles, "Coéquipiers IA", approvals?.length, true)}
         </nav>
 

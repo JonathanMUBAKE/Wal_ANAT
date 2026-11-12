@@ -35,7 +35,7 @@ import { useCan, useMe, useProjects, useUnits, useUsers } from "@/lib/hooks";
 import { type RefValue, useForms, useReferentials } from "@/lib/referentials";
 import { HEALTH } from "./Pilotage";
 import { ContractsPayments } from "./ProjectDossier";
-import { ArbitrationsBoard, PortfolioReview } from "@/components/portfolio";
+import { ActivityArbitrations, ArbitrationsBoard, PortfolioReview } from "@/components/portfolio";
 
 /** Code d'un type d'activité du référentiel de l'institution. */
 type Kind = string;
@@ -403,6 +403,8 @@ export function ActivityPage() {
     error,
   } = useQuery({ queryKey: ["activity", id], queryFn: () => api.get<Detail>(`/api/activities/${id}`) });
   const rec = useRecord(a);
+  const can = useCan();
+  const { data: me } = useMe();
   const [params, setParams] = useSearchParams();
   // « Modifier » depuis la grille : la fiche s'ouvre directement en modification
   useEffect(() => {
@@ -767,7 +769,6 @@ export function ActivityPage() {
                     />
                   )}
                 </Field>
-                <Field label="Décision attendue de la DG">{(a) => <Input {...a} {...text("decision_needed")} />}</Field>
                 <label className="flex items-center gap-2 text-[13px]">
                   <input
                     type="checkbox"
@@ -780,6 +781,9 @@ export function ActivityPage() {
               </div>
             )}
           </Section>
+          {!editing && (
+            <ActivityArbitrations activityId={d.id} canAsk={can("agenda.manage") || (!!me && d.lead_id === me.id)} />
+          )}
           {!editing && <DossierDocuments owner="activity" ownerId={d.id} title="Documents de l'activité" />}
           <Section title="Suites à donner">
             <div className="space-y-2 p-4">

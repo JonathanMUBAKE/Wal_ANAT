@@ -180,6 +180,7 @@ export class Decisions {
       if (old.status === "remplacee") throw new HttpError(409, "Cette décision a déjà été remplacée");
     }
     const id = uid("dec");
+    let closed: { requested_by: string | null; question: string }[] = [];
     const year = Number(i.decided_on.slice(0, 4));
     const confidential = !!i.confidential || src.confidential || !!old?.confidential;
     for (let attempt = 0; ; attempt++) {
@@ -210,6 +211,15 @@ export class Decisions {
           if (i.project_id) await q.query("UPDATE projects SET decision_needed = '' WHERE id = $1", [i.project_id]);
           if (i.activity_id)
             await q.query("UPDATE agency_activities SET decision_needed = '' WHERE id = $1", [i.activity_id]);
+          // Une seule porte : la décision inscrite sur un dossier tranche l'arbitrage qui y était en attente
+          if (i.project_id || i.activity_id)
+            closed = await q.query<{ requested_by: string | null; question: string }>(
+              `UPDATE project_arbitrations SET status = 'tranche', decision_id = $2, decided_by = $3, decided_at = now(),
+                 decision_note = CASE WHEN decision_note = '' THEN 'Tranché par une décision inscrite au registre' ELSE decision_note END
+               WHERE org_id = $1 AND status = 'en_attente' AND (project_id = $4 OR activity_id = $5)
+               RETURNING requested_by, question`,
+              [orgId, id, actorId, i.project_id ?? null, i.activity_id ?? null],
+            );
           if (old) {
             const done = await q.query(
               "UPDATE dg_decisions SET status = 'remplacee' WHERE id = $1 AND status <> 'remplacee' RETURNING id",
@@ -227,6 +237,16 @@ export class Decisions {
       }
     }
     const d = await this.row(id);
+    for (const c of closed)
+      if (c.requested_by && c.requested_by !== actorId)
+        await this.svc.notify(c.requested_by, orgId, {
+          kind: "arbitration.decided",
+          title: `Arbitrage rendu : ${c.question}`,
+          body: `${decisionRef(d)} · ${d.title}`,
+          actor_id: actorId,
+          link: "/decisions",
+          category: "decisions",
+        });
     await this.svc.log(actorId, "decision.recorded", {
       orgId,
       projectId: i.project_id ?? null,

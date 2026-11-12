@@ -54,7 +54,9 @@ interface Review {
 }
 export interface Arbitration {
   id: string;
-  project_id: string;
+  project_id: string | null;
+  activity_id: string | null;
+  dossier_kind: "projet" | "activite";
   project_name: string;
   question: string;
   context: string;
@@ -269,7 +271,7 @@ export function ArbitrationsBoard() {
           build={() =>
             tableDoc(
               "Arbitrages demandés à la DG",
-              ["Question", "Projet", "Demandé par", "Souhaité pour", "État", "Option retenue", "Registre"],
+              ["Question", "Dossier", "Demandé par", "Souhaité pour", "État", "Option retenue", "Registre"],
               data.map((a) => [
                 a.question,
                 a.project_name,
@@ -287,7 +289,7 @@ export function ArbitrationsBoard() {
       title="Arbitrages"
     >
       {data.length ? (
-        <Table head={["Question", "Projet", "Demandé par", "Souhaité pour", "État"]}>
+        <Table head={["Question", "Dossier", "Demandé par", "Souhaité pour", "État"]}>
           {data.map((a) => (
             <Tr key={a.id} onClick={() => setOpen(a.id)}>
               <Td className="min-w-[260px] font-medium">{a.question}</Td>
@@ -376,8 +378,11 @@ function ArbitrationDrawer({ id, list, onClose }: { id: string; list: Arbitratio
     >
       <DrawerSection title="La demande">
         <Facts className="p-0">
-          <Fact label="Projet">
-            <Link to={`/projects/${a.project_id}/dashboard`} className="hover:underline">
+          <Fact label={a.activity_id ? "Activité" : "Projet"}>
+            <Link
+              to={a.activity_id ? `/activites/${a.activity_id}` : `/projects/${a.project_id}/dashboard`}
+              className="hover:underline"
+            >
               {a.project_name}
             </Link>
           </Fact>
@@ -413,7 +418,7 @@ function ArbitrationDrawer({ id, list, onClose }: { id: string; list: Arbitratio
               <span className="min-w-0">
                 <span className="flex flex-wrap items-center gap-2 font-medium">
                   {o.label}
-                  {a.recommendation === i && <Status label="Recommandée par le projet" tone="info" />}
+                  {a.recommendation === i && <Status label="Recommandée par le demandeur" tone="info" />}
                   {a.decided_option === i && <Status label="Retenue" tone="success" />}
                 </span>
                 {o.consequences && <span className="mt-0.5 block text-[13px] text-muted">{o.consequences}</span>}
@@ -456,12 +461,26 @@ function ArbitrationDrawer({ id, list, onClose }: { id: string; list: Arbitratio
 }
 
 /** Sur le tableau de bord d'un projet : demander un arbitrage, et l'historique des arbitrages. */
-export function ProjectArbitrations({ projectId, canAsk }: { projectId: string; canAsk: boolean }) {
+/** Les arbitrages d'une activité : même bloc que pour un projet. */
+export const ActivityArbitrations = ({ activityId, canAsk }: { activityId: string; canAsk: boolean }) => (
+  <ProjectArbitrations projectId={activityId} base={`/api/activities/${activityId}`} canAsk={canAsk} />
+);
+
+export function ProjectArbitrations({
+  projectId,
+  canAsk,
+  base = `/api/projects/${projectId}`,
+}: {
+  projectId: string;
+  canAsk: boolean;
+  /** Le dossier : un projet (par défaut) ou une activité. */
+  base?: string;
+}) {
   const qc = useQueryClient();
   const { data: me } = useMe();
   const { data } = useQuery({
     queryKey: ["arbitrations", "project", projectId],
-    queryFn: () => api.get<Arbitration[]>(`/api/projects/${projectId}/arbitrations`),
+    queryFn: () => api.get<Arbitration[]>(`${base}/arbitrations`),
   });
   const [asking, setAsking] = useState(false);
   const pending = data?.find((a) => a.status === "en_attente");
@@ -521,12 +540,12 @@ export function ProjectArbitrations({ projectId, canAsk }: { projectId: string; 
           DG décide.
         </p>
       )}
-      {asking && <AskDialog projectId={projectId} onClose={() => setAsking(false)} />}
+      {asking && <AskDialog base={base} onClose={() => setAsking(false)} />}
     </Section>
   );
 }
 
-function AskDialog({ projectId, onClose }: { projectId: string; onClose: () => void }) {
+function AskDialog({ base, onClose }: { base: string; onClose: () => void }) {
   const qc = useQueryClient();
   const [f, setF] = useState({ question: "", context: "", wanted_by: "" });
   const [options, setOptions] = useState([
@@ -539,7 +558,7 @@ function AskDialog({ projectId, onClose }: { projectId: string; onClose: () => v
   const submit = async () => {
     setBusy(true);
     try {
-      await api.post(`/api/projects/${projectId}/arbitrations`, {
+      await api.post(`${base}/arbitrations`, {
         question: f.question,
         context: f.context || undefined,
         wanted_by: f.wanted_by || null,

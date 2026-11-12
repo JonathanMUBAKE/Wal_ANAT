@@ -49,6 +49,7 @@ interface Item {
   next_due: string | null;
   overdue: number;
   decision_needed: string;
+  arbitration_id: string | null;
   href: string;
 }
 interface Overview {
@@ -300,21 +301,30 @@ export function PilotagePage() {
                         <span className="block truncate text-[12px] text-muted">{d.decision_needed}</span>
                       </span>
                     </Link>
-                    {can("decisions.record") && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setArbitrating({
-                            kind: d.form.startsWith("projet") ? "project" : "activity",
-                            id: d.id,
-                            label: d.title,
-                            question: d.decision_needed,
-                          })
-                        }
+                    {can("decisions.record") && d.arbitration_id ? (
+                      <Link
+                        to={`/activites?onglet=arbitrages&arbitrage=${d.arbitration_id}`}
                         className="shrink-0 rounded-lg border border-line px-2.5 py-1 text-[12px] font-medium text-fg/80 transition-colors hover:border-transparent hover:bg-night hover:text-white"
                       >
-                        Arbitrer
-                      </button>
+                        Trancher
+                      </Link>
+                    ) : (
+                      can("decisions.record") && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setArbitrating({
+                              kind: d.form.startsWith("projet") ? "project" : "activity",
+                              id: d.id,
+                              label: d.title,
+                              question: d.decision_needed,
+                            })
+                          }
+                          className="shrink-0 rounded-lg border border-line px-2.5 py-1 text-[12px] font-medium text-fg/80 transition-colors hover:border-transparent hover:bg-night hover:text-white"
+                        >
+                          Arbitrer
+                        </button>
+                      )
                     )}
                   </li>
                 );

@@ -330,9 +330,6 @@ function EditGovernance({ g, projectId, onClose }: { g: Gov; projectId: string; 
             />
           )}
         </Field>
-        <Field label="Décision attendue de la DG" className="sm:col-span-2">
-          {(a) => <Input {...a} value={f.decision_needed} onChange={set("decision_needed")} />}
-        </Field>
       </div>
     </Dialog>
   );

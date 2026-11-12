@@ -124,6 +124,27 @@ export class Activities {
       throw badRequest("Activité du plan inconnue");
   }
 
+  /** Pendant un arbitrage, la décision attendue est la question posée à la DG : elle ne se réécrit pas à la main. */
+  private async assertNoArbitration(
+    id: string,
+    column: "project_id" | "activity_id",
+    table: "projects" | "agency_activities",
+    next: string | undefined,
+  ) {
+    if (next === undefined) return;
+    const cur = await this.svc.db.one<{ decision_needed: string }>(
+      `SELECT decision_needed FROM ${table} WHERE id = $1`,
+      [id],
+    );
+    if ((cur?.decision_needed ?? "") === next) return;
+    if (
+      await this.svc.db.one(`SELECT 1 FROM project_arbitrations WHERE ${column} = $1 AND status = 'en_attente'`, [id])
+    )
+      throw badRequest(
+        "Un arbitrage est en cours : la décision attendue suit la question posée à la DG ; retirez la demande pour la changer",
+      );
+  }
+
   async list(actorId: string, orgId: string, f: { kind?: ActivityKind }) {
     await this.svc.requirePerm(actorId, orgId, "agenda.view");
     const manager = await this.canManage(actorId, orgId);
@@ -230,6 +251,7 @@ export class Activities {
     if (start && end && String(end).slice(0, 10) < String(start).slice(0, 10))
       throw badRequest("La fin précède le début");
     await this.assertRefs(a.org_id, patch);
+    await this.assertNoArbitration(id, "activity_id", "agency_activities", patch.decision_needed);
     if (patch.counterpart_partner_id) {
       const p = await linkPartner(this.svc, a.org_id, patch.counterpart_partner_id, {
         current: a.counterpart_partner_id,
@@ -354,6 +376,7 @@ export class Activities {
     if ((g.budget_planned ?? 0) < 0 || (g.budget_spent ?? 0) < 0)
       throw badRequest("Un montant ne peut pas être négatif");
     // Le commanditaire choisi dans l'annuaire donne son nom au champ, sauf texte saisi
+    await this.assertNoArbitration(projectId, "project_id", "projects", g.decision_needed);
     if (g.sponsor_partner_id) {
       const current = await this.svc.db.one<{ sponsor_partner_id: string | null }>(
         "SELECT sponsor_partner_id FROM projects WHERE id = $1",

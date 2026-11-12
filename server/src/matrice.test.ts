@@ -928,6 +928,13 @@ const TABLE = [
   R_("GET", "/api/activities"),
   R_("POST", "/api/activities", () => ({ body: { kind: "commission", title: "Commission" } })),
   R_("GET", "/api/activities/:id", async (X) => ({ url: `/api/activities/${(await X.activity()).id}` })),
+  R_("GET", "/api/activities/:id/arbitrations", async (X) => ({
+    url: `/api/activities/${(await X.activity()).id}/arbitrations`,
+  })),
+  R_("POST", "/api/activities/:id/arbitrations", async (X) => ({
+    url: `/api/activities/${(await X.activity()).id}/arbitrations`,
+    body: { question: "Quelle position ?", options: [{ label: "A" }, { label: "B" }] },
+  })),
   R_("PATCH", "/api/activities/:id", async (X) => ({
     url: `/api/activities/${(await X.activity()).id}`,
     body: { outcome: "x" },

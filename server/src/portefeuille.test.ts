@@ -139,3 +139,70 @@ describe("arbitrages", () => {
     expect((await g.api("u_alice", "GET", `/api/projects/${p}/governance`)).body.decision_needed).toBe("");
   });
 });
+
+describe("une seule porte pour les décisions", () => {
+  it("inscrire au registre une décision sur un projet clôt l'arbitrage en attente", async () => {
+    const p = await mkProject("Projet arbitré au registre (essai)");
+    const a = (
+      await g.api("u_karim", "POST", `/api/projects/${p}/arbitrations`, {
+        question: "Faut-il recruter ?",
+        options: [{ label: "Oui" }, { label: "Non" }],
+      })
+    ).body;
+    const d = await g.api("u_alice", "POST", "/api/decisions", {
+      title: "Recruter un cartographe",
+      content: "Décision d'essai",
+      decided_on: day(0),
+      project_id: p,
+    });
+    expect(d.status).toBe(200);
+    const hist = (await g.api("u_alice", "GET", `/api/projects/${p}/arbitrations`)).body as Any[];
+    expect(hist.find((x) => x.id === a.id)).toMatchObject({ status: "tranche", decision_id: d.body.id });
+    const review = (await g.api("u_alice", "GET", "/api/portfolio/review")).body;
+    expect(review.projects.find((x: Any) => x.id === p).arbitration).toBeNull();
+  });
+
+  it("la décision attendue ne se modifie pas à la main pendant un arbitrage", async () => {
+    const p = await mkProject("Projet verrouillé (essai)");
+    await g.api("u_karim", "POST", `/api/projects/${p}/arbitrations`, {
+      question: "Quel prestataire ?",
+      options: [{ label: "A" }, { label: "B" }],
+    });
+    const r = await g.api("u_alice", "PUT", `/api/projects/${p}/governance`, { decision_needed: "Autre chose" });
+    expect(r.status).toBe(400);
+    expect(r.body.error).toMatch(/arbitrage/);
+    // Les autres champs restent modifiables
+    expect((await g.api("u_alice", "PUT", `/api/projects/${p}/governance`, { budget_planned: 10 })).status).toBe(200);
+  });
+
+  it("une activité demande aussi un arbitrage ; la décision s'inscrit rattachée à l'activité", async () => {
+    const act = (
+      await g.api("u_alice", "POST", "/api/activities", {
+        kind: "commission",
+        title: "Commission foncière (essai)",
+        lead_id: "u_karim",
+      })
+    ).body;
+    await g.promote("u_karim");
+    const a = await g.api("u_karim", "POST", `/api/activities/${act.id}/arbitrations`, {
+      question: "Quelle position défendre ?",
+      options: [{ label: "Position A" }, { label: "Position B" }],
+      recommendation: 0,
+    });
+    expect(a.status).toBe(200);
+    expect(a.body).toMatchObject({ activity_id: act.id, project_id: null, status: "en_attente" });
+    expect((await g.api("u_alice", "GET", `/api/activities/${act.id}`)).body.decision_needed).toBe(
+      "Quelle position défendre ?",
+    );
+    expect(((await g.api("u_alice", "GET", "/api/arbitrations")).body as Any[]).some((x) => x.id === a.body.id)).toBe(
+      true,
+    );
+    const d = await g.api("u_alice", "POST", `/api/arbitrations/${a.body.id}/decide`, { option: 0 });
+    expect(d.status).toBe(200);
+    const reg = (await g.api("u_alice", "GET", "/api/decisions")).body as Any[];
+    expect(reg.find((x) => x.id === d.body.decision_id)?.source).toMatchObject({ kind: "activity", id: act.id });
+    expect((await g.api("u_alice", "GET", `/api/activities/${act.id}`)).body.decision_needed).toBe("");
+    const hist = (await g.api("u_alice", "GET", `/api/activities/${act.id}/arbitrations`)).body as Any[];
+    expect(hist[0]).toMatchObject({ id: a.body.id, status: "tranche" });
+  });
+});

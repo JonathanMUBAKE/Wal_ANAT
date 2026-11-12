@@ -51,7 +51,8 @@ const Decide = z.object({
 interface Arbitration {
   id: string;
   org_id: string;
-  project_id: string;
+  project_id: string | null;
+  activity_id: string | null;
   question: string;
   context: string;
   options: { label: string; consequences?: string }[];
@@ -64,11 +65,13 @@ interface Arbitration {
   decision_note: string;
   decision_id: string | null;
 }
-const COLS = `a.id, a.org_id, a.project_id, a.question, a.context, a.options, a.recommendation,
+const COLS = `a.id, a.org_id, a.project_id, a.activity_id, a.question, a.context, a.options, a.recommendation,
   to_char(a.wanted_by, 'YYYY-MM-DD') AS wanted_by, a.status, a.requested_by, a.decided_by, a.decided_option,
-  a.decision_note, a.decision_id, a.decided_at, a.created_at, p.name AS project_name, rq.name AS requested_by_name,
+  a.decision_note, a.decision_id, a.decided_at, a.created_at, COALESCE(p.name, aa.title) AS project_name,
+  CASE WHEN a.activity_id IS NULL THEN 'projet' ELSE 'activite' END AS dossier_kind, rq.name AS requested_by_name,
   dc.name AS decided_by_name, d.year AS decision_year, d.seq AS decision_seq`;
-const FROM = `project_arbitrations a JOIN projects p ON p.id = a.project_id
+const FROM = `project_arbitrations a LEFT JOIN projects p ON p.id = a.project_id
+  LEFT JOIN agency_activities aa ON aa.id = a.activity_id
   LEFT JOIN users rq ON rq.id = a.requested_by LEFT JOIN users dc ON dc.id = a.decided_by
   LEFT JOIN dg_decisions d ON d.id = a.decision_id`;
 
@@ -200,14 +203,50 @@ export class Portfolio {
     if (!a) throw notFound("Demande d'arbitrage introuvable");
     return a;
   }
-  /** Demander : le chef du projet ou un administrateur du projet. */
-  private async canAsk(actorId: string, projectId: string) {
+  /** L'activité, si la personne peut la lire (confidentialité respectée). */
+  private async activity(actorId: string, activityId: string) {
+    const a = await this.svc.db.one<{
+      id: string;
+      org_id: string;
+      title: string;
+      lead_id: string | null;
+      confidential: boolean;
+    }>("SELECT id, org_id, title, lead_id, confidential FROM agency_activities WHERE id = $1", [activityId]);
+    if (!a) throw notFound("Activité introuvable");
+    const perms = await this.svc.permissionsOf(actorId, a.org_id);
+    if (!perms.includes("agenda.view")) throw notFound("Activité introuvable");
+    if (a.confidential && a.lead_id !== actorId && !perms.includes("agenda.manage"))
+      throw notFound("Activité introuvable");
+    return { ...a, manage: perms.includes("agenda.manage") };
+  }
+  /** Le dossier visé (projet ou activité), qui peut y demander un arbitrage, et son responsable. */
+  private async dossier(actorId: string, ref: { project_id?: string; activity_id?: string }) {
+    if (ref.activity_id) {
+      const a = await this.activity(actorId, ref.activity_id);
+      return {
+        orgId: a.org_id,
+        name: a.title,
+        lead: a.lead_id,
+        canAsk: a.lead_id === actorId || a.manage,
+        table: "agency_activities" as const,
+        id: a.id,
+      };
+    }
+    const projectId = ref.project_id as string;
+    const orgId = await this.svc.orgOfProject(projectId);
+    const p = await this.svc.db.one<{ name: string; lead_id: string | null }>(
+      "SELECT name, lead_id FROM projects WHERE id = $1",
+      [projectId],
+    );
     const role = await this.svc.projectRole(actorId, projectId);
-    if (role === "admin") return true;
-    const lead = await this.svc.db.one<{ lead_id: string | null }>("SELECT lead_id FROM projects WHERE id = $1", [
-      projectId,
-    ]);
-    return !!role && lead?.lead_id === actorId;
+    return {
+      orgId,
+      name: p?.name ?? "",
+      lead: p?.lead_id ?? null,
+      canAsk: role === "admin" || (!!role && p?.lead_id === actorId),
+      table: "projects" as const,
+      id: projectId,
+    };
   }
 
   async ofProject(actorId: string, projectId: string) {
@@ -217,42 +256,58 @@ export class Portfolio {
     ]);
   }
 
+  async ofActivity(actorId: string, activityId: string) {
+    await this.activity(actorId, activityId);
+    return this.svc.db.query(`SELECT ${COLS} FROM ${FROM} WHERE a.activity_id = $1 ORDER BY a.created_at DESC`, [
+      activityId,
+    ]);
+  }
+
   async list(actorId: string, orgId: string, status?: string) {
     const perms = await this.svc.permissionsOf(actorId, orgId);
     if (!perms.includes("decisions.record") && !perms.includes("pilotage.view"))
       throw forbidden("Les arbitrages sont suivis par la direction générale");
     const rows = await this.svc.db.query<Arbitration>(
-      `SELECT ${COLS} FROM ${FROM} WHERE a.org_id = $1 AND ($2::text IS NULL OR a.status = $2)
+      `SELECT ${COLS}, aa.confidential AS activity_confidential, aa.lead_id AS activity_lead
+         FROM ${FROM} WHERE a.org_id = $1 AND ($2::text IS NULL OR a.status = $2)
         ORDER BY (a.status = 'en_attente') DESC, a.wanted_by NULLS LAST, a.created_at DESC LIMIT 300`,
       [orgId, status ?? null],
     );
-    // Un projet privé n'apparaît qu'à ceux qui y ont accès
+    // Un projet privé n'apparaît qu'à ceux qui y ont accès ; une activité confidentielle, à ses gestionnaires
     const open = new Set((await this.svc.listProjects(actorId, orgId)).map((p) => p.id));
-    return rows.filter((r) => open.has(r.project_id));
+    const manage = perms.includes("agenda.manage");
+    return rows.filter((r) => {
+      const x = r as Arbitration & { activity_confidential?: boolean; activity_lead?: string | null };
+      if (x.project_id) return open.has(x.project_id);
+      return !x.activity_confidential || manage || x.activity_lead === actorId;
+    });
   }
 
-  async ask(actorId: string, projectId: string, input: z.infer<typeof Ask>) {
-    const orgId = await this.svc.orgOfProject(projectId);
-    if (!(await this.canAsk(actorId, projectId)))
-      throw forbidden("Seuls le chef du projet et ses administrateurs demandent un arbitrage");
+  async ask(actorId: string, ref: { project_id?: string; activity_id?: string }, input: z.infer<typeof Ask>) {
+    const d = await this.dossier(actorId, ref);
+    if (!d.canAsk)
+      throw forbidden(
+        d.table === "projects"
+          ? "Seuls le chef du projet et ses administrateurs demandent un arbitrage"
+          : "Seuls le responsable de l'activité et les gestionnaires de l'agenda demandent un arbitrage",
+      );
     if (input.options.length < 2) throw badRequest("Un arbitrage oppose au moins deux options");
     if (input.recommendation != null && input.recommendation >= input.options.length)
       throw badRequest("La recommandation doit désigner l'une des options");
+    const column = d.table === "projects" ? "project_id" : "activity_id";
     if (
-      await this.svc.db.one("SELECT 1 FROM project_arbitrations WHERE project_id = $1 AND status = 'en_attente'", [
-        projectId,
-      ])
+      await this.svc.db.one(`SELECT 1 FROM project_arbitrations WHERE ${column} = $1 AND status = 'en_attente'`, [d.id])
     )
-      throw badRequest("Un arbitrage est déjà en attente pour ce projet : retirez-le ou attendez la décision");
+      throw badRequest("Un arbitrage est déjà en attente pour ce dossier : retirez-le ou attendez la décision");
     const id = uid("arb");
     await this.svc.db.tx(async (q) => {
       await q.query(
-        `INSERT INTO project_arbitrations (id, org_id, project_id, question, context, options, recommendation, wanted_by, requested_by)
+        `INSERT INTO project_arbitrations (id, org_id, ${column}, question, context, options, recommendation, wanted_by, requested_by)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
         [
           id,
-          orgId,
-          projectId,
+          d.orgId,
+          d.id,
           input.question,
           input.context ?? "",
           JSON.stringify(input.options),
@@ -261,19 +316,23 @@ export class Portfolio {
           actorId,
         ],
       );
-      // La question devient la décision attendue du projet : elle remonte au tableau de bord DG
-      await q.query("UPDATE projects SET decision_needed = $2 WHERE id = $1", [projectId, input.question]);
+      // La question devient la décision attendue du dossier : elle remonte au tableau de bord DG
+      await q.query(`UPDATE ${d.table} SET decision_needed = $2 WHERE id = $1`, [d.id, input.question]);
     });
-    await this.svc.log(actorId, "arbitration.requested", { orgId, projectId, data: { id, question: input.question } });
-    const a = await this.row(orgId, id);
-    for (const u of await this.svc.usersOf(orgId)) {
+    await this.svc.log(actorId, "arbitration.requested", {
+      orgId: d.orgId,
+      projectId: d.table === "projects" ? d.id : null,
+      data: { id, question: input.question, activity_id: d.table === "projects" ? null : d.id },
+    });
+    const a = await this.row(d.orgId, id);
+    for (const u of await this.svc.usersOf(d.orgId)) {
       if (u.is_ai || u.id === actorId) continue;
-      if (!(await this.svc.permissionsOf(u.id, orgId)).includes("decisions.record")) continue;
-      await this.svc.notify(u.id, orgId, {
+      if (!(await this.svc.permissionsOf(u.id, d.orgId)).includes("decisions.record")) continue;
+      await this.svc.notify(u.id, d.orgId, {
         kind: "arbitration.requested",
-        title: `Arbitrage demandé · ${a.project_name}`,
+        title: `Arbitrage demandé · ${d.name}`,
         body: input.question,
-        project_id: projectId,
+        project_id: d.table === "projects" ? d.id : null,
         actor_id: actorId,
         link: `/activites?onglet=arbitrages&arbitrage=${id}`,
         category: "decisions",
@@ -289,9 +348,14 @@ export class Portfolio {
     if (a.status !== "en_attente") throw badRequest("Cette demande n'est plus en attente");
     const chosen = a.options[input.option];
     if (!chosen) throw badRequest("Choisissez l'une des options proposées");
-    const lead = await this.svc.db.one<{ lead_id: string | null }>("SELECT lead_id FROM projects WHERE id = $1", [
-      a.project_id,
-    ]);
+    const lead = (
+      await this.svc.db.one<{ lead_id: string | null }>(
+        a.project_id
+          ? "SELECT lead_id FROM projects WHERE id = $1"
+          : "SELECT lead_id FROM agency_activities WHERE id = $1",
+        [a.project_id ?? a.activity_id],
+      )
+    )?.lead_id;
     const content = [
       `Question : ${a.question}`,
       `Option retenue : ${chosen.label}${chosen.consequences ? ` (${chosen.consequences})` : ""}`,
@@ -299,29 +363,28 @@ export class Portfolio {
     ]
       .filter(Boolean)
       .join("\n");
+    // L'inscription au registre clôt l'arbitrage (Decisions.record) ; on y ajoute l'option retenue
     const decision = await new Decisions(this.svc).record(actorId, orgId, {
       title: `${a.project_name} : ${chosen.label}`,
       content,
       decided_on: today(),
       project_id: a.project_id,
-      owner_id: lead?.lead_id ?? a.requested_by,
+      activity_id: a.activity_id,
+      owner_id: lead ?? a.requested_by,
       due_on: input.due_on ?? null,
     });
     const decisionId = (decision as { id: string }).id;
-    await this.svc.db.tx(async (q) => {
-      await q.query(
-        `UPDATE project_arbitrations SET status = 'tranche', decided_by = $3, decided_option = $4, decision_note = $5,
-           decision_id = $6, decided_at = now() WHERE org_id = $1 AND id = $2`,
-        [orgId, id, actorId, input.option, input.note ?? "", decisionId],
-      );
-      await q.query("UPDATE projects SET decision_needed = '' WHERE id = $1", [a.project_id]);
-    });
+    await this.svc.db.query(
+      `UPDATE project_arbitrations SET status = 'tranche', decided_by = $3, decided_option = $4, decision_note = $5,
+         decision_id = $6, decided_at = now() WHERE org_id = $1 AND id = $2`,
+      [orgId, id, actorId, input.option, input.note ?? "", decisionId],
+    );
     await this.svc.log(actorId, "arbitration.decided", {
       orgId,
       projectId: a.project_id,
-      data: { id, option: chosen.label, decision_id: decisionId },
+      data: { id, option: chosen.label, decision_id: decisionId, activity_id: a.activity_id },
     });
-    for (const to of new Set([a.requested_by, lead?.lead_id].filter((x): x is string => !!x && x !== actorId)))
+    for (const to of new Set([a.requested_by, lead].filter((x): x is string => !!x && x !== actorId)))
       await this.svc.notify(to, orgId, {
         kind: "arbitration.decided",
         title: `Arbitrage rendu · ${a.project_name} : ${chosen.label}`,
@@ -336,15 +399,18 @@ export class Portfolio {
 
   async withdraw(actorId: string, orgId: string, id: string) {
     const a = await this.row(orgId, id);
-    if (a.requested_by !== actorId && (await this.svc.projectRole(actorId, a.project_id)) !== "admin")
-      throw forbidden("Seuls le demandeur et les administrateurs du projet retirent cette demande");
+    const admin = a.project_id
+      ? (await this.svc.projectRole(actorId, a.project_id)) === "admin"
+      : (await this.svc.permissionsOf(actorId, orgId)).includes("agenda.manage");
+    if (a.requested_by !== actorId && !admin)
+      throw forbidden("Seuls le demandeur et les gestionnaires du dossier retirent cette demande");
     if (a.status !== "en_attente") throw badRequest("Cette demande n'est plus en attente");
     await this.svc.db.tx(async (q) => {
       await q.query("UPDATE project_arbitrations SET status = 'retire' WHERE org_id = $1 AND id = $2", [orgId, id]);
-      await q.query("UPDATE projects SET decision_needed = '' WHERE id = $1 AND decision_needed = $2", [
-        a.project_id,
-        a.question,
-      ]);
+      await q.query(
+        `UPDATE ${a.project_id ? "projects" : "agency_activities"} SET decision_needed = '' WHERE id = $1 AND decision_needed = $2`,
+        [a.project_id ?? a.activity_id, a.question],
+      );
     });
     await this.svc.log(actorId, "arbitration.withdrawn", { orgId, projectId: a.project_id, data: { id } });
     return this.row(orgId, id);
@@ -358,8 +424,14 @@ export function portfolioRoutes(r: FastifyInstance, p: Portfolio) {
     const q = z.object({ status: z.enum(["en_attente", "tranche", "retire"]).optional() }).parse(req.query ?? {});
     return p.list(req.userId, req.orgId, q.status);
   });
+  r.get<Id>("/api/activities/:id/arbitrations", async (req) => p.ofActivity(req.userId, req.params.id));
+  r.post<Id>("/api/activities/:id/arbitrations", async (req) =>
+    p.ask(req.userId, { activity_id: req.params.id }, Ask.parse(req.body)),
+  );
   r.get<Id>("/api/projects/:id/arbitrations", async (req) => p.ofProject(req.userId, req.params.id));
-  r.post<Id>("/api/projects/:id/arbitrations", async (req) => p.ask(req.userId, req.params.id, Ask.parse(req.body)));
+  r.post<Id>("/api/projects/:id/arbitrations", async (req) =>
+    p.ask(req.userId, { project_id: req.params.id }, Ask.parse(req.body)),
+  );
   r.post<Id>("/api/arbitrations/:id/decide", async (req) =>
     p.decide(req.userId, req.orgId, req.params.id, Decide.parse(req.body)),
   );

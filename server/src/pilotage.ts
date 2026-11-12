@@ -17,6 +17,8 @@ export interface PilotageItem {
   next_due: string | null;
   overdue: number;
   decision_needed: string;
+  /** L'arbitrage en attente du dossier : la DG le tranche au lieu d'inscrire une décision à part. */
+  arbitration_id: string | null;
   href: string;
 }
 const day = (offset = 0) => localDate(new Date(Date.now() + offset * 864e5));
@@ -79,6 +81,14 @@ export class Pilotage {
     const types = await new Referentials(this.svc).values(orgId, "activity_type");
     const tracked = new Set(types.filter((t) => t.props.tracks_progress === true).map((t) => t.code));
     const effective = (h: PilotageItem["health"], overdue: number) => (h === "on_track" && overdue > 0 ? "at_risk" : h);
+    const pending = new Map(
+      (
+        await db.query<{ id: string; dossier: string }>(
+          "SELECT id, COALESCE(project_id, activity_id) AS dossier FROM project_arbitrations WHERE org_id = $1 AND status = 'en_attente'",
+          [orgId],
+        )
+      ).map((r) => [r.dossier, r.id]),
+    );
     const items: PilotageItem[] = [
       ...projects.map((p) => {
         const g = gov.get(p.id);
@@ -93,6 +103,7 @@ export class Pilotage {
           next_due: nextDue.get(p.id) ?? p.due_on,
           overdue: p.overdue_count,
           decision_needed: g?.decision_needed ?? "",
+          arbitration_id: pending.get(p.id) ?? null,
           href: `/projects/${p.id}/dashboard`,
         };
       }),
@@ -107,6 +118,7 @@ export class Pilotage {
         next_due: a.next_due_on ?? a.start_on,
         overdue: a.overdue,
         decision_needed: a.decision_needed,
+        arbitration_id: pending.get(a.id) ?? null,
         href: `/activites/${a.id}`,
       })),
     ];

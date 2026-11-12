@@ -195,7 +195,7 @@ export class Pilotage {
             ) x
           ) eff ON TRUE
           WHERE a.org_id = $1 AND p.status = 'approved' AND COALESCE(eff.progress, a.progress) < 100 AND a.end_on < $2::date) AS activites_plan,
-        (SELECT count(*)::int FROM correspondence WHERE org_id = $1 AND status <> 'traite' AND NOT confidential AND due_on < $2::date) AS courrier`,
+        (SELECT count(*)::int FROM correspondence WHERE org_id = $1 AND status NOT IN ('traite', 'classe') AND NOT confidential AND due_on < $2::date) AS courrier`,
       [orgId, today],
     );
     const decisions = items.filter((i) => i.decision_needed.trim() && i.health !== "done");

@@ -30,7 +30,7 @@ const SOURCES: { kind: string; noun: string; ahead: number; sql: string }[] = [
     noun: "Courrier à traiter",
     ahead: 2,
     sql: `SELECT c.id, c.org_id, c.assignee_id AS user_id, c.subject AS label, c.due_on::text AS due_on
-          FROM correspondence c WHERE c.status <> 'traite' AND c.assignee_id IS NOT NULL AND c.due_on IS NOT NULL AND c.due_on <= $1::date`,
+          FROM correspondence c WHERE c.status NOT IN ('traite', 'classe') AND c.assignee_id IS NOT NULL AND c.due_on IS NOT NULL AND c.due_on <= $1::date`,
   },
   {
     kind: "decision",

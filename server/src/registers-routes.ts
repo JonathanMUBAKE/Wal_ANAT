@@ -115,9 +115,24 @@ export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers,
           assignee_id: id.nullable().optional(),
           due_on: date.nullable().optional(),
           instruction: z.string().max(300).optional(),
+          annotation: z.string().max(5000).optional(),
+          copies: z
+            .array(z.object({ user_id: id, purpose: z.enum(["information", "avis"]).optional() }))
+            .max(50)
+            .optional(),
         })
         .parse(req.body),
     ),
+  );
+  // Circuit du courrier : prise en charge, classement sans suite, fil des annotations, tableau de bord
+  r.get("/api/correspondence/summary", async (req) => reg.summary(req.userId, req.orgId));
+  r.post<Id>("/api/correspondence/:id/start", async (req) => reg.startMail(req.userId, req.params.id));
+  r.post<Id>("/api/correspondence/:id/file", async (req) =>
+    reg.fileMail(req.userId, req.params.id, z.object({ reason: z.string().max(2000) }).parse(req.body).reason),
+  );
+  r.get<Id>("/api/correspondence/:id/annotations", async (req) => reg.annotations(req.userId, req.params.id));
+  r.post<Id>("/api/correspondence/:id/annotations", async (req) =>
+    reg.addAnnotation(req.userId, req.params.id, z.object({ text: z.string().max(5000) }).parse(req.body).text),
   );
   r.post<Id>("/api/correspondence/:id/close", async (req) =>
     reg.closeMail(

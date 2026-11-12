@@ -180,10 +180,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </NavSection>
         )}
 
-        {(can("signature.use") || can("correspondence.view")) && (
+        {(can("signature.use") || can("correspondence.view") || currentOrg?.role !== "guest") && (
           <NavSection title="Secrétariat">
             {can("signature.use") && link("/parapheur", FileSignature, "Parapheur")}
-            {can("correspondence.view") && link("/courrier", Mail, "Courrier")}
+            {(can("correspondence.view") || currentOrg?.role !== "guest") && link("/courrier", Mail, "Courrier")}
           </NavSection>
         )}
 

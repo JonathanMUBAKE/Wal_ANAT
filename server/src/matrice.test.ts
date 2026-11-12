@@ -282,6 +282,11 @@ async function boot(kind: Kind) {
     delegation: async () =>
       (await inj(a, "POST", "/api/delegations", { to_user: "u_karim", start_on: "2026-01-01", end_on: "2026-01-02" }))
         .body,
+    mineMail: async () => {
+      const m = await X.mail();
+      await inj(a, "POST", `/api/correspondence/${m.id}/assign`, { assignee_id: a });
+      return m;
+    },
     mail: async () =>
       (
         await inj(a, "POST", "/api/correspondence", {
@@ -631,6 +636,21 @@ const TABLE = [
   R_("POST", "/api/correspondence/:id/close", async (X) => ({
     url: `/api/correspondence/${(await X.mail()).id}/close`,
     body: {},
+  })),
+  R_("GET", "/api/correspondence/summary"),
+  R_("POST", "/api/correspondence/:id/start", async (X) => ({
+    url: `/api/correspondence/${(await X.mineMail()).id}/start`,
+  })),
+  R_("POST", "/api/correspondence/:id/file", async (X) => ({
+    url: `/api/correspondence/${(await X.mail()).id}/file`,
+    body: { reason: "Sans objet" },
+  })),
+  R_("GET", "/api/correspondence/:id/annotations", async (X) => ({
+    url: `/api/correspondence/${(await X.mail()).id}/annotations`,
+  })),
+  R_("POST", "/api/correspondence/:id/annotations", async (X) => ({
+    url: `/api/correspondence/${(await X.mail()).id}/annotations`,
+    body: { text: "Annotation" },
   })),
   R_("GET", "/api/risks"),
   R_("POST", "/api/risks", () => ({ body: { title: "R", probability: 2, impact: 3 } })),

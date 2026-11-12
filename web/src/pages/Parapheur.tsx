@@ -43,7 +43,7 @@ import { RoundBtn } from "@/components/collection";
 import { Drawer } from "@/components/drawer";
 import { DossierDocuments } from "@/components/documents";
 import { Fact, Facts, RowActions } from "@/components/record";
-import { useCan, useMe, useProjects, useUnits, useUsers } from "@/lib/hooks";
+import { useCan, useMe, useMyUnits, useProjects, useUnits, useUsers } from "@/lib/hooks";
 
 type DocStatus = "draft" | "in_circuit" | "signed" | "rejected";
 interface Row {
@@ -545,7 +545,9 @@ interface MailRow {
   correspondent: string;
   received_on: string;
   due_on: string | null;
-  status: "enregistre" | "impute" | "traite";
+  status: "enregistre" | "impute" | "en_traitement" | "traite" | "classe";
+  unit_id: string | null;
+  filed_reason?: string;
   unit_name: string | null;
   assignee_name: string | null;
   instruction: string;
@@ -567,19 +569,47 @@ const INSTRUCTIONS = ["Pour traitement", "Pour avis", "Pour information"];
 const MAIL: Record<MailRow["status"], { label: string; tone: Tone }> = {
   enregistre: { label: "Enregistré", tone: "neutral" },
   impute: { label: "Imputé", tone: "info" },
+  en_traitement: { label: "En traitement", tone: "warning" },
   traite: { label: "Traité", tone: "success" },
+  classe: { label: "Classé sans suite", tone: "neutral" },
 };
+const closedMail = (m: Pick<MailRow, "status">) => m.status === "traite" || m.status === "classe";
+interface MailSummary {
+  to_assign: number;
+  in_progress: number;
+  late: number;
+  done_month: number;
+  mine: { open: number; late: number };
+}
 export function CourrierPage() {
   const can = useCan();
-  const [tab, setTab] = useState<"entrant" | "sortant">("entrant");
+  const { data: me } = useMe();
+  const { data: myUnits } = useMyUnits();
+  const heads = new Set((myUnits ?? []).filter((u) => u.role === "responsable").map((u) => u.id));
+  const registry = can("correspondence.view") || can("correspondence.manage");
+  const [tab, setTab] = useState<"mine" | "entrant" | "sortant">(registry ? "entrant" : "mine");
+  const { data: summary } = useQuery({
+    queryKey: ["correspondence", "summary"],
+    queryFn: () => api.get<MailSummary>("/api/correspondence/summary"),
+  });
   const [creating, setCreating] = useState(false);
   const [assign, setAssign] = useState<MailRow | null>(null);
   const [open, setOpen] = useState<MailRow | null>(null);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["correspondence", tab],
-    queryFn: () => api.get<MailRow[]>(`/api/correspondence?direction=${tab}`),
+    queryFn: () =>
+      api
+        .get<MailRow[]>(tab === "mine" ? "/api/correspondence" : `/api/correspondence?direction=${tab}`)
+        .then((rows) =>
+          // « Mon courrier » : ce qui m'est imputé, en copie, ou imputé à une entité que je dirige
+          tab === "mine" && registry
+            ? rows.filter((m) => m.assignee_id === me?.id || (m.unit_id && heads.has(m.unit_id)))
+            : rows,
+        ),
   });
+  const canAssign = (m: MailRow) => can("correspondence.manage") || (!!m.unit_id && heads.has(m.unit_id));
+  const canClose = (m: MailRow) => canAssign(m) || m.assignee_id === me?.id;
   const close = useMutation({
     mutationFn: (id: string) => api.post(`/api/correspondence/${id}/close`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["correspondence"] }),
@@ -591,7 +621,7 @@ export function CourrierPage() {
         Icon={Mail}
         crumbs={["Secrétariat", "Courrier"]}
         title="Courrier"
-        subtitle="Chaque courrier reçoit un numéro, une imputation et un délai. Un retard remonte automatiquement à l'entité."
+        subtitle="Le circuit du courrier : enregistrement, annotation et imputation par la direction, imputation par le chef d'entité, prise en charge, traitement ou classement motivé. Chaque étape est tracée ; un retard remonte à l'entité."
         actions={
           can("correspondence.manage") && (
             <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
@@ -604,11 +634,34 @@ export function CourrierPage() {
         value={tab}
         onChange={setTab}
         items={[
-          { id: "entrant", label: "Courrier entrant" },
-          { id: "sortant", label: "Courrier sortant" },
+          { id: "mine" as const, label: "Mon courrier", badge: summary?.mine.open },
+          ...(registry
+            ? [
+                { id: "entrant" as const, label: "Courrier entrant" },
+                { id: "sortant" as const, label: "Courrier sortant" },
+              ]
+            : []),
         ]}
       />
-      <div className="mx-auto max-w-[1240px] p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1240px] space-y-4 p-4 sm:px-8 sm:py-6">
+        {summary && (
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            {(
+              [
+                ["À imputer", summary.to_assign, false],
+                ["En cours", summary.in_progress, false],
+                ["En retard", summary.late, summary.late > 0],
+                ["Traités ce mois", summary.done_month, false],
+                ["À moi · en retard", `${summary.mine.open} · ${summary.mine.late}`, summary.mine.late > 0],
+              ] as const
+            ).map(([label, v, alert]) => (
+              <div key={label} className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm">
+                <p className="text-[12.5px] text-muted">{label}</p>
+                <p className={cn("mt-0.5 text-[24px] font-semibold tabular-nums", alert && "text-danger")}>{v}</p>
+              </div>
+            ))}
+          </div>
+        )}
         <Section>
           {isLoading ? (
             <LoadingRows />
@@ -617,7 +670,7 @@ export function CourrierPage() {
               head={[
                 "N°",
                 "Objet",
-                tab === "entrant" ? "Expéditeur" : "Destinataire",
+                tab === "sortant" ? "Destinataire" : "Correspondant",
                 "Date",
                 "Imputation",
                 "Délai",
@@ -646,11 +699,7 @@ export function CourrierPage() {
                     {m.assignee_name ?? m.unit_name ?? "—"}
                     {m.instruction && <span className="block text-[12px] text-muted">{m.instruction}</span>}
                   </Td>
-                  <Td
-                    className={
-                      m.status !== "traite" && isLate(m.due_on) ? "font-medium text-danger tabular" : "tabular"
-                    }
-                  >
+                  <Td className={!closedMail(m) && isLate(m.due_on) ? "font-medium text-danger tabular" : "tabular"}>
                     {frDate(m.due_on)}
                   </Td>
                   <Td>
@@ -658,15 +707,15 @@ export function CourrierPage() {
                   </Td>
                   <Td>
                     <RowActions label={m.reference} onView={() => setOpen(m)}>
-                      {m.status !== "traite" && can("correspondence.manage") && (
-                        <>
-                          <RoundBtn label={`Imputer ${m.reference}`} onClick={() => setAssign(m)}>
-                            <UserRoundPlus className="size-4" />
-                          </RoundBtn>
-                          <RoundBtn label={`Clôturer ${m.reference}`} onClick={() => close.mutate(m.id)}>
-                            <CheckCircle2 className="size-4" />
-                          </RoundBtn>
-                        </>
+                      {!closedMail(m) && canAssign(m) && (
+                        <RoundBtn label={`Imputer ${m.reference}`} onClick={() => setAssign(m)}>
+                          <UserRoundPlus className="size-4" />
+                        </RoundBtn>
+                      )}
+                      {!closedMail(m) && canClose(m) && (
+                        <RoundBtn label={`Clôturer ${m.reference}`} onClick={() => close.mutate(m.id)}>
+                          <CheckCircle2 className="size-4" />
+                        </RoundBtn>
                       )}
                     </RowActions>
                   </Td>
@@ -674,18 +723,26 @@ export function CourrierPage() {
               ))}
             </Table>
           ) : (
-            <Empty icon={<Mail className="size-6" />} title="Registre vide">
-              Enregistrez le premier courrier.
+            <Empty
+              icon={<Mail className="size-6" />}
+              title={tab === "mine" ? "Aucun courrier pour vous" : "Registre vide"}
+            >
+              {tab === "mine"
+                ? "Le courrier qui vous est imputé, ou en copie, apparaît ici."
+                : "Enregistrez le premier courrier."}
             </Empty>
           )}
         </Section>
       </div>
-      {creating && <NewMail direction={tab} onClose={() => setCreating(false)} />}
+      {creating && <NewMail direction={tab === "sortant" ? "sortant" : "entrant"} onClose={() => setCreating(false)} />}
       {assign && <Assign m={assign} onClose={() => setAssign(null)} />}
       {open && (
         <MailDialog
           m={open}
           canManage={can("correspondence.manage")}
+          canAssign={canAssign(open)}
+          canClose={canClose(open)}
+          meId={me?.id}
           onAssign={() => {
             setAssign(open);
             setOpen(null);
@@ -893,7 +950,10 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
     assignee_id: "",
     due_on: m.due_on ?? "",
     instruction: m.instruction ?? "",
+    annotation: "",
   });
+  const [copies, setCopies] = useState<{ user_id: string; purpose: "information" | "avis" }[]>([]);
+  const [copy, setCopy] = useState({ user_id: "", purpose: "information" as "information" | "avis" });
   const save = useMutation({
     mutationFn: () =>
       api.post(`/api/correspondence/${m.id}/assign`, {
@@ -901,9 +961,12 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
         assignee_id: f.assignee_id || null,
         due_on: f.due_on || null,
         instruction: f.instruction || undefined,
+        annotation: f.annotation.trim() || undefined,
+        copies,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["correspondence"] });
+      qc.invalidateQueries({ queryKey: ["mail-annotations", m.id] });
       onClose();
     },
     onError: fail,
@@ -920,7 +983,7 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
           <Button onClick={onClose}>Annuler</Button>
           <Button
             variant="primary"
-            disabled={!f.unit_id && !f.assignee_id}
+            disabled={!f.unit_id && !f.assignee_id && !copies.length && !f.annotation.trim()}
             loading={save.isPending}
             onClick={() => save.mutate()}
           >
@@ -967,6 +1030,63 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
             </Select>
           )}
         </Field>
+        <Field label="Annotation" hint="Consigne de la direction ou du chef d'entité, inscrite au fil du courrier.">
+          {(a) => (
+            <textarea
+              {...a}
+              rows={3}
+              value={f.annotation}
+              onChange={(e) => setF({ ...f, annotation: e.target.value })}
+              className="field-ring w-full rounded-[10px] border border-field bg-panel px-3 py-2 text-[13.5px] outline-none"
+            />
+          )}
+        </Field>
+        <div>
+          <p className="mb-1.5 text-[12.5px] font-medium text-muted">Copies</p>
+          {copies.length > 0 && (
+            <ul className="mb-2 flex flex-wrap gap-1.5">
+              {copies.map((c) => (
+                <li key={c.user_id} className="flex items-center gap-1 rounded-full bg-hover px-2.5 py-0.5 text-[12px]">
+                  {users?.find((u) => u.id === c.user_id)?.name} ·{" "}
+                  {c.purpose === "avis" ? "pour avis" : "pour information"}
+                  <button
+                    type="button"
+                    aria-label="Retirer la copie"
+                    className="text-muted hover:text-fg"
+                    onClick={() => setCopies((x) => x.filter((y) => y.user_id !== c.user_id))}
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex gap-2">
+            <PeopleSelect
+              people={users?.filter((u) => !copies.some((c) => c.user_id === u.id))}
+              value={copy.user_id}
+              onChange={(v) => setCopy({ ...copy, user_id: v })}
+            />
+            <Select
+              aria-label="Objet de la copie"
+              value={copy.purpose}
+              onChange={(e) => setCopy({ ...copy, purpose: e.target.value as "information" | "avis" })}
+              className="w-[150px]"
+            >
+              <option value="information">Pour information</option>
+              <option value="avis">Pour avis</option>
+            </Select>
+            <Button
+              disabled={!copy.user_id}
+              onClick={() => {
+                setCopies((x) => [...x, copy]);
+                setCopy({ user_id: "", purpose: "information" });
+              }}
+            >
+              Ajouter
+            </Button>
+          </div>
+        </div>
       </div>
     </Dialog>
   );
@@ -976,14 +1096,31 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
 function MailDialog({
   m,
   canManage,
+  canAssign,
+  canClose,
+  meId,
   onAssign,
   onClose,
 }: {
   m: MailRow;
   canManage: boolean;
+  canAssign: boolean;
+  canClose: boolean;
+  meId?: string;
   onAssign: () => void;
   onClose: () => void;
 }) {
+  const qc = useQueryClient();
+  const [filing, setFiling] = useState(false);
+  const [reason, setReason] = useState("");
+  const act = (path: string, body: unknown, ok: string) =>
+    api.post(`/api/correspondence/${m.id}/${path}`, body).then(() => {
+      toast.success(ok);
+      qc.invalidateQueries({ queryKey: ["correspondence"] });
+      qc.invalidateQueries({ queryKey: ["mail-annotations", m.id] });
+      onClose();
+    }, fail);
+  const open = !closedMail(m);
   return (
     <Drawer
       open
@@ -992,9 +1129,24 @@ function MailDialog({
       subtitle={`${m.reference} · courrier ${m.direction}${m.confidential ? " · confidentiel" : ""}`}
       footer={
         <>
-          {canManage && m.status !== "traite" && (
+          {open && canManage && <Button onClick={() => setFiling(true)}>Classer sans suite</Button>}
+          {open && canAssign && (
             <Button icon={<UserRoundPlus className="size-4" />} onClick={onAssign}>
               Imputer
+            </Button>
+          )}
+          {m.status === "impute" && m.assignee_id === meId && (
+            <Button variant="primary" onClick={() => act("start", {}, "Courrier pris en charge")}>
+              Prendre en charge
+            </Button>
+          )}
+          {open && canClose && m.status !== "impute" && (
+            <Button
+              variant={m.assignee_id === meId ? "primary" : undefined}
+              icon={<CheckCircle2 className="size-4" />}
+              onClick={() => act("close", {}, "Courrier traité")}
+            >
+              Clôturer
             </Button>
           )}
           <Button onClick={onClose}>Fermer</Button>
@@ -1036,8 +1188,98 @@ function MailDialog({
                 : null}
           </Fact>
         </Facts>
+        {m.status === "classe" && m.filed_reason && (
+          <p className="rounded-[10px] bg-hover px-3 py-2 text-[13px]">Classé sans suite : {m.filed_reason}</p>
+        )}
         <DossierDocuments owner="mail" ownerId={m.id} title="Pièce numérisée et documents" />
+        <MailThread id={m.id} />
       </div>
+      {filing && (
+        <Dialog
+          open
+          onOpenChange={() => setFiling(false)}
+          title="Classer sans suite"
+          description="Le motif est inscrit au fil du courrier et au journal ; le courrier sort des délais."
+          footer={
+            <>
+              <Button onClick={() => setFiling(false)}>Annuler</Button>
+              <Button
+                variant="primary"
+                disabled={!reason.trim()}
+                onClick={() => act("file", { reason }, "Courrier classé sans suite")}
+              >
+                Classer
+              </Button>
+            </>
+          }
+        >
+          <Field label="Motif" required>
+            {(a) => <Input {...a} value={reason} onChange={(e) => setReason(e.target.value)} autoFocus />}
+          </Field>
+        </Dialog>
+      )}
     </Drawer>
+  );
+}
+
+const THREAD_LABEL: Record<string, string> = {
+  enregistrement: "Enregistrement",
+  imputation: "Imputation",
+  annotation: "Annotation",
+  copie: "Copie",
+  prise_en_charge: "Prise en charge",
+  note: "Note",
+  cloture: "Clôture",
+  classement: "Classement",
+};
+/** Le fil du courrier : chaque étape du circuit et chaque annotation, dans l'ordre. */
+function MailThread({ id }: { id: string }) {
+  const qc = useQueryClient();
+  const [text, setText] = useState("");
+  const { data } = useQuery({
+    queryKey: ["mail-annotations", id],
+    queryFn: () =>
+      api.get<{ id: string; kind: string; text: string; created_at: string; author_name: string | null }[]>(
+        `/api/correspondence/${id}/annotations`,
+      ),
+  });
+  const add = () =>
+    api.post(`/api/correspondence/${id}/annotations`, { text }).then(() => {
+      setText("");
+      toast.success("Annotation ajoutée au fil");
+      qc.invalidateQueries({ queryKey: ["mail-annotations", id] });
+    }, fail);
+  return (
+    <section>
+      <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted">Circuit et annotations</h3>
+      <ol className="relative space-y-3 border-l border-line pl-4">
+        {(data ?? []).map((a) => (
+          <li key={a.id} className="relative">
+            <span
+              className={cn(
+                "absolute -left-[21px] top-1.5 size-2.5 rounded-full border-2 border-panel",
+                a.kind === "annotation" ? "bg-primary" : a.kind === "note" ? "bg-ai" : "bg-line-strong",
+              )}
+            />
+            <p className="text-[12px] text-muted">
+              <span className="font-medium text-fg">{THREAD_LABEL[a.kind] ?? a.kind}</span> · {a.author_name ?? "—"} ·{" "}
+              {new Date(a.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
+            </p>
+            {a.text && <p className="mt-0.5 whitespace-pre-wrap text-[13.5px]">{a.text}</p>}
+          </li>
+        ))}
+      </ol>
+      <div className="mt-3 flex gap-2">
+        <Input
+          aria-label="Nouvelle annotation"
+          placeholder="Ajouter une annotation ou une note…"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <Button disabled={!text.trim()} onClick={add}>
+          Annoter
+        </Button>
+      </div>
+    </section>
   );
 }

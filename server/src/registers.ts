@@ -1,6 +1,6 @@
 import { uid } from "./db.js";
 import { linkContact, linkPartner } from "./partner-links.js";
-import { HttpError, badRequest, isRealDate, notFound, type Services, localDate } from "./services.js";
+import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services, localDate } from "./services.js";
 
 interface Mail {
   id: string;
@@ -15,7 +15,9 @@ interface Mail {
   unit_id: string | null;
   assignee_id: string | null;
   due_on: string | null;
-  status: "enregistre" | "impute" | "traite";
+  status: "enregistre" | "impute" | "en_traitement" | "traite" | "classe";
+  started_at?: string | null;
+  filed_reason?: string;
   response_ref: string;
   confidential: boolean;
   escalated: boolean;
@@ -71,12 +73,36 @@ export class Registers {
     if (!m) throw notFound("Courrier introuvable");
     return m;
   }
+  /** Ce que la personne est pour ce courrier : registre, gestionnaire, imputée, chef de l'entité imputée, en copie. */
+  private async relation(actorId: string, m: Mail) {
+    const perms = await this.svc.permissionsOf(actorId, m.org_id);
+    const manager = perms.includes("correspondence.manage");
+    const registry = manager || perms.includes("correspondence.view");
+    const assignee = m.assignee_id === actorId;
+    const head = !!m.unit_id && (await this.heads(actorId, m.unit_id));
+    const copy = !!(await this.svc.db.one(
+      "SELECT 1 FROM correspondence_copies WHERE correspondence_id = $1 AND user_id = $2",
+      [m.id, actorId],
+    ));
+    return { manager, registry, assignee, head, copy };
+  }
+  /** Chef de cette entité, ou d'une entité au-dessus. */
+  private async heads(actorId: string, unitId: string) {
+    return !!(await this.svc.db.one(
+      `WITH RECURSIVE up(id, manager_id, parent_id) AS (
+         SELECT id, manager_id, parent_id FROM org_units WHERE id = $1
+         UNION SELECT p.id, p.manager_id, p.parent_id FROM org_units p JOIN up ON p.id = up.parent_id
+       ) SELECT 1 FROM up WHERE manager_id = $2`,
+      [unitId, actorId],
+    ));
+  }
   private async mailReadable(actorId: string, id: string) {
     const m = await this.mail(id);
-    await this.svc.requirePerm(actorId, m.org_id, "correspondence.view");
-    const manager = (await this.svc.permissionsOf(actorId, m.org_id)).includes("correspondence.manage");
-    if (m.confidential && !manager && m.assignee_id !== actorId) throw notFound("Courrier introuvable");
-    return { m, manager };
+    const rel = await this.relation(actorId, m);
+    const concerned = rel.assignee || rel.head || rel.copy;
+    if (!concerned && !rel.registry) throw notFound("Courrier introuvable");
+    if (m.confidential && !rel.manager && !concerned) throw notFound("Courrier introuvable");
+    return { m, manager: rel.manager, rel };
   }
   /** Lecture d'un courrier par un autre module (documents du dossier) : mêmes droits que le registre. */
   access(actorId: string, id: string) {
@@ -87,8 +113,10 @@ export class Registers {
     orgId: string,
     f: { direction?: Mail["direction"]; project_id?: string; activity_id?: string; partner_id?: string },
   ) {
-    await this.svc.requirePerm(actorId, orgId, "correspondence.view");
-    const manager = (await this.svc.permissionsOf(actorId, orgId)).includes("correspondence.manage");
+    await this.svc.requireOrg(actorId, orgId, "member");
+    const perms = await this.svc.permissionsOf(actorId, orgId);
+    const manager = perms.includes("correspondence.manage");
+    const registry = manager || perms.includes("correspondence.view");
     const rows = await this.svc.db.query<
       Mail & {
         unit_name: string | null;
@@ -118,11 +146,26 @@ export class Registers {
        LEFT JOIN partner_contacts ct ON ct.id = c.contact_id
        LEFT JOIN correspondence rt ON rt.id = c.reply_to_id
        LEFT JOIN LATERAL (SELECT r2.direction, r2.year, r2.seq FROM correspondence r2 WHERE r2.reply_to_id = c.id ORDER BY r2.created_at LIMIT 1) rsp ON TRUE
-       WHERE c.org_id = $1 AND (NOT c.confidential OR $2 OR c.assignee_id = $3) AND ($4::text IS NULL OR c.direction = $4)
+       WHERE c.org_id = $1
+         AND (($8 AND (NOT c.confidential OR $2)) OR c.assignee_id = $3
+              OR EXISTS (SELECT 1 FROM correspondence_copies cc WHERE cc.correspondence_id = c.id AND cc.user_id = $3)
+              OR c.unit_id IN (WITH RECURSIVE down(id) AS (
+                   SELECT id FROM org_units WHERE manager_id = $3 AND org_id = $1
+                   UNION SELECT u.id FROM org_units u JOIN down ON u.parent_id = down.id) SELECT id FROM down))
+         AND ($4::text IS NULL OR c.direction = $4)
          AND ($5::text IS NULL OR c.project_id = $5) AND ($6::text IS NULL OR c.activity_id = $6)
          AND ($7::text IS NULL OR c.partner_id = $7)
        ORDER BY c.received_on DESC, c.seq DESC`,
-      [orgId, manager, actorId, f.direction ?? null, f.project_id ?? null, f.activity_id ?? null, f.partner_id ?? null],
+      [
+        orgId,
+        manager,
+        actorId,
+        f.direction ?? null,
+        f.project_id ?? null,
+        f.activity_id ?? null,
+        f.partner_id ?? null,
+        registry,
+      ],
     );
     return rows.map(({ rt_direction, rt_year, rt_seq, rsp_direction, rsp_year, rsp_seq, ...m }) => ({
       ...m,
@@ -209,6 +252,7 @@ export class Registers {
       }
     }
     await this.svc.log(actorId, "correspondence.registered", { orgId, data: { id, reply_to: i.reply_to_id ?? null } });
+    await this.annotate({ id, org_id: orgId }, actorId, "enregistrement", "Enregistré au bureau d'ordre");
     const m = await this.mail(id);
     // La réponse clôt l'entrant encore ouvert ; une clôture déjà faite n'est jamais écrasée
     if (replied) {
@@ -227,11 +271,35 @@ export class Registers {
   async assignMail(
     actorId: string,
     id: string,
-    i: { unit_id?: string | null; assignee_id?: string | null; due_on?: string | null; instruction?: string },
+    i: {
+      unit_id?: string | null;
+      assignee_id?: string | null;
+      due_on?: string | null;
+      instruction?: string;
+      annotation?: string;
+      copies?: { user_id: string; purpose?: "information" | "avis" }[];
+    },
   ) {
     const m = await this.mail(id);
-    await this.svc.requirePerm(actorId, m.org_id, "correspondence.manage");
-    if (m.status === "traite") throw new HttpError(409, "Ce courrier est clôturé");
+    const rel = await this.relation(actorId, m);
+    if (!rel.manager) {
+      // Imputation en cascade : le chef de l'entité imputée confie le courrier à un agent de son entité
+      if (!rel.head) {
+        if (rel.assignee || rel.copy) throw forbidden("Seuls la direction et le chef de l'entité imputent ce courrier");
+        await this.svc.requirePerm(actorId, m.org_id, "correspondence.manage");
+      }
+      if (i.unit_id && !(await this.heads(actorId, i.unit_id)))
+        throw badRequest("Vous imputez seulement à une entité que vous dirigez");
+      if (i.assignee_id) {
+        const inUnit = await this.svc.db.one<{ unit_id: string }>(
+          "SELECT unit_id FROM org_members WHERE org_id = $1 AND user_id = $2 AND unit_id IS NOT NULL",
+          [m.org_id, i.assignee_id],
+        );
+        if (!inUnit || !(await this.heads(actorId, inUnit.unit_id)))
+          throw badRequest("Vous imputez seulement à un agent de votre entité");
+      }
+    }
+    if (m.status === "traite" || m.status === "classe") throw new HttpError(409, "Ce courrier est clôturé");
     if (
       i.unit_id &&
       !(await this.svc.db.one("SELECT 1 FROM org_units WHERE org_id = $1 AND id = $2", [m.org_id, i.unit_id]))
@@ -247,33 +315,190 @@ export class Registers {
         instruction = CASE WHEN $5::text IS NULL THEN instruction ELSE $5 END, status = 'impute', escalated = FALSE WHERE id = $4`,
       [i.unit_id ?? null, i.assignee_id ?? null, i.due_on ?? null, id, i.instruction?.trim() ?? null],
     );
-    if (i.assignee_id)
-      await this.svc.notify(i.assignee_id, m.org_id, {
-        kind: "correspondence.assigned",
-        title: `Courrier imputé : ${m.subject}`,
-        body: `${mailRef(m)}${i.instruction?.trim() ? ` · ${i.instruction.trim()}` : ""}`,
+    const instruction = i.instruction?.trim() || m.instruction;
+    const ref = mailRef(m);
+    if (i.unit_id && i.unit_id !== m.unit_id) {
+      const unit = await this.svc.db.one<{ name: string; manager_id: string | null }>(
+        "SELECT name, manager_id FROM org_units WHERE id = $1",
+        [i.unit_id],
+      );
+      await this.annotate(
+        m,
+        actorId,
+        "imputation",
+        `Imputé à ${unit?.name ?? "l'entité"}${instruction ? ` · ${instruction}` : ""}`,
+        {
+          unit_id: i.unit_id,
+        },
+      );
+      if (unit?.manager_id && unit.manager_id !== actorId && unit.manager_id !== i.assignee_id)
+        await this.svc.notify(unit.manager_id, m.org_id, {
+          kind: "correspondence.unit",
+          title: `Courrier imputé à ${unit.name} : ${m.subject}`,
+          body: `${ref}${instruction ? ` · ${instruction}` : ""}${i.due_on ? ` · réponse attendue le ${i.due_on.split("-").reverse().join("/")}` : ""}. Imputez-le à un agent de votre entité.`,
+          actor_id: actorId,
+          link: "/courrier",
+        });
+    }
+    if (i.assignee_id && i.assignee_id !== m.assignee_id) {
+      const who = await this.svc.user(i.assignee_id);
+      await this.annotate(m, actorId, "imputation", `Imputé à ${who.name}${instruction ? ` · ${instruction}` : ""}`, {
+        user_id: i.assignee_id,
       });
-    await this.svc.log(actorId, "correspondence.assigned", { orgId: m.org_id, data: { id } });
+      if (i.assignee_id !== actorId)
+        await this.svc.notify(i.assignee_id, m.org_id, {
+          kind: "correspondence.assigned",
+          title: `Courrier imputé : ${m.subject}`,
+          body: `${ref}${instruction ? ` · ${instruction}` : ""}`,
+          actor_id: actorId,
+          link: "/courrier",
+        });
+    }
+    if (i.annotation?.trim()) await this.annotate(m, actorId, "annotation", i.annotation.trim());
+    for (const c of i.copies ?? []) {
+      if (!(await this.svc.orgRole(c.user_id, m.org_id))) throw badRequest("Une copie va à un membre de l'institution");
+      const added = await this.svc.db.query(
+        "INSERT INTO correspondence_copies (org_id, correspondence_id, user_id, purpose, created_by) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING RETURNING user_id",
+        [m.org_id, m.id, c.user_id, c.purpose ?? "information", actorId],
+      );
+      if (!added.length) continue;
+      const who = await this.svc.user(c.user_id);
+      await this.annotate(
+        m,
+        actorId,
+        "copie",
+        `Copie ${c.purpose === "avis" ? "pour avis" : "pour information"} à ${who.name}`,
+        {
+          user_id: c.user_id,
+        },
+      );
+      await this.svc.notify(c.user_id, m.org_id, {
+        kind: "correspondence.copy",
+        title: `Courrier en copie ${c.purpose === "avis" ? "pour avis" : "pour information"} : ${m.subject}`,
+        body: ref,
+        actor_id: actorId,
+        link: "/courrier",
+      });
+    }
+    await this.svc.log(actorId, "correspondence.assigned", { orgId: m.org_id, data: { id, reference: ref } });
     const r = await this.mail(id);
     return { ...r, reference: mailRef(r) };
   }
   async closeMail(actorId: string, id: string, i: { response_ref?: string }) {
-    const { m, manager } = await this.mailReadable(actorId, id);
-    if (!manager && m.assignee_id !== actorId) await this.svc.requirePerm(actorId, m.org_id, "correspondence.manage");
+    const { m, manager, rel } = await this.mailReadable(actorId, id);
+    if (!manager && !rel.assignee && !rel.head)
+      throw forbidden("Seuls l'agent imputé, son chef et la direction clôturent ce courrier");
+    if (m.status === "classe") throw new HttpError(409, "Ce courrier est classé sans suite");
     // Une clôture est un fait du registre : elle ne s'écrase pas
     const closed = await this.svc.db.one(
       "UPDATE correspondence SET status = 'traite', response_ref = $1, closed_at = now() WHERE id = $2 AND status <> 'traite' RETURNING id",
       [i.response_ref ?? "", id],
     );
     if (!closed) throw new HttpError(409, "Ce courrier est déjà traité");
+    await this.annotate(m, actorId, "cloture", i.response_ref ? `Traité · réponse ${i.response_ref}` : "Traité");
     await this.svc.log(actorId, "correspondence.closed", { orgId: m.org_id, data: { id } });
     const r = await this.mail(id);
     return { ...r, reference: mailRef(r) };
   }
+  private async annotate(
+    m: Pick<Mail, "id" | "org_id">,
+    authorId: string,
+    kind: string,
+    text: string,
+    to: { unit_id?: string; user_id?: string } = {},
+  ) {
+    await this.svc.db.query(
+      "INSERT INTO correspondence_annotations (id, org_id, correspondence_id, author_id, kind, text, unit_id, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+      [uid("cra"), m.org_id, m.id, authorId, kind, text, to.unit_id ?? null, to.user_id ?? null],
+    );
+  }
+
+  /** L'agent imputé prend le courrier en charge : il passe « en traitement ». */
+  async startMail(actorId: string, id: string) {
+    const { m, rel } = await this.mailReadable(actorId, id);
+    if (!rel.assignee && !rel.manager) throw forbidden("Seul l'agent imputé prend ce courrier en charge");
+    const r = await this.svc.db.one(
+      "UPDATE correspondence SET status = 'en_traitement', started_at = now() WHERE id = $1 AND status = 'impute' RETURNING id",
+      [id],
+    );
+    if (!r) throw new HttpError(409, "Seul un courrier imputé se prend en charge");
+    await this.annotate(m, actorId, "prise_en_charge", "Pris en charge");
+    await this.svc.log(actorId, "correspondence.started", { orgId: m.org_id, data: { id, reference: mailRef(m) } });
+    const after = await this.mail(id);
+    return { ...after, reference: mailRef(after) };
+  }
+
+  /** Classer sans suite : un acte de la direction, toujours motivé. */
+  async fileMail(actorId: string, id: string, reason: string) {
+    const { m, manager } = await this.mailReadable(actorId, id);
+    if (!manager) throw forbidden("Seule la direction classe un courrier sans suite");
+    if (!reason.trim()) throw badRequest("Le motif du classement est obligatoire");
+    const r = await this.svc.db.one(
+      "UPDATE correspondence SET status = 'classe', filed_reason = $1, closed_at = now() WHERE id = $2 AND status NOT IN ('traite', 'classe') RETURNING id",
+      [reason.trim(), id],
+    );
+    if (!r) throw new HttpError(409, "Ce courrier est déjà clôturé");
+    await this.annotate(m, actorId, "classement", `Classé sans suite · ${reason.trim()}`);
+    await this.svc.log(actorId, "correspondence.filed", { orgId: m.org_id, data: { id, reference: mailRef(m) } });
+    const after = await this.mail(id);
+    return { ...after, reference: mailRef(after) };
+  }
+
+  /** Annoter : la direction, le chef d'entité, l'agent imputé ou une personne en copie (pour avis). */
+  async addAnnotation(actorId: string, id: string, text: string) {
+    const { m, rel } = await this.mailReadable(actorId, id);
+    if (!rel.manager && !rel.head && !rel.assignee && !rel.copy)
+      throw forbidden("Seules les personnes concernées par ce courrier l'annotent");
+    if (!text.trim()) throw badRequest("L'annotation est vide");
+    const kind = rel.manager || rel.head ? "annotation" : "note";
+    await this.annotate(m, actorId, kind, text.trim());
+    // L'agent imputé est prévenu d'une annotation de sa hiérarchie
+    if (kind === "annotation" && m.assignee_id && m.assignee_id !== actorId)
+      await this.svc.notify(m.assignee_id, m.org_id, {
+        kind: "correspondence.annotation",
+        title: `Nouvelle annotation sur « ${m.subject} »`,
+        body: text.trim().slice(0, 300),
+        actor_id: actorId,
+        link: "/courrier",
+      });
+    await this.svc.log(actorId, "correspondence.annotated", { orgId: m.org_id, data: { id, reference: mailRef(m) } });
+    return { ok: true };
+  }
+  async annotations(actorId: string, id: string) {
+    await this.mailReadable(actorId, id);
+    return this.svc.db.query(
+      `SELECT a.id, a.kind, a.text, a.created_at, a.author_id, u.name AS author_name, a.unit_id, ou.name AS unit_name,
+              a.user_id, t.name AS user_name
+         FROM correspondence_annotations a LEFT JOIN users u ON u.id = a.author_id
+         LEFT JOIN org_units ou ON ou.id = a.unit_id LEFT JOIN users t ON t.id = a.user_id
+        WHERE a.correspondence_id = $1 ORDER BY a.created_at, a.id`,
+      [id],
+    );
+  }
+
+  /** Tableau de bord du courrier : ce qui attend, au registre et pour soi. */
+  async summary(actorId: string, orgId: string) {
+    const rows = (await this.listMail(actorId, orgId, {})) as (Mail & { id: string })[];
+    const now = localDate();
+    const open = (m: Mail) => !["traite", "classe"].includes(m.status);
+    const late = (m: Mail) => open(m) && !!m.due_on && String(m.due_on).slice(0, 10) < now;
+    const month = now.slice(0, 7);
+    const mine = rows.filter((m) => m.assignee_id === actorId);
+    return {
+      to_assign: rows.filter((m) => m.status === "enregistre" && m.direction === "entrant").length,
+      in_progress: rows.filter((m) => m.status === "impute" || m.status === "en_traitement").length,
+      late: rows.filter(late).length,
+      done_month: rows.filter(
+        (m) => m.status === "traite" && String((m as { closed_at?: string }).closed_at ?? "").slice(0, 7) === month,
+      ).length,
+      mine: { open: mine.filter(open).length, late: mine.filter(late).length },
+    };
+  }
+
   /** Un courrier en retard remonte une seule fois au responsable de l'entité. */
   async sweep(now = day()) {
     const late = await this.svc.db.query<Mail & { manager_id: string | null; created_by: string | null }>(
-      "SELECT c.*, ou.manager_id FROM correspondence c LEFT JOIN org_units ou ON ou.id = c.unit_id WHERE c.status <> 'traite' AND NOT c.escalated AND c.due_on < $1::date",
+      "SELECT c.*, ou.manager_id FROM correspondence c LEFT JOIN org_units ou ON ou.id = c.unit_id WHERE c.status NOT IN ('traite', 'classe') AND NOT c.escalated AND c.due_on < $1::date",
       [now],
     );
     for (const m of late) {

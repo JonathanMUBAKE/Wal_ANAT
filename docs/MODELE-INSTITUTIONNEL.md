@@ -166,7 +166,7 @@ manques identifiés) · **Partiel** (une partie du cycle manque) · **À constru
 | Mon entité, tâches | **Complet** | Registre hors projet, vues Asana, confier / noter, suivi des agents, tableau de bord, réunions de l'entité | Tâches récurrentes ; modèle de tâches |
 | Projets (dossier complet) | **Complet** | Équipe, tâches, documents, livrables, contrats, réunions, risques, avancement remonté au plan | Budget détaillé et décaissements (volet finance) |
 | Activités | **Utilisable** | Commission, conférence, rendez-vous, interne ; suites à donner ; documents | Mandat et compte rendu de mission formalisés |
-| Plans de travail | **Utilisable** | Préparer, soumettre, approuver, réviser ; avancement par les dossiers | Grille CRUD homogène ; revue trimestrielle |
+| Plans de travail | **Complet** | Préparer, soumettre, approuver, réviser ; avancement par les dossiers ; revue trimestrielle (constaté face à l'attendu, écarts expliqués, validation par la DG, revue figée) | Grille CRUD homogène |
 | Réunions | **Complet** | À venir / déjà tenue, convocation, réponses, ordre du jour et pièces, compte rendu, validation, décisions et recommandations, réunions d'entité | Convocation en lecture (carte encore en champs) |
 | Décisions | **Utilisable** | Registre numéroté, exécution, remplacement, rappels | Grille CRUD homogène (actions en ligne) |
 | Courrier | **Complet** | Registre, imputation en cascade, annotations, copies, prise en charge, clôture, classement motivé, réponse liée, délais, tableau de bord, Mon courrier | Modèles de réponse ; accusé de réception automatique |

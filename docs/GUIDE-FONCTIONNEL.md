@@ -289,6 +289,17 @@ remonte au chef de l'entité.
 indicateurs ; **soumis** par l'entité, **approuvé** (ou renvoyé) par une autre personne ; révisable de façon tracée.
 Les projets et activités qui réalisent une activité du plan **remontent leur avancement** dans le plan.
 
+**Revue trimestrielle** (fiche d'un plan approuvé, « Revues trimestrielles ») : une revue par trimestre, à partir
+du début du trimestre.
+1. **Préparer** (service du plan ou chef de l'entité) : la revue relève pour chaque activité l'**avancement
+   constaté** et l'**attendu** à la fin du trimestre (ou au jour même s'il court encore), et **propose une
+   appréciation** — atteint, en bonne voie, en retard, compromis — que l'entité corrige.
+2. **Expliquer** : toute activité en retard ou compromise exige **la cause de l'écart et une mesure corrective** ;
+   la **synthèse** du trimestre est obligatoire ; difficultés et appuis demandés complètent.
+3. **Soumettre** : la direction générale (droit d'approuver les plans) est prévenue.
+4. **Valider** ou **retourner** avec un motif — jamais par celui qui a soumis. L'entité est prévenue ; une revue
+   retournée se corrige et se soumet à nouveau. **Validée, elle est figée** : c'est la trace de ce qui a été dit.
+
 ### 5.10 Documents
 
 Partout où un dossier en a besoin (partenaire, accord, projet, courrier, activité, réunion), on joint des documents

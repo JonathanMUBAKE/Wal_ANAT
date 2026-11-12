@@ -25,6 +25,7 @@ import {
 } from "@/components/gov";
 import { api } from "@/lib/api";
 import { useCan, useUnits, useUsers } from "@/lib/hooks";
+import { QuarterReviews, type ReviewRef } from "@/components/plan-reviews";
 
 type PlanStatus = "draft" | "submitted" | "approved";
 interface PlanRow {
@@ -69,7 +70,8 @@ interface Plan extends PlanRow {
     reason: string;
     author_name: string | null;
   }[];
-  can: { edit: boolean; submit: boolean; approve: boolean; revise: boolean };
+  reviews: ReviewRef[];
+  can: { edit: boolean; submit: boolean; approve: boolean; revise: boolean; review: boolean };
 }
 const STATE: Record<PlanStatus, { label: string; tone: Tone }> = {
   draft: { label: "En préparation", tone: "neutral" },
@@ -391,6 +393,9 @@ export function PlanPage() {
             </Empty>
           )}
         </Section>
+        {p.status === "approved" && (
+          <QuarterReviews planId={p.id} year={p.year} reviews={p.reviews} canOpen={p.can.review} />
+        )}
         {!!p.revisions.length && (
           <Section title="Révisions tracées">
             <Table head={["Élément", "Avant", "Après", "Motif", "Décidé par"]}>

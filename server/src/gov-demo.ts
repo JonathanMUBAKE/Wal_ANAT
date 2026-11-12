@@ -268,6 +268,50 @@ export async function seedGovDemo(svc: Services) {
   const approved = await plans.approve("u_karim", plan.id);
   await plans.updateProgress("u_karim", approved.activities[0].id, { progress: 55, budget_spent: 21000 });
   await plans.updateProgress("u_karim", approved.activities[1].id, { progress: 80, actual_value: 5 });
+  // Plans des directions (fictifs) : de quoi lire, sur le tableau de bord DG, le réalisé face à l'attendu à date
+  for (const [unitName, owner, rows] of [
+    [
+      "Direction Produit & Technologie",
+      "u_karim",
+      [
+        ["Refonte de la plateforme de suivi", -200, 60, 45],
+        ["Ouverture des données géographiques", -150, 20, 85],
+        ["Audit de sécurité des applications", -90, -5, 70],
+      ],
+    ],
+    [
+      "Direction Marketing",
+      "u_hugo",
+      [
+        ["Campagne d'information des collectivités", -120, 40, 60],
+        ["Enquête de satisfaction des usagers", -60, 90, 30],
+      ],
+    ],
+  ] as const) {
+    const unit = await svc.db.one<{ id: string }>("SELECT id FROM org_units WHERE org_id = $1 AND name = $2", [
+      org,
+      unitName,
+    ]);
+    if (!unit) continue;
+    const dp = await plans.create(me, org, { unit_id: unit.id, year, title: `Plan de travail ${year} (exemple)` });
+    for (const [title, start, end] of rows)
+      await plans.addActivity(me, dp.id, {
+        title,
+        responsible_id: owner,
+        start_on: day(start) < `${year}-01-01` ? `${year}-01-01` : day(start),
+        end_on: day(end) > `${year}-12-31` ? `${year}-12-31` : day(end),
+        objective: "Objectif fixé au plan (exemple fictif)",
+        target_value: 1,
+        unit_label: "livrable",
+      });
+    await plans.submit(me, dp.id);
+    const ok = await plans.approve("u_karim", dp.id);
+    // L'approbation range les activités par échéance : chacune retrouve son avancement par son intitulé
+    for (const [title, , , progress] of rows) {
+      const a = ok.activities.find((x: { title: string }) => x.title === title);
+      if (a) await plans.updateProgress(me, a.id, { progress });
+    }
+  }
 
   // Le projet est le dossier : la mission du consultant et ses livrables y sont rangés (docs/PARCOURS-METIER.md)
   const schema = await svc.createProject(me, org, {

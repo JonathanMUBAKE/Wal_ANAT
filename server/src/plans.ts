@@ -1,5 +1,6 @@
 import { uid } from "./db.js";
 import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
+import { PlanReviews } from "./plan-reviews.js";
 
 export interface Plan {
   id: string;
@@ -197,11 +198,13 @@ export class Plans {
       unit_name: unit?.name ?? "",
       activities,
       revisions,
+      reviews: await new PlanReviews(this.svc).ofPlan(id),
       can: {
         edit: p.status === "draft" && perms.includes("plans.manage"),
         submit: p.status === "draft" && perms.includes("plans.manage"),
         approve: p.status === "submitted" && perms.includes("plans.approve") && p.submitted_by !== actorId,
         revise: p.status === "approved" && perms.includes("plans.approve"),
+        review: p.status === "approved" && (await new PlanReviews(this.svc).canPrepare(actorId, id)),
       },
     };
   }

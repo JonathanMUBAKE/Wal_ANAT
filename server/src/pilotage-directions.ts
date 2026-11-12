@@ -122,7 +122,7 @@ export class Directions {
     // Avancement effectif d'une activité du plan : celui des dossiers qui la réalisent, sinon celui déclaré
     const plan = await db.query<PlanRow>(
       `SELECT a.id, p.unit_id, a.title, COALESCE(eff.progress, a.progress)::int AS progress,
-              to_char(a.start_on, 'YYYY-MM-DD') AS start_on, to_char(a.end_on, 'YYYY-MM-DD') AS end_on,
+              to_char(COALESCE(a.start_on, make_date(p.year, 1, 1)), 'YYYY-MM-DD') AS start_on, to_char(a.end_on, 'YYYY-MM-DD') AS end_on,
               r.name AS responsible_name
          FROM plan_activities a JOIN work_plans p ON p.id = a.plan_id LEFT JOIN users r ON r.id = a.responsible_id
          LEFT JOIN LATERAL (

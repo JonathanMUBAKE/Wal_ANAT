@@ -189,6 +189,22 @@ async function boot(kind: Kind) {
       const p = await X.submittedByKarim();
       return (await inj(a, "POST", `/api/plans/${p.id}/approve`)).body;
     },
+    /** Revue trimestrielle d'un plan approuvé ; « prête » a sa synthèse ; « soumise » l'a été par Karim. */
+    review: async () => {
+      const p = await X.approvedPlan();
+      return (await inj(a, "POST", `/api/plans/${p.id}/reviews`, { quarter: 1 })).body;
+    },
+    readyReview: async () => {
+      const r = await X.review();
+      await ctx.db.query("UPDATE plan_reviews SET summary = 'Synthèse' WHERE id = $1", [r.id]);
+      await ctx.db.query("UPDATE plan_review_lines SET assessment = 'en_bonne_voie' WHERE review_id = $1", [r.id]);
+      return r;
+    },
+    submittedReview: async () => {
+      const r = await X.readyReview();
+      await ctx.db.query("UPDATE plan_reviews SET status = 'soumise', submitted_by = 'u_karim' WHERE id = $1", [r.id]);
+      return r;
+    },
     deliverable: async (responsible: string, validator = responsible === "u_alice" ? "u_karim" : "u_alice") =>
       (
         await inj(a, "POST", "/api/deliverables", {
@@ -682,6 +698,27 @@ const TABLE = [
   R_("POST", "/api/plans/:id/activities", async (X) => ({
     url: `/api/plans/${(await X.plan()).id}/activities`,
     body: { title: "A" },
+  })),
+  // Revue trimestrielle du plan
+  R_("POST", "/api/plans/:id/reviews", async (X) => ({
+    url: `/api/plans/${(await X.approvedPlan()).id}/reviews`,
+    body: { quarter: 2 },
+  })),
+  R_("GET", "/api/plan-reviews/:id", async (X) => ({ url: `/api/plan-reviews/${(await X.review()).id}` })),
+  R_("PATCH", "/api/plan-reviews/:id", async (X) => ({
+    url: `/api/plan-reviews/${(await X.review()).id}`,
+    body: { summary: "Synthèse" },
+  })),
+  R_("POST", "/api/plan-reviews/:id/submit", async (X) => ({
+    url: `/api/plan-reviews/${(await X.readyReview()).id}/submit`,
+  })),
+  R_("POST", "/api/plan-reviews/:id/validate", async (X) => ({
+    url: `/api/plan-reviews/${(await X.submittedReview()).id}/validate`,
+    body: {},
+  })),
+  R_("POST", "/api/plan-reviews/:id/return", async (X) => ({
+    url: `/api/plan-reviews/${(await X.submittedReview()).id}/return`,
+    body: { comment: "À reprendre" },
   })),
   R_("POST", "/api/plans/:id/submit", async (X) => ({ url: `/api/plans/${(await X.fullPlan()).id}/submit` })),
   R_("POST", "/api/plans/:id/approve", async (X) => ({ url: `/api/plans/${(await X.submittedByKarim()).id}/approve` })),

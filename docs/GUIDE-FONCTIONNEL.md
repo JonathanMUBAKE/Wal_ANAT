@@ -350,6 +350,23 @@ L'accueil met en avant **ce qui vous attend** selon votre profil : courrier à i
 **vos prochaines réunions** (convocations à répondre). Le détail « qui voit quoi » par profil est dans
 `MODELE-INSTITUTIONNEL.md`.
 
+### 5.15 Tableau de bord DG : la vue par direction
+
+Sur le **Tableau de bord DG**, la carte **Par direction** donne une ligne par direction (les entités du premier
+niveau sous l'institution), avec tout ce qui lui est rattaché (ses services, leurs agents) :
+- une **appréciation** écrite — *Sous contrôle*, *Vigilance* ou *Alerte* — et ses **raisons** (projet en
+  difficulté, activité du plan échue, décision en retard d'exécution, tâches en retard, courrier hors délai,
+  recommandations en retard, activité du plan en décalage) ;
+- les **projets** et leur santé (un projet sans entité suit celle de son responsable) ;
+- le **plan de travail** de l'année (plans approuvés) : la barre montre le **réalisé**, le trait vertical
+  l'**attendu à date** (au prorata du calendrier de chaque activité) ; 15 points d'écart signalent un décalage ;
+- les **retards** : tâches de ses agents, décisions, courrier imputé, recommandations.
+
+Un clic ouvre la **fiche de la direction** : appréciation et chiffres clés, **services rattachés** (même lecture, on
+y descend d'un clic), ce qui a dépassé son échéance, la charge et les retards de chaque agent, ses projets, et son
+plan de travail activité par activité (achevée, dans le calendrier, en décalage, échue). Les éléments confidentiels
+ne sont ni comptés ni montrés ; un projet n'est listé qu'à ceux qui y ont accès. Réservé aux profils de pilotage.
+
 ## 6. Le journal d'audit
 
 **Administration système › Journal d'audit** réunit les deux traces que l'outil tient : le **fil d'activité**

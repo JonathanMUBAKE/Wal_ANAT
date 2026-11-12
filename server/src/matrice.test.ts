@@ -435,6 +435,9 @@ const TABLE = [
   R_("PUT", "/api/org/members/:userId/unit", () => ({ url: "/api/org/members/u_karim/unit", body: { unit_id: null } })),
   R_("GET", "/api/org/units"),
   R_("POST", "/api/org/units", () => ({ body: { name: u("U") } })),
+  // Tableau de bord DG : vue par direction
+  R_("GET", "/api/pilotage/directions"),
+  R_("GET", "/api/pilotage/directions/:id", async (X) => ({ url: `/api/pilotage/directions/${(await X.unit()).id}` })),
   // Module RH
   R_("GET", "/api/hr/agents"),
   R_("GET", "/api/hr/unregistered"),

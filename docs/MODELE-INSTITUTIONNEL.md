@@ -172,7 +172,7 @@ manques identifiés) · **Partiel** (une partie du cycle manque) · **À constru
 | Courrier | **Complet** | Registre, imputation en cascade, annotations, copies, prise en charge, clôture, classement motivé, réponse liée, délais, tableau de bord, Mon courrier | Modèles de réponse ; accusé de réception automatique |
 | Parapheur | **Utilisable** | Circuit de visa et signature, délégations, accroches (accords, courrier) | Grille CRUD homogène ; signature électronique qualifiée |
 | Partenaires, conventions | **Utilisable** | Annuaire, états, contacts, documents typés, accords, avenants, rapprochement, liens | Finance (engagements, décaissements) et obligations de rapport — reportés à la demande |
-| Tableau de bord DG | **Utilisable** | Retards, décisions attendues, agenda, santé du portefeuille | Indicateurs du plan en temps réel, vue par direction |
+| Tableau de bord DG | **Complet** | Retards, décisions attendues, agenda, santé du portefeuille ; vue par direction (appréciation motivée, projets, plan réalisé face à l'attendu, retards) et fiche de chaque direction et service | Tendances d'un mois sur l'autre |
 | Coéquipiers IA | **Utilisable** | Assistant, délégation sous validation, analyse du journal | Fournisseur par agent IA |
 
 ### 5.1 Ce qui était à moitié et a été corrigé dans cette série

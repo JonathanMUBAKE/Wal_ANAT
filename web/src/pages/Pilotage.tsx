@@ -25,6 +25,7 @@ import { Empty, cn } from "@/components/ui";
 import { CountUp, LoadingRows, frDate, isLate, type Tone } from "@/components/gov";
 import { HealthRing } from "@/components/territory";
 import { CollectionHeader } from "@/components/collection";
+import { ByDirection } from "@/components/directions";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 import { api } from "@/lib/api";
@@ -204,6 +205,9 @@ export function PilotagePage() {
           tone={o.to_sign ? undefined : "good"}
           to="/parapheur"
         />
+
+        {/* 1 bis. Par direction : où en est chaque direction, et pourquoi */}
+        <ByDirection className="md:col-span-6 xl:col-span-12" />
 
         {/* 2. Santé du portefeuille */}
         <Bento

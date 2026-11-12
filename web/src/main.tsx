@@ -32,6 +32,7 @@ import { AccountPage } from "./pages/Account";
 import { AdminPage } from "./pages/Admin";
 import { MeetingPage, MeetingsPage } from "./pages/Meetings";
 import { PilotagePage } from "./pages/Pilotage";
+import { DirectionPage } from "./pages/Direction";
 import { DecisionsPage } from "./pages/Decisions";
 import { PartnerPage, PartnersPage } from "./pages/Partners";
 import { AgreementPage, AgreementsPage } from "./pages/Agreements";
@@ -72,6 +73,7 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="parapheur" element={<ParapheurPage />} />
                   <Route path="courrier" element={<CourrierPage />} />
                   <Route path="pilotage" element={<PilotagePage />} />
+                  <Route path="pilotage/directions/:id" element={<DirectionPage />} />
                   <Route path="decisions" element={<DecisionsPage />} />
                   <Route path="partenaires" element={<PartnersPage />} />
                   <Route path="partenaires/rapprochement" element={<ReconcilePage />} />

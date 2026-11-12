@@ -5,7 +5,7 @@
 > Il décrit l'état réel de la branche `lot-partenaires` au 12 novembre 2026 ; ce qui n'existe pas encore est signalé
 > comme tel (« **À construire** »).
 >
-> Documents voisins : `MODELE-INSTITUTIONNEL.md` (concepts, rôles, diagnostic), `CONCEPTION.md` (vision et conception des modules), `PARCOURS-METIER.md` (parcours détaillés),
+> Documents voisins : `FONCTIONNEMENT-PAR-MODULE.md` (ce que fait chaque module, incohérences), `MODELE-INSTITUTIONNEL.md` (concepts, rôles, diagnostic), `CONCEPTION.md` (vision et conception des modules), `PARCOURS-METIER.md` (parcours détaillés),
 > `PARAMETRAGE.md` (listes paramétrables), `DESIGN-SYSTEM.md` (règles d'écran), `PLAN-DE-TRAVAIL.md` (lots et journal).
 
 ---

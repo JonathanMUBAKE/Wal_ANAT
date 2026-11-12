@@ -18,7 +18,7 @@ beforeEach(async () => {
   [unit] = await g.units(1);
   await g.ctx.db.query("UPDATE org_units SET manager_id = 'u_karim' WHERE id = $1", [unit]);
   await g.ctx.db.query("UPDATE org_members SET unit_id = $1 WHERE org_id = $2 AND user_id = 'u_hugo'", [unit, g.org]);
-  // Hugo et Chloé : sans accès au registre du courrier
+  // Didier et Clarisse : sans accès au registre du courrier
   for (const u of ["u_hugo", "u_chloe", "u_karim"])
     await g.ctx.db.query(
       'UPDATE org_members SET permission_overrides = \'{"correspondence.view": false, "correspondence.manage": false}\' WHERE org_id = $1 AND user_id = $2',
@@ -67,7 +67,7 @@ describe("circuit du courrier", () => {
     ).toBe(403);
     const mine = (await g.api("u_hugo", "GET", "/api/correspondence")).body as Any[];
     expect(mine.map((m) => m.id)).toEqual([mail]);
-    // Chloé n'est concernée par rien : elle ne voit rien
+    // Clarisse n'est concernée par rien : elle ne voit rien
     expect((await g.api("u_chloe", "GET", "/api/correspondence")).body).toEqual([]);
   });
 
@@ -99,7 +99,7 @@ describe("circuit du courrier", () => {
     );
     expect(thread.find((a) => a.kind === "note")).toMatchObject({
       text: "Projet de réponse en relecture.",
-      author_name: "Hugo Lefèvre",
+      author_name: "Didier Lukusa",
     });
     expect(
       (await g.api("u_hugo", "POST", `/api/correspondence/${mail}/close`, { response_ref: "SOR fictive" })).status,

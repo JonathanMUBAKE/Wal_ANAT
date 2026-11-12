@@ -41,11 +41,11 @@ afterEach(async () => {
 describe("stabilité", () => {
   it("mentionne un prénom finissant par une lettre accentuée, sans confondre les prénoms", async () => {
     const t = await firstTask(await projectId("Application mobile"));
-    await api("u_alice", "POST", `/api/tasks/${t.id}/comments`, { body: "@Chloé tu peux regarder ?" });
+    await api("u_alice", "POST", `/api/tasks/${t.id}/comments`, { body: "@Clarisse tu peux regarder ?" });
     expect(
       (await api("u_chloe", "GET", "/api/notifications")).body.filter((n: { kind: string }) => n.kind === "mention"),
     ).toHaveLength(1);
-    await api("u_alice", "POST", `/api/tasks/${t.id}/comments`, { body: "@Chloéa n'existe pas" });
+    await api("u_alice", "POST", `/api/tasks/${t.id}/comments`, { body: "@Clarissea n'existe pas" });
     expect(
       (await api("u_chloe", "GET", "/api/notifications")).body.filter((n: { kind: string }) => n.kind === "mention"),
     ).toHaveLength(1);

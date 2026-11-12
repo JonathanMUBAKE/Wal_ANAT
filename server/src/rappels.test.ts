@@ -83,13 +83,13 @@ describe("rappels d'échéance", () => {
 describe("courriel de notification", () => {
   it("signé ANAT Pilotage, avec le lien vers l'outil et sans invitation à répondre", () => {
     const t = notificationText({
-      userName: "Karim Benali",
+      userName: "Fiston Banza",
       title: "Échéance demain : Rédiger la note",
       body: "Projet de démonstration",
       orgName: "Agence fictive",
       link: "https://pilotage.exemple.test",
     });
-    expect(t).toContain("Bonjour Karim Benali,");
+    expect(t).toContain("Bonjour Fiston Banza,");
     expect(t).toContain("Échéance demain : Rédiger la note");
     expect(t).toContain("https://pilotage.exemple.test");
     expect(t).toContain("ANAT Pilotage");

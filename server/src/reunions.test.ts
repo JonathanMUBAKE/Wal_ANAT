@@ -74,12 +74,12 @@ const content = (actions: Record<string, unknown>[] = []) => ({
       actions,
     },
   ],
-  attendees: [{ name: "Karim", user_id: "u_karim", presence: "present" }],
+  attendees: [{ name: "Fiston", user_id: "u_karim", presence: "present" }],
 });
 const action = (patch: Record<string, unknown> = {}) => ({
   text: "Préparer le planning",
   responsible_id: "u_theo",
-  responsible_name: "Théo",
+  responsible_name: "Gaston",
   due_on: "2026-07-15",
   status: "a_faire",
   ...patch,
@@ -193,7 +193,7 @@ describe("droits", () => {
     const m = await create({ confidential: true });
     await api("u_alice", "PUT", `/api/meetings/${m.id}/content`, {
       agenda: [],
-      attendees: [{ name: "Théo", user_id: "u_theo", presence: "present" }],
+      attendees: [{ name: "Gaston", user_id: "u_theo", presence: "present" }],
     });
     expect((await api("u_hugo", "GET", `/api/meetings/${m.id}`)).status).toBe(404);
     expect((await api("u_hugo", "GET", `/api/meetings/${m.id}/report.docx`)).status).toBe(404);

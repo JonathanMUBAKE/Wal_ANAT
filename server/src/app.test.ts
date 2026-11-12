@@ -78,7 +78,7 @@ describe("tâches", () => {
     const moved = await api("u_alice", "POST", `/api/tasks/${created.body.id}/move`, { section_id: target.id });
     expect(moved.body.section_id).toBe(target.id);
 
-    await api("u_alice", "POST", `/api/tasks/${created.body.id}/comments`, { body: "@Karim tu peux regarder ?" });
+    await api("u_alice", "POST", `/api/tasks/${created.body.id}/comments`, { body: "@Fiston tu peux regarder ?" });
     const notifs = (await api("u_karim", "GET", "/api/notifications")).body;
     expect(notifs.some((n: { kind: string }) => n.kind === "mention")).toBe(true);
     expect(notifs.some((n: { kind: string }) => n.kind === "assigned")).toBe(true);
@@ -206,7 +206,7 @@ describe("coéquipier IA", () => {
     expect(["on_track", "at_risk", "off_track"]).toContain(status.status);
     const parsed = (
       await api("u_alice", "POST", `/api/projects/${pid}/ai/parse`, {
-        text: "Karim corrige le crash demain\nChloé refait l'icône, urgent",
+        text: "Fiston corrige le crash demain\nClarisse refait l'icône, urgent",
       })
     ).body.tasks;
     expect(parsed).toHaveLength(2);

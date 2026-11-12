@@ -103,21 +103,21 @@ describe("module RH : créer un agent", () => {
   });
 
   it("l'agent lit son dossier sans pouvoir le modifier ; le chef d'entité lit ceux de ses agents ; les autres non", async () => {
-    // Hugo devient agent (dossier ouvert pour un compte existant)
+    // Didier devient agent (dossier ouvert pour un compte existant)
     const units = (await g.api("u_alice", "GET", "/api/org/units")).body as Any[];
     const unit = units[1].id;
     await g.ctx.db.query("UPDATE org_units SET manager_id = 'u_karim' WHERE id = $1", [unit]);
     const opened = await g.api("u_alice", "POST", "/api/hr/agents", {
       user_id: "u_hugo",
-      last_name: "Lefèvre",
-      first_names: "Hugo",
+      last_name: "Lukusa",
+      first_names: "Didier",
       status: "contractuel",
       unit_id: unit,
     });
     expect(opened.status).toBe(200);
     const mine = await g.api("u_hugo", "GET", "/api/hr/me");
     expect(mine.status).toBe(200);
-    expect(mine.body.last_name).toBe("Lefèvre");
+    expect(mine.body.last_name).toBe("Lukusa");
     // Lecture seule : l'agent ne modifie rien de son dossier, le service RH le tient
     expect(mine.body.can).toMatchObject({ manage: false, self: true });
     expect((await g.api("u_hugo", "PATCH", "/api/hr/me", { phone: "+000 22 22 22" })).status).toBe(404);
@@ -136,16 +136,16 @@ describe("module RH : créer un agent", () => {
   });
 
   it("le service RH ne modifie pas son propre dossier : un autre gestionnaire s'en charge", async () => {
-    // Alice tient les dossiers ; Karim reçoit aussi le droit, pour pouvoir tenir celui d'Alice
+    // Bernadette tient les dossiers ; Fiston reçoit aussi le droit, pour pouvoir tenir celui d'Bernadette
     await g.ctx.db.query(
       `UPDATE org_members SET permission_overrides = '{"hr.manage": true}'::jsonb WHERE user_id = 'u_karim'`,
     );
     expect(
-      (await g.api("u_karim", "POST", "/api/hr/agents", { user_id: "u_alice", last_name: "Martin" })).status,
+      (await g.api("u_karim", "POST", "/api/hr/agents", { user_id: "u_alice", last_name: "Mbuyi" })).status,
     ).toBe(200);
     // Ouvrir son propre dossier lui est aussi refusé
     expect(
-      (await g.api("u_karim", "POST", "/api/hr/agents", { user_id: "u_karim", last_name: "Benali" })).status,
+      (await g.api("u_karim", "POST", "/api/hr/agents", { user_id: "u_karim", last_name: "Banza" })).status,
     ).toBe(403);
     const mine = (await g.api("u_alice", "GET", "/api/hr/me")).body;
     expect(mine.can).toMatchObject({ manage: false, self: true });

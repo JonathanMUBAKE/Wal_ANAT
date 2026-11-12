@@ -382,7 +382,7 @@ export function QuickAddDialog() {
           onChange={(e) => setText(e.target.value)}
           rows={9}
           placeholder={
-            "Réunion produit du lundi\n- Karim corrige le crash du panier, urgent\n- Chloé finalise les maquettes du tableau de bord pour vendredi\n- Préparer la démo client la semaine prochaine"
+            "Réunion produit du lundi\n- Fiston corrige le crash du panier, urgent\n- Clarisse finalise les maquettes du tableau de bord pour vendredi\n- Préparer la démo client la semaine prochaine"
           }
           className="w-full resize-y rounded-xl border border-line bg-bg/60 px-3.5 py-3 text-[13.5px] leading-relaxed outline-none focus:border-ai-line"
         />

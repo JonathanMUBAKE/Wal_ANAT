@@ -78,7 +78,7 @@ describe("plans de travail", () => {
       field: "end_on",
       new_value: "2027-09-30",
       reason: "Retard du bailleur",
-      author_name: "Alice Martin",
+      author_name: "Bernadette Mbuyi",
     });
   });
   it("une révision sans motif est refusée", async () => {

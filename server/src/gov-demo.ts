@@ -33,7 +33,7 @@ export async function seedGovDemo(svc: Services) {
   const m = new Meetings(svc);
   const at = new Attributions(svc);
 
-  // Démonstration : Alice est aussi administratrice système (paramètres de l'institution), et l'institution a des provinces
+  // Démonstration : Bernadette est aussi administratrice système (paramètres de l'institution), et l'institution a des provinces
   await db.query("UPDATE users SET platform_role = 'super_admin' WHERE id = $1", [me]);
   const root = await db.one<{ id: string }>("SELECT id FROM org_units WHERE org_id = $1 AND parent_id IS NULL", [org]);
   if (root)
@@ -163,8 +163,8 @@ export async function seedGovDemo(svc: Services) {
       },
     ],
     attendees: [
-      { user_id: me, name: "Alice" },
-      { user_id: "u_karim", name: "Karim" },
+      { user_id: me, name: "Bernadette" },
+      { user_id: "u_karim", name: "Fiston" },
     ],
   });
   await m.create(me, org, {
@@ -467,7 +467,7 @@ export async function seedGovDemo(svc: Services) {
 
 /**
  * Profils institutionnels des personnes fictives, posés en dernier (le jeu de données a été créé avec des droits
- * larges) : chacun voit alors l'outil comme il le verra vraiment. Alice reste propriétaire et joue la DG.
+ * larges) : chacun voit alors l'outil comme il le verra vraiment. Bernadette reste propriétaire et joue la DG.
  */
 async function seedProfiles(svc: Services, org: string) {
   for (const [user, slug, role] of [
@@ -496,8 +496,8 @@ async function seedHr(svc: Services, org: string) {
     [
       "u_alice",
       "Mme",
-      "Alice",
-      "Martin",
+      "Bernadette",
+      "Mbuyi",
       "fonctionnaire",
       "Administrateur civil principal",
       "A",
@@ -507,20 +507,20 @@ async function seedHr(svc: Services, org: string) {
     [
       "u_karim",
       "M.",
-      "Karim",
-      "Benali",
+      "Fiston",
+      "Banza",
       "fonctionnaire",
       "Ingénieur en chef",
       "A",
       "Chef du département Ingénierie",
       "2015-02-02",
     ],
-    ["u_chloe", "Mme", "Chloé", "Dubois", "contractuel", "Attachée", "A", "Responsable Produit & Design", "2019-06-17"],
+    ["u_chloe", "Mme", "Clarisse", "Diala", "contractuel", "Attachée", "A", "Responsable Produit & Design", "2019-06-17"],
     [
       "u_theo",
       "M.",
-      "Théo",
-      "Garnier",
+      "Gaston",
+      "Kalala",
       "fonctionnaire",
       "Ingénieur des travaux",
       "A",
@@ -530,8 +530,8 @@ async function seedHr(svc: Services, org: string) {
     [
       "u_hugo",
       "M.",
-      "Hugo",
-      "Lefèvre",
+      "Didier",
+      "Lukusa",
       "fonctionnaire",
       "Attaché principal",
       "A",
@@ -541,8 +541,8 @@ async function seedHr(svc: Services, org: string) {
     [
       "u_ines",
       "Mme",
-      "Inès",
-      "Moreau",
+      "Esther",
+      "Mukendi",
       "fonctionnaire",
       "Attachée principale",
       "A",
@@ -555,7 +555,7 @@ async function seedHr(svc: Services, org: string) {
       [org, user_id],
     );
     if (!unit) continue;
-    // Personne n'ouvre son propre dossier : celui d'Alice, seule gestionnaire RH de la démo, est posé directement
+    // Personne n'ouvre son propre dossier : celui d'Bernadette, seule gestionnaire RH de la démo, est posé directement
     if (user_id === "u_alice") {
       await svc.db.query(
         `INSERT INTO agent_records (org_id, user_id, matricule, created_by, civility, first_names, last_name, status,

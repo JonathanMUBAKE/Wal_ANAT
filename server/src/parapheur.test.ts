@@ -304,7 +304,7 @@ describe("écarts de participation", () => {
     const { a, sheet } = await setup();
     await sheet(a, "responsable");
     const gaps = await detect();
-    expect(JSON.stringify(gaps)).not.toMatch(/Karim|Alice/);
+    expect(JSON.stringify(gaps)).not.toMatch(/Fiston|Bernadette/);
     expect((await g.api("u_hugo", "GET", "/api/gaps")).status).toBe(403);
     expect((await g.api("u_hugo", "POST", "/api/gaps/detect", {})).status).toBe(403);
   });

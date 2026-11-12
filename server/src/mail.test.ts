@@ -141,7 +141,7 @@ describe("messagerie de l'organisation", () => {
       (x) => x.length > 0,
     );
     expect(m[0].from).toBe("contact@nova-mobile.fr");
-    expect(m[0].to).toEqual(["alice@cadence.app"]);
+    expect(m[0].to).toEqual(["bernadette@cadence.app"]);
     expect(m[0].user).toBe("cadence");
     expect(m[0].raw).toMatch(/From: "?Nova Mobile"? <contact@nova-mobile\.fr>/);
   });
@@ -159,7 +159,7 @@ describe("messagerie de l'organisation", () => {
       (x) => x.length > 0,
     );
     expect(m[0].from).toBe("equipe-mobile@nova-mobile.fr");
-    expect(m[0].to).toEqual(["karim@cadence.app"]);
+    expect(m[0].to).toEqual(["fiston@cadence.app"]);
     expect(m[0].raw).toMatch(/Subject: .*Corriger le crash/);
     expect(m[0].raw).toMatch(/Reply-To: [^\n]*(\r?\n [^\n]*)?equipe-mobile@nova-mobile\.fr/);
     const log = await waitFor(

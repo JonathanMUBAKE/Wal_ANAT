@@ -425,7 +425,7 @@ Gravité : **A** = fausse l'information ou la décision · **B** = parcours inco
 | I-33 | Portefeuille / Pilotage | La DG voit tout ce qui lui est ouvert, pas seulement ce qui lui est adressé ; elle voit aussi des tâches internes. | A | Notion de « dossier suivi par la DG » (transmis ou stratégique) ; tâches internes hors de sa vue. |
 | I-34 | Profils | DGA : inscrit-il des décisions par délégation ? Responsable informatique administrateur de droit ? Stagiaires et portefeuille ? | — | Décisions à prendre. |
 | I-35 | RH | Congés et absences, fins de contrat : prêts sur `lot-conges`, non fusionnés (migration 039 réservée). | — | À fusionner quand vous le déciderez. |
-| I-36 | Démonstration | Personnes fictives aux profils génériques ; Karim est administrateur et voit tout, ce qui fausse l'essai des vues par rôle. | C | Donner à chaque personne fictive un profil institutionnel. |
+| I-36 | Démonstration | Personnes fictives aux profils génériques ; Fiston est administrateur et voit tout, ce qui fausse l'essai des vues par rôle. | C | Donner à chaque personne fictive un profil institutionnel. |
 
 ### Ordre de correction proposé
 1. **I-01, I-02, I-03, I-04** — une seule porte pour les décisions : l'arbitrage, étendu aux activités.

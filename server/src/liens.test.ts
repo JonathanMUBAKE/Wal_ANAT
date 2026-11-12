@@ -229,7 +229,7 @@ describe("recommandations → tâches du projet", () => {
     await validate(id);
     const t = (await tasksOf(closed)).find((x) => x.title === "Tâche réservée")!;
     expect(t.assignee_id).toBeNull();
-    expect(t.description).toContain("Karim");
+    expect(t.description).toContain("Fiston");
   });
 
   it("lot P3b — la réponse sortante clôt l'entrant et les deux restent liés", async () => {

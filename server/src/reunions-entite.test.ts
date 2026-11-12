@@ -83,7 +83,7 @@ describe("réunions d'une entité", () => {
         repeat: { every: "week", count: 3 },
       })
     ).body;
-    // Une réunion d'ailleurs où Hugo est convoqué personnellement
+    // Une réunion d'ailleurs où Didier est convoqué personnellement
     await g.api("u_alice", "POST", "/api/meetings", {
       meeting_type: "Comité de pilotage",
       title: "Copil régional",
@@ -123,7 +123,7 @@ describe("projets visibles dans l'espace de l'entité", () => {
     await g.api("u_alice", "PUT", `/api/projects/${p.id}/members/u_karim`, { role: "viewer" });
     const mgr = (await g.api("u_karim", "GET", `/api/units/${unit}/dashboard`)).body;
     expect(mgr.projects.map((x: Any) => x.name)).toContain("Projet transversal");
-    // Hugo n'y est pas invité : il ne le voit pas
+    // Didier n'y est pas invité : il ne le voit pas
     const agent = (await g.api("u_hugo", "GET", `/api/units/${unit}/dashboard`)).body;
     expect(agent.projects.map((x: Any) => x.name)).not.toContain("Projet transversal");
     // Invité à son tour, il le voit

@@ -189,7 +189,7 @@ async function boot(kind: Kind) {
       const p = await X.submittedByKarim();
       return (await inj(a, "POST", `/api/plans/${p.id}/approve`)).body;
     },
-    /** Arbitrage en attente, demandé par Karim sur un projet du propriétaire (la DG le tranche). */
+    /** Arbitrage en attente, demandé par Fiston sur un projet du propriétaire (la DG le tranche). */
     arbitration: async () => {
       const p = await X.project();
       const id = u("arb_matrice");
@@ -200,7 +200,7 @@ async function boot(kind: Kind) {
       );
       return { id, project: p };
     },
-    /** Revue trimestrielle d'un plan approuvé ; « prête » a sa synthèse ; « soumise » l'a été par Karim. */
+    /** Revue trimestrielle d'un plan approuvé ; « prête » a sa synthèse ; « soumise » l'a été par Fiston. */
     review: async () => {
       const p = await X.approvedPlan();
       return (await inj(a, "POST", `/api/plans/${p.id}/reviews`, { quarter: 1 })).body;

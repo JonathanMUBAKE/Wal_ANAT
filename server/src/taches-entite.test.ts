@@ -16,7 +16,7 @@ beforeEach(async () => {
   for (const id of ["u_chloe", "u_ines"]) await g.login(id);
   [unit] = await g.units(1);
   sub = (await g.api("u_alice", "POST", "/api/org/units", { name: "Cellule cartographie", parent_id: unit })).body.id;
-  // Karim dirige l'entité ; Hugo et Chloé y travaillent ; Inès travaille dans la cellule rattachée
+  // Fiston dirige l'entité ; Didier et Clarisse y travaillent ; Esther travaille dans la cellule rattachée
   await g.ctx.db.query("UPDATE org_units SET manager_id = 'u_karim' WHERE id = $1", [unit]);
   await g.ctx.db.query("UPDATE org_members SET unit_id = $1 WHERE org_id = $2 AND user_id IN ('u_hugo', 'u_chloe')", [
     unit,
@@ -40,7 +40,7 @@ describe("registre des tâches d'une entité", () => {
     expect(agent.status).toBe(200);
     expect(agent.body.project_id).toBe(mgr.body.project_id);
     expect(agent.body.can.assign).toBe(false);
-    // Inès (cellule rattachée) n'appartient pas à cette entité ; son responsable hiérarchique ouvre la cellule
+    // Esther (cellule rattachée) n'appartient pas à cette entité ; son responsable hiérarchique ouvre la cellule
     expect((await board("u_ines")).status).toBe(403);
     expect((await board("u_karim", sub)).status).toBe(200);
     expect((await board("u_hugo", sub)).status).toBe(403);
@@ -84,7 +84,7 @@ describe("registre des tâches d'une entité", () => {
     // … mais n'en confie pas à une collègue, ni ne réattribue celle qu'on lui a confiée
     const toColleague = await g.api("u_hugo", "POST", "/api/tasks", {
       project_id: pid,
-      title: "Pour Chloé",
+      title: "Pour Clarisse",
       assignee_id: "u_chloe",
     });
     expect(toColleague.status).toBe(403);
@@ -95,7 +95,7 @@ describe("registre des tâches d'une entité", () => {
     // Il fait avancer la sienne ; il ne touche pas à celle d'une collègue
     expect((await g.api("u_hugo", "PATCH", `/api/tasks/${given.body.id}`, { completed: true })).status).toBe(200);
     const chloe = (
-      await g.api("u_karim", "POST", "/api/tasks", { project_id: pid, title: "Tâche de Chloé", assignee_id: "u_chloe" })
+      await g.api("u_karim", "POST", "/api/tasks", { project_id: pid, title: "Tâche de Clarisse", assignee_id: "u_chloe" })
     ).body;
     expect((await g.api("u_hugo", "PATCH", `/api/tasks/${chloe.id}`, { completed: true })).status).toBe(403);
     // Le responsable ne confie pas une tâche à quelqu'un d'extérieur à l'entité
@@ -130,8 +130,8 @@ describe("registre des tâches d'une entité", () => {
       assignee_id: "u_hugo",
       due_on: day(-2),
     });
-    await g.api("u_karim", "POST", "/api/tasks", { project_id: pid, title: "Pour Inès", assignee_id: "u_karim" });
-    // Une tâche de projet confiée à Chloé, dans un projet que le responsable peut lire
+    await g.api("u_karim", "POST", "/api/tasks", { project_id: pid, title: "Pour Esther", assignee_id: "u_karim" });
+    // Une tâche de projet confiée à Clarisse, dans un projet que le responsable peut lire
     const project = (await g.api("u_karim", "POST", "/api/projects", { name: "Schéma régional", access: "private" }))
       .body;
     await g.api("u_karim", "PUT", `/api/projects/${project.id}/members/u_chloe`, { role: "editor" });

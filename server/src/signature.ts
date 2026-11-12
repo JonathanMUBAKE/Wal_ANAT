@@ -59,7 +59,8 @@ const hashOf = (d: Pick<SignDoc, "title" | "body">) =>
 const notDraft = () => new HttpError(409, "Ce document est déjà dans le circuit : il ne peut plus être modifié");
 
 /** Délégations en cours au profit d'une personne : qui l'a chargée d'agir à sa place aujourd'hui. */
-const DELEGATORS = `SELECT from_user FROM delegations WHERE org_id = $1 AND to_user = $2 AND start_on <= CURRENT_DATE AND end_on >= CURRENT_DATE`;
+/** Délégations en cours : à la date locale du serveur, pas CURRENT_DATE (UTC) qui retarde autour de minuit. */
+const DELEGATORS = `SELECT from_user FROM delegations WHERE org_id = $1 AND to_user = $2 AND start_on <= $3::date AND end_on >= $3::date`;
 
 export class Signature {
   constructor(private svc: Services) {}
@@ -78,7 +79,7 @@ export class Signature {
     );
   }
   private async delegators(orgId: string, userId: string) {
-    return (await this.svc.db.query<{ from_user: string }>(DELEGATORS, [orgId, userId])).map((r) => r.from_user);
+    return (await this.svc.db.query<{ from_user: string }>(DELEGATORS, [orgId, userId, today()])).map((r) => r.from_user);
   }
   private async readable(actorId: string, id: string) {
     const d = await this.row(id);
@@ -239,8 +240,8 @@ export class Signature {
       body: reference(d),
     });
     for (const r of await this.svc.db.query<{ to_user: string }>(
-      "SELECT to_user FROM delegations WHERE org_id = $1 AND from_user = $2 AND start_on <= CURRENT_DATE AND end_on >= CURRENT_DATE",
-      [d.org_id, actorId],
+      "SELECT to_user FROM delegations WHERE org_id = $1 AND from_user = $2 AND start_on <= $3::date AND end_on >= $3::date",
+      [d.org_id, actorId, today()],
     ))
       await this.svc.notify(r.to_user, d.org_id, {
         kind: "signature.pending",

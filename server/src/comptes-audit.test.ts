@@ -57,7 +57,7 @@ describe("administration système : créer un compte", () => {
   it("refuse un membre déjà inscrit, une entité ou un profil d'ailleurs ; renvoie un lien qui annule le précédent", async () => {
     const base = { org_id: g.org, name: "M. Test", profile_id: g.profile("Membre") };
     expect(
-      (await g.api("u_alice", "POST", "/api/admin/accounts", { ...base, email: "karim@cadence.app" })).status,
+      (await g.api("u_alice", "POST", "/api/admin/accounts", { ...base, email: "fiston@cadence.app" })).status,
     ).toBe(400);
     expect(
       (
@@ -102,7 +102,7 @@ describe("administration système : journal d'audit", () => {
     expect((await g.api("u_karim", "GET", "/api/admin/audit")).status).toBe(403);
     const all = (await g.api("u_alice", "GET", "/api/admin/audit")).body as Any;
     const created = all.entries.find((e: Any) => e.kind === "partner.created");
-    expect(created).toMatchObject({ label: "Partenaire créé", actor_name: "Alice Martin", category: "Partenariats" });
+    expect(created).toMatchObject({ label: "Partenaire créé", actor_name: "Bernadette Mbuyi", category: "Partenariats" });
     expect(created.summary).toContain("Partenaire tracé");
     expect(all.entries.some((e: Any) => e.source === "security" && e.kind === "login.success")).toBe(true);
     // Filtres : par domaine, par auteur, par texte
@@ -142,18 +142,18 @@ describe("journal d'audit : gravité, journal par utilisateur, analyse", () => {
   it("le journal d'un utilisateur réunit ses connexions et ses activités, y compris ce qui le concerne", async () => {
     await g.promote("u_karim");
     expect(
-      (await g.api("u_karim", "POST", "/api/partners", { name: "Partenaire de Karim", type_code: "autre" })).status,
+      (await g.api("u_karim", "POST", "/api/partners", { name: "Partenaire de Fiston", type_code: "autre" })).status,
     ).toBe(200);
     await g.api("u_alice", "POST", "/api/admin/users/u_karim/revoke-sessions");
     const r = await g.api("u_alice", "GET", "/api/admin/users/u_karim/journal");
     expect(r.status).toBe(200);
-    expect(r.body.user).toMatchObject({ id: "u_karim", name: "Karim Benali" });
+    expect(r.body.user).toMatchObject({ id: "u_karim", name: "Fiston Banza" });
     expect(r.body.connections.some((e: Any) => e.kind === "login.success")).toBe(true);
     expect(r.body.activities.some((e: Any) => e.kind === "partner.created")).toBe(true);
     // Ce qu'un autre a fait sur son compte y figure aussi
     expect(r.body.connections.some((e: Any) => e.kind === "sessions.revoked" && e.actor_id === "u_alice")).toBe(true);
     expect(r.body.stats).toMatchObject({ logins: expect.any(Number), failed_logins: 0 });
-    // Karim, dont les sessions viennent d'être fermées, est déconnecté ; un autre membre est refusé
+    // Fiston, dont les sessions viennent d'être fermées, est déconnecté ; un autre membre est refusé
     expect((await g.api("u_karim", "GET", "/api/admin/users/u_karim/journal")).status).toBe(401);
     expect((await g.api("u_hugo", "GET", "/api/admin/users/u_karim/journal")).status).toBe(403);
   });
@@ -163,7 +163,7 @@ describe("journal d'audit : gravité, journal par utilisateur, analyse", () => {
       await g.ctx.app.inject({
         method: "POST",
         url: "/api/auth/login",
-        payload: { email: "karim@cadence.app", password: "mauvais-mot-de-passe" },
+        payload: { email: "fiston@cadence.app", password: "mauvais-mot-de-passe" },
       });
     const r = await g.api("u_alice", "POST", "/api/admin/audit/analysis", {});
     expect(r.status).toBe(200);

@@ -1,6 +1,6 @@
 import { buildApp } from "./app.js";
 
-/* Démarrage commun des tests de la version gouvernementale : une application neuve, Alice propriétaire, Karim membre. */
+/* Démarrage commun des tests de la version gouvernementale : une application neuve, Bernadette propriétaire, Fiston membre. */
 type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 const NO_LIMITS = {
   anonymousPerMinute: 1e6,
@@ -70,11 +70,11 @@ export async function boot() {
       );
     return out;
   };
-  /** Un projet privé d'Alice : le dossier où se rangent contrats et livrables (docs/PARCOURS-METIER.md). */
+  /** Un projet privé d'Bernadette : le dossier où se rangent contrats et livrables (docs/PARCOURS-METIER.md). */
   const project = async () =>
     (await api("u_alice", "POST", "/api/projects", { name: `Projet ${Math.random()}`, access: "private" })).body
       .id as string;
-  /** Hugo fonde une autre organisation et y reste seul : c'est le propriétaire « extérieur ». */
+  /** Didier fonde une autre organisation et y reste seul : c'est le propriétaire « extérieur ». */
   const foreignOrg = async () => {
     const b = await ctx.app.inject({
       method: "POST",

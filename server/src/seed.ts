@@ -22,12 +22,12 @@ export async function seedIfEmpty(svc: Services) {
 export async function seed(svc: Services) {
   const db = svc.db;
   const users: [string, string, string | null, string, string, boolean, string | null, string | null][] = [
-    ["u_alice", "Alice Martin", "alice@cadence.app", "Head of Product", "#E5484D", false, null, null],
-    ["u_karim", "Karim Benali", "karim@cadence.app", "Lead développeur mobile", "#0090FF", false, null, null],
-    ["u_chloe", "Chloé Dubois", "chloe@cadence.app", "Product designer", "#D6409F", false, null, null],
-    ["u_hugo", "Hugo Lefèvre", "hugo@cadence.app", "Responsable marketing", "#F76B15", false, null, null],
-    ["u_ines", "Inès Moreau", "ines@cadence.app", "Responsable RH", "#12A594", false, null, null],
-    ["u_theo", "Théo Garnier", "theo@cadence.app", "Ingénieur QA", "#8E4EC6", false, null, null],
+    ["u_alice", "Bernadette Mbuyi", "bernadette@cadence.app", "Head of Product", "#E5484D", false, null, null],
+    ["u_karim", "Fiston Banza", "fiston@cadence.app", "Lead développeur mobile", "#0090FF", false, null, null],
+    ["u_chloe", "Clarisse Diala", "clarisse@cadence.app", "Product designer", "#D6409F", false, null, null],
+    ["u_hugo", "Didier Lukusa", "didier@cadence.app", "Responsable marketing", "#F76B15", false, null, null],
+    ["u_ines", "Esther Mukendi", "esther@cadence.app", "Responsable RH", "#12A594", false, null, null],
+    ["u_theo", "Gaston Kalala", "gaston@cadence.app", "Ingénieur QA", "#8E4EC6", false, null, null],
     [
       "ai_atlas",
       "Atlas",
@@ -501,17 +501,17 @@ export async function seed(svc: Services) {
       "task_created",
       app.sections.find((s) => s.name === "Backlog")!.id,
       "ai_nova",
-      "Qualifie la nouvelle tâche : fixe une priorité selon l'impact utilisateur. Si c'est un bug sans étapes de reproduction, demande-les en commentaire. Si un test est nécessaire, mentionne @Théo.",
+      "Qualifie la nouvelle tâche : fixe une priorité selon l'impact utilisateur. Si c'est un bug sans étapes de reproduction, demande-les en commentaire. Si un test est nécessaire, mentionne @Gaston.",
       "u_alice",
     ],
   );
   await db.query(
     "INSERT INTO ai_memories (id, agent_id, object_type, object_id, project_id, content) VALUES ($1,'ai_atlas','project',$2,$2,$3)",
-    [uid("mem"), app.id, "Alice veut les risques en premier dans chaque point d'avancement."],
+    [uid("mem"), app.id, "Bernadette veut les risques en premier dans chaque point d'avancement."],
   );
   await db.query(
     "INSERT INTO ai_memories (id, agent_id, object_type, object_id, project_id, content) VALUES ($1,'ai_atlas','project',$2,$2,$3)",
-    [uid("mem"), camp.id, "La vidéo de lancement doit être validée par Alice avant toute diffusion."],
+    [uid("mem"), camp.id, "La vidéo de lancement doit être validée par Bernadette avant toute diffusion."],
   );
   await db.query("UPDATE activity SET created_at = t.created_at FROM tasks t WHERE t.id = activity.task_id");
 

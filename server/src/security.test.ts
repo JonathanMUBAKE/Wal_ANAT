@@ -53,7 +53,7 @@ describe("sécurité de l'organisation et de la connexion", () => {
     const res = await ctx.app.inject({ method: "GET", url: "/api/auth/users" });
     expect(res.statusCode).toBe(200);
     const users = JSON.parse(res.body) as Record<string, unknown>[];
-    expect(users.find((u) => u.id === "u_alice")).toMatchObject({ name: "Alice Martin", title: "Head of Product" });
+    expect(users.find((u) => u.id === "u_alice")).toMatchObject({ name: "Bernadette Mbuyi", title: "Head of Product" });
     for (const u of users) {
       expect(u).not.toHaveProperty("email");
       expect(u).not.toHaveProperty("ai_instructions");

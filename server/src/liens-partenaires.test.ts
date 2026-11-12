@@ -210,7 +210,7 @@ describe("liens : la fiche du partenaire rassemble tout", () => {
     expect(all.mail.map((x: Any) => x.id).sort()).toEqual([m1.id, m2.id].sort());
     expect(all.meetings.map((x: Any) => x.id)).toEqual([meet.id]);
     expect(all.contracts.map((x: Any) => x.id)).toEqual([ctr.id]);
-    // Hugo, simple membre : ni le projet privé d'Alice, ni l'audience confidentielle, ni le courrier confidentiel
+    // Didier, simple membre : ni le projet privé d'Bernadette, ni l'audience confidentielle, ni le courrier confidentiel
     const h = await detail(p.id, "u_hugo");
     expect(h.dossiers.map((d: Any) => d.id)).toEqual([act.id]);
     expect(h.mail.map((x: Any) => x.id)).toEqual([m1.id]);

@@ -250,8 +250,8 @@ export class Pilotage {
     };
     const delegators = (
       await db.query<{ from_user: string }>(
-        "SELECT from_user FROM delegations WHERE org_id = $1 AND to_user = $2 AND start_on <= CURRENT_DATE AND end_on >= CURRENT_DATE",
-        [orgId, actorId],
+        "SELECT from_user FROM delegations WHERE org_id = $1 AND to_user = $2 AND start_on <= $3::date AND end_on >= $3::date",
+        [orgId, actorId, day()],
       )
     ).map((r) => r.from_user);
     const toSign =

@@ -64,7 +64,7 @@ describe("activités de l'Agence", () => {
     });
     expect(r.body.followups[0]).toMatchObject({
       text: "Transmettre la note",
-      responsible_name: "Karim Benali",
+      responsible_name: "Fiston Banza",
       done: false,
     });
     const notes = (await g.api("u_karim", "GET", "/api/notifications")).body as { kind: string }[];
@@ -93,7 +93,7 @@ describe("gouvernance des projets", () => {
     expect(r.body).toMatchObject({
       origin: "confie",
       sponsor: "Ministère",
-      lead_name: "Karim Benali",
+      lead_name: "Fiston Banza",
       budget_planned: 1000,
       budget_spent: 250,
     });

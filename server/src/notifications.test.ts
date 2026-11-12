@@ -40,7 +40,7 @@ describe("notifications des tâches", () => {
     // Le chargé qui modifie sa propre tâche ne se prévient pas lui-même
     await g.api("u_karim", "PATCH", `/api/tasks/${t.id}`, { title: "Rédiger la note de cadrage" });
     expect((await notes("u_karim")).filter((n: Any) => n.kind === "task.changed")).toHaveLength(1);
-    // Réattribuée : Hugo est prévenu (assignation), Karim aussi (retrait)
+    // Réattribuée : Didier est prévenu (assignation), Fiston aussi (retrait)
     await g.api("u_alice", "PATCH", `/api/tasks/${t.id}`, { assignee_id: "u_hugo" });
     expect((await notes("u_karim")).some((n: Any) => n.kind === "task.unassigned")).toBe(true);
     expect((await notes("u_hugo")).some((n: Any) => n.kind === "assigned")).toBe(true);
@@ -97,7 +97,7 @@ describe("retards signalés au chef d'entité", () => {
       (n: Any) => n.kind === "task.late.manager" && n.title.includes("Rapport en souffrance"),
     );
     expect(escalated).toHaveLength(1);
-    expect(escalated[0].title).toMatch(/Hugo/);
+    expect(escalated[0].title).toMatch(/Didier/);
   });
 });
 

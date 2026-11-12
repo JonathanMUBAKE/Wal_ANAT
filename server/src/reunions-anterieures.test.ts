@@ -48,7 +48,7 @@ describe("réunions antérieures et postérieures", () => {
       ]),
     ).toEqual(
       expect.arrayContaining([
-        ["Karim Benali", false, "present"],
+        ["Fiston Banza", false, "present"],
         ["M. Extérieur", false, "present"],
       ]),
     );

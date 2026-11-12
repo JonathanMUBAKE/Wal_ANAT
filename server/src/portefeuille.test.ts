@@ -44,7 +44,7 @@ describe("revue de portefeuille", () => {
       health_declared: "on_track",
       health_computed: "off_track",
       divergent: true,
-      lead_name: expect.stringContaining("Karim"),
+      lead_name: expect.stringContaining("Fiston"),
       tasks: { overdue: 1 },
       budget: { planned: 1000, spent: 1500, consumed: 150 },
     });

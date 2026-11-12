@@ -26,7 +26,7 @@ beforeEach(async () => {
   other = await mk("Direction des études (essai)", root, "Direction");
   await g.ctx.db.query("UPDATE org_units SET manager_id = 'u_karim' WHERE id = $1", [dir]);
   await g.ctx.db.query("UPDATE org_members SET unit_id = $1 WHERE org_id = $2 AND user_id = 'u_hugo'", [svc, g.org]);
-  // Hugo arrive sans charge : ce qu'il porte dans les données de démonstration reste ailleurs
+  // Didier arrive sans charge : ce qu'il porte dans les données de démonstration reste ailleurs
   await g.ctx.db.query("UPDATE tasks SET assignee_id = NULL WHERE assignee_id = 'u_hugo'");
   await g.ctx.db.query("UPDATE dg_decisions SET owner_id = NULL WHERE owner_id = 'u_hugo'");
   await g.ctx.db.query("UPDATE meeting_actions SET responsible_id = NULL WHERE responsible_id = 'u_hugo'");
@@ -43,7 +43,7 @@ const of = (list: Any[], id: string) => list.find((d: Any) => d.id === id);
 
 describe("vue par direction", () => {
   it("rassemble projets, retards, plan, décisions et courrier de la direction et de ses services", async () => {
-    // Un projet du service, en difficulté, avec une tâche en retard confiée à Hugo
+    // Un projet du service, en difficulté, avec une tâche en retard confiée à Didier
     const p = (await g.api("u_alice", "POST", "/api/projects", { name: "Schéma d'aménagement (essai)" })).body.id;
     await g.ctx.db.query("UPDATE projects SET unit_id = $1, status = 'off_track' WHERE id = $2", [svc, p]);
     await g.api("u_alice", "PUT", `/api/projects/${p}/members/u_hugo`, { role: "editor" });
@@ -53,7 +53,7 @@ describe("vue par direction", () => {
       assignee_id: "u_hugo",
       due_on: day(-3),
     });
-    // Une décision à exécuter par Hugo, en retard
+    // Une décision à exécuter par Didier, en retard
     await g.api("u_alice", "POST", "/api/decisions", {
       title: "Lancer l'étude de faisabilité",
       content: "Décision d'essai",
@@ -83,7 +83,7 @@ describe("vue par direction", () => {
     const d = of(r.body.directions, dir);
     expect(d).toMatchObject({
       name: "Direction de l'aménagement (essai)",
-      manager_name: expect.stringContaining("Karim"),
+      manager_name: expect.stringContaining("Fiston"),
       agents: 1,
       projects: { total: 1, off_track: 1 },
       tasks: { open: 1, overdue: 1 },

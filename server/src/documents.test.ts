@@ -49,8 +49,8 @@ function workbook(bookType: "xlsx" | "biff8") {
     XLSX.utils.aoa_to_sheet(
       [
         ["Tâche", "Responsable", "Échéance", "Priorité", "Statut", "Tâche parente"],
-        ["Préparer le lancement", "Karim Benali", new Date(Date.UTC(2031, 2, 15)), "Haute", "À faire", ""],
-        ["Rédiger le communiqué", "Chloé", "20/03/2031", "", "À faire", "Préparer le lancement"],
+        ["Préparer le lancement", "Fiston Banza", new Date(Date.UTC(2031, 2, 15)), "Haute", "À faire", ""],
+        ["Rédiger le communiqué", "Clarisse", "20/03/2031", "", "À faire", "Préparer le lancement"],
         ["Choisir le prestataire", "", "", "", "Terminé", ""],
       ],
       { cellDates: true, UTC: true },
@@ -113,7 +113,7 @@ describe("lecture des fichiers", () => {
   it("lit un classeur Excel, sans les feuilles masquées, avec des dates exploitables", async () => {
     const { text, truncated } = await extractDocument("plan.xlsx", await xlsxFile());
     expect(text).toContain("Planning");
-    expect(text).toContain("Préparer le lancement | Karim Benali | 2031-03-15");
+    expect(text).toContain("Préparer le lancement | Fiston Banza | 2031-03-15");
     expect(text).not.toContain("Secret");
     expect(truncated).toBe(false);
   });
@@ -131,7 +131,7 @@ describe("lecture des fichiers", () => {
   });
   it("lit un ancien classeur .xls", async () => {
     const { text } = await extractDocument("ancien.xls", workbook("biff8"));
-    expect(text).toContain("Préparer le lancement | Karim Benali");
+    expect(text).toContain("Préparer le lancement | Fiston Banza");
     expect(text).not.toContain("Secret");
   });
   it("lit le texte d'un PDF et explique pourquoi un scan reste muet", async () => {
@@ -283,11 +283,11 @@ describe("pièces jointes", () => {
     const sheet = (await preview("plan.xlsx", await xlsxFile(), "u_hugo")).body;
     expect(sheet.kind).toBe("sheets");
     expect(sheet.sheets.map((s: { name: string }) => s.name)).toEqual(["Planning"]);
-    expect(sheet.sheets[0].rows[1].slice(0, 3)).toEqual(["Préparer le lancement", "Karim Benali", "2031-03-15"]);
+    expect(sheet.sheets[0].rows[1].slice(0, 3)).toEqual(["Préparer le lancement", "Fiston Banza", "2031-03-15"]);
     expect((await preview("ancien.xls", workbook("biff8"))).body.kind).toBe("sheets");
-    expect((await preview("liste.csv", Buffer.from("Tâche;Qui\nA;Karim"))).body.sheets[0].rows[1]).toEqual([
+    expect((await preview("liste.csv", Buffer.from("Tâche;Qui\nA;Fiston"))).body.sheets[0].rows[1]).toEqual([
       "A",
-      "Karim",
+      "Fiston",
     ]);
     const doc = (await preview("plan.docx", await docxFile(para("Objectif du projet")))).body;
     expect(doc).toMatchObject({ kind: "document", truncated: false });

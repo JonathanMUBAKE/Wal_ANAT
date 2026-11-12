@@ -28,7 +28,7 @@ describe("risques", () => {
     });
     expect(r.status).toBe(200);
     expect(r.body).toMatchObject({ project_id: p, score: 12 });
-    // Hugo n'a pas le pilotage, mais il est dans le projet
+    // Didier n'a pas le pilotage, mais il est dans le projet
     const sans = await g.api("u_hugo", "GET", "/api/risks");
     expect(sans.status).toBe(403);
     const mine = await g.api("u_hugo", "GET", `/api/risks?project_id=${p}`);

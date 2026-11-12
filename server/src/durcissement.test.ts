@@ -66,7 +66,7 @@ async function activated(email = "nadia@exemple.test") {
   cookies[email] = cookieOf(await login(email, GOOD));
   return i;
 }
-/** Une seconde organisation, dirigée par Hugo, sans lien avec Nova Mobile. */
+/** Une seconde organisation, dirigée par Didier, sans lien avec Nova Mobile. */
 async function otherOrg() {
   const b = await api("u_hugo", "POST", "/api/orgs", { name: "Autre organisation" });
   cookies.other = `${cookies.u_hugo}; ${cookieOf(b)}`;
@@ -144,7 +144,7 @@ describe("liens d'activation entre organisations", () => {
     await suspend("u_ines");
     const org = await otherOrg();
     const r = await api("other", "POST", "/api/org/invitations", {
-      email: "ines@cadence.app",
+      email: "esther@cadence.app",
       name: "x",
       profile_id: `prf_member_${org}`,
     });
@@ -381,7 +381,7 @@ describe("droit de déléguer à l'IA", () => {
     await restrict();
     const t = await task();
     expect(
-      (await api("u_theo", "POST", `/api/tasks/${t.id}/comments`, { body: "@Karim peux-tu regarder ?" })).status,
+      (await api("u_theo", "POST", `/api/tasks/${t.id}/comments`, { body: "@Fiston peux-tu regarder ?" })).status,
     ).toBe(200);
   });
 

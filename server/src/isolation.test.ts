@@ -223,36 +223,36 @@ describe("T-01 : une invitation ne donne rien sans l'accord du titulaire", () =>
   it("un compte actif est prévenu, mais rien n'est rattaché sans son accord", async () => {
     const spy = withPlatformMail();
     const orgB = await otherOrg();
-    const r = await inviteFromB(orgB, "karim@cadence.app");
+    const r = await inviteFromB(orgB, "fiston@cadence.app");
     expect(r.status).toBe(200);
-    expect(await memberRole("karim@cadence.app", orgB)).toBeUndefined();
-    expect(mailTo(spy, "karim@cadence.app")[2]).not.toContain("#token=");
+    expect(await memberRole("fiston@cadence.app", orgB)).toBeUndefined();
+    expect(mailTo(spy, "fiston@cadence.app")[2]).not.toContain("#token=");
     await demo("u_karim");
     expect(
       (await api("u_karim", "GET", "/api/notifications")).body.some((n: { kind: string }) => n.kind === "org.invite"),
     ).toBe(true);
     const [inv] = (await api("u_karim", "GET", "/api/invitations")).body as { id: string }[];
     expect((await api("u_karim", "POST", `/api/invitations/${inv.id}/decline`)).status).toBe(200);
-    expect(await memberRole("karim@cadence.app", orgB)).toBeUndefined();
+    expect(await memberRole("fiston@cadence.app", orgB)).toBeUndefined();
     expect((await api("u_karim", "POST", `/api/invitations/${inv.id}/accept`)).status).toBe(404);
   });
 
   it("seul le titulaire de l'adresse peut accepter", async () => {
     withPlatformMail();
     const orgB = await otherOrg();
-    const id = (await inviteFromB(orgB, "karim@cadence.app")).body.invitation_id as string;
+    const id = (await inviteFromB(orgB, "fiston@cadence.app")).body.invitation_id as string;
     expect((await api("u_theo", "POST", `/api/invitations/${id}/accept`)).status).toBe(404);
     expect((await api("other", "POST", `/api/invitations/${id}/accept`)).status).toBe(404);
-    expect(await memberRole("karim@cadence.app", orgB)).toBeUndefined();
+    expect(await memberRole("fiston@cadence.app", orgB)).toBeUndefined();
     expect((await api("u_karim", "POST", `/api/invitations/${id}/accept`)).status).toBe(200);
     expect((await api("u_karim", "POST", `/api/invitations/${id}/accept`)).status).toBe(404);
-    expect(await memberRole("karim@cadence.app", orgB)).toBe("member");
+    expect(await memberRole("fiston@cadence.app", orgB)).toBe("member");
   });
 
   it("une invitation annulée ou expirée ne s'accepte plus", async () => {
     withPlatformMail();
     const orgB = await otherOrg();
-    const id = (await inviteFromB(orgB, "karim@cadence.app")).body.invitation_id as string;
+    const id = (await inviteFromB(orgB, "fiston@cadence.app")).body.invitation_id as string;
     await ctx.db.query("UPDATE org_invitations SET expires_at = now() - interval '1 minute' WHERE id = $1", [id]);
     expect((await api("u_karim", "GET", "/api/invitations")).body).toEqual([]);
     expect((await api("u_karim", "POST", `/api/invitations/${id}/accept`)).status).toBe(404);
@@ -273,8 +273,8 @@ describe("T-01 : une invitation ne donne rien sans l'accord du titulaire", () =>
     };
     const [unknown, active, suspended] = [
       await shape("inconnu@client.test"),
-      await shape("karim@cadence.app"),
-      await shape("ines@cadence.app"),
+      await shape("fiston@cadence.app"),
+      await shape("esther@cadence.app"),
     ];
     expect(active).toEqual(unknown);
     expect(suspended).toEqual(unknown);
@@ -303,7 +303,7 @@ describe("T-02 : une organisation n'agit pas sur un compte qui ne lui appartient
     expect(r.status).toBe(404);
     expect(await ctx.svc.orgRole("u_karim", orgB)).toBeNull();
     expect(
-      (await api("other", "GET", "/api/users")).body.some((u: { email: string }) => u.email === "karim@cadence.app"),
+      (await api("other", "GET", "/api/users")).body.some((u: { email: string }) => u.email === "fiston@cadence.app"),
     ).toBe(false);
   });
 

@@ -102,7 +102,7 @@ function module(title, o) {
 }
 
 const PEOPLE =
-  "Personnes fictives des scénarios : la DG ; Inès, assistante de direction ; Karim, chef du département Ingénierie ; Hugo, directeur du Marketing ; Chloé et Théo, agents ; Alice, cheffe de projet. Toute ressemblance avec des personnes réelles est fortuite.";
+  "Personnes fictives des scénarios : la DG ; Esther, assistante de direction ; Fiston, chef du département Ingénierie ; Didier, directeur du Marketing ; Clarisse et Gaston, agents ; Bernadette, cheffe de projet. Toute ressemblance avec des personnes réelles est fortuite.";
 
 const content = [];
 // ------------------------------------------------------------------ couverture
@@ -184,12 +184,12 @@ content.push(
       "**Mes tâches** (à venir, en retard, terminées) et **Mes prochaines réunions** (convocations à répondre en tête).",
     ],
     scenarios: [
-      ["un lundi matin au secrétariat de la DG", "Inès, assistante de direction.", [
-        "Inès ouvre l'outil : l'accueil affiche « Courrier à imputer : 2 » et le bloc « Saisir ».",
+      ["un lundi matin au secrétariat de la DG", "Esther, assistante de direction.", [
+        "Esther ouvre l'outil : l'accueil affiche « Courrier à imputer : 2 » et le bloc « Saisir ».",
         "Elle clique **Enregistrer un courrier** : le formulaire s'ouvre directement. Elle saisit la lettre d'un ministère, joint le scan, valide : numéro ENT/2026/0142.",
-        "La DG lui dicte une décision prise en réunion restreinte. Inès clique **Inscrire une décision**, la saisit : elle reçoit le numéro DEC/2026/0004 et le chargé d'exécution est prévenu.",
+        "La DG lui dicte une décision prise en réunion restreinte. Esther clique **Inscrire une décision**, la saisit : elle reçoit le numéro DEC/2026/0004 et le chargé d'exécution est prévenu.",
         "Elle clique **Programmer une réunion** pour le comité de direction de jeudi, puis envoie la convocation.",
-      ], "la DG n'a rien saisi elle-même ; tout est tracé au nom d'Inès, et la DG peut faire la même chose depuis son tableau de bord quand elle le souhaite."],
+      ], "la DG n'a rien saisi elle-même ; tout est tracé au nom d'Esther, et la DG peut faire la même chose depuis son tableau de bord quand elle le souhaite."],
     ],
     changes: ["Bloc « Saisir » ajouté (I-31).", "L'en-tête affiche le profil réel de la personne (I-36)."],
   }),
@@ -204,8 +204,8 @@ content.push(
     ],
     rules: ["Un agent ne confie pas de tâche à un collègue dans le registre d'entité : c'est le chef qui confie.", "Une sous-tâche ne se répète pas seule."],
     scenarios: [
-      ["le rapport hebdomadaire", "Karim, chef du département Ingénierie.", [
-        "Karim crée « Consolider le rapport hebdomadaire de l'entité », échéance lundi, **Répétition : chaque semaine**.",
+      ["le rapport hebdomadaire", "Fiston, chef du département Ingénierie.", [
+        "Fiston crée « Consolider le rapport hebdomadaire de l'entité », échéance lundi, **Répétition : chaque semaine**.",
         "Lundi, il la coche terminée : une nouvelle tâche identique apparaît pour le lundi suivant.",
         "S'il rouvre puis recoche la tâche, aucun doublon n'est créé.",
       ], "le travail courant se répète sans ressaisie ; l'activité garde la trace de chaque occurrence."],
@@ -221,11 +221,11 @@ content.push(
       "Le chef **confie** une tâche à un agent ; l'agent **note** ses propres tâches ; création de projet rattaché à l'entité ; réunions de l'entité.",
     ],
     scenarios: [
-      ["confier une tâche à un agent", "Karim, chef d'entité ; Théo, agent.", [
-        "Karim ouvre Mon entité › Liste et clique « Confier une tâche ».",
-        "Il choisit Théo, l'échéance, la priorité, et éventuellement une répétition.",
-        "Théo est prévenu ; la tâche apparaît dans Mes tâches et dans le suivi de l'entité.",
-      ], "Karim suit la charge de chaque agent dans l'onglet Suivi ; la DG, elle, ne voit que la synthèse."],
+      ["confier une tâche à un agent", "Fiston, chef d'entité ; Gaston, agent.", [
+        "Fiston ouvre Mon entité › Liste et clique « Confier une tâche ».",
+        "Il choisit Gaston, l'échéance, la priorité, et éventuellement une répétition.",
+        "Gaston est prévenu ; la tâche apparaît dans Mes tâches et dans le suivi de l'entité.",
+      ], "Fiston suit la charge de chaque agent dans l'onglet Suivi ; la DG, elle, ne voit que la synthèse."],
     ],
   }),
   ...module("6. Tableau de bord DG et vue par direction", {
@@ -258,11 +258,11 @@ content.push(
     ],
     rules: ["Un arbitrage oppose au moins deux options ; un seul en attente par dossier.", "Celui qui demande ne tranche pas.", "La décision s'inscrit au registre, rattachée au dossier ; son responsable est chargé de l'exécution."],
     scenarios: [
-      ["un arbitrage sur une commission", "Alice, responsable de la commission foncière ; la DG.", [
-        "Sur la fiche de la commission, Alice clique **Demander un arbitrage** : « Quelle position l'Agence défend-elle ? », deux options (position ferme, position de compromis), recommandation : compromis.",
+      ["un arbitrage sur une commission", "Bernadette, responsable de la commission foncière ; la DG.", [
+        "Sur la fiche de la commission, Bernadette clique **Demander un arbitrage** : « Quelle position l'Agence défend-elle ? », deux options (position ferme, position de compromis), recommandation : compromis.",
         "La question devient la décision attendue de la commission ; la DG et son assistante sont prévenues.",
         "La DG clique **Trancher** au tableau de bord, garde l'option recommandée et ajoute une échéance.",
-        "La décision DEC/2026/0003 est inscrite, rattachée à la commission ; Alice est prévenue ; la fiche affiche « Tranché · retenu : position de compromis ».",
+        "La décision DEC/2026/0003 est inscrite, rattachée à la commission ; Bernadette est prévenue ; la fiche affiche « Tranché · retenu : position de compromis ».",
       ], "une seule porte pour décider, et une trace complète du raisonnement."],
     ],
     changes: ["Arbitrages étendus aux activités (I-03).", "« Tous les dossiers » (I-13).", "Export du portefeuille (I-22)."],
@@ -276,7 +276,7 @@ content.push(
       "Livrables : prévu, en cours, soumis, en revue, à corriger ou validé, payé ; responsable et valideur distincts.",
     ],
     scenarios: [
-      ["signaler un risque sur un projet", "Karim, chef du projet « Refonte de la plateforme ».", [
+      ["signaler un risque sur un projet", "Fiston, chef du projet « Refonte de la plateforme ».", [
         "Sur le tableau de bord du projet, section « Risques du projet », il clique **Ajouter un risque**.",
         "« Retard de livraison des données », probabilité 4, impact 3 : niveau Élevé (12) ; responsable, parade.",
         "Le risque apparaît dans le projet pour toute l'équipe, et dans le registre des risques de la DG.",
@@ -295,8 +295,8 @@ content.push(
     ],
     rules: ["Inscrire une décision sur un dossier tranche l'arbitrage qui y attendait.", "Jamais par un coéquipier IA."],
     scenarios: [
-      ["exécuter une décision", "Hugo, directeur du Marketing.", [
-        "Hugo reçoit l'avis « Décision à exécuter : lancer la campagne d'information ».",
+      ["exécuter une décision", "Didier, directeur du Marketing.", [
+        "Didier reçoit l'avis « Décision à exécuter : lancer la campagne d'information ».",
         "Il passe la décision « en cours », puis « exécutée » avec une note.",
         "La DG voit la décision sortir des retards du tableau de bord.",
       ], "le registre dit à tout moment ce qui a été décidé et ce qui a été fait."],
@@ -313,11 +313,11 @@ content.push(
       "Export du compte rendu en Word (modèle officiel) ou en PDF.",
     ],
     scenarios: [
-      ["le comité de direction", "Inès prépare ; la DG préside ; Karim rédige.", [
-        "Inès programme le comité et envoie la convocation ; chaque convoqué répond.",
-        "Karim saisit le compte rendu, les recommandations et une décision de séance, puis soumet.",
+      ["le comité de direction", "Esther prépare ; la DG préside ; Fiston rédige.", [
+        "Esther programme le comité et envoie la convocation ; chaque convoqué répond.",
+        "Fiston saisit le compte rendu, les recommandations et une décision de séance, puis soumet.",
         "La DG valide : la décision reçoit son numéro au registre ; le compte rendu est figé.",
-        "Inès clique **Exporter › PDF** pour diffusion.",
+        "Esther clique **Exporter › PDF** pour diffusion.",
       ], "un compte rendu officiel, des recommandations suivies, des décisions au registre."],
     ],
     changes: ["Convocation en lecture, champs ouverts avec « Modifier » (I-23).", "Export Word ou PDF au choix."],
@@ -331,8 +331,8 @@ content.push(
       "**Revue trimestrielle** : avancement constaté et attendu relevés, appréciation proposée puis corrigée, cause et mesure exigées pour tout retard, synthèse ; validation par la DG ; revue figée.",
     ],
     scenarios: [
-      ["la revue du quatrième trimestre", "Karim prépare ; la DG valide.", [
-        "Karim ouvre le plan de sa direction et clique **Préparer la revue** du T4.",
+      ["la revue du quatrième trimestre", "Fiston prépare ; la DG valide.", [
+        "Fiston ouvre le plan de sa direction et clique **Préparer la revue** du T4.",
         "L'audit de sécurité est proposé « compromis » (45 % pour 100 % attendus) : il indique la cause et la mesure.",
         "Il rédige la synthèse et soumet ; une soumission sans synthèse aurait été refusée.",
         "La DG valide : la revue est figée.",
@@ -348,8 +348,8 @@ content.push(
       "Export (Excel, PDF, Word, CSV) ; affichage au tableau de bord DG.",
     ],
     scenarios: [
-      ["suivre un indicateur du plan", "La DG ; Inès.", [
-        "Inès crée « Communes couvertes par un schéma » : référence 10, cible 40, résultat 18, rattaché à l'activité « Élaborer le schéma ».",
+      ["suivre un indicateur du plan", "La DG ; Esther.", [
+        "Esther crée « Communes couvertes par un schéma » : référence 10, cible 40, résultat 18, rattaché à l'activité « Élaborer le schéma ».",
         "Le tableau de bord DG affiche l'indicateur et son taux d'atteinte.",
       ], "ce que la DG voit est désormais saisi et mis à jour dans l'outil."],
     ],
@@ -379,9 +379,9 @@ content.push(
       "Courrier : enregistrement (ENT ou SOR), imputation par la direction puis en cascade par le chef d'entité, copies, annotations, prise en charge, réponse par le parapheur, clôture ou classement motivé ; « Mon courrier » pour chacun.",
     ],
     scenarios: [
-      ["un courrier imputé en cascade", "Inès ; Karim ; Théo.", [
-        "Inès enregistre la lettre et l'impute à l'Ingénierie, « pour traitement », délai 10 jours, copie à la DGA.",
-        "Karim l'impute à Théo ; Théo la prend en charge et prépare la réponse, qui part au parapheur.",
+      ["un courrier imputé en cascade", "Esther ; Fiston ; Gaston.", [
+        "Esther enregistre la lettre et l'impute à l'Ingénierie, « pour traitement », délai 10 jours, copie à la DGA.",
+        "Fiston l'impute à Gaston ; Gaston la prend en charge et prépare la réponse, qui part au parapheur.",
         "Signée, la réponse est enregistrée en sortie et le courrier entrant est clos.",
       ], "chaque étape est tracée ; un retard remonte au chef d'entité."],
     ],
@@ -396,8 +396,8 @@ content.push(
     ],
     scenarios: [
       ["donner son profil à l'assistante de la DG", "L'administrateur.", [
-        "Dans Structure › Personnes, il choisit Inès et lui attribue le profil **Assistant(e) de direction**.",
-        "Inès voit aussitôt le bloc « Saisir », le courrier à imputer et le tableau de bord DG.",
+        "Dans Structure › Personnes, il choisit Esther et lui attribue le profil **Assistant(e) de direction**.",
+        "Esther voit aussitôt le bloc « Saisir », le courrier à imputer et le tableau de bord DG.",
       ], "chacun voit l'outil tel que son rôle le demande."],
     ],
     changes: ["Profil Assistant(e) de direction (I-30)."],
@@ -413,8 +413,8 @@ content.push(
       "Toutes les pages au même gabarit : le contenu ne glisse plus d'une page à l'autre.",
     ],
     scenarios: [
-      ["exporter un registre", "Inès.", [
-        "Dans Décisions, Inès clique **Exporter** et choisit **Excel**.",
+      ["exporter un registre", "Esther.", [
+        "Dans Décisions, Esther clique **Exporter** et choisit **Excel**.",
         "Le fichier reprend exactement ce qui est affiché (onglet et filtres compris), aux couleurs de l'agence.",
       ], "l'export est inscrit au journal : titre, format, nombre de lignes."],
     ],

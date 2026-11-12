@@ -33,7 +33,7 @@ describe("administration système : surveiller et informer", () => {
   it("liste les sessions ouvertes de toute la plateforme et en ferme une, tracé", async () => {
     const list = (await g.api("u_alice", "GET", "/api/admin/sessions")).body as Any[];
     const karim = list.find((s) => s.user_id === "u_karim");
-    expect(karim).toMatchObject({ user_name: "Karim Benali" });
+    expect(karim).toMatchObject({ user_name: "Fiston Banza" });
     expect(karim.id).toBeTruthy();
     expect((await g.api("u_alice", "DELETE", `/api/admin/sessions/${karim.id}`)).status).toBe(200);
     expect((await g.api("u_karim", "GET", "/api/me")).status).toBe(401);
@@ -75,7 +75,7 @@ describe("administration système : surveiller et informer", () => {
     expect(text.split("\n")[0]).toMatch(
       /Nom;Adresse;État;Institutions;Profils;Double authentification;Dernière connexion/,
     );
-    expect(text).toContain("Karim Benali");
+    expect(text).toContain("Fiston Banza");
     expect(await g.ctx.db.one("SELECT 1 FROM security_events WHERE kind = 'accounts.exported'")).toBeTruthy();
   });
 });

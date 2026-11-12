@@ -7,7 +7,7 @@ import { localDate } from "./services.js";
  * Lot PA2 — accords et pièces de collaboration (docs/CONCEPTION.md § 4.4 à 4.6).
  * Un accord lie un ou plusieurs partenaires ; il entre en vigueur par la signature au parapheur (type contraignant)
  * ou par la date de signature (type non contraignant) ; il reçoit alors son numéro CONV/AAAA/NNNN et son texte
- * est figé. Toute modification passe par un avenant. Alice gère, Karim est point focal, Hugo consulte.
+ * est figé. Toute modification passe par un avenant. Bernadette gère, Fiston est point focal, Didier consulte.
  */
 let g: GovCtx;
 beforeEach(async () => {

@@ -5,7 +5,7 @@ import { Partners } from "./partners.js";
 /*
  * Lot PA1 — l'annuaire des partenaires (docs/CONCEPTION.md, partie 4).
  * Un annuaire unique des tiers : type et catégories paramétrables, états à cycle fixe, contacts, points focaux,
- * doublons refusés, fusion, notes d'échange et historique. Alice gère (propriétaire), Karim consulte (membre).
+ * doublons refusés, fusion, notes d'échange et historique. Bernadette gère (propriétaire), Fiston consulte (membre).
  */
 let g: GovCtx;
 beforeEach(async () => {
@@ -290,7 +290,7 @@ describe("partenaires : contacts et historique", () => {
       happened_on: "2026-11-02",
     });
     expect(r.status).toBe(200);
-    expect(r.body.notes[0]).toMatchObject({ happened_on: "2026-11-02", author_name: "Karim Benali" });
+    expect(r.body.notes[0]).toMatchObject({ happened_on: "2026-11-02", author_name: "Fiston Banza" });
     expect((await g.api("u_hugo", "POST", `/api/partners/${p.id}/notes`, { body: "x" })).status).toBe(403);
   });
 

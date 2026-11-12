@@ -152,8 +152,8 @@ describe("convoquer et répondre", () => {
     const r = await g.api("u_alice", "PUT", `/api/meetings/${m.id}/content`, {
       agenda: [{ subject: "Budget 2027" }],
       attendees: [
-        { user_id: "u_karim", name: "Karim", presence: "present" },
-        { user_id: "u_hugo", name: "Hugo", presence: "excuse" },
+        { user_id: "u_karim", name: "Fiston", presence: "present" },
+        { user_id: "u_hugo", name: "Didier", presence: "excuse" },
       ],
     });
     const k = r.body.attendees.find((a: { user_id: string }) => a.user_id === "u_karim");
@@ -221,9 +221,9 @@ describe("soumettre, retourner, valider, diffuser", () => {
         },
       ],
       attendees: [
-        { user_id: "u_karim", name: "Karim", presence: "present" },
-        { user_id: "u_hugo", name: "Hugo", presence: "present" },
-        { user_id: "u_alice", name: "Alice", presence: "present" },
+        { user_id: "u_karim", name: "Fiston", presence: "present" },
+        { user_id: "u_hugo", name: "Didier", presence: "present" },
+        { user_id: "u_alice", name: "Bernadette", presence: "present" },
       ],
     });
     await g.api("u_karim", "POST", `/api/meetings/${m.id}/submit`);

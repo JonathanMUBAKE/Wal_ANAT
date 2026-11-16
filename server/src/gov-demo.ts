@@ -501,7 +501,7 @@ async function seedHr(svc: Services, org: string) {
       "fonctionnaire",
       "Administrateur civil principal",
       "A",
-      "Directrice",
+      "Directrice générale",
       "2012-09-03",
     ],
     [
@@ -515,7 +515,7 @@ async function seedHr(svc: Services, org: string) {
       "Chef du département Ingénierie",
       "2015-02-02",
     ],
-    ["u_chloe", "Mme", "Clarisse", "Diala", "contractuel", "Attachée", "A", "Responsable Produit & Design", "2019-06-17"],
+    ["u_chloe", "Mme", "Clarisse", "Diala", "contractuel", "Attachée", "A", "Chargée d'études", "2019-06-17"],
     [
       "u_theo",
       "M.",
@@ -535,7 +535,7 @@ async function seedHr(svc: Services, org: string) {
       "fonctionnaire",
       "Attaché principal",
       "A",
-      "Directeur du marketing",
+      "Directeur du Marketing",
       "2016-04-11",
     ],
     [
@@ -546,7 +546,7 @@ async function seedHr(svc: Services, org: string) {
       "fonctionnaire",
       "Attachée principale",
       "A",
-      "Cheffe du service RH",
+      "Assistante de direction",
       "2014-10-01",
     ],
   ] as const) {

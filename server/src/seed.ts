@@ -22,12 +22,12 @@ export async function seedIfEmpty(svc: Services) {
 export async function seed(svc: Services) {
   const db = svc.db;
   const users: [string, string, string | null, string, string, boolean, string | null, string | null][] = [
-    ["u_alice", "Bernadette Mbuyi", "bernadette@cadence.app", "Head of Product", "#E5484D", false, null, null],
-    ["u_karim", "Fiston Banza", "fiston@cadence.app", "Lead développeur mobile", "#0090FF", false, null, null],
-    ["u_chloe", "Clarisse Diala", "clarisse@cadence.app", "Product designer", "#D6409F", false, null, null],
-    ["u_hugo", "Didier Lukusa", "didier@cadence.app", "Responsable marketing", "#F76B15", false, null, null],
-    ["u_ines", "Esther Mukendi", "esther@cadence.app", "Responsable RH", "#12A594", false, null, null],
-    ["u_theo", "Gaston Kalala", "gaston@cadence.app", "Ingénieur QA", "#8E4EC6", false, null, null],
+    ["u_alice", "Bernadette Mbuyi", "bernadette@cadence.app", "Directrice générale", "#E5484D", false, null, null],
+    ["u_karim", "Fiston Banza", "fiston@cadence.app", "Chef du département Ingénierie", "#0090FF", false, null, null],
+    ["u_chloe", "Clarisse Diala", "clarisse@cadence.app", "Chargée d'études", "#D6409F", false, null, null],
+    ["u_hugo", "Didier Lukusa", "didier@cadence.app", "Directeur du Marketing", "#F76B15", false, null, null],
+    ["u_ines", "Esther Mukendi", "esther@cadence.app", "Assistante de direction", "#12A594", false, null, null],
+    ["u_theo", "Gaston Kalala", "gaston@cadence.app", "Chef du service Qualité", "#8E4EC6", false, null, null],
     [
       "ai_atlas",
       "Atlas",

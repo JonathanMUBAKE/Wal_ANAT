@@ -102,7 +102,7 @@ function module(title, o) {
 }
 
 const PEOPLE =
-  "Personnes fictives des scénarios : la DG ; Esther, assistante de direction ; Fiston, chef du département Ingénierie ; Didier, directeur du Marketing ; Clarisse et Gaston, agents ; Bernadette, cheffe de projet. Toute ressemblance avec des personnes réelles est fortuite.";
+  "Personnes fictives des scénarios : Bernadette, directrice générale (la DG) ; Esther, assistante de direction ; Fiston, chef du département Ingénierie ; Didier, directeur du Marketing ; Clarisse, chargée d'études ; Gaston, chef du service Qualité. Toute ressemblance avec des personnes réelles est fortuite.";
 
 const content = [];
 // ------------------------------------------------------------------ couverture
@@ -258,11 +258,11 @@ content.push(
     ],
     rules: ["Un arbitrage oppose au moins deux options ; un seul en attente par dossier.", "Celui qui demande ne tranche pas.", "La décision s'inscrit au registre, rattachée au dossier ; son responsable est chargé de l'exécution."],
     scenarios: [
-      ["un arbitrage sur une commission", "Bernadette, responsable de la commission foncière ; la DG.", [
-        "Sur la fiche de la commission, Bernadette clique **Demander un arbitrage** : « Quelle position l'Agence défend-elle ? », deux options (position ferme, position de compromis), recommandation : compromis.",
+      ["un arbitrage sur une commission", "Clarisse, chargée d'études, responsable de la commission foncière ; la DG.", [
+        "Sur la fiche de la commission, Clarisse clique **Demander un arbitrage** : « Quelle position l'Agence défend-elle ? », deux options (position ferme, position de compromis), recommandation : compromis.",
         "La question devient la décision attendue de la commission ; la DG et son assistante sont prévenues.",
         "La DG clique **Trancher** au tableau de bord, garde l'option recommandée et ajoute une échéance.",
-        "La décision DEC/2026/0003 est inscrite, rattachée à la commission ; Bernadette est prévenue ; la fiche affiche « Tranché · retenu : position de compromis ».",
+        "La décision DEC/2026/0003 est inscrite, rattachée à la commission ; Clarisse est prévenue ; la fiche affiche « Tranché · retenu : position de compromis ».",
       ], "une seule porte pour décider, et une trace complète du raisonnement."],
     ],
     changes: ["Arbitrages étendus aux activités (I-03).", "« Tous les dossiers » (I-13).", "Export du portefeuille (I-22)."],

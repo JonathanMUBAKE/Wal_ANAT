@@ -102,7 +102,7 @@ function module(title, o) {
 }
 
 const PEOPLE =
-  "Personnes fictives des scénarios : Bernadette, directrice générale (la DG) ; Esther, assistante de direction ; Fiston, chef du département Ingénierie ; Didier, directeur du Marketing ; Clarisse, chargée d'études ; Gaston, chef du service Qualité. Toute ressemblance avec des personnes réelles est fortuite.";
+  "Personnes fictives des scénarios : Bernadette, directrice générale (la DG) ; Esther, assistante de direction ; Fiston, chef du département Ingénierie territoriale ; Didier, directeur de la Communication et des Partenariats ; Clarisse, chargée d'études ; Gaston, chef du service Suivi-évaluation. Toute ressemblance avec des personnes réelles est fortuite.";
 
 const content = [];
 // ------------------------------------------------------------------ couverture
@@ -204,7 +204,7 @@ content.push(
     ],
     rules: ["Un agent ne confie pas de tâche à un collègue dans le registre d'entité : c'est le chef qui confie.", "Une sous-tâche ne se répète pas seule."],
     scenarios: [
-      ["le rapport hebdomadaire", "Fiston, chef du département Ingénierie.", [
+      ["le rapport hebdomadaire", "Fiston, chef du département Ingénierie territoriale.", [
         "Fiston crée « Consolider le rapport hebdomadaire de l'entité », échéance lundi, **Répétition : chaque semaine**.",
         "Lundi, il la coche terminée : une nouvelle tâche identique apparaît pour le lundi suivant.",
         "S'il rouvre puis recoche la tâche, aucun doublon n'est créé.",
@@ -240,7 +240,7 @@ content.push(
     rules: ["La santé d'un projet est la même partout : celle calculée d'après les faits, ou celle déclarée si elle est plus grave.", "Un retard est une tâche principale échue.", "La DG voit la synthèse du travail des équipes, pas la charge nominative des agents."],
     scenarios: [
       ["la revue du lundi", "La DG.", [
-        "La DG ouvre le tableau de bord : la Direction Produit & Technologie est en **Alerte** — « 1 activité du plan échue non achevée · 1 décision en retard d'exécution ».",
+        "La DG ouvre le tableau de bord : la Direction technique est en **Alerte** — « 1 activité du plan échue non achevée · 1 décision en retard d'exécution ».",
         "Elle clique sur la ligne : la fiche montre le plan à 67 % pour 89 % attendus, et la décision en retard avec son chargé.",
         "Dans « Décisions attendues », un projet affiche **Trancher** : elle ouvre l'arbitrage et choisit l'option recommandée.",
       ], "en trois clics, la DG sait où agir et agit ; la décision est inscrite au registre."],
@@ -295,7 +295,7 @@ content.push(
     ],
     rules: ["Inscrire une décision sur un dossier tranche l'arbitrage qui y attendait.", "Jamais par un coéquipier IA."],
     scenarios: [
-      ["exécuter une décision", "Didier, directeur du Marketing.", [
+      ["exécuter une décision", "Didier, directeur de la Communication et des Partenariats.", [
         "Didier reçoit l'avis « Décision à exécuter : lancer la campagne d'information ».",
         "Il passe la décision « en cours », puis « exécutée » avec une note.",
         "La DG voit la décision sortir des retards du tableau de bord.",
@@ -380,7 +380,7 @@ content.push(
     ],
     scenarios: [
       ["un courrier imputé en cascade", "Esther ; Fiston ; Gaston.", [
-        "Esther enregistre la lettre et l'impute à l'Ingénierie, « pour traitement », délai 10 jours, copie à la DGA.",
+        "Esther enregistre la lettre et l'impute à l'Ingénierie territoriale, « pour traitement », délai 10 jours, copie à la DGA.",
         "Fiston l'impute à Gaston ; Gaston la prend en charge et prépare la réponse, qui part au parapheur.",
         "Signée, la réponse est enregistrée en sortie et le courrier entrant est clos.",
       ], "chaque étape est tracée ; un retard remonte au chef d'entité."],

@@ -20,14 +20,17 @@ const day = (offset: number) => localDate(new Date(Date.now() + offset * 864e5))
 
 export async function seedGovDemo(svc: Services) {
   const db = svc.db;
-  const org = (await db.one<{ id: string }>("SELECT id FROM organizations WHERE name = 'Nova Mobile'"))?.id;
+  const org = (
+    await db.one<{ id: string }>("SELECT id FROM organizations WHERE name IN ('Nova Mobile', $1)", [ANAT_ORG])
+  )?.id;
   if (!org) return;
   const me = "u_alice";
   // Une base déjà illustrée reçoit seulement les lots ajoutés depuis (ici, l'annuaire des partenaires)
   if (await db.one("SELECT 1 FROM agency_activities WHERE org_id = $1", [org])) {
     await seedPartners(svc, org, me);
     await seedAgreements(svc, org, me);
-    return seedPartnerLinks(svc, org, me);
+    await seedPartnerLinks(svc, org, me);
+    return renameForAnat(svc, org);
   }
   const a = new Activities(svc);
   const m = new Meetings(svc);
@@ -463,6 +466,65 @@ export async function seedGovDemo(svc: Services) {
   await seedUnitTasks(svc, org);
   await seedHr(svc, org);
   await seedProfiles(svc, org);
+  await renameForAnat(svc, org);
+}
+
+const ANAT_ORG = "ANAT (démonstration)";
+/** Entités du jeu générique (start-up) → entités d'une agence d'aménagement du territoire, toutes fictives. */
+const UNITS: [string, string][] = [
+  ["Nova Mobile", ANAT_ORG],
+  ["Direction Générale", "Direction générale"],
+  ["Direction Produit & Technologie", "Direction technique"],
+  ["Produit & Design", "Études et Prospective"],
+  ["Ingénierie", "Ingénierie territoriale"],
+  ["Mobile", "Cartographie et SIG"],
+  ["Qualité", "Suivi-évaluation"],
+  ["Direction Marketing", "Direction de la Communication et des Partenariats"],
+  ["Acquisition", "Communication"],
+];
+/** Fonctions assorties aux nouvelles entités. */
+const TITLES: [string, string][] = [
+  ["u_alice", "Directrice générale"],
+  ["u_karim", "Chef du département Ingénierie territoriale"],
+  ["u_chloe", "Chargée d'études"],
+  ["u_hugo", "Directeur de la Communication et des Partenariats"],
+  ["u_ines", "Assistante de direction"],
+  ["u_theo", "Chef du service Suivi-évaluation"],
+];
+
+/**
+ * Renomme en dernier (le reste du jeu retrouve les entités par leur nom d'origine) : l'institution, ses entités et
+ * les fonctions affichées. Sans effet sur une base déjà renommée.
+ */
+async function renameForAnat(svc: Services, org: string) {
+  await svc.db.query("UPDATE organizations SET name = $2 WHERE id = $1", [org, ANAT_ORG]);
+  for (const [from, to] of UNITS)
+    await svc.db.query("UPDATE org_units SET name = $3 WHERE org_id = $1 AND name = $2", [org, from, to]);
+  for (const [user, title] of TITLES) {
+    await svc.db.query("UPDATE users SET title = $2 WHERE id = $1", [user, title]);
+    await svc.db.query("UPDATE agent_records SET function_title = $3 WHERE org_id = $1 AND user_id = $2", [
+      org,
+      user,
+      title,
+    ]);
+    await svc.db.query(
+      "UPDATE agent_assignments SET function_title = $3 WHERE org_id = $1 AND user_id = $2 AND ended_on IS NULL",
+      [org, user, title],
+    );
+  }
+  // La DG et son assistante relèvent de la Direction générale
+  const dg = await svc.db.one<{ id: string }>("SELECT id FROM org_units WHERE org_id = $1 AND name = $2", [
+    org,
+    "Direction générale",
+  ]);
+  if (dg)
+    for (const user of ["u_alice", "u_ines"]) {
+      await svc.db.query("UPDATE org_members SET unit_id = $3 WHERE org_id = $1 AND user_id = $2", [org, user, dg.id]);
+      await svc.db.query(
+        "UPDATE agent_assignments SET unit_id = $3 WHERE org_id = $1 AND user_id = $2 AND ended_on IS NULL",
+        [org, user, dg.id],
+      );
+    }
 }
 
 /**
@@ -672,11 +734,11 @@ async function seedUnitTasks(svc: Services, org: string) {
   monday.setDate(monday.getDate() + ((8 - monday.getDay()) % 7 || 7));
   await new Meetings(svc).create("u_karim", org, {
     meeting_type: "Réunion de service",
-    title: "Réunion hebdomadaire de l'Ingénierie",
+    title: "Réunion hebdomadaire de l'Ingénierie territoriale",
     meeting_date: localDate(monday),
     start_time: "09:00",
     end_time: "10:00",
-    location: "Salle Ingénierie",
+    location: "Salle Ingénierie territoriale",
     unit_id: inge,
     chair_id: "u_karim",
     timing: "upcoming",
@@ -685,7 +747,7 @@ async function seedUnitTasks(svc: Services, org: string) {
   });
   const p = await ut.createProject("u_karim", org, inge, {
     name: "Plateforme de tests automatisés",
-    description: "Exemple fictif : outiller les tests de non-régression de l'Ingénierie.",
+    description: "Exemple fictif : outiller les tests de non-régression de l'Ingénierie territoriale.",
     due_on: day(60),
   });
   for (const [title, done] of [

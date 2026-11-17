@@ -1653,3 +1653,40 @@ plusieurs fois la même cause.
 5. **Confidentialité** (thème 5), après les décisions de la DG sur qui lit quoi.
 6. **Fonctions manquantes** (thème 6), lot par lot, en commençant par PH-1 (signature de fichiers) et
    RH-1 (sortie d'un agent).
+
+---
+
+## Suivi des améliorations
+
+### Lot 1 — Démonstration ANAT crédible (17/11/2026, branche `lot-demo-anat`)
+
+Le contenu de démonstration hérité d'une start-up devient celui d'une agence d'aménagement, et les
+entités sont peuplées. Seule la démonstration (ANAT_DEMO=1) est transformée ; le jeu des tests reste
+inchangé. Code : `server/src/gov-demo-anat.ts` ; tests : `server/src/demo-anat.test.ts` (7 tests).
+
+| Ce qui change | Avant | Après |
+|---|---|---|
+| Projets | Application mobile v2, Campagne de lancement, Refonte du site web, Plateforme de tests automatisés | Système d'information géographique national, Campagne d'information sur le schéma national, Refonte du site institutionnel, Numérisation des archives cartographiques |
+| Tâches, étiquettes, commentaires, historique | Paiement, Apple Pay, iOS, App Store, panier, QA | Couches foncière, routière et hydrographique ; relevés de terrain ; formation des agents provinciaux… |
+| Équipes | Marketing, Produit & Design, RH, Équipe Mobile | Comité éditorial, Groupe de travail du site institutionnel, Comité de recrutement, Groupe projet SIG national |
+| Réunions | Plusieurs intitulées « Réunion » | Le nom du type : Comité de direction, Comité de pilotage des projets, Réunion avec les provinces |
+| Coéquipiers IA | « Chef de projet IA », « analyste QA et triage », bugs | Chargé de suivi, analyste des données ; règle de tri sans vocabulaire de start-up |
+| Second espace | Studio Lumen | Retiré |
+| Personnes | 6 | 15 : un chef distinct par entité et des agents dans les services |
+| Profils | La DG « Propriétaire » ; deux agents chefs de service ; l'assistante cheffe des RH | La DG « DG » ; chaque chef « Chef d'entité » ; les agents ne dirigent rien ; le service RH dirigé par sa cheffe, qui tient les dossiers |
+| Dossiers RH | Entité contraire à la fonction ; nationalité « Fictivienne » | Affectation alignée sur le rattachement ; nationalité congolaise |
+| Textes figés | « Imputé à Nova Mobile », écarts sur « Direction Produit & Technologie » | Noms ANAT |
+
+Personnes ajoutées (fictives) : Albert Mwamba (Directeur technique), Jean-Pierre Kabongo (Chef du
+département Études et Prospective), Patrick Ilunga (Chef du service Cartographie et SIG), Aimée Ngalula
+(Géomaticienne), Samuel Kalonji (Chargé de suivi-évaluation), Sylvie Kasongo (Cheffe du service des
+Ressources humaines), Rose Mbombo (Cheffe du service Communication), Joseph Tshibangu (Représentant
+provincial Nord), Prisca Kanku (Cheffe de l'Antenne Sud).
+
+**Remarques traitées** : A-3 (données), A-4, A-7, A-8, T-10, T-13, E-9 (en partie), D-5, D-7 (nationalité),
+D-8, I-6, I-7, P-6, F-8, C-1, S-5, S-6, S-8, EQ-4, AD-5, RH-6, RH-7.
+
+**Restent pour un lot suivant** : adresses en « @cadence.app » (D-7), rédacteur des comités et membres
+convoqués (R-9), décisions, courrier, risques, plans et liens partenaires plus fournis (DEC-7, C-6, RI-8,
+PT-8, PA-6), fiches d'attributions (S-7). Le journal d'audit de l'administration garde, lui, les noms
+d'origine : il n'est pas réécrit.

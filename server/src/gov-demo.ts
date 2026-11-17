@@ -12,6 +12,7 @@ import { Registers } from "./registers.js";
 import { Signature } from "./signature.js";
 import { UnitTasks } from "./unit-tasks.js";
 import { Hr } from "./hr.js";
+import { anatContent } from "./gov-demo-anat.js";
 import type { Provisioning } from "./auth/provisioning.js";
 import type { Services } from "./services.js";
 
@@ -30,7 +31,8 @@ export async function seedGovDemo(svc: Services) {
     await seedPartners(svc, org, me);
     await seedAgreements(svc, org, me);
     await seedPartnerLinks(svc, org, me);
-    return renameForAnat(svc, org);
+    await renameForAnat(svc, org);
+    return anatContent(svc, org, UNITS);
   }
   const a = new Activities(svc);
   const m = new Meetings(svc);
@@ -467,6 +469,7 @@ export async function seedGovDemo(svc: Services) {
   await seedHr(svc, org);
   await seedProfiles(svc, org);
   await renameForAnat(svc, org);
+  await anatContent(svc, org, UNITS);
 }
 
 const ANAT_ORG = "ANAT (démonstration)";

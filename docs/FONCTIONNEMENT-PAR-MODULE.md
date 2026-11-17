@@ -346,10 +346,10 @@ Partenaires ──► Conventions, projets, courrier, réunions
 
 - **Où** : Organisation › Structure.
 - **Onglets** : Organigramme · Attributions · Écarts de participation · Personnes · Profils et droits · Référentiel
-  des domaines · Messagerie.
+  des domaines. (La messagerie est réglée dans Administration système.)
 - **Fonctionnalités** : entités et chefs ; **fiches d'attributions** des entités (rédigées, approuvées) ; **écarts
   de participation** (une entité absente des dossiers de son domaine) ; personnes, invitations, profils et droits
-  individuels ; domaines d'activité ; adresses de service et messagerie.
+  individuels ; domaines d'activité.
 - **Incohérences** : grille non homogène (I-21) ; pas d'intérim d'un chef d'entité.
 
 ## 17. Équipes
@@ -372,8 +372,15 @@ Partenaires ──► Conventions, projets, courrier, réunions
 ## 19. Administration système
 
 - **Qui** : administrateur de la plateforme.
-- **Onglets** : État du système · Paramètres de l'institution · Comptes · Sessions · Rôles et droits ·
+- **Onglets** : État du système · Paramètres de l'institution · Messagerie · Comptes · Sessions · Rôles et droits ·
   Inscriptions · Journal d'audit.
+- **Domaine principal** (Paramètres de l'institution) : le domaine de l'institution (ex. agence.gouv.cd), saisi à
+  l'écran et jamais dans le code ; il propose les adresses des agents (prénom.nom@domaine) et le point de départ de la
+  messagerie. Contrôlé (format) et journalisé.
+- **Messagerie** : domaine des adresses, nom d'expéditeur, **adresse des notifications** (ex. noreply@domaine, du même
+  domaine ; les réponses vont à l'équipe ou à l'entité concernée), serveur SMTP (proposé : mail.domaine), sécurité
+  SSL/TLS (port 465) ou STARTTLS (port 587), identifiants chiffrés ; adresses de service par entité et par équipe ;
+  envoi de test ; derniers envois.
 - **Fonctionnalités** : alertes (droits élevés sans double authentification, messagerie absente…), bandeau
   d'information, comptes (créer avec lien de finalisation, renvoyer, réinitialiser, suspendre), sessions (fermer),
   matrice des rôles, journal d'audit (filtres, gravité, journal par personne, analyse IA).

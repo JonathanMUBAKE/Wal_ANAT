@@ -8,7 +8,7 @@ import { Button, Chip, Empty, IconButton, Spinner } from "@/components/ui";
 import { Drawer, DrawerSection } from "@/components/drawer";
 import { Field, Input, PageHeader, Section, Select, Table, Tabs, Td, Tr, frDate } from "@/components/gov";
 import { Fact, Facts } from "@/components/record";
-import { useUnits } from "@/lib/hooks";
+import { usePrimaryDomain, useUnits } from "@/lib/hooks";
 import { api } from "@/lib/api";
 import type { InviteResult } from "@/lib/types";
 import { LinkResult } from "./OrgAccess";
@@ -296,6 +296,7 @@ function AgentForm({
   const qc = useQueryClient();
   const nav = useNavigate();
   const { data: units } = useUnits();
+  const domain = usePrimaryDomain();
   const [f, setF] = useState<Form>(() => {
     if (!agent) {
       const [first, ...rest] = (existing?.name ?? "").split(" ");
@@ -416,7 +417,16 @@ function AgentForm({
             {text("first_names", "Prénoms", { wide: true })}
             {needsEmail && (
               <Field label="Adresse électronique professionnelle" required error={emailError} className="sm:col-span-2">
-                {(a) => <Input {...a} type="email" value={f.email} onChange={set("email")} autoComplete="off" />}
+                {(a) => (
+                  <Input
+                    {...a}
+                    type="email"
+                    value={f.email}
+                    onChange={set("email")}
+                    autoComplete="off"
+                    placeholder={`prénom.nom@${domain || "agence.gouv.cd"}`}
+                  />
+                )}
               </Field>
             )}
             {text("birth_date", "Date de naissance", { type: "date" })}
@@ -549,8 +559,8 @@ export function AgentPage({ self }: { self?: boolean }) {
         <div className="min-w-0 space-y-4">
           {a.can.self && (
             <p className="rounded-lg border border-line bg-hover px-4 py-3 text-[13px] text-muted">
-              Votre dossier est tenu par le service des ressources humaines. Pour corriger une information, adressez-vous
-              à lui : vous ne pouvez pas la modifier vous-même.
+              Votre dossier est tenu par le service des ressources humaines. Pour corriger une information,
+              adressez-vous à lui : vous ne pouvez pas la modifier vous-même.
             </p>
           )}
           <Section title="Identité">

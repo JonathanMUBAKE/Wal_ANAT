@@ -19,6 +19,8 @@ export interface MailConfig {
   domain: string;
   from_name: string;
   notifications: boolean;
+  /** Adresse d'envoi des notifications (ex. noreply@agence.gouv.cd), vide pour l'adresse de l'équipe. */
+  notify_from: string;
   smtp: { host: string; port: number; security: SmtpSecurity; username: string; password_set: boolean };
 }
 export interface ServiceAddress {

@@ -7,6 +7,7 @@ import {
   ArrowUp,
   Banknote,
   Briefcase,
+  Globe,
   Landmark,
   Lock,
   MapPin,
@@ -18,6 +19,7 @@ import { toast } from "sonner";
 import { Button, Dialog, Empty, IconButton, cn } from "@/components/ui";
 import { Field, Input, LoadingRows } from "@/components/gov";
 import { api } from "@/lib/api";
+import { useMe } from "@/lib/hooks";
 import { HUES, HUE_LABEL, REF_ICONS, type RefList, type RefValue, useReferentials } from "@/lib/referentials";
 
 const LISTS: { id: RefList; label: string; hint: string }[] = [
@@ -55,7 +57,69 @@ const LISTS: { id: RefList; label: string; hint: string }[] = [
 const fail = (e: unknown) => toast.error((e as Error).message);
 
 /** Référentiels de l'institution : modifiables par l'administrateur système seul, jamais supprimés (docs/PARAMETRAGE.md). */
+/**
+ * Domaine principal du système (ex. agence.gouv.cd) : il donne les adresses des agents et sert de point de départ à la
+ * messagerie (domaine d'envoi, serveur mail.<domaine>). Saisi ici, jamais inscrit dans le code.
+ */
+function PrimaryDomain() {
+  const qc = useQueryClient();
+  const { data: me } = useMe();
+  const org = me?.orgs.find((o) => o.id === me.org_id);
+  const current = org?.domains?.[0] ?? "";
+  const [value, setValue] = useState<string | null>(null);
+  const v = (value ?? current).trim().toLowerCase();
+  const save = useMutation({
+    mutationFn: () =>
+      api.patch("/api/org", { domains: [v, ...(org?.domains ?? []).filter((d) => d !== v && d !== current)] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["me"] });
+      setValue(null);
+      toast.success("Domaine principal enregistré");
+    },
+    onError: fail,
+  });
+  const example = v || "agence.gouv.cd";
+  return (
+    <section className="rounded-2xl border border-line bg-panel p-5 shadow-sm" aria-label="Domaine principal">
+      <h2 className="flex items-center gap-2 text-[15px] font-semibold">
+        <Globe className="size-4" />
+        Domaine principal
+      </h2>
+      <p className="mt-0.5 text-[12.5px] text-muted">
+        Le domaine de l'institution : adresses des agents (prénom.nom@{example}) et messagerie (serveur proposé : mail.
+        {example}).
+      </p>
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <Field label="Domaine principal du système" className="w-full max-w-[420px]">
+          {(a) => (
+            <Input
+              {...a}
+              value={value ?? current}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="agence.gouv.cd"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          )}
+        </Field>
+        <Button variant="primary" loading={save.isPending} disabled={!v || v === current} onClick={() => save.mutate()}>
+          Enregistrer
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 export function InstitutionSettings() {
+  return (
+    <div className="space-y-6">
+      <PrimaryDomain />
+      <Referentials />
+    </div>
+  );
+}
+
+function Referentials() {
   const qc = useQueryClient();
   const { data, isLoading } = useReferentials();
   const [list, setList] = useState<RefList>("activity_type");

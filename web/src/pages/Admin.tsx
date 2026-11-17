@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Button, Chip, Dialog, Empty, Menu, MenuContent, MenuItem, MenuTrigger, Spinner, cn } from "@/components/ui";
 import { Drawer, DrawerSection } from "@/components/drawer";
-import { useMe } from "@/lib/hooks";
+import { useMe, usePrimaryDomain } from "@/lib/hooks";
 import { ago } from "@/lib/format";
 import { api } from "@/lib/api";
 import type {
@@ -23,6 +23,7 @@ import type {
 import { LinkResult } from "./OrgAccess";
 import { Field, Input, PageHeader, Select, Tabs } from "@/components/gov";
 import { InstitutionSettings } from "./AdminReferentials";
+import { OrgMail } from "./OrgMail";
 import { ActiveSessions, RolesMatrix, SystemHealth } from "./AdminPlus";
 
 const STATUS: Record<
@@ -40,9 +41,10 @@ const failure = (e: unknown) => toast.error((e as Error).message);
 /** Console de l'administrateur système : tous les comptes, inscriptions et journal de sécurité. */
 export function AdminPage() {
   const { data: me } = useMe();
-  const [tab, setTab] = useState<"health" | "institution" | "users" | "sessions" | "roles" | "settings" | "events">(
-    "health",
-  );
+  const [tab, setTab] = useState<
+    "health" | "institution" | "mail" | "users" | "sessions" | "roles" | "settings" | "events"
+  >("health");
+  const org = me?.orgs.find((o) => o.id === me.org_id);
   if (me && !me.platform_role) return <Navigate to="/" replace />;
   return (
     <div className="min-h-full">
@@ -50,7 +52,7 @@ export function AdminPage() {
         Icon={ShieldCheck}
         crumbs={["Administration système"]}
         title="Administration système"
-        subtitle="Réservée à l'administrateur système : état du système, paramètres, comptes, sessions, rôles et droits, inscriptions, journal d'audit."
+        subtitle="Réservée à l'administrateur système : état du système, paramètres, messagerie, comptes, sessions, rôles et droits, inscriptions, journal d'audit."
       />
       <Tabs
         value={tab}
@@ -58,6 +60,7 @@ export function AdminPage() {
         items={[
           { id: "health", label: "État du système" },
           { id: "institution", label: "Paramètres de l'institution" },
+          { id: "mail", label: "Messagerie" },
           { id: "users", label: "Comptes" },
           { id: "sessions", label: "Sessions" },
           { id: "roles", label: "Rôles et droits" },
@@ -80,6 +83,8 @@ export function AdminPage() {
           <RolesMatrix />
         ) : tab === "institution" ? (
           <InstitutionSettings />
+        ) : tab === "mail" ? (
+          <OrgMail orgName={org?.name ?? ""} primaryDomain={org?.domains?.[0] ?? ""} />
         ) : tab === "users" ? (
           <Users meId={me?.id} />
         ) : tab === "settings" ? (
@@ -264,6 +269,7 @@ function Users({ meId }: { meId?: string }) {
  * personnel, valable une durée limitée, pour choisir elle-même son mot de passe. Personne d'autre ne le connaît.
  */
 function CreateAccount({ onClose, onDone }: { onClose: () => void; onDone: (r: InviteResult) => void }) {
+  const domain = usePrimaryDomain();
   const { data: orgs } = useQuery({ queryKey: ["admin-orgs"], queryFn: () => api.get<AdminOrg[]>("/api/admin/orgs") });
   const [f, setF] = useState({ org_id: "", name: "", email: "", title: "", unit_id: "", profile_id: "" });
   const [busy, setBusy] = useState(false);
@@ -321,7 +327,16 @@ function CreateAccount({ onClose, onDone }: { onClose: () => void; onDone: (r: I
                 {(a) => <Input {...a} value={f.name} onChange={set("name")} placeholder="Prénom et nom" autoFocus />}
               </Field>
               <Field label="Adresse électronique" required error={emailError} hint="Le lien y sera envoyé.">
-                {(a) => <Input {...a} type="email" value={f.email} onChange={set("email")} autoComplete="off" />}
+                {(a) => (
+                  <Input
+                    {...a}
+                    type="email"
+                    value={f.email}
+                    onChange={set("email")}
+                    autoComplete="off"
+                    placeholder={`prénom.nom@${domain || "agence.gouv.cd"}`}
+                  />
+                )}
               </Field>
               <Field label="Fonction">
                 {(a) => <Input {...a} value={f.title} onChange={set("title")} placeholder="Ex. Chargé d'études" />}

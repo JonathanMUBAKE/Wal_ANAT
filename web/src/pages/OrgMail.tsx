@@ -22,19 +22,19 @@ import type { MailConfig, ServiceAddress, SmtpSecurity } from "@/lib/types";
 
 const SECURITY: Record<SmtpSecurity, { label: string; port: number; hint: string }> = {
   starttls: { label: "STARTTLS", port: 587, hint: "Recommandé : connexion chiffrée après l'ouverture (port 587)." },
-  tls: { label: "TLS implicite", port: 465, hint: "Connexion chiffrée dès l'ouverture (port 465)." },
+  tls: { label: "SSL/TLS", port: 465, hint: "Connexion chiffrée dès l'ouverture (port 465)." },
   none: { label: "Aucune", port: 25, hint: "Sans chiffrement : à réserver à un relais interne de confiance." },
 };
 const field =
   "h-9 w-full rounded-lg border border-line bg-bg/60 px-2.5 text-[13.5px] outline-none focus:border-line-strong";
 
 /** Onglet « Messagerie » de l'organisation : serveur SMTP, domaine, adresses de service par niveau. */
-export function OrgMail({ orgName }: { orgName: string }) {
+export function OrgMail({ orgName, primaryDomain = "" }: { orgName: string; primaryDomain?: string }) {
   const { data: cfg, isLoading } = useMailConfig();
   if (isLoading) return <Spinner />;
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[420px_minmax(0,1fr)]">
-      <SmtpForm cfg={cfg ?? null} orgName={orgName} />
+      <SmtpForm cfg={cfg ?? null} orgName={orgName} primary={primaryDomain} />
       <div className="min-w-0 space-y-5">
         {cfg ? (
           <Addresses domain={cfg.domain} />
@@ -55,13 +55,13 @@ export function OrgMail({ orgName }: { orgName: string }) {
   );
 }
 
-function SmtpForm({ cfg, orgName }: { cfg: MailConfig | null; orgName: string }) {
+function SmtpForm({ cfg, orgName, primary }: { cfg: MailConfig | null; orgName: string; primary: string }) {
   const qc = useQueryClient();
-  const [f, setF] = useState(() => init(cfg, orgName));
+  const [f, setF] = useState(() => init(cfg, orgName, primary));
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; error?: string } | null>(null);
-  useEffect(() => setF(init(cfg, orgName)), [cfg, orgName]);
+  useEffect(() => setF(init(cfg, orgName, primary)), [cfg, orgName, primary]);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => {
     setF((x) => ({ ...x, [k]: v }));
     setResult(null);
@@ -75,6 +75,7 @@ function SmtpForm({ cfg, orgName }: { cfg: MailConfig | null; orgName: string })
         domain: f.domain.trim(),
         from_name: f.from_name.trim(),
         notifications: f.notifications,
+        notify_from: f.notify_from.trim(),
         smtp: {
           host: f.host.trim(),
           port: Number(f.port),
@@ -136,7 +137,7 @@ function SmtpForm({ cfg, orgName }: { cfg: MailConfig | null; orgName: string })
             <input
               value={f.domain}
               onChange={(e) => set("domain", e.target.value.toLowerCase())}
-              placeholder="mon-entreprise.fr"
+              placeholder={primary || "agence.gouv.cd"}
               className="h-9 w-full bg-transparent px-1 text-[13.5px] text-fg outline-none"
             />
           </div>
@@ -151,11 +152,25 @@ function SmtpForm({ cfg, orgName }: { cfg: MailConfig | null; orgName: string })
           />
         </label>
         <label className="text-[12px] text-muted sm:col-span-2">
+          Adresse des notifications
+          <input
+            value={f.notify_from}
+            onChange={(e) => set("notify_from", e.target.value.toLowerCase())}
+            placeholder={`noreply@${f.domain.trim() || primary || "agence.gouv.cd"}`}
+            autoComplete="off"
+            className={cn(field, "mt-1 font-mono text-[13px] text-fg")}
+          />
+          <span className="mt-1 block text-[11.5px] text-faint">
+            Les notifications partent de cette adresse ; les réponses vont à l'équipe ou à l'entité concernée. Vide :
+            l'adresse de l'équipe.
+          </span>
+        </label>
+        <label className="text-[12px] text-muted sm:col-span-2">
           Hôte SMTP
           <input
             value={f.host}
             onChange={(e) => set("host", e.target.value)}
-            placeholder="smtp.mon-entreprise.fr"
+            placeholder={`mail.${primary || "agence.gouv.cd"}`}
             autoComplete="off"
             className={cn(field, "mt-1 font-mono text-[13px] text-fg")}
           />
@@ -227,8 +242,8 @@ function SmtpForm({ cfg, orgName }: { cfg: MailConfig | null; orgName: string })
         <span className="text-[13px]">
           <span className="font-medium">Notifications par e-mail</span>
           <span className="block text-[12px] text-muted">
-            Assignations, mentions, commentaires et validations sont aussi envoyés par e-mail, depuis l'adresse de
-            l'équipe du projet.
+            Assignations, mentions, commentaires et validations sont aussi envoyés par e-mail, depuis l'adresse des
+            notifications (à défaut, celle de l'équipe du projet).
           </span>
         </span>
       </label>
@@ -263,14 +278,19 @@ function SmtpForm({ cfg, orgName }: { cfg: MailConfig | null; orgName: string })
   );
 }
 
-function init(cfg: MailConfig | null, orgName: string) {
+/**
+ * Sans configuration, la messagerie part du domaine principal de l'institution : serveur mail.<domaine> en SSL/TLS,
+ * notifications depuis noreply@<domaine>.
+ */
+function init(cfg: MailConfig | null, orgName: string, primary = "") {
   return {
-    domain: cfg?.domain ?? "",
+    domain: cfg?.domain ?? primary,
     from_name: cfg?.from_name ?? orgName,
     notifications: cfg?.notifications ?? true,
-    host: cfg?.smtp.host ?? "",
-    port: cfg?.smtp.port ?? 587,
-    security: cfg?.smtp.security ?? ("starttls" as SmtpSecurity),
+    notify_from: cfg ? cfg.notify_from : primary ? `noreply@${primary}` : "",
+    host: cfg?.smtp.host ?? (primary ? `mail.${primary}` : ""),
+    port: cfg?.smtp.port ?? (primary ? 465 : 587),
+    security: cfg?.smtp.security ?? ((primary ? "tls" : "starttls") as SmtpSecurity),
     username: cfg?.smtp.username ?? "",
     password: "",
   };

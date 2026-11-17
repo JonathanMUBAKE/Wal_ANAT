@@ -170,6 +170,8 @@ export const ROLE_RANK: Record<Role, number> = { viewer: 1, commenter: 2, editor
 const RANK_ROLE: Role[] = ["viewer", "viewer", "commenter", "editor", "admin"];
 const ORG_RANK: Record<OrgRole, number> = { guest: 1, member: 2, admin: 3, owner: 4 };
 /** Date du calendrier local au format AAAA-MM-JJ : « aujourd'hui » suit l'heure de l'installation, pas UTC. */
+/** Nom de domaine (agence.gouv.cd) : domaine principal de l'institution, domaine d'envoi de la messagerie. */
+export const DOMAIN_RE = /^(?=.{3,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 export const localDate = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 export const today = () => localDate();
@@ -556,11 +558,17 @@ export class Services {
     await this.requirePerm(actorId, orgId, "org.settings");
     if (patch.name !== undefined)
       await this.db.query("UPDATE organizations SET name = $1 WHERE id = $2", [patch.name.trim(), orgId]);
-    if (patch.domains !== undefined)
-      await this.db.query("UPDATE organizations SET domains = $1 WHERE id = $2", [
-        JSON.stringify(patch.domains),
+    if (patch.domains !== undefined) {
+      // Le premier domaine est le domaine principal de l'institution (adresses, messagerie) : contrôlé et tracé
+      const domains = [...new Set(patch.domains.map((d) => d.trim().toLowerCase()).filter(Boolean))];
+      const bad = domains.find((d) => !DOMAIN_RE.test(d));
+      if (bad) throw badRequest(`Nom de domaine invalide : ${bad} (exemple : agence.gouv.cd)`);
+      const before = await this.db.one<{ domains: string[] }>("SELECT domains FROM organizations WHERE id = $1", [
         orgId,
       ]);
+      await this.db.query("UPDATE organizations SET domains = $1 WHERE id = $2", [JSON.stringify(domains), orgId]);
+      await this.log(actorId, "org.domains", { orgId, data: { from: before?.domains ?? [], to: domains } });
+    }
     this.bus.emit({ type: "org.changed", actorId, orgId });
   }
   async setOrgMember(actorId: string, orgId: string, userId: string, role: OrgRole | null) {

@@ -1690,3 +1690,21 @@ D-8, I-6, I-7, P-6, F-8, C-1, S-5, S-6, S-8, EQ-4, AD-5, RH-6, RH-7.
 convoqués (R-9), décisions, courrier, risques, plans et liens partenaires plus fournis (DEC-7, C-6, RI-8,
 PT-8, PA-6), fiches d'attributions (S-7). Le journal d'audit de l'administration garde, lui, les noms
 d'origine : il n'est pas réécrit.
+
+### Lot 2 — Domaine principal et messagerie (17/11/2026, branche `lot-domaine-principal`)
+
+Demandes de la direction : un espace pour le domaine principal du système, l'adresse noreply@ pour les
+notifications, une connexion SSL/TLS, et la messagerie rangée dans Administration système.
+
+| Ce qui change | Avant | Après |
+|---|---|---|
+| Domaine principal | Le champ existait en base mais aucun écran ne le réglait ; rien ne le contrôlait | Administration › Paramètres de l'institution › « Domaine principal » : format contrôlé, minuscules, sans doublon, réservé aux paramètres de l'institution, journalisé (« Domaine principal de l'institution modifié », événement sensible) |
+| Adresses proposées | « mon-entreprise.fr » | prénom.nom@<domaine principal> à la création d'un compte et d'un agent |
+| Adresse des notifications | Les notifications partaient de l'adresse de l'équipe | Réglable (ex. noreply@<domaine>) ; doit appartenir au domaine de la messagerie ; les réponses vont à l'équipe ou à l'entité concernée ; journalisée |
+| Sécurité de la connexion | Libellé « TLS implicite » ; proposition STARTTLS | Libellé « SSL/TLS » ; une messagerie à configurer propose mail.<domaine>, SSL/TLS, port 465, noreply@<domaine> |
+| Emplacement | Structure › Messagerie | Administration système › Messagerie |
+
+Les valeurs propres à l'Agence (anat.gouv.cd, mail.anat.gouv.cd, noreply@anat.gouv.cd) se saisissent à l'écran au
+déploiement : elles ne figurent ni dans le code ni dans le jeu de démonstration. Les personnes fictives de la
+démonstration gardent leurs adresses d'exemple, pour qu'aucune notification ne puisse partir vers une vraie boîte de
+l'Agence. Tests : `server/src/domaine.test.ts` (4) et `server/src/mail.test.ts` (2 ajoutés).

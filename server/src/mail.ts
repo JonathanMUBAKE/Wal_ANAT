@@ -3,7 +3,7 @@ import { uid, type Db } from "./db.js";
 import type { Bus, DomainEvent } from "./bus.js";
 import { open, seal } from "./crypto.js";
 import { assertPublicHost } from "./net-guard.js";
-import { badRequest, notFound, type Services } from "./services.js";
+import { DOMAIN_RE, badRequest, notFound, type Services } from "./services.js";
 
 /**
  * Messagerie par organisation.
@@ -17,18 +17,22 @@ interface StoredMail {
   domain: string;
   from_name: string;
   notifications: boolean;
+  /** Adresse d'envoi des notifications (ex. noreply@agence.gouv.cd) ; sinon l'adresse de l'équipe ou de l'entité. */
+  notify_from?: string;
   smtp: { host: string; port: number; security: SmtpSecurity; username: string; password_sealed?: string };
 }
 export interface MailConfig {
   domain: string;
   from_name: string;
   notifications: boolean;
+  notify_from: string;
   smtp: { host: string; port: number; security: SmtpSecurity; username: string; password_set: boolean };
 }
 export interface MailConfigInput {
   domain: string;
   from_name?: string;
   notifications?: boolean;
+  notify_from?: string;
   smtp: { host: string; port: number; security: SmtpSecurity; username?: string; password?: string };
 }
 export interface ServiceAddress {
@@ -42,7 +46,6 @@ export interface ServiceAddress {
   address: string;
 }
 
-const DOMAIN_RE = /^(?=.{3,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 const LOCAL_RE = /^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/;
 const RESERVED = new Set(["postmaster", "abuse", "hostmaster", "webmaster", "mailer-daemon", "root"]);
 
@@ -165,22 +168,31 @@ export class MailService {
       domain: m.domain,
       from_name: m.from_name,
       notifications: m.notifications,
+      notify_from: m.notify_from ?? "",
       smtp: { ...smtp, password_set: !!password_sealed },
     };
   }
   async updateConfig(actorId: string, orgId: string, input: MailConfigInput) {
     await this.svc.requirePerm(actorId, orgId, "org.mail");
     const domain = input.domain.trim().toLowerCase();
-    if (!DOMAIN_RE.test(domain)) throw badRequest("Nom de domaine invalide (exemple : mon-entreprise.fr)");
+    if (!DOMAIN_RE.test(domain)) throw badRequest("Nom de domaine invalide (exemple : agence.gouv.cd)");
     const host = input.smtp.host.trim();
     if (!host) throw badRequest("L'hôte SMTP est obligatoire");
     if (this.blockPrivateHosts) await assertPublicHost(host);
+    // L'adresse des notifications appartient au domaine de l'organisation : un serveur ne relaie que ses propres adresses
+    const notifyFrom = input.notify_from?.trim().toLowerCase() ?? "";
+    if (notifyFrom) {
+      const [local, at, ...rest] = notifyFrom.split("@");
+      if (at === undefined || rest.length || !LOCAL_RE.test(local) || at !== domain)
+        throw badRequest(`Adresse de notification invalide : elle doit être de la forme noreply@${domain}`);
+    }
     const previous = await this.stored(orgId);
     const org = await this.db.one<{ name: string }>("SELECT name FROM organizations WHERE id = $1", [orgId]);
     const mail: StoredMail = {
       domain,
       from_name: input.from_name?.trim() || org?.name || "Cadence",
       notifications: input.notifications ?? true,
+      ...(notifyFrom ? { notify_from: notifyFrom } : {}),
       smtp: {
         host,
         port: input.smtp.port,
@@ -201,6 +213,7 @@ export class MailService {
         host,
         port: mail.smtp.port,
         security: mail.smtp.security,
+        notify_from: mail.notify_from ?? null,
         password_changed: !!input.smtp.password,
       },
     });
@@ -335,11 +348,20 @@ export class MailService {
   // ---------------------------------------------------------------- envoi
   async send(
     orgId: string,
-    msg: { to: string; subject: string; text: string; html?: string; projectId?: string | null },
+    msg: {
+      to: string;
+      subject: string;
+      text: string;
+      html?: string;
+      projectId?: string | null;
+      /** Une notification part de l'adresse de notification réglée ; les réponses vont à l'équipe ou l'entité. */
+      notification?: boolean;
+    },
   ): Promise<{ ok: true } | { ok: false; error: string }> {
     const m = await this.stored(orgId);
     if (!m) return { ok: false, error: "La messagerie de l'organisation n'est pas configurée" };
-    const from = (await this.senderFor(orgId, msg.projectId))!;
+    const replyTo = (await this.senderFor(orgId, msg.projectId))!;
+    const from = msg.notification && m.notify_from ? { address: m.notify_from, name: m.from_name } : replyTo;
     const log = (status: "sent" | "failed", error: string | null) =>
       this.db.query(
         "INSERT INTO email_log (id, org_id, from_address, to_address, subject, status, error) VALUES ($1,$2,$3,$4,$5,$6,$7)",
@@ -362,7 +384,7 @@ export class MailService {
       });
       await transport.sendMail({
         from: { name: from.name, address: from.address },
-        replyTo: { name: from.name, address: from.address },
+        replyTo: { name: replyTo.name, address: replyTo.address },
         to: msg.to,
         subject: msg.subject,
         text: msg.text,
@@ -432,6 +454,6 @@ export class MailService {
         ? `${base}${e.link ?? (e.taskId && e.projectId ? `/projects/${e.projectId}?task=${e.taskId}` : "/inbox")}`
         : undefined,
     });
-    await this.send(e.orgId, { to: user.email, subject, text, projectId: e.projectId });
+    await this.send(e.orgId, { to: user.email, subject, text, projectId: e.projectId, notification: true });
   }
 }

@@ -164,6 +164,7 @@ const LABELS: Record<string, string> = {
   "org.member": "Membre de l'institution mis à jour",
   "org.mail.address": "Adresse d'envoi modifiée",
   "org.mail.config": "Messagerie configurée",
+  "org.domains": "Domaine principal de l'institution modifié",
   "unit.created": "Entité créée",
   "unit.deleted": "Entité supprimée",
   "domain.created": "Domaine d'activité créé",
@@ -287,6 +288,7 @@ const CRITICAL = new Set([
   "agreement.terminated",
   "signature.reject",
   "org.mail.config",
+  "org.domains",
   "session.revoked",
   "correspondence.filed",
 ]);

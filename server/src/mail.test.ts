@@ -169,6 +169,32 @@ describe("messagerie de l'organisation", () => {
     expect(log[0].status).toBe("sent");
   });
 
+  it("notifie depuis l'adresse de notification réglée (noreply@), les réponses allant à l'équipe", async () => {
+    const r = await api("u_alice", "PUT", "/api/org/mail", {
+      ...smtpConfig(),
+      notify_from: " NoReply@Nova-Mobile.fr ",
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.notify_from).toBe("noreply@nova-mobile.fr");
+    expect((await api("u_alice", "GET", "/api/org/mail")).body.notify_from).toBe("noreply@nova-mobile.fr");
+    const app = (await ctx.db.one<{ id: string }>("SELECT id FROM projects WHERE key = 'APP'"))!.id;
+    await api("u_alice", "POST", "/api/tasks", { project_id: app, title: "Relire la note", assignee_id: "u_karim" });
+    const m = await waitFor(
+      () => inbox,
+      (x) => x.length > 0,
+    );
+    expect(m[0].from).toBe("noreply@nova-mobile.fr");
+    expect(m[0].raw).toMatch(/Reply-To: [^\n]*(\r?\n [^\n]*)?equipe-mobile@nova-mobile\.fr/);
+  });
+
+  it("refuse une adresse de notification invalide ou hors du domaine de l'organisation", async () => {
+    for (const bad of ["noreply", "noreply@autre-domaine.fr", "pas une adresse@nova-mobile.fr"]) {
+      const r = await api("u_alice", "PUT", "/api/org/mail", { ...smtpConfig(), notify_from: bad });
+      expect(r.status, bad).toBe(400);
+      expect(r.body.error).toMatch(/adresse de notification/i);
+    }
+  });
+
   it("signale clairement une erreur SMTP sans faire échouer l'action", async () => {
     await api("u_alice", "PUT", "/api/org/mail", {
       ...smtpConfig(),

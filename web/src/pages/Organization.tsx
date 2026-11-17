@@ -9,7 +9,6 @@ import { useReferentials, useUnitTypes } from "@/lib/referentials";
 import { Avatar, Button, ConfirmDialog, Empty, Spinner, cn } from "@/components/ui";
 import { AssigneePicker } from "@/components/pickers";
 import { AvatarUpload } from "@/components/AvatarUpload";
-import { OrgMail } from "./OrgMail";
 import { ORG_ROLE } from "@/components/Sidebar";
 import { useCan, useMe, useServiceAddress, useTeams, useUnits, useUserMap, useUsers } from "@/lib/hooks";
 import { InvitationsPanel, MemberAccessButton, ProfilesPanel, useProfiles } from "./OrgAccess";
@@ -38,15 +37,14 @@ export function OrganizationPage() {
   const { data: units, isLoading } = useUnits();
   const { data: people } = useUsers();
   const [params, setParams] = useSearchParams();
-  type OrgTab = "tree" | "attributions" | "gaps" | "people" | "profiles" | "domains" | "mail";
+  type OrgTab = "tree" | "attributions" | "gaps" | "people" | "profiles" | "domains";
   const tab = (params.get("tab") as OrgTab) || "tree";
   const setTab = (t: OrgTab) => setParams(t === "tree" ? {} : { tab: t }, { replace: true });
   const can = useCan();
   const org = me?.orgs.find((o) => o.id === me.org_id);
   const isAdmin = org?.role === "owner" || org?.role === "admin";
   const canManage = can("org.members"),
-    canProfiles = can("org.profiles"),
-    canMail = can("org.mail");
+    canProfiles = can("org.profiles");
   const humans = (people ?? []).filter((u) => !u.is_ai);
   // Une entité, ses attributions, ses écarts et le référentiel des domaines vivent ici (docs/ARCHITECTURE-INFORMATION.md)
   const tabs: { id: OrgTab; label: string }[] = [
@@ -56,7 +54,6 @@ export function OrganizationPage() {
     { id: "people", label: "Personnes" },
     ...(canProfiles ? [{ id: "profiles" as const, label: "Profils et droits" }] : []),
     ...(can("attributions.view") ? [{ id: "domains" as const, label: "Référentiel des domaines" }] : []),
-    ...(canMail ? [{ id: "mail" as const, label: "Messagerie" }] : []),
   ];
 
   return (
@@ -79,8 +76,6 @@ export function OrganizationPage() {
           <Gaps />
         ) : tab === "domains" ? (
           <Domains />
-        ) : tab === "mail" && canMail ? (
-          <OrgMail orgName={org?.name ?? ""} />
         ) : tab === "profiles" && canProfiles ? (
           <ProfilesPanel />
         ) : (

@@ -38,6 +38,11 @@ export const queryClient = new QueryClient({
 
 // ---------------------------------------------------------------- lectures
 export const useMe = () => useQuery({ queryKey: ["me"], queryFn: () => api.get<Me>("/api/me"), retry: false });
+/** Domaine principal de l'institution courante (Administration, Paramètres de l'institution), ou chaîne vide. */
+export function usePrimaryDomain() {
+  const { data: me } = useMe();
+  return me?.orgs.find((o) => o.id === me.org_id)?.domains?.[0] ?? "";
+}
 /** Teste un droit coché dans le profil. Le serveur reste seul juge : ceci sert seulement à ne pas proposer l'impossible. */
 export function useCan() {
   const { data } = useMe();

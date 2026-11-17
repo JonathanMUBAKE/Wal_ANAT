@@ -110,6 +110,7 @@ describe("l'échéancier de paiement suit les livrables", () => {
 
 describe("les membres du dossier voient ses pièces", () => {
   it("un membre du projet sans droit général lit les livrables et contrats du projet, rien d'autre", async () => {
+    await g.ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_hugo'"); // un chef garde un profil de chef (A-3)
     await g.promote("u_hugo", "Lecture seule");
     const c = (await contract({ user_id: null, consultant_name: "Cabinet Géo" })).body;
     const d = (await deliverable({ responsible_id: "u_karim", validator_id: "u_alice", contract_id: c.id })).body;

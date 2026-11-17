@@ -91,7 +91,7 @@ Activité des coéquipiers IA.
 |---|---|---|---|
 | A-1 | L'Accueil de la DG est une page de collaborateur (mes tâches, mes projets, IA). Sa page de travail, le Tableau de bord DG, est ailleurs. | Haute | À décider : rediriger la DG vers le tableau de bord, ou remonter l'essentiel sur son Accueil |
 | A-2 | Les retards de l'Accueil comptent les sous-tâches, contrairement à la règle du lot 3 (« un retard = une tâche principale échue ») appliquée par le Tableau de bord DG et la vue par direction. Les chiffres diffèrent d'une page à l'autre. | Haute | À corriger |
-| A-3 | Profil et responsabilité se contredisent : Gaston et Clarisse (Agent) dirigent une entité, Esther (assistante) reste cheffe des RH, Fiston dirige aussi l'Antenne Sud et la Représentation Nord. L'outil ne contrôle pas cet écart. | Haute | À décider : un Agent peut-il diriger une entité ? Corriger la démo dans tous les cas |
+| A-3 | Profil et responsabilité se contredisent : Gaston et Clarisse (Agent) dirigent une entité, Esther (assistante) reste cheffe des RH, Fiston dirige aussi l'Antenne Sud et la Représentation Nord. L'outil ne contrôle pas cet écart. | Haute | Décidé le 17/11/2026 : on refuse la nomination (lot 3) ; démo corrigée (lot 1) |
 | A-4 | La DG apparaît comme « Propriétaire » dans l'en-tête, pas comme « DG ». | Moyenne | À corriger |
 | A-5 | « Viser ou signer » figure deux fois (Saisir et Ce qui vous attend). Pour un agent, le bloc Saisir se réduit à ce seul bouton. | Moyenne | À corriger |
 | A-6 | « Nouveau projet » s'affiche pour tout le monde sans vérifier le droit de créer un projet ; un stagiaire ou un consultant reçoit un refus en cliquant. | Moyenne | À corriger |
@@ -1383,7 +1383,7 @@ La liste des profils comprend un profil **« DG »**, mais Bernadette a le profi
 |---|---|---|---|
 | S-1 | Changer le chef d'une entité, la renommer ou la déplacer, et changer l'entité d'une personne ne sont pas journalisés (seules la création et la suppression d'une entité le sont). | Haute | À corriger : journaliser toute modification de structure et de rattachement |
 | S-2 | L'entité d'une personne se change à deux endroits (Structure et Ressources humaines) avec des effets différents : seul le passage par les RH crée une affectation datée dans le dossier. | Haute | À corriger : une seule porte (le dossier RH), ou un changement depuis Structure qui crée aussi l'affectation |
-| S-3 | Désigner une personne chef d'une entité ne touche pas à son profil d'accès, et rien ne signale l'écart (un Agent chef de service, un chef de département chef d'antenne). Même famille que A-3. | Haute | À décider avec A-3 : contrôle ou alerte quand chef et profil ne concordent pas |
+| S-3 | Désigner une personne chef d'une entité ne touche pas à son profil d'accès, et rien ne signale l'écart (un Agent chef de service, un chef de département chef d'antenne). Même famille que A-3. | Haute | Décidé le 17/11/2026 avec A-3 : le serveur refuse (lot 3) |
 | S-4 | Les listes déroulantes de profil et d'entité modifient immédiatement, sans confirmation. Un clic malheureux change les droits ou le rattachement de quelqu'un. | Moyenne | À corriger : confirmation, avec motif pour un changement de profil |
 | S-5 | Un profil « DG » existe, mais la DG de la démo a le profil « Propriétaire ». Même famille que A-4. | Moyenne (démo) | À corriger avec A-4 |
 | S-6 | Les écarts de participation gardent un texte figé avec les anciens noms (« Direction Produit & Technologie », « Nova Mobile »). Même famille que C-1. | Basse (démo) | À corriger dans la démo (régénérer les écarts après renommage) |
@@ -1708,3 +1708,25 @@ Les valeurs propres à l'Agence (anat.gouv.cd, mail.anat.gouv.cd, noreply@anat.g
 déploiement : elles ne figurent ni dans le code ni dans le jeu de démonstration. Les personnes fictives de la
 démonstration gardent leurs adresses d'exemple, pour qu'aucune notification ne puisse partir vers une vraie boîte de
 l'Agence. Tests : `server/src/domaine.test.ts` (4) et `server/src/mail.test.ts` (2 ajoutés).
+
+### Lot 3 — Droits et profils cohérents (17/11/2026, branche `lot-droits-profils`)
+
+Thème 1 de la synthèse. Décision de la direction sur A-3 et S-3 : **refuser** de nommer chef une personne dont le
+profil ne permet pas de diriger une entité.
+
+| Ce qui change | Avant | Après |
+|---|---|---|
+| Chef d'entité et profil (A-3, S-3) | Un Agent, un Stagiaire ou un profil en lecture seule pouvait être nommé chef ; rien ne signalait l'écart | Nouveau droit « Pouvoir être nommé chef d'une entité » (Chef d'entité, DGA, DG, Responsable informatique, administrateurs). Le serveur refuse la nomination sans ce droit, et refuse aussi de donner à un chef en poste un profil ou une exception qui le lui retire : il faut d'abord désigner un autre chef |
+| Bouton « Nouveau projet » (A-6, E-7, F-7) | Affiché pour tous, refusé ensuite par le serveur | Affiché seulement à qui a le droit de créer un projet : accueil, Portefeuille, Mon entité, page d'une équipe, palette de commandes |
+| Registre des risques (RI-1) | Les chefs créaient des risques sans voir la page ; le responsable d'un risque ne pouvait rien y faire | Qui gère les risques voit le registre. Le responsable d'un risque le voit (la page s'affiche pour lui) et met à jour sa parade et son état, rien d'autre |
+| Indicateurs stratégiques (RI-2) | « Gérer les risques » permettait de changer cible et résultat des indicateurs de la DG | Droit distinct « Gérer les indicateurs stratégiques » (DG, DGA) ; les chefs les lisent sans les modifier |
+| Plans de travail (PT-1) | « Préparer les plans » valait pour toutes les entités | Un chef prépare le plan de son entité et des entités rattachées. Nouveau droit « Préparer les plans de toutes les entités » (DG, DGA, et le service du plan par exception) ; la fenêtre « Nouveau plan » ne propose que les entités permises ; même règle pour les revues trimestrielles |
+| Partenaires (PA-1) | Seule la DG gérait l'annuaire | Dans la démonstration, le directeur de la Communication et des Partenariats reçoit le droit ; en production, il se coche dans Profils et droits |
+| Équipes (EQ-1) | Le responsable d'une équipe ne la gérait que si son profil avait « gérer les équipes » | Être responsable de l'équipe suffit. « Gérer toutes les équipes de l'institution » reste au DG, au DGA et au responsable informatique |
+
+Les bases déjà en service reçoivent ces droits par la migration `044_droits_profils.sql` : aucun chef en poste n'est
+bloqué. Tests : `server/src/droits-profils.test.ts` (9) et un test de démonstration ; 18 anciens tests ajustés : 17 parce qu'ils
+retiraient le profil de chef à une personne qui dirigeait une entité, 1 parce que le responsable d'un risque voit désormais les siens. 578 tests au vert.
+
+**Remarques traitées** : A-3 (règle), A-6, E-7, F-7, RI-1, RI-2, PT-1, PA-1, EQ-1, S-3. A-4, S-5, D-8 et RH-6
+l'avaient été par le lot 1. **Reste** : AD-1 (séparer administration technique et direction), traité avec le thème 2.

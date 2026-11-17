@@ -170,6 +170,7 @@ describe("annuaire et équipes", () => {
     await ctx.db.query("DELETE FROM team_members WHERE user_id = 'u_karim'");
     await ctx.db.query("DELETE FROM memberships WHERE user_id = 'u_karim' AND project_id <> $1", [app]);
     await ctx.svc.setMember("u_alice", app, "u_karim", "commenter");
+    await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_karim'"); // un chef garde un profil de chef (A-3)
     await api("u_alice", "PUT", "/api/org/members/u_karim", { role: "guest" });
     const seen = (await api("u_karim", "GET", "/api/users")).body.map((u: { id: string }) => u.id) as string[];
     const expected = new Set([...(await ctx.svc.members(app)).map((m) => m.user_id), "u_karim"]);

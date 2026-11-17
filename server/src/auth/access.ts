@@ -186,6 +186,8 @@ export class Access {
       );
       if ((owners?.n ?? 0) <= 1) throw badRequest("Impossible de retirer le dernier propriétaire de l'organisation");
     }
+    const { overrides } = await this.memberAccess(actorId, orgId, userId);
+    await this.svc.assertCanLead(orgId, userId, effectivePermissions(p.base_role, p.permissions, overrides));
     await this.svc.db.query("UPDATE org_members SET profile_id = $1, role = $2 WHERE org_id = $3 AND user_id = $4", [
       p.id,
       p.base_role,
@@ -246,6 +248,8 @@ export class Access {
       if (v === null) delete next[k];
       else next[k] = v;
     }
+    const now = await this.memberAccess(actorId, orgId, userId);
+    await this.svc.assertCanLead(orgId, userId, effectivePermissions(now.role, now.profile_id ? now.profile_permissions : null, next));
     await this.svc.db.query("UPDATE org_members SET permission_overrides = $1 WHERE org_id = $2 AND user_id = $3", [
       JSON.stringify(next),
       orgId,

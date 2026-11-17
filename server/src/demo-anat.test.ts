@@ -148,6 +148,23 @@ describe("démonstration ANAT", () => {
     expect(perms).toContain("hr.manage");
   });
 
+  it("donne à chaque direction les droits de sa fonction : partenariats, plans, et chefs aptes à diriger", async () => {
+    const chief = async (unit: string) =>
+      (await ctx.db.one<{ m: string }>("SELECT manager_id AS m FROM org_units WHERE org_id = $1 AND name = $2", [
+        org,
+        unit,
+      ]))!.m;
+    const partners = await ctx.svc.permissionsOf(await chief("Direction de la Communication et des Partenariats"), org);
+    expect(partners).toContain("partners.manage");
+    const plan = await ctx.svc.permissionsOf(await chief("Suivi-évaluation"), org);
+    expect(plan).toContain("plans.manage_all");
+    for (const u of await ctx.db.query<{ name: string; m: string }>(
+      "SELECT name, manager_id AS m FROM org_units WHERE org_id = $1 AND manager_id IS NOT NULL",
+      [org],
+    ))
+      expect([u.name, (await ctx.svc.permissionsOf(u.m, org)).includes("units.lead")]).toEqual([u.name, true]);
+  });
+
   it("aligne le dossier RH de chacun sur son entité", async () => {
     const rows = await q<{ user_id: string; member: string | null; assigned: string | null }>(
       `SELECT om.user_id, om.unit_id AS member,

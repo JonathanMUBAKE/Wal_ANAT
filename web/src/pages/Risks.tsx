@@ -23,7 +23,7 @@ import {
   type Tone,
 } from "@/components/gov";
 import { ExportMenu, tableDoc } from "@/components/export-menu";
-import { useCan, useProjects, useUsers } from "@/lib/hooks";
+import { useCan, useMe, useProjects, useUsers } from "@/lib/hooks";
 import { api } from "@/lib/api";
 
 /*
@@ -85,11 +85,20 @@ export function RisksPage() {
   const [risk, setRisk] = useState<Risk | "new" | null>(null);
   const [indicator, setIndicator] = useState<Indicator | "new" | null>(null);
   const { data: risks, error } = useQuery({ queryKey: ["risks"], queryFn: () => api.get<Risk[]>("/api/risks") });
+  // Le responsable d'un risque sans droit sur le registre ne voit que ses risques, pas les indicateurs
+  const seesIndicators = can("pilotage.view") || can("risks.manage") || can("indicators.manage");
   const { data: indicators } = useQuery({
     queryKey: ["indicators"],
     queryFn: () => api.get<Indicator[]>("/api/indicators"),
+    enabled: seesIndicators,
   });
+  const { data: me } = useMe();
+  // Qui gère le registre ouvre tout risque ; le responsable d'un risque ouvre le sien (parade et état) — RI-1.
+  // Les indicateurs ont leur propre droit (RI-2).
   const manage = can("risks.manage");
+  const manageIndicators = can("indicators.manage");
+  const openRisk = (r: Risk) => (manage || r.owner_id === me?.id ? setRisk(r) : undefined);
+  const canCreate = tab === "risques" ? manage : manageIndicators;
   return (
     <div className="min-h-full">
       <PageHeader
@@ -133,7 +142,7 @@ export function RisksPage() {
                     )
               }
             />
-            {manage && (
+            {canCreate && (
               <Button
                 variant="primary"
                 icon={<Plus className="size-4" />}
@@ -150,7 +159,7 @@ export function RisksPage() {
         onChange={setTab}
         items={[
           { id: "risques" as const, label: "Risques", badge: risks?.filter((r) => r.status === "open").length },
-          { id: "indicateurs" as const, label: "Indicateurs", badge: indicators?.length },
+          ...(seesIndicators ? [{ id: "indicateurs" as const, label: "Indicateurs", badge: indicators?.length }] : []),
         ]}
       />
       <div className="mx-auto max-w-[1480px] p-4 sm:px-8 sm:py-6">
@@ -163,7 +172,7 @@ export function RisksPage() {
                 <Spinner />
               </div>
             ) : risks.length ? (
-              <RiskTable risks={risks} onOpen={manage ? setRisk : undefined} />
+              <RiskTable risks={risks} onOpen={openRisk} canOpen={(r) => manage || r.owner_id === me?.id} />
             ) : (
               <Empty icon={<ShieldAlert className="size-6" />} title="Aucun risque enregistré">
                 Un risque se décrit par sa probabilité et son impact (de 1 à 5), un responsable et une parade.
@@ -176,7 +185,7 @@ export function RisksPage() {
           ) : indicators.length ? (
             <Table head={["Indicateur", "Activité du plan", "Référence", "Cible", "Résultat", "Atteinte", "Source"]}>
               {indicators.map((i) => (
-                <Tr key={i.id} onClick={manage ? () => setIndicator(i) : undefined}>
+                <Tr key={i.id} onClick={manageIndicators ? () => setIndicator(i) : undefined}>
                   <Td className="min-w-[220px] font-medium">{i.name}</Td>
                   <Td className="text-muted">
                     {i.plan_activity_title ? `${i.plan_activity_title} · ${i.plan_unit_name}, ${i.plan_year}` : "—"}
@@ -206,7 +215,7 @@ export function RisksPage() {
           <div className="h-3" />
         </Section>
       </div>
-      {risk && <RiskDrawer risk={risk === "new" ? null : risk} onClose={() => setRisk(null)} />}
+      {risk && <RiskDrawer risk={risk === "new" ? null : risk} ownerOnly={!manage} onClose={() => setRisk(null)} />}
       {indicator && (
         <IndicatorDrawer indicator={indicator === "new" ? null : indicator} onClose={() => setIndicator(null)} />
       )}
@@ -214,11 +223,19 @@ export function RisksPage() {
   );
 }
 
-export function RiskTable({ risks, onOpen }: { risks: Risk[]; onOpen?: (r: Risk) => void }) {
+export function RiskTable({
+  risks,
+  onOpen,
+  canOpen = () => true,
+}: {
+  risks: Risk[];
+  onOpen?: (r: Risk) => void;
+  canOpen?: (r: Risk) => boolean;
+}) {
   return (
     <Table head={["Risque", "Projet", "Niveau", "Responsable", "Parade", "État"]}>
       {risks.map((r) => (
-        <Tr key={r.id} onClick={onOpen ? () => onOpen(r) : undefined}>
+        <Tr key={r.id} onClick={onOpen && canOpen(r) ? () => onOpen(r) : undefined}>
           <Td className="min-w-[220px] font-medium">{r.title}</Td>
           <Td className="text-muted">
             {r.project_id ? (
@@ -268,10 +285,13 @@ const Scale5 = ({ value, onChange, label }: { value: number; onChange: (v: numbe
 export function RiskDrawer({
   risk,
   projectId,
+  ownerOnly = false,
   onClose,
 }: {
   risk: Risk | null;
   projectId?: string;
+  /** Le responsable du risque sans droit sur le registre : il met à jour la parade et l'état, rien d'autre. */
+  ownerOnly?: boolean;
   onClose: () => void;
 }) {
   const qc = useQueryClient();
@@ -290,7 +310,9 @@ export function RiskDrawer({
   const save = async () => {
     setBusy(true);
     try {
-      const body = { ...f, owner_id: f.owner_id || null, project_id: f.project_id || null };
+      const body = ownerOnly
+        ? { mitigation: f.mitigation, status: f.status }
+        : { ...f, owner_id: f.owner_id || null, project_id: f.project_id || null };
       if (risk) await api.patch(`/api/risks/${risk.id}`, body);
       else await api.post("/api/risks", body);
       qc.invalidateQueries({ queryKey: ["risks"] });
@@ -320,40 +342,50 @@ export function RiskDrawer({
       }
     >
       <DrawerSection title="Le risque">
+        {ownerOnly && risk && (
+          <p className="mb-4 rounded-lg bg-hover px-3 py-2 text-[12.5px] text-muted">
+            Vous êtes responsable de ce risque : vous mettez à jour la parade et l'état. Probabilité ({risk.probability}
+            ), impact ({risk.impact}), projet et responsable relèvent du gestionnaire des risques.
+          </p>
+        )}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Intitulé" required className="sm:col-span-2">
-            {(a) => <Input {...a} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />}
-          </Field>
-          <Scale5 label="Probabilité" value={f.probability} onChange={(v) => setF({ ...f, probability: v })} />
-          <Scale5 label="Impact" value={f.impact} onChange={(v) => setF({ ...f, impact: v })} />
-          <Field label="Projet menacé" hint="Laisser vide pour un risque qui concerne l'Agence entière.">
-            {(a) => (
-              <Select
-                {...a}
-                value={f.project_id}
-                disabled={!!projectId}
-                onChange={(e) => setF({ ...f, project_id: e.target.value })}
-              >
-                <option value="">Agence entière</option>
-                {(projects ?? []).map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-          <Field label="Responsable">
-            {(a) => (
-              <PeopleSelect
-                {...a}
-                value={f.owner_id}
-                onChange={(v) => setF({ ...f, owner_id: v })}
-                people={users}
-                placeholder="Non désigné"
-              />
-            )}
-          </Field>
+          {!ownerOnly && (
+            <>
+              <Field label="Intitulé" required className="sm:col-span-2">
+                {(a) => <Input {...a} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />}
+              </Field>
+              <Scale5 label="Probabilité" value={f.probability} onChange={(v) => setF({ ...f, probability: v })} />
+              <Scale5 label="Impact" value={f.impact} onChange={(v) => setF({ ...f, impact: v })} />
+              <Field label="Projet menacé" hint="Laisser vide pour un risque qui concerne l'Agence entière.">
+                {(a) => (
+                  <Select
+                    {...a}
+                    value={f.project_id}
+                    disabled={!!projectId}
+                    onChange={(e) => setF({ ...f, project_id: e.target.value })}
+                  >
+                    <option value="">Agence entière</option>
+                    {(projects ?? []).map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+              <Field label="Responsable">
+                {(a) => (
+                  <PeopleSelect
+                    {...a}
+                    value={f.owner_id}
+                    onChange={(v) => setF({ ...f, owner_id: v })}
+                    people={users}
+                    placeholder="Non désigné"
+                  />
+                )}
+              </Field>
+            </>
+          )}
           <Field
             label="Parade"
             className="sm:col-span-2"
@@ -501,6 +533,7 @@ export function ProjectRisks({ projectId }: { projectId: string }) {
     queryKey: ["risks", "project", projectId],
     queryFn: () => api.get<Risk[]>(`/api/risks?project_id=${projectId}`),
   });
+  const { data: me } = useMe();
   const manage = can("risks.manage");
   return (
     <Section
@@ -514,12 +547,19 @@ export function ProjectRisks({ projectId }: { projectId: string }) {
       }
     >
       {data?.length ? (
-        <RiskTable risks={data} onOpen={manage ? setOpen : undefined} />
+        <RiskTable risks={data} onOpen={setOpen} canOpen={(r) => manage || r.owner_id === me?.id} />
       ) : (
         <p className={cn("px-5 pb-5 text-[13px] text-muted")}>Aucun risque enregistré pour ce projet.</p>
       )}
       <div className="h-3" />
-      {open && <RiskDrawer risk={open === "new" ? null : open} projectId={projectId} onClose={() => setOpen(null)} />}
+      {open && (
+        <RiskDrawer
+          risk={open === "new" ? null : open}
+          projectId={projectId}
+          ownerOnly={!manage}
+          onClose={() => setOpen(null)}
+        />
+      )}
     </Section>
   );
 }

@@ -98,6 +98,7 @@ describe("R-04 : un administrateur n'agit pas sur un autre administrateur", () =
   });
   it("le propriétaire garde la main, et un administrateur agit sur un membre", async () => {
     await twoAdmins();
+    await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_hugo'"); // un chef garde un profil de chef (A-3)
     expect((await api("u_theo", "PUT", "/api/org/members/u_hugo", { role: "guest" })).status).toBe(200);
     expect((await api("u_alice", "PUT", "/api/org/members/u_ines", { role: "member" })).status).toBe(200);
   });
@@ -209,6 +210,7 @@ describe("R-07 : profil système Lecture seule", () => {
     const p = await profile("Lecture seule");
     expect(p).toMatchObject({ is_system: true, permissions: [] });
     expect((await api("u_alice", "DELETE", `/api/org/profiles/${p.id}`)).status).toBe(400);
+    await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_theo'"); // un chef garde un profil de chef (A-3)
     await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: p.id });
     expect((await api("u_theo", "POST", "/api/projects", { name: "X" })).status).toBe(403);
     const created = (await api("u_alice", "POST", "/api/orgs", { name: "Nouvelle" })).body as { id: string };

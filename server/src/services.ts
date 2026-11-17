@@ -489,6 +489,37 @@ export class Services {
     if (!(await this.db.one<{ on: boolean }>("SELECT TRUE AS on FROM users WHERE id = $1 AND totp_enabled", [actorId])))
       throw forbidden("Activez la double authentification dans « Sécurité du compte » pour administrer");
   }
+  /** Dirige-t-il cette entité ou une entité au-dessus d'elle ? */
+  async heads(actorId: string, unitId: string) {
+    return !!(await this.db.one(
+      `WITH RECURSIVE up(id, manager_id, parent_id) AS (
+         SELECT id, manager_id, parent_id FROM org_units WHERE id = $1
+         UNION SELECT p.id, p.manager_id, p.parent_id FROM org_units p JOIN up ON p.id = up.parent_id
+       ) SELECT 1 FROM up WHERE manager_id = $2`,
+      [unitId, actorId],
+    ));
+  }
+  /**
+   * Qui dirige une entité a un profil qui le permet (docs/ANALYSE-MODULES.md, A-3 et S-3) : on refuse la nomination,
+   * et on refuse de retirer ce droit à un chef en poste. `perms` : les droits qu'il aurait après le changement.
+   */
+  async assertCanLead(orgId: string, userId: string, perms?: string[]) {
+    const have = perms ?? (await this.permissionsOf(userId, orgId));
+    if (have.includes("units.lead")) return;
+    const name = (await this.userOrNull(userId))?.name ?? "Cette personne";
+    if (!perms)
+      throw badRequest(
+        `${name} n'a pas un profil qui permet de diriger une entité : donnez-lui d'abord un profil de chef (Chef d'entité, DGA, DG)`,
+      );
+    const led = await this.db.query<{ name: string }>(
+      "SELECT name FROM org_units WHERE org_id = $1 AND manager_id = $2 ORDER BY name",
+      [orgId, userId],
+    );
+    if (led.length)
+      throw badRequest(
+        `${name} dirige ${led.map((u) => `« ${u.name} »`).join(", ")} : ce profil ne permet pas de diriger une entité. Désignez d'abord un autre chef`,
+      );
+  }
   async projectPerm(actorId: string, projectId: string, perm: Permission) {
     await this.requirePerm(actorId, await this.orgOfProject(projectId), perm);
   }
@@ -615,6 +646,17 @@ export class Services {
         await q.query("DELETE FROM org_members WHERE org_id = $1 AND user_id = $2", [orgId, userId]);
       });
     } else {
+      const next = await this.db.one<{ permissions: string[] }>(
+        "SELECT permissions FROM access_profiles WHERE id = $1",
+        [systemProfileId(orgId, role)],
+      );
+      const overrides = (
+        await this.db.one<{ o: Record<string, boolean> }>(
+          "SELECT permission_overrides AS o FROM org_members WHERE org_id = $1 AND user_id = $2",
+          [orgId, userId],
+        )
+      )?.o;
+      await this.assertCanLead(orgId, userId, effectivePermissions(role, next?.permissions ?? null, overrides ?? {}));
       await this.db.query("UPDATE org_members SET role = $1, profile_id = $2 WHERE org_id = $3 AND user_id = $4", [
         role,
         systemProfileId(orgId, role),
@@ -655,10 +697,14 @@ export class Services {
     ).map((u) => ({ ...u, position: Number(u.position), depth: Number(u.depth) }));
   }
   private async unitRow(id: string) {
-    const u = await this.db.one<{ id: string; org_id: string; parent_id: string | null; name: string; kind: string }>(
-      "SELECT * FROM org_units WHERE id = $1",
-      [id],
-    );
+    const u = await this.db.one<{
+      id: string;
+      org_id: string;
+      parent_id: string | null;
+      name: string;
+      kind: string;
+      manager_id: string | null;
+    }>("SELECT * FROM org_units WHERE id = $1", [id]);
     if (!u) throw notFound("Entité introuvable");
     return u;
   }
@@ -675,6 +721,7 @@ export class Services {
     }
     if (input.manager_id && !(await this.orgRole(input.manager_id, orgId)))
       throw badRequest("Le responsable doit être membre de l'organisation");
+    if (input.manager_id) await this.assertCanLead(orgId, input.manager_id);
     // Le type d'entité vient du référentiel de l'institution (provinces comprises) ; on garde son code stable
     const kind = (await new Referentials(this).resolve(orgId, "unit_type", input.kind?.trim() || "service")).code;
     const id = uid("unt");
@@ -721,6 +768,7 @@ export class Services {
     }
     if (patch.manager_id && !(await this.orgRole(patch.manager_id, u.org_id)))
       throw badRequest("Le responsable doit être membre de l'organisation");
+    if (patch.manager_id && patch.manager_id !== u.manager_id) await this.assertCanLead(u.org_id, patch.manager_id);
     if (patch.kind !== undefined)
       patch = {
         ...patch,
@@ -804,10 +852,10 @@ export class Services {
   private async requireTeamManager(actorId: string, teamId: string) {
     const t = await this.teamRow(teamId);
     const org = await this.requireOrg(actorId, t.org_id);
-    await this.requirePerm(actorId, t.org_id, "teams.manage");
-    if (org !== "owner" && org !== "admin" && (await this.teamRole(actorId, teamId)) !== "lead")
-      throw forbidden("Réservé aux responsables de l'équipe");
-    return t;
+    // Le responsable d'une équipe la gère (EQ-1) ; « gérer les équipes » vaut pour toutes celles de l'institution
+    if (org === "owner" || org === "admin" || (await this.teamRole(actorId, teamId)) === "lead") return t;
+    if ((await this.permissionsOf(actorId, t.org_id)).includes("teams.manage")) return t;
+    throw forbidden("Réservé aux responsables de l'équipe");
   }
   async team(actorId: string, teamId: string) {
     const t = await this.teamRow(teamId);

@@ -619,6 +619,7 @@ describe("import d'un projet", () => {
 
   it("réserve l'import aux membres de l'organisation connectés", async () => {
     const org = (await ctx.db.one<{ id: string }>("SELECT id FROM organizations WHERE name = 'Nova Mobile'"))!.id;
+    await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_karim'"); // un chef garde un profil de chef (A-3)
     await api("u_alice", "PUT", "/api/org/members/u_karim", { role: "guest" });
     expect(await ctx.svc.orgRole("u_karim", org)).toBe("guest");
     expect((await analyze("u_karim", "a.txt", Buffer.from("- Tâche"))).status).toBe(403);

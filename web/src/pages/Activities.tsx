@@ -158,9 +158,11 @@ export function ActivitiesPage() {
                 }
               />
               {tab === "projects" ? (
-                <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => shell.setNewProject(true)}>
-                  Nouveau projet
-                </Button>
+                can("projects.create") && (
+                  <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => shell.setNewProject(true)}>
+                    Nouveau projet
+                  </Button>
+                )
               ) : (
                 can("agenda.manage") && (
                   <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>

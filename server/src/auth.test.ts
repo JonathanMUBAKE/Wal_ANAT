@@ -563,6 +563,7 @@ describe("profils et droits à cocher", () => {
       })
     ).body;
     expect((await task("u_theo", pid)).status).toBe(200);
+    await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_theo'"); // un chef garde un profil de chef (A-3)
     expect((await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: profile.id })).status).toBe(
       200,
     );
@@ -660,6 +661,7 @@ describe("profils et droits à cocher", () => {
         permissions: [],
       })
     ).body;
+    await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_theo'"); // un chef garde un profil de chef (A-3)
     await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: p.id });
     expect((await api("u_alice", "DELETE", `/api/org/profiles/${p.id}`)).status).toBe(400);
     await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: await profileId("Membre") });

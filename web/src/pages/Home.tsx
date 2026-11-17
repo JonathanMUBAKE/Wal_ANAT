@@ -11,6 +11,7 @@ import { RoleFocus } from "@/components/role-focus";
 import {
   useApprovals,
   useArchivedProjects,
+  useCan,
   useMe,
   useMyTasks,
   useProjects,
@@ -25,6 +26,7 @@ import { useShell } from "@/lib/shell";
 import { STATUS, ago, firstName, greeting, isoIn, longDate, todayIso } from "@/lib/format";
 
 export function HomePage() {
+  const can = useCan();
   const { data: me } = useMe();
   const { data: tasks } = useMyTasks();
   const { data: projects } = useProjects();
@@ -145,9 +147,11 @@ export function HomePage() {
                 >
                   {showArchived ? "Masquer les archivés" : "Archivés"}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => shell.setNewProject(true)}>
-                  Nouveau projet
-                </Button>
+                {can("projects.create") && (
+                  <Button size="sm" variant="ghost" onClick={() => shell.setNewProject(true)}>
+                    Nouveau projet
+                  </Button>
+                )}
               </span>
             </div>
             {showArchived && (

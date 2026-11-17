@@ -23,7 +23,7 @@ import { UnitDashboardView, UnitProjects } from "@/components/unit-dashboard";
 import { MeetingsBrowser } from "@/components/MeetingViews";
 import { NewMeeting, type MeetingRow } from "./Meetings";
 import { isActive } from "@/components/ai";
-import { useMe, useMyUnits, useProject, useProjectTasks, useRuns } from "@/lib/hooks";
+import { useCan, useMe, useMyUnits, useProject, useProjectTasks, useRuns } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { todayIso } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -52,6 +52,7 @@ const VIEWS: { id: View; label: string; Icon: typeof LayoutList; responsable?: b
 ];
 
 export function UnitPage() {
+  const can = useCan();
   const { data: units } = useMyUnits();
   const [params, setParams] = useSearchParams();
   const unitId = params.get("unite") || units?.[0]?.id || "";
@@ -109,7 +110,7 @@ export function UnitPage() {
                 Réunion
               </Button>
             )}
-            {board && (
+            {board && can("projects.create") && (
               <Button icon={<FolderPlus className="size-4" />} onClick={() => setCreating(true)}>
                 Projet
               </Button>
@@ -151,7 +152,7 @@ export function UnitPage() {
           <Overview
             unitId={unitId}
             projectsOnly={view === "projets"}
-            onNewProject={() => setCreating(true)}
+            onNewProject={can("projects.create") ? () => setCreating(true) : undefined}
             onNewTask={() => setGiving(true)}
           />
         ) : view === "reunions" ? (
@@ -210,7 +211,7 @@ function Overview({
 }: {
   unitId: string;
   projectsOnly: boolean;
-  onNewProject: () => void;
+  onNewProject?: () => void;
   onNewTask: () => void;
 }) {
   const { data, error } = useQuery({

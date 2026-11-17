@@ -326,7 +326,7 @@ function TaskList({ rows, empty, late }: { rows: UnitDashboard["overdue"]; empty
   );
 }
 
-export function UnitProjects({ rows, onCreate }: { rows: UnitDashboard["projects"]; onCreate: () => void }) {
+export function UnitProjects({ rows, onCreate }: { rows: UnitDashboard["projects"]; onCreate?: () => void }) {
   const nav = useNavigate();
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -370,6 +370,7 @@ export function UnitProjects({ rows, onCreate }: { rows: UnitDashboard["projects
           </span>
         </button>
       ))}
+      {onCreate && (
       <button
         type="button"
         onClick={onCreate}
@@ -378,6 +379,7 @@ export function UnitProjects({ rows, onCreate }: { rows: UnitDashboard["projects
         <Plus className="size-5" />
         Nouveau projet de l'entité
       </button>
+      )}
     </div>
   );
 }
@@ -388,7 +390,7 @@ export function UnitDashboardView({
   onNewTask,
 }: {
   data: UnitDashboard;
-  onNewProject: () => void;
+  onNewProject?: () => void;
   onNewTask: () => void;
 }) {
   const k = data.kpis;

@@ -25,7 +25,7 @@ import {
   type Tone,
 } from "@/components/gov";
 import { api } from "@/lib/api";
-import { useCan, useUnits, useUsers } from "@/lib/hooks";
+import { useCan, useLedUnitIds, useUnits, useUsers } from "@/lib/hooks";
 import { QuarterReviews, type ReviewRef } from "@/components/plan-reviews";
 
 type PlanStatus = "draft" | "submitted" | "approved";
@@ -172,7 +172,10 @@ export function PlansPage() {
 function NewPlan({ onClose }: { onClose: () => void }) {
   const nav = useNavigate();
   const qc = useQueryClient();
-  const { data: units } = useUnits();
+  const can = useCan();
+  const led = useLedUnitIds();
+  // Un chef prépare le plan de son entité et des entités rattachées ; le service du plan, tous les plans (PT-1)
+  const units = useUnits().data?.filter((u) => can("plans.manage_all") || led.has(u.id));
   const [f, setF] = useState({ unit_id: "", year: String(new Date().getFullYear() + 1), title: "" });
   const create = useMutation({
     mutationFn: () => api.post<Plan>("/api/plans", { ...f, year: Number(f.year) }),

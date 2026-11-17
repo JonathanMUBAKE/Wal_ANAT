@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
   Scale,
@@ -106,6 +106,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const shell = useShell();
   const can = useCan();
   const currentOrg = me?.orgs.find((o) => o.id === me.org_id);
+  // Le registre des risques : qui pilote ou gère les risques, et le responsable d'un risque pour les siens (RI-1)
+  const risksPage = can("pilotage.view") || can("risks.manage") || can("indicators.manage");
+  const { data: myRisks } = useQuery({
+    queryKey: ["risks"],
+    queryFn: () => api.get<unknown[]>("/api/risks"),
+    enabled: !!me && !risksPage && currentOrg?.role !== "guest",
+  });
 
   const link = (to: string, Icon: typeof House, label: string, badge?: number, ai?: boolean) => (
     <NavLink
@@ -167,7 +174,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           {(can("agenda.view") || can("projects.create")) && link("/activites", Briefcase, "Portefeuille")}
           {(can("decisions.view") || can("decisions.record")) && link("/decisions", Scale, "Décisions")}
           {can("meetings.view") && link("/reunions", CalendarDays, "Réunions")}
-          {can("pilotage.view") && link("/risques", ShieldAlert, "Risques et indicateurs")}
+          {(risksPage || !!myRisks?.length) && link("/risques", ShieldAlert, "Risques et indicateurs")}
         </NavSection>
 
         {/* Livrables et contrats vivent dans leur projet (docs/PARCOURS-METIER.md) : plus de module à part */}

@@ -4,12 +4,13 @@ import { useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, FolderPlus, House, Inbox, Moon, Search, Sparkles, Wand2 } from "lucide-react";
 import { ProjectIcon } from "./ui";
-import { useProjects } from "@/lib/hooks";
+import { useCan, useProjects } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { api } from "@/lib/api";
 import type { ProjectSummary, Task } from "@/lib/types";
 
 export function CommandPalette() {
+  const can = useCan();
   const shell = useShell();
   const nav = useNavigate();
   const { data: projects } = useProjects();
@@ -146,10 +147,12 @@ export function CommandPalette() {
             <Wand2 className="size-4 text-ai-fg" />
             Créer des tâches à partir de notes
           </Command.Item>
-          <Command.Item onSelect={() => run(() => shell.setNewProject(true))} className={item}>
-            <FolderPlus className="size-4 text-muted" />
-            Nouveau projet
-          </Command.Item>
+          {can("projects.create") && (
+            <Command.Item onSelect={() => run(() => shell.setNewProject(true))} className={item}>
+              <FolderPlus className="size-4 text-muted" />
+              Nouveau projet
+            </Command.Item>
+          )}
           <Command.Item onSelect={() => run(shell.toggleTheme)} className={item}>
             <Moon className="size-4 text-muted" />
             Changer de thème

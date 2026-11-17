@@ -150,6 +150,18 @@ export class Plans {
     );
   }
 
+  /** Peut-il préparer le plan de cette entité ? Tous les plans, ou celui de son entité et des entités rattachées (PT-1). */
+  private async mayPrepare(actorId: string, orgId: string, unitId: string, perms?: string[]) {
+    const have = perms ?? (await this.svc.permissionsOf(actorId, orgId));
+    if (have.includes("plans.manage_all")) return true;
+    return have.includes("plans.manage") && (await this.svc.heads(actorId, unitId));
+  }
+  private async assertPrepare(actorId: string, orgId: string, unitId: string) {
+    await this.svc.requirePerm(actorId, orgId, "plans.manage");
+    if (!(await this.mayPrepare(actorId, orgId, unitId)))
+      throw forbidden("Vous préparez le plan de votre entité et des entités qui lui sont rattachées, pas celui-ci");
+  }
+
   async get(actorId: string, id: string) {
     const p = await this.row(id);
     await this.svc.requirePerm(actorId, p.org_id, "plans.view");
@@ -193,6 +205,7 @@ export class Plans {
       [id],
     );
     const unit = await this.svc.db.one<{ name: string }>("SELECT name FROM org_units WHERE id = $1", [p.unit_id]);
+    const prepare = await this.mayPrepare(actorId, p.org_id, p.unit_id, perms);
     return {
       ...p,
       unit_name: unit?.name ?? "",
@@ -200,8 +213,8 @@ export class Plans {
       revisions,
       reviews: await new PlanReviews(this.svc).ofPlan(id),
       can: {
-        edit: p.status === "draft" && perms.includes("plans.manage"),
-        submit: p.status === "draft" && perms.includes("plans.manage"),
+        edit: p.status === "draft" && prepare,
+        submit: p.status === "draft" && prepare,
         approve: p.status === "submitted" && perms.includes("plans.approve") && p.submitted_by !== actorId,
         revise: p.status === "approved" && perms.includes("plans.approve"),
         review: p.status === "approved" && (await new PlanReviews(this.svc).canPrepare(actorId, id)),
@@ -213,6 +226,7 @@ export class Plans {
     await this.svc.requirePerm(actorId, orgId, "plans.manage");
     if (!(await this.svc.db.one("SELECT 1 FROM org_units WHERE org_id = $1 AND id = $2", [orgId, i.unit_id])))
       throw badRequest("Entité inconnue");
+    await this.assertPrepare(actorId, orgId, i.unit_id);
     const id = uid("pln");
     try {
       await this.svc.db.query(
@@ -230,7 +244,7 @@ export class Plans {
 
   async remove(actorId: string, id: string) {
     const p = await this.row(id);
-    await this.svc.requirePerm(actorId, p.org_id, "plans.manage");
+    await this.assertPrepare(actorId, p.org_id, p.unit_id);
     if (p.status !== "draft") throw frozen();
     await this.svc.db.query("DELETE FROM work_plans WHERE id = $1", [id]);
     await this.svc.log(actorId, "plan.deleted", { orgId: p.org_id, data: { id, title: p.title } });
@@ -255,7 +269,7 @@ export class Plans {
 
   async addActivity(actorId: string, planId: string, i: ActivityInput & { title: string }) {
     const p = await this.row(planId);
-    await this.svc.requirePerm(actorId, p.org_id, "plans.manage");
+    await this.assertPrepare(actorId, p.org_id, p.unit_id);
     if (p.status !== "draft") throw frozen();
     await this.assertActivity(p, i);
     await this.svc.db.query(
@@ -283,7 +297,7 @@ export class Plans {
   async updateActivity(actorId: string, id: string, i: ActivityInput) {
     const a = await this.activity(id);
     const p = await this.row(a.plan_id);
-    await this.svc.requirePerm(actorId, p.org_id, "plans.manage");
+    await this.assertPrepare(actorId, p.org_id, p.unit_id);
     if (p.status !== "draft") throw frozen();
     await this.assertActivity(p, i);
     const sets: string[] = [];
@@ -303,7 +317,7 @@ export class Plans {
   async removeActivity(actorId: string, id: string) {
     const a = await this.activity(id);
     const p = await this.row(a.plan_id);
-    await this.svc.requirePerm(actorId, p.org_id, "plans.manage");
+    await this.assertPrepare(actorId, p.org_id, p.unit_id);
     if (p.status !== "draft") throw frozen();
     await this.svc.db.query("DELETE FROM plan_activities WHERE id = $1", [id]);
     return this.get(actorId, a.plan_id);
@@ -312,7 +326,7 @@ export class Plans {
   /** Responsable unique, objectif chiffré, date de fin : un plan incomplet ne part pas en validation. */
   async submit(actorId: string, id: string) {
     const p = await this.row(id);
-    await this.svc.requirePerm(actorId, p.org_id, "plans.manage");
+    await this.assertPrepare(actorId, p.org_id, p.unit_id);
     if (p.status !== "draft") throw frozen();
     const rows = await this.svc.db.query<PlanActivity>(
       `SELECT ${SELECT_ACTIVITY} FROM plan_activities a WHERE a.plan_id = $1`,
@@ -389,9 +403,9 @@ export class Plans {
     },
   ) {
     const a = await this.activity(id);
-    if (a.responsible_id !== actorId) await this.svc.requirePerm(actorId, a.org_id, "plans.manage");
-    else await this.svc.requirePerm(actorId, a.org_id, "plans.view");
     const p = await this.row(a.plan_id);
+    if (a.responsible_id !== actorId) await this.assertPrepare(actorId, a.org_id, p.unit_id);
+    else await this.svc.requirePerm(actorId, a.org_id, "plans.view");
     if (p.status !== "approved") throw badRequest("Le suivi commence une fois le plan approuvé");
     // L'avancement d'une activité réalisée par des dossiers remonte de ces dossiers : il ne se saisit plus à la main
     if (i.progress !== undefined && (await this.dossiersOf([id])).length)

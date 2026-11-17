@@ -53,7 +53,8 @@ export const PERMISSION_GROUPS = [
     group: "Plans de travail",
     items: [
       { key: "plans.view", label: "Consulter les plans de travail" },
-      { key: "plans.manage", label: "Préparer les plans de travail" },
+      { key: "plans.manage", label: "Préparer le plan de son entité et des entités rattachées" },
+      { key: "plans.manage_all", label: "Préparer les plans de toutes les entités" },
       { key: "plans.approve", label: "Approuver et réviser les plans de travail" },
     ],
   },
@@ -80,7 +81,8 @@ export const PERMISSION_GROUPS = [
       { key: "pilotage.view", label: "Accéder au poste de pilotage" },
       { key: "decisions.view", label: "Consulter le registre des décisions" },
       { key: "decisions.record", label: "Enregistrer les décisions de la DG" },
-      { key: "risks.manage", label: "Gérer les risques et les indicateurs" },
+      { key: "risks.manage", label: "Gérer le registre des risques" },
+      { key: "indicators.manage", label: "Gérer les indicateurs stratégiques" },
       { key: "agenda.view", label: "Consulter l'agenda de la direction" },
       { key: "agenda.manage", label: "Gérer l'agenda de la direction" },
     ],
@@ -97,7 +99,7 @@ export const PERMISSION_GROUPS = [
     items: [
       { key: "teams.create", label: "Créer des équipes" },
       { key: "teams.join", label: "Rejoindre des équipes" },
-      { key: "teams.manage", label: "Gérer les équipes dont on est responsable" },
+      { key: "teams.manage", label: "Gérer toutes les équipes de l'institution" },
     ],
   },
   {
@@ -112,6 +114,7 @@ export const PERMISSION_GROUPS = [
     items: [
       { key: "org.settings", label: "Modifier l'organisation" },
       { key: "org.structure", label: "Gérer l'organigramme" },
+      { key: "units.lead", label: "Pouvoir être nommé chef d'une entité" },
       { key: "org.members", label: "Inviter et gérer les personnes" },
       { key: "org.profiles", label: "Gérer les profils et les droits" },
       { key: "org.mail", label: "Configurer la messagerie" },
@@ -134,6 +137,7 @@ const GOVERNANCE = new Set<Permission>([
   "attributions.approve",
   "plans.manage",
   "plans.approve",
+  "plans.manage_all",
   "deliverables.manage",
   "deliverables.validate",
   "consultants.manage",
@@ -142,6 +146,7 @@ const GOVERNANCE = new Set<Permission>([
   "decisions.record",
   "partners.manage",
   "risks.manage",
+  "indicators.manage",
   "agenda.manage",
   "hr.view",
   "hr.manage",
@@ -162,6 +167,7 @@ const NOT_FOR_GUESTS = new Set<Permission>([
   "teams.create",
   "teams.join",
   "teams.manage",
+  "units.lead",
 ]);
 
 /*
@@ -189,6 +195,7 @@ const AGENT: Permission[] = [
 ];
 const CHEF_ENTITE: Permission[] = [
   ...AGENT,
+  "units.lead",
   "risks.manage",
   "projects.import",
   "projects.archive",
@@ -204,9 +211,7 @@ const CHEF_ENTITE: Permission[] = [
   "deliverables.validate",
   "consultants.manage",
   "correspondence.view",
-  "risks.manage",
   "teams.create",
-  "teams.manage",
 ];
 const DGA: Permission[] = [
   ...CHEF_ENTITE,
@@ -214,6 +219,9 @@ const DGA: Permission[] = [
   "meetings.validate",
   "attributions.approve",
   "plans.approve",
+  "plans.manage_all",
+  "indicators.manage",
+  "teams.manage",
   "correspondence.manage",
   "pilotage.view",
   "agenda.manage",
@@ -239,6 +247,7 @@ const ASSISTANT_DG: Permission[] = [
 ];
 const INFORMATIQUE: Permission[] = [
   ...AGENT,
+  "units.lead",
   "projects.members",
   "ai.rules",
   "teams.create",

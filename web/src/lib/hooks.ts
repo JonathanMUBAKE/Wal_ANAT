@@ -51,6 +51,22 @@ export function useCan() {
     return (perm: string) => set.has(perm);
   }, [data]);
 }
+/** Les entités que l'on dirige, et celles qui leur sont rattachées (le serveur applique la même règle). */
+export function useLedUnitIds() {
+  const { data: me } = useMe();
+  const { data: units } = useUnits();
+  return useMemo(() => {
+    const out = new Set<string>();
+    const all = units ?? [];
+    const walk = (id: string) => {
+      if (out.has(id)) return;
+      out.add(id);
+      for (const c of all) if (c.parent_id === id) walk(c.id);
+    };
+    for (const u of all) if (me && u.manager_id === me.id) walk(u.id);
+    return out;
+  }, [me, units]);
+}
 export const useUsers = () =>
   useQuery({ queryKey: ["users"], queryFn: () => api.get<OrgUser[]>("/api/users"), staleTime: 60_000 });
 export const useUnits = () => useQuery({ queryKey: ["units"], queryFn: () => api.get<OrgUnit[]>("/api/org/units") });

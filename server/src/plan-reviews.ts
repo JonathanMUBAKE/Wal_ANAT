@@ -116,7 +116,7 @@ export class PlanReviews {
   }
   private async rights(actorId: string, p: PlanRef) {
     const perms = await this.svc.permissionsOf(actorId, p.org_id);
-    const prepare = perms.includes("plans.manage") || (await this.heads(actorId, p.unit_id));
+    const prepare = perms.includes("plans.manage_all") || (await this.heads(actorId, p.unit_id));
     return { prepare, read: prepare || perms.includes("plans.view"), approve: perms.includes("plans.approve") };
   }
 

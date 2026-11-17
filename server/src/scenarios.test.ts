@@ -149,6 +149,7 @@ describe("livrables et missions : réception, paiement, durée de la mission", (
 
 describe("parapheur : personne ne reste bloqué dans un circuit", () => {
   it("refuse un intervenant qui n'a pas accès au parapheur", async () => {
+    await g.ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_hugo'"); // un chef garde un profil de chef (A-3)
     await g.promote("u_hugo", "Lecture seule");
     const r = await g.api("u_alice", "POST", "/api/signature", {
       title: "Note",

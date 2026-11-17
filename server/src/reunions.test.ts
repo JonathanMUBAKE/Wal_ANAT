@@ -88,6 +88,7 @@ const readOnlyMember = async (user: string) => {
   const p = (await api("u_alice", "GET", "/api/org/profiles")).body.find(
     (x: { name: string }) => x.name === "Lecture seule",
   );
+  await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = $1", [user]); // un chef garde un profil de chef (A-3)
   await api("u_alice", "PUT", `/api/org/members/${user}/profile`, { profile_id: p.id });
 };
 const saved = async (m: Meeting, actions = [action()]) =>

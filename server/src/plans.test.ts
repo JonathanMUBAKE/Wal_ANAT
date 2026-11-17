@@ -181,6 +181,7 @@ describe("livrables", () => {
     expect((await g.api("u_alice", "DELETE", `/api/deliverables/${d.id}`)).status).toBe(409);
   });
   it("une personne sans droit de lecture ne voit que ses livrables", async () => {
+    await g.ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_hugo'"); // un chef garde un profil de chef (A-3)
     await g.promote("u_hugo", "Lecture seule");
     const mine = await make({ responsible_id: "u_hugo" });
     const other = await make();

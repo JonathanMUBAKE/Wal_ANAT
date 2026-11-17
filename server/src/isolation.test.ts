@@ -164,6 +164,7 @@ describe("R-01 : un rôle explicite plafonne les droits venus d'une équipe", ()
         permissions: [],
       })
     ).body;
+    await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_hugo'"); // un chef garde un profil de chef (A-3)
     await api("u_alice", "PUT", "/api/org/members/u_hugo/profile", { profile_id: p.id });
     const refused = await api("u_hugo", "POST", `/api/teams/${team.id}/join`);
     expect(refused.status).toBe(403);
@@ -327,6 +328,7 @@ describe("T-02 : une organisation n'agit pas sur un compte qui ne lui appartient
   });
 
   it("un membre existant change toujours de rôle", async () => {
+    await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_theo'"); // un chef garde un profil de chef (A-3)
     expect((await api("u_alice", "PUT", "/api/org/members/u_theo", { role: "guest" })).status).toBe(200);
     expect(await ctx.svc.orgRole("u_theo", await orgId())).toBe("guest");
     void projectId;

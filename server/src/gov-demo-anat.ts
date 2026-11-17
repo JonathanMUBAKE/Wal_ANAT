@@ -484,6 +484,15 @@ async function people(svc: Services, org: string) {
     `UPDATE org_members SET permission_overrides = '{"hr.manage": true, "hr.view": true}' WHERE org_id = $1 AND user_id = 'u_sylvie'`,
     [org],
   );
+  // La direction chargée des partenariats gère l'annuaire (PA-1) ; le suivi-évaluation prépare tous les plans (PT-1)
+  await db.query(
+    `UPDATE org_members SET permission_overrides = '{"partners.manage": true}' WHERE org_id = $1 AND user_id = 'u_hugo'`,
+    [org],
+  );
+  await db.query(
+    `UPDATE org_members SET permission_overrides = '{"plans.manage_all": true}' WHERE org_id = $1 AND user_id = 'u_theo'`,
+    [org],
+  );
 
   // Dossiers RH : un dossier pour chaque nouvelle personne, et l'affectation en cours alignée sur le rattachement
   const hr = new Hr(svc, null as unknown as Provisioning);

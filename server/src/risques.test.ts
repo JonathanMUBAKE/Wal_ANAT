@@ -28,9 +28,11 @@ describe("risques", () => {
     });
     expect(r.status).toBe(200);
     expect(r.body).toMatchObject({ project_id: p, score: 12 });
-    // Didier n'a pas le pilotage, mais il est dans le projet
+    // Didier n'a pas le pilotage : hors du projet, il ne voit que les risques dont il est responsable (RI-1)
+    await g.api("u_alice", "POST", "/api/risks", { title: "Risque d'un autre", probability: 1, impact: 1 });
     const sans = await g.api("u_hugo", "GET", "/api/risks");
-    expect(sans.status).toBe(403);
+    expect(sans.status).toBe(200);
+    expect(sans.body.map((x: Any) => x.title)).toEqual(["Retard de livraison des données"]);
     const mine = await g.api("u_hugo", "GET", `/api/risks?project_id=${p}`);
     expect(mine.status).toBe(200);
     expect(mine.body.map((x: Any) => x.title)).toEqual(["Retard de livraison des données"]);

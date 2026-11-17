@@ -64,6 +64,7 @@ async function boot(kind: Kind) {
     await ctx.db.query("DELETE FROM team_members WHERE user_id='u_hugo'");
     const p = (await inj(a, "POST", "/api/org/profiles", { name: "Sans droit", base_role: "member", permissions: [] }))
       .body;
+    await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_hugo'"); // un chef garde un profil de chef (A-3)
     await inj(a, "PUT", "/api/org/members/u_hugo/profile", { profile_id: p.id });
     await inj(a, "PUT", `/api/projects/${app}/members/u_hugo`, { role: "viewer" });
   }

@@ -220,6 +220,7 @@ describe("ancienne route de rôle", () => {
         permissions: ["org.members"],
       })
     ).body;
+    await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_theo'"); // un chef garde un profil de chef (A-3)
     await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: p.id });
   };
 
@@ -356,6 +357,7 @@ describe("droit de déléguer à l'IA", () => {
         permissions: ["tasks.comment", "tasks.edit", "tasks.create"],
       })
     ).body;
+    await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_theo'"); // un chef garde un profil de chef (A-3)
     await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: p.id });
   };
   const runs = async (taskId: string) =>

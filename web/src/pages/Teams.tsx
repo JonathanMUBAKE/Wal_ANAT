@@ -252,6 +252,7 @@ function TeamDialog({ open, onOpenChange, team }: { open: boolean; onOpenChange:
 }
 
 export function TeamPage() {
+  const can = useCan();
   const { id } = useParams();
   const { data: t, error } = useTeam(id);
   const { data: me } = useMe();
@@ -313,7 +314,7 @@ export function TeamPage() {
         <div className="flex items-center gap-2">
           <JoinButton t={t} />
           {manager && <Button onClick={() => setSettings(true)}>Réglages</Button>}
-          {manager && (
+          {manager && can("projects.create") && (
             <Button
               variant="primary"
               icon={<Plus className="size-3.5" />}

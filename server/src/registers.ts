@@ -518,16 +518,24 @@ export class Registers {
   }
 
   // ---------------------------------------------------------------- risques
-  /** Les risques : le registre complet (pilotage), ou ceux d'un projet pour son équipe. */
+  /**
+   * Les risques : le registre complet pour qui pilote ou gère les risques (qui modifie voit, RI-1), ceux d'un projet
+   * pour son équipe, et, pour les autres, les risques dont ils sont responsables.
+   */
   async risks(actorId: string, orgId: string, projectId?: string) {
+    let ownerOnly = false;
     if (projectId) await this.svc.require(actorId, projectId, "viewer");
-    else await this.svc.requirePerm(actorId, orgId, "pilotage.view");
+    else {
+      await this.svc.requireOrg(actorId, orgId, "member");
+      const perms = await this.svc.permissionsOf(actorId, orgId);
+      ownerOnly = !perms.includes("pilotage.view") && !perms.includes("risks.manage");
+    }
     return this.svc.db.query(
       `SELECT r.*, r.probability * r.impact AS score, u.name AS owner_name, p.name AS project_name
          FROM risks r LEFT JOIN users u ON u.id = r.owner_id LEFT JOIN projects p ON p.id = r.project_id
-        WHERE r.org_id = $1 AND ($2::text IS NULL OR r.project_id = $2)
+        WHERE r.org_id = $1 AND ($2::text IS NULL OR r.project_id = $2) AND (NOT $3 OR r.owner_id = $4)
         ORDER BY r.status, score DESC, r.created_at DESC`,
-      [orgId, projectId ?? null],
+      [orgId, projectId ?? null, ownerOnly, actorId],
     );
   }
   private async riskRow(id: string) {
@@ -578,12 +586,18 @@ export class Registers {
     return this.riskRow(id);
   }
   async updateRisk(actorId: string, id: string, i: RiskInput) {
-    const r = await this.svc.db.one<{ org_id: string; project_id: string | null }>(
-      "SELECT org_id, project_id FROM risks WHERE id = $1",
+    const r = await this.svc.db.one<{ org_id: string; project_id: string | null; owner_id: string | null }>(
+      "SELECT org_id, project_id, owner_id FROM risks WHERE id = $1",
       [id],
     );
     if (!r) throw notFound("Risque introuvable");
-    await this.svc.requirePerm(actorId, r.org_id, "risks.manage");
+    // Le responsable du risque tient sa parade et son état ; le reste revient à qui gère le registre
+    const own = r.owner_id === actorId && !!(await this.svc.orgRole(actorId, r.org_id));
+    if (!(await this.svc.permissionsOf(actorId, r.org_id)).includes("risks.manage")) {
+      if (!own) await this.svc.requirePerm(actorId, r.org_id, "risks.manage");
+      else if (Object.keys(i).some((k) => k !== "mitigation" && k !== "status" && i[k as keyof RiskInput] !== undefined))
+        throw forbidden("Le responsable d'un risque met à jour sa parade et l'état ; le reste revient au gestionnaire des risques");
+    }
     await this.assertRiskRefs(r.org_id, i);
     await this.svc.db.query(
       `UPDATE risks SET title = COALESCE($1, title), probability = COALESCE($2, probability), impact = COALESCE($3, impact),
@@ -613,7 +627,9 @@ export class Registers {
     FROM indicators i LEFT JOIN plan_activities pa ON pa.id = i.plan_activity_id LEFT JOIN work_plans wp ON wp.id = pa.plan_id
     LEFT JOIN org_units ou ON ou.id = wp.unit_id`;
   async indicators(actorId: string, orgId: string) {
-    await this.svc.requirePerm(actorId, orgId, "pilotage.view");
+    const perms = await this.svc.permissionsOf(actorId, orgId);
+    if (!["pilotage.view", "indicators.manage", "risks.manage"].some((p) => perms.includes(p as never)))
+      await this.svc.requirePerm(actorId, orgId, "pilotage.view");
     return this.svc.db.query(`${Registers.INDICATOR} WHERE i.org_id = $1 ORDER BY i.name`, [orgId]);
   }
   private async assertPlanActivity(orgId: string, id: string | null | undefined) {
@@ -621,7 +637,7 @@ export class Registers {
       throw badRequest("Activité du plan inconnue");
   }
   async createIndicator(actorId: string, orgId: string, i: IndicatorInput & { name: string; target: number }) {
-    await this.svc.requirePerm(actorId, orgId, "risks.manage");
+    await this.svc.requirePerm(actorId, orgId, "indicators.manage");
     await this.assertPlanActivity(orgId, i.plan_activity_id);
     const id = uid("ind");
     await this.svc.db.query(
@@ -644,7 +660,7 @@ export class Registers {
   async updateIndicator(actorId: string, id: string, i: IndicatorInput) {
     const r = await this.svc.db.one<{ org_id: string }>("SELECT org_id FROM indicators WHERE id = $1", [id]);
     if (!r) throw notFound("Indicateur introuvable");
-    await this.svc.requirePerm(actorId, r.org_id, "risks.manage");
+    await this.svc.requirePerm(actorId, r.org_id, "indicators.manage");
     await this.assertPlanActivity(r.org_id, i.plan_activity_id);
     await this.svc.db.query(
       `UPDATE indicators SET name = COALESCE($1, name), unit_label = COALESCE($2, unit_label), baseline = COALESCE($3, baseline),

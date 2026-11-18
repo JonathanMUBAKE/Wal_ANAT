@@ -498,6 +498,8 @@ export class Agreements {
       unit_id: a.unit_id,
       confidential: a.confidential,
       steps,
+      // Un accord engage toujours l'Agence : la signature finale revient à la DG (CV-1)
+      binding: true,
     });
     await signature.start(actorId, doc.id);
     const moved = await this.svc.db.one(

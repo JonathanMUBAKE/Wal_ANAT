@@ -359,13 +359,19 @@ function NewDoc({ onClose }: { onClose: () => void }) {
           <Field label="Nature">
             {(a) => (
               <Select {...a} value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}>
-                {["Note", "Lettre", "Rapport", "Décision", "Contrat"].map((k) => (
+                {["Note", "Lettre", "Rapport", "Décision", "Contrat", "Convention", "Avenant", "Protocole d'accord"].map((k) => (
                   <option key={k}>{k}</option>
                 ))}
               </Select>
             )}
           </Field>
         </div>
+        {/(convention|accord|avenant|contrat|protocole|m[ée]morandum|arr[êe]t[ée]|engagement)/i.test(f.kind) && (
+          <p className="rounded-lg border border-line bg-warning-soft/40 px-3 py-2 text-[12.5px]">
+            Ce document engage l'Agence : la signature finale revient à la DG, ou à la personne qui a reçu sa délégation
+            de signature.
+          </p>
+        )}
         <Field label="Contenu">
           {(a) => <Textarea {...a} rows={6} value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} />}
         </Field>
@@ -409,7 +415,8 @@ function NewDoc({ onClose }: { onClose: () => void }) {
                 <div className="grid grid-cols-[1fr_130px_32px] items-center gap-2">
                   <PeopleSelect
                     aria-label="Intervenant"
-                    people={others}
+                    // L'auteur peut signer en dernier, après le visa ou l'avis d'une autre personne
+                    people={i === steps.length - 1 ? users : others}
                     value={s.actor_id}
                     onChange={(v) => setSteps(steps.map((x, n) => (n === i ? { ...x, actor_id: v } : x)))}
                   />
@@ -459,15 +466,24 @@ function Delegations() {
     queryKey: ["delegations"],
     queryFn: () =>
       api.get<
-        { id: string; from_user: string; from_name: string; to_name: string; start_on: string; end_on: string }[]
+        {
+          id: string;
+          from_user: string;
+          from_name: string;
+          to_name: string;
+          start_on: string;
+          end_on: string;
+          scope: "visa" | "signature";
+          revoked_at: string | null;
+        }[]
       >("/api/delegations"),
   });
-  const [f, setF] = useState({ to_user: "", start_on: "", end_on: "" });
+  const [f, setF] = useState({ to_user: "", start_on: "", end_on: "", scope: "signature" });
   const refresh = () => qc.invalidateQueries({ queryKey: ["delegations"] });
   const add = useMutation({
     mutationFn: () => api.post("/api/delegations", f),
     onSuccess: () => {
-      setF({ to_user: "", start_on: "", end_on: "" });
+      setF({ to_user: "", start_on: "", end_on: "", scope: "signature" });
       refresh();
     },
     onError: fail,
@@ -479,8 +495,8 @@ function Delegations() {
   });
   return (
     <div className="space-y-4">
-      <Section title="Déléguer ma signature en cas d'absence">
-        <div className="grid items-end gap-3 p-4 sm:grid-cols-[1fr_170px_170px_auto]">
+      <Section title="Déléguer mon parapheur en cas d'absence (30 jours au plus)">
+        <div className="grid items-end gap-3 p-4 sm:grid-cols-[1fr_150px_150px_170px_auto]">
           <Field label="Délégataire">
             {(a) => (
               <PeopleSelect
@@ -501,6 +517,14 @@ function Delegations() {
               <Input {...a} type="date" value={f.end_on} onChange={(e) => setF({ ...f, end_on: e.target.value })} />
             )}
           </Field>
+          <Field label="Portée">
+            {(a) => (
+              <Select {...a} value={f.scope} onChange={(e) => setF({ ...f, scope: e.target.value })}>
+                <option value="signature">Visa et signature</option>
+                <option value="visa">Visa et avis seulement</option>
+              </Select>
+            )}
+          </Field>
           <Button
             variant="primary"
             disabled={!f.to_user || !f.start_on || !f.end_on}
@@ -513,15 +537,19 @@ function Delegations() {
       </Section>
       <Section>
         {data?.length ? (
-          <Table head={["De", "À", "Du", "Au", ""]}>
+          <Table head={["De", "À", "Du", "Au", "Portée", ""]}>
             {data.map((d) => (
               <Tr key={d.id}>
                 <Td>{d.from_name}</Td>
                 <Td>{d.to_name}</Td>
                 <Td className="tabular">{frDate(d.start_on)}</Td>
                 <Td className="tabular">{frDate(d.end_on)}</Td>
+                <Td>{d.scope === "visa" ? "Visa et avis" : "Visa et signature"}</Td>
                 <Td className="text-right">
-                  {d.from_user === me?.id && (
+                  {d.revoked_at && (
+                    <span className="text-[12px] text-faint">Retirée le {frDate(d.revoked_at.slice(0, 10))}</span>
+                  )}
+                  {d.from_user === me?.id && !d.revoked_at && (
                     <Button size="sm" variant="ghost" onClick={() => del.mutate(d.id)}>
                       Retirer
                     </Button>

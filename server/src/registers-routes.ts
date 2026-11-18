@@ -64,7 +64,13 @@ export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers,
   );
   r.get("/api/delegations", async (req) => s.delegations(req.userId, req.orgId));
   r.post("/api/delegations", async (req) =>
-    s.delegate(req.userId, req.orgId, z.object({ to_user: id, start_on: date, end_on: date }).parse(req.body)),
+    s.delegate(
+      req.userId,
+      req.orgId,
+      z
+        .object({ to_user: id, start_on: date, end_on: date, scope: z.enum(["visa", "signature"]).optional() })
+        .parse(req.body),
+    ),
   );
   r.delete<Id>("/api/delegations/:id", async (req) => {
     await s.revoke(req.userId, req.params.id);

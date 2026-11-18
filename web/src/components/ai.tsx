@@ -143,7 +143,9 @@ export function ApprovalCard({ a, compact }: { a: AiApproval; compact?: boolean 
         <div className="min-w-0 flex-1">
           <p className="text-[11.5px] font-medium uppercase tracking-wider text-ai-fg">
             {pending
-              ? `${agent?.name ?? "L'IA"} demande votre accord`
+              ? targeted
+                ? `${agent?.name ?? "L'IA"} attend l'accord d'une autre personne`
+                : `${agent?.name ?? "L'IA"} demande votre accord`
               : decided === true || a.status === "approved"
                 ? "Autorisé"
                 : decided === false || a.status === "rejected"

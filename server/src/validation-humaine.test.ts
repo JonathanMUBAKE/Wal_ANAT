@@ -270,3 +270,157 @@ describe("compte rendu validé : réouverture motivée (R-3)", () => {
     expect((await notes("u_hugo")).some((n) => n.kind === "meeting.reopened")).toBe(true);
   });
 });
+
+describe("parapheur : signataire imposé selon la nature du document (CV-1, PH-2)", () => {
+  const draft = (who: string, kind: string, steps: { actor_id: string; action: string }[]) =>
+    g.api(who, "POST", "/api/signature", { title: "Convention avec l'université de Kinshasa", kind, body: "Texte", steps });
+
+  it("une convention engage l'Agence : la signature finale revient à la DG", async () => {
+    const bad = await draft("u_karim", "Convention de partenariat", [
+      { actor_id: "u_alice", action: "visa" },
+      { actor_id: "u_hugo", action: "signature" },
+    ]);
+    expect(bad.status).toBe(400);
+    expect(bad.body.error).toMatch(/engage l'Agence/);
+    const ok = await draft("u_karim", "Convention de partenariat", [
+      { actor_id: "u_hugo", action: "visa" },
+      { actor_id: "u_alice", action: "signature" },
+    ]);
+    expect(ok.status).toBe(200);
+    expect(ok.body.binding).toBe(true);
+    // Une note interne reste libre
+    const note = await draft("u_karim", "Note", [{ actor_id: "u_hugo", action: "signature" }]);
+    expect(note.status).toBe(200);
+    expect(note.body.binding).toBe(false);
+  });
+
+  it("la DG signe ce qu'elle a préparé, après le visa d'une autre personne", async () => {
+    const alone = await draft("u_alice", "Convention", [{ actor_id: "u_alice", action: "signature" }]);
+    expect(alone.status).toBe(400);
+    expect(alone.body.error).toMatch(/visa ou un avis d'une autre personne/);
+    // L'auteur ne vise toujours pas son propre document
+    const self = await draft("u_alice", "Convention", [
+      { actor_id: "u_alice", action: "visa" },
+      { actor_id: "u_karim", action: "visa" },
+      { actor_id: "u_alice", action: "signature" },
+    ]);
+    expect(self.status).toBe(400);
+    const d = (
+      await draft("u_alice", "Convention", [
+        { actor_id: "u_karim", action: "visa" },
+        { actor_id: "u_alice", action: "signature" },
+      ])
+    ).body;
+    await g.api("u_alice", "POST", `/api/signature/${d.id}/start`);
+    expect((await g.api("u_alice", "POST", `/api/signature/${d.id}/decide`, { decision: "approve" })).status).toBe(403);
+    await g.api("u_karim", "POST", `/api/signature/${d.id}/decide`, { decision: "approve" });
+    const signed = await g.api("u_alice", "POST", `/api/signature/${d.id}/decide`, { decision: "approve" });
+    expect(signed.body.status).toBe("signed");
+  });
+
+  it("le droit de signer au nom de l'Agence est celui de la DG", async () => {
+    const profiles = (await g.api("u_alice", "GET", "/api/org/profiles")).body as Any[];
+    const by = (n: string) => profiles.find((p) => p.name === n)!.permissions as string[];
+    expect(by("DG")).toContain("signature.institution");
+    expect(by("DGA")).not.toContain("signature.institution");
+    expect(by("Chef d'entité")).not.toContain("signature.institution");
+  });
+});
+
+describe("parapheur : délégations bornées (PH-3)", () => {
+  it("une délégation dure au plus 30 jours et sa portée se choisit", async () => {
+    const long = await g.api("u_alice", "POST", "/api/delegations", {
+      to_user: "u_karim",
+      start_on: day(),
+      end_on: day(45),
+    });
+    expect(long.status).toBe(400);
+    expect(long.body.error).toMatch(/30 jours/);
+    // Délégation de visa seulement : Fiston vise à la place de la DG, mais ne signe pas
+    await g.api("u_alice", "POST", "/api/delegations", { to_user: "u_karim", start_on: day(), end_on: day(5), scope: "visa" });
+    const steps = [
+      { actor_id: "u_alice", action: "visa" },
+      { actor_id: "u_alice", action: "signature" },
+    ];
+    const d = (await g.api("u_hugo", "POST", "/api/signature", { title: "Note", body: "x", steps })).body;
+    await g.api("u_hugo", "POST", `/api/signature/${d.id}/start`);
+    expect((await g.api("u_karim", "POST", `/api/signature/${d.id}/decide`, { decision: "approve" })).status).toBe(200);
+    const sign = await g.api("u_karim", "POST", `/api/signature/${d.id}/decide`, { decision: "approve" });
+    expect(sign.status).toBe(403);
+  });
+
+  it("la signature ne se délègue qu'à un responsable ; une délégation retirée reste dans l'historique", async () => {
+    await g.ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_hugo'");
+    await g.promote("u_hugo", "Agent");
+    const agent = await g.api("u_alice", "POST", "/api/delegations", {
+      to_user: "u_hugo",
+      start_on: day(),
+      end_on: day(3),
+      scope: "signature",
+    });
+    expect(agent.status).toBe(400);
+    expect(agent.body.error).toMatch(/responsable/);
+    expect(
+      (await g.api("u_alice", "POST", "/api/delegations", { to_user: "u_hugo", start_on: day(), end_on: day(3), scope: "visa" }))
+        .status,
+    ).toBe(200);
+    const { id } = (
+      await g.api("u_alice", "POST", "/api/delegations", { to_user: "u_karim", start_on: day(), end_on: day(3) })
+    ).body;
+    expect((await g.api("u_alice", "DELETE", `/api/delegations/${id}`)).status).toBe(200);
+    const list = (await g.api("u_alice", "GET", "/api/delegations")).body as Any[];
+    const gone = list.find((x) => x.id === id);
+    expect(gone).toMatchObject({ revoked_by: "u_alice" });
+    expect(gone.revoked_at).toBeTruthy();
+    // Retirée, elle n'ouvre plus aucun droit
+    const d = (
+      await g.api("u_hugo", "POST", "/api/signature", {
+        title: "Note",
+        body: "x",
+        steps: [{ actor_id: "u_alice", action: "signature" }],
+      })
+    ).body;
+    await g.api("u_hugo", "POST", `/api/signature/${d.id}/start`);
+    expect((await g.api("u_karim", "POST", `/api/signature/${d.id}/decide`, { decision: "approve" })).status).toBe(404);
+  });
+});
+
+describe("administration : un administrateur système distinct, relu par la DG (AD-1)", () => {
+  beforeEach(async () => {
+    // Fiston est l'administrateur système (responsable informatique) ; il a modifié un compte
+    await g.ctx.db.query("UPDATE users SET platform_role = 'super_admin' WHERE id = 'u_karim'");
+    await g.ctx.db.query(
+      "INSERT INTO activity (id, org_id, actor_id, kind, data) VALUES ('act_admin_1', $1, 'u_karim', 'member.profile_changed', '{\"user\":\"u_hugo\"}')",
+      [g.org],
+    );
+  });
+
+  it("la DG voit les actions de l'administrateur depuis la dernière relecture et vise le journal", async () => {
+    const r = await g.api("u_alice", "GET", "/api/org/admin-review");
+    expect(r.status).toBe(200);
+    expect(r.body.admins.map((a: Any) => a.id)).toContain("u_karim");
+    expect(r.body.entries.some((e: Any) => e.kind === "member.profile_changed")).toBe(true);
+    expect(r.body.last_review).toBeNull();
+    const done = await g.api("u_alice", "POST", "/api/org/admin-review", { comment: "Rien d'anormal" });
+    expect(done.status).toBe(200);
+    expect(done.body.last_review).toMatchObject({ reviewer_id: "u_alice", comment: "Rien d'anormal" });
+    expect(done.body.last_review.count).toBeGreaterThan(0);
+    expect(done.body.entries.filter((e: Any) => e.kind === "member.profile_changed")).toHaveLength(0);
+    expect((await notes("u_karim")).some((n) => n.kind === "admin.journal.reviewed")).toBe(true);
+  });
+
+  it("l'administrateur ne relit pas ses propres actions", async () => {
+    await g.api("u_alice", "PUT", "/api/org/members/u_karim/permissions", { overrides: { "audit.review": true } });
+    const r = await g.api("u_karim", "POST", "/api/org/admin-review", { comment: "Vu" });
+    expect(r.status).toBe(403);
+    expect(r.body.error).toMatch(/propres actions/);
+    expect((await g.api("u_hugo", "GET", "/api/org/admin-review")).status).toBe(403);
+  });
+
+  it("la relecture revient à la DG, pas au responsable informatique", async () => {
+    const profiles = (await g.api("u_alice", "GET", "/api/org/profiles")).body as Any[];
+    const by = (n: string) => profiles.find((p) => p.name === n)!.permissions as string[];
+    expect(by("DG")).toContain("audit.review");
+    expect(by("Responsable informatique")).not.toContain("audit.review");
+  });
+});

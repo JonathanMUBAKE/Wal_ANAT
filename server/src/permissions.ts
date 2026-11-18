@@ -71,6 +71,7 @@ export const PERMISSION_GROUPS = [
     group: "Parapheur et courrier",
     items: [
       { key: "signature.use", label: "Utiliser le parapheur" },
+      { key: "signature.institution", label: "Signer au nom de l'Agence (conventions, accords, actes)" },
       { key: "correspondence.view", label: "Consulter le courrier" },
       { key: "correspondence.manage", label: "Enregistrer et imputer le courrier" },
     ],
@@ -119,6 +120,7 @@ export const PERMISSION_GROUPS = [
       { key: "org.members", label: "Inviter et gérer les personnes" },
       { key: "org.profiles", label: "Gérer les profils et les droits" },
       { key: "org.mail", label: "Configurer la messagerie" },
+      { key: "audit.review", label: "Relire et viser le journal des actions de l'administrateur système" },
     ],
   },
 ] as const;
@@ -146,6 +148,8 @@ const GOVERNANCE = new Set<Permission>([
   "pilotage.view",
   "decisions.record",
   "decisions.confirm",
+  "signature.institution",
+  "audit.review",
   "partners.manage",
   "risks.manage",
   "indicators.manage",
@@ -230,7 +234,7 @@ const DGA: Permission[] = [
   "partners.manage",
   "hr.view",
 ];
-const DG: Permission[] = [...DGA, "projects.delete", "decisions.record", "decisions.confirm", "ai.rules"];
+const DG: Permission[] = [...DGA, "projects.delete", "decisions.record", "decisions.confirm", "signature.institution", "audit.review", "ai.rules"];
 /** L'assistant(e) de la DG saisit pour elle (courrier, agenda, réunions, décisions dictées) ; il ne signe ni n'approuve. */
 const ASSISTANT_DG: Permission[] = [
   ...new Set<Permission>([

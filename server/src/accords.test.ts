@@ -151,7 +151,16 @@ describe("accords : entrée en vigueur", () => {
   it("au parapheur : la convention est scellée pendant le circuit, entre en vigueur à la signature, revient en préparation si rejetée", async () => {
     const p = await partner();
     const a = (await create({ partner_ids: [p.id], type_code: "convention_partenariat", focal_id: "u_karim" })).body;
-    const steps = [{ actor_id: "u_karim", action: "signature" }];
+    // Un accord engage l'Agence : Fiston vise, la DG signe (thème 2, CV-1) ; Fiston ne peut pas être signataire final
+    const wrong = await g.api("u_alice", "POST", `/api/agreements/${a.id}/sign`, {
+      steps: [{ actor_id: "u_karim", action: "signature" }],
+    });
+    expect(wrong.status).toBe(400);
+    expect(wrong.body.error).toMatch(/engage l'Agence/);
+    const steps = [
+      { actor_id: "u_karim", action: "visa" },
+      { actor_id: "u_alice", action: "signature" },
+    ];
     expect((await g.api("u_hugo", "POST", `/api/agreements/${a.id}/sign`, { steps })).status).toBe(403);
     const s = await g.api("u_alice", "POST", `/api/agreements/${a.id}/sign`, { steps });
     expect(s.status).toBe(200);
@@ -172,7 +181,8 @@ describe("accords : entrée en vigueur", () => {
     );
     // Nouveau passage, puis signature
     const again = (await g.api("u_alice", "POST", `/api/agreements/${a.id}/sign`, { steps })).body;
-    const signed = await g.api("u_karim", "POST", `/api/signature/${again.sign_document.id}/decide`, {
+    await g.api("u_karim", "POST", `/api/signature/${again.sign_document.id}/decide`, { decision: "approve" });
+    const signed = await g.api("u_alice", "POST", `/api/signature/${again.sign_document.id}/decide`, {
       decision: "approve",
     });
     expect(signed.status).toBe(200);

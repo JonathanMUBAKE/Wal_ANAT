@@ -165,6 +165,18 @@ describe("démonstration ANAT", () => {
       expect([u.name, (await ctx.svc.permissionsOf(u.m, org)).includes("units.lead")]).toEqual([u.name, true]);
   });
 
+  it("sépare l'administration technique de la direction : le responsable informatique administre, la DG relit (AD-1)", async () => {
+    const admins = await q<{ id: string; title: string }>(
+      "SELECT id, title FROM users WHERE platform_role = 'super_admin' AND status = 'active'",
+    );
+    expect(admins.map((a) => a.id)).toEqual(["u_cedric"]);
+    expect(admins[0].title).toMatch(/informatique/i);
+    const it = await ctx.svc.permissionsOf("u_cedric", org);
+    expect(it).toEqual(expect.arrayContaining(["org.members", "org.profiles", "org.structure"]));
+    for (const p of ["pilotage.view", "decisions.record", "audit.review"]) expect(it).not.toContain(p);
+    expect(await ctx.svc.permissionsOf("u_alice", org)).toContain("audit.review");
+  });
+
   it("aligne le dossier RH de chacun sur son entité", async () => {
     const rows = await q<{ user_id: string; member: string | null; assigned: string | null }>(
       `SELECT om.user_id, om.unit_id AS member,

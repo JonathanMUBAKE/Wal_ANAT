@@ -892,7 +892,13 @@ const TABLE = [
   R_("DELETE", "/api/agreements/:id", async (X) => ({ url: `/api/agreements/${(await X.agreement()).id}` })),
   R_("POST", "/api/agreements/:id/sign", async (X) => ({
     url: `/api/agreements/${(await X.agreement()).id}/sign`,
-    body: { steps: [{ actor_id: "u_karim", action: "signature" }] },
+    // Un accord engage l'Agence : visa d'un collaborateur, puis signature de la DG (thème 2, CV-1)
+    body: {
+      steps: [
+        { actor_id: "u_karim", action: "visa" },
+        { actor_id: "u_alice", action: "signature" },
+      ],
+    },
   })),
   R_("POST", "/api/agreements/:id/activate", async (X) => ({
     url: `/api/agreements/${(await X.agreement()).id}/activate`,
@@ -936,6 +942,8 @@ const TABLE = [
     body: { title: "Document renommé" },
   })),
   R_("DELETE", "/api/dossier-documents/:id", async (X) => ({ url: `/api/dossier-documents/${(await X.ddoc()).id}` })),
+  R_("GET", "/api/org/admin-review"),
+  R_("POST", "/api/org/admin-review", () => ({ body: { comment: "Vu" } })),
   R_("GET", "/api/decisions"),
   R_("POST", "/api/decisions", () => ({ body: { title: "D", content: "Texte", decided_on: "2026-03-02" } })),
   R_("GET", "/api/decisions/:id", async (X) => ({ url: `/api/decisions/${(await X.decision()).id}` })),

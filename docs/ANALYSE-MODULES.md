@@ -170,9 +170,9 @@ Une tâche du registre d'entité s'affiche avec l'étiquette « Tâche d'entité
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| T-1 | Un agent peut repousser l'échéance, changer l'intitulé et la priorité d'une tâche que son responsable lui a confiée. Le retard disparaît des tableaux sans que le responsable le sache. | Haute | **Décidé** : l'échéance, l'intitulé et la priorité d'une tâche confiée restent au responsable. L'agent demande un report, le responsable accepte ou refuse |
-| T-2 | Aucune notification ni trace visible pour le responsable quand l'agent modifie une tâche confiée (seule la fin de la tâche est notifiée). | Haute | À corriger, avec T-1 |
-| T-3 | Une tâche confiée se termine d'un clic, sans validation du responsable. Pour un travail qui produit un document, l'agent déclare « fait » et la tâche sort des retards. | Moyenne | **Décidé** : l'agent déclare la tâche réalisée, le responsable confirme la clôture ou la renvoie |
+| T-1 | Un agent peut repousser l'échéance, changer l'intitulé et la priorité d'une tâche que son responsable lui a confiée. Le retard disparaît des tableaux sans que le responsable le sache. | Haute | **Fait** (lot 4) : l'intitulé, l'échéance et la priorité d'une tâche confiée restent à qui l'a confiée ; le chargé demande un report, accepté ou refusé |
+| T-2 | Aucune notification ni trace visible pour le responsable quand l'agent modifie une tâche confiée (seule la fin de la tâche est notifiée). | Haute | **Fait** (lot 4) : le responsable est prévenu de ce que d'autres changent sur une tâche qu'il a confiée |
+| T-3 | Une tâche confiée se termine d'un clic, sans validation du responsable. Pour un travail qui produit un document, l'agent déclare « fait » et la tâche sort des retards. | Moyenne | **Fait** (lot 4) : le chargé déclare la tâche réalisée ; le responsable confirme la clôture ou la renvoie avec un motif |
 | T-4 | « Tâche d'entité » ne dit pas de quelle entité. Pour un chef qui en dirige plusieurs, les tâches ne se distinguent pas. | Moyenne | À corriger : afficher le nom de l'entité |
 | T-5 | Les sous-tâches apparaissent seules (« Apple Pay ») sans le nom de la tâche parente. | Moyenne | À corriger : afficher « Tâche parente › sous-tâche » |
 | T-6 | Un livrable en retard (Didier, « Rapport intermédiaire ») reste dans « Livrables » avec une date rouge. Il n'est ni dans « En retard » ni dans le compteur de retards. | Moyenne | À corriger : compter et regrouper les livrables en retard avec les retards |
@@ -422,10 +422,10 @@ Fiston crée, dans « Application mobile v2 », la tâche « Préparer un point 
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| I-1 | Une règle d'automatisation peut être réglée en « validation automatique » pour créer une tâche, commenter ou mémoriser sans accord humain. Cela contredit la règle du projet « l'IA propose et un humain décide ». | Haute | À décider : supprimer la validation automatique, ou la limiter à « mémoriser » |
-| I-2 | Refuser une proposition n'arrête pas l'intervention : le coéquipier enchaîne d'autres propositions. | Haute | À corriger : un refus arrête l'intervention, ou propose explicitement « arrêter / laisser continuer » |
+| I-1 | Une règle d'automatisation peut être réglée en « validation automatique » pour créer une tâche, commenter ou mémoriser sans accord humain. Cela contredit la règle du projet « l'IA propose et un humain décide ». | Haute | **Décidé et fait** (lot 4) : validation automatique supprimée ; les règles existantes repassent en validation humaine |
+| I-2 | Refuser une proposition n'arrête pas l'intervention : le coéquipier enchaîne d'autres propositions. | Haute | **Fait** (lot 4) : un refus arrête l'intervention ; « Refuser, laisser continuer » permet au coéquipier de poursuivre |
 | I-3 | Deux coéquipiers peuvent travailler en même temps sur la même tâche (tâche confiée + règle) et proposer la même action. | Moyenne | À corriger : une seule intervention à la fois par tâche |
-| I-4 | La personne visée par une proposition peut la valider elle-même (Fiston valide la relance qui le concerne). | Moyenne | À décider : exclure la personne visée de la validation |
+| I-4 | La personne visée par une proposition peut la valider elle-même (Fiston valide la relance qui le concerne). | Moyenne | **Décidé et fait** (lot 4) : la personne visée (chargé de la tâche touchée, personne mentionnée) ne valide pas la proposition et n'est pas sollicitée |
 | I-5 | Les propositions sont visibles par des personnes qui ne peuvent pas les valider (Gaston, Clarisse) et absentes des notifications de ceux qui pourraient (autres éditeurs avec le droit). | Basse | À corriger : n'afficher que les propositions que l'on peut décider |
 | I-6 | Les coéquipiers ne sont membres que des projets de start-up. Aucun projet de l'ANAT (Schéma national d'aménagement, RH) ne les utilise. | Moyenne (démo) | À corriger avec A-7 |
 | I-7 | Les rôles et consignes viennent d'une start-up (« chef de projet IA », « analyste QA et triage », bugs, étapes de reproduction). | Moyenne | À corriger : des rôles utiles à l'ANAT (préparer une note, suivre les échéances d'un plan de travail, synthétiser un compte rendu) |
@@ -443,8 +443,8 @@ Fiston crée, dans « Application mobile v2 », la tâche « Préparer un point 
 
 ### Décisions ouvertes
 
-- I-1 : garde-t-on une validation automatique, et pour quelles actions ?
-- I-4 : la personne visée par une proposition peut-elle la valider ?
+- I-1 : garde-t-on une validation automatique, et pour quelles actions ? **Décidé le 18/11/2026 : non, supprimée.**
+- I-4 : la personne visée par une proposition peut-elle la valider ? **Décidé le 18/11/2026 : non.**
 - I-9 : quels projets et documents l'IA peut-elle lire, compte tenu de l'envoi à un service extérieur ?
 
 ---
@@ -681,9 +681,9 @@ Aucune n'est rattachée à un dossier.
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| DEC-1 | Une décision inscrite par l'assistante entre au registre sans confirmation de la DG. Rien ne la distingue d'une décision que la DG a vue. (Décision déjà ouverte dans le plan de travail.) | Haute | À décider : « inscrite, à confirmer par la DG » avant numérotation, ou confirmation après coup |
+| DEC-1 | Une décision inscrite par l'assistante entre au registre sans confirmation de la DG. Rien ne la distingue d'une décision que la DG a vue. (Décision déjà ouverte dans le plan de travail.) | Haute | **Décidé et fait** (lot 4) : confirmation après coup. La décision est numérotée dès son inscription, marquée « à confirmer par la DG », et la DG la confirme (droit « Confirmer les décisions inscrites au nom de la DG ») |
 | DEC-2 | Le chargé d'exécution et l'échéance sont facultatifs : une décision peut rester sans suivi ni retard possible. | Haute | À corriger : chargé et échéance obligatoires, sauf décision sans exécution (à marquer comme telle) |
-| DEC-3 | Le chargé déclare seul la décision exécutée, sans vérification. Même logique que T-3. | Moyenne | À décider avec T-3 : le secrétariat de la DG confirme la clôture |
+| DEC-3 | Le chargé déclare seul la décision exécutée, sans vérification. Même logique que T-3. | Moyenne | **Décidé et fait** (lot 4) : le secrétariat de la DG ou la DG confirme l'exécution déclarée par le chargé, ou la renvoie avec un motif |
 | DEC-4 | Aucune correction possible, même d'une faute de frappe : il faut remplacer, ce qui crée un nouveau numéro. | Basse | À décider : autoriser une correction de forme tracée pendant un court délai, ou garder le remplacement |
 | DEC-5 | Le formulaire « Inscrire une décision » de cette page ne propose pas de rattacher la décision à un dossier ; seule l'action « Arbitrer » depuis un dossier le fait. | Moyenne | À corriger : champ « Dossier » (projet, activité, réunion) dans le formulaire |
 | DEC-6 | Tous les profils, agents compris, voient toutes les décisions non confidentielles. | Basse | À décider avec F-4 |
@@ -700,8 +700,8 @@ Aucune n'est rattachée à un dossier.
 
 ### Décisions ouvertes
 
-- DEC-1 : la DG confirme-t-elle les décisions inscrites par son assistante ?
-- DEC-3 : la clôture d'une décision est-elle confirmée par le secrétariat de la DG ?
+- DEC-1 : la DG confirme-t-elle les décisions inscrites par son assistante ? **Décidé le 18/11/2026 : confirmation après coup.**
+- DEC-3 : la clôture d'une décision est-elle confirmée par le secrétariat de la DG ? **Décidé le 18/11/2026 : oui, secrétariat ou DG.**
 - DEC-4 : correction de forme autorisée, ou remplacement seulement ?
 
 ---
@@ -783,7 +783,7 @@ Fiston est rédacteur de 15 réunions sur 16, comité de direction compris.
 |---|---|---|---|
 | R-1 | Le titre « Réunion » s'affiche tel quel sur l'Accueil et dans Mon entité, alors que la page Réunions affiche le type (« Comité de direction »). Cause de A-8. | Moyenne | À corriger : un même libellé partout (le titre s'il est parlant, sinon le type) ; titre par défaut = type |
 | R-2 | Seule la présidence valide un compte rendu qu'elle a présidé. En son absence, rien ne permet une validation par intérim. | Moyenne | À décider : validation par délégation (la délégation existe déjà au parapheur) |
-| R-3 | Tout profil autorisé à valider peut rouvrir un compte rendu validé, même s'il ne l'a pas validé. Un document validé doit rester figé. | Haute | À corriger : réouverture par la personne qui a validé (ou la DG), avec un motif obligatoire, tracé |
+| R-3 | Tout profil autorisé à valider peut rouvrir un compte rendu validé, même s'il ne l'a pas validé. Un document validé doit rester figé. | Haute | **Fait** (lot 4) : réouverture par la personne qui a validé ou par la DG, motif obligatoire inscrit au journal, valideur et rédacteur prévenus |
 | R-4 | Après réouverture, des recommandations peuvent être retirées du compte rendu, y compris celles déjà transformées en tâches. | Moyenne | À vérifier puis corriger : une recommandation issue d'un compte rendu validé ne se supprime pas, elle s'annule |
 | R-5 | Les numéros de compte rendu sont attribués à la programmation : ordre non chronologique dans une série, trous en cas d'annulation. | Moyenne | À décider : numéroter à la validation, ou accepter et documenter |
 | R-6 | Une réunion passée non tenue (13/11) reste « Compte rendu à établir » indéfiniment ; rien ne propose de la déclarer non tenue ou annulée. | Basse | À corriger : proposer « Annuler » ou « Reporter » une séance passée sans compte rendu |
@@ -1122,7 +1122,7 @@ Les six comptes voient les quatre accords.
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| CV-1 | Le circuit de signature d'un accord est composé librement par qui l'envoie : n'importe quelle personne ayant accès au parapheur peut être signataire final, et sa signature fait entrer l'accord en vigueur. | Haute | À corriger : signataire final imposé pour les accords contraignants (DG, ou délégataire désigné), circuit type par type d'accord |
+| CV-1 | Le circuit de signature d'un accord est composé librement par qui l'envoie : n'importe quelle personne ayant accès au parapheur peut être signataire final, et sa signature fait entrer l'accord en vigueur. | Haute | **Fait** (lot 4) : un accord engage l'Agence : la signature finale revient à la DG (droit « Signer au nom de l'Agence ») ou à son délégataire |
 | CV-2 | Aucun volet financier : montant, contributions, échéancier de décaissement. (Décision « finance des partenariats » déjà reportée dans le plan de travail.) | Moyenne | À décider : reprendre le lot reporté, au moins un montant et une devise |
 | CV-3 | Tous les profils voient tous les accords non confidentiels, texte compris. | Basse | À décider avec F-4 |
 | CV-4 | Un accord peut être préparé et envoyé au parapheur sans point focal. | Moyenne | À corriger : point focal obligatoire avant le parapheur |
@@ -1203,8 +1203,8 @@ Aucune délégation en cours.
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
 | PH-1 | Le parapheur ne signe que du texte saisi : pas de fichier joint (lettre, note, convention en PDF ou Word), pas de document signé produit en sortie. | Haute | À corriger : joindre le document à signer, sceller le fichier, produire le document final avec le bordereau des visas et signatures |
-| PH-2 | L'auteur compose librement le circuit : n'importe quel détenteur du parapheur peut être signataire final, y compris pour une convention. Et quand la DG est l'auteur, elle ne peut pas signer. | Haute | À corriger avec CV-1 : signataire imposé selon la nature du document ; distinguer « préparé par » et « présenté par » pour que la DG puisse signer ce que son cabinet prépare |
-| PH-3 | Délégation sans limite de durée, de délégataire ni de portée ; une délégation retirée disparaît de la liste. | Haute | À corriger : durée maximale, délégataire choisi parmi des profils habilités, portée (visa seul ou signature), historique conservé |
+| PH-2 | L'auteur compose librement le circuit : n'importe quel détenteur du parapheur peut être signataire final, y compris pour une convention. Et quand la DG est l'auteur, elle ne peut pas signer. | Haute | **Fait** (lot 4) : signature finale de la DG imposée pour les documents qui engagent l'Agence (convention, accord, avenant, contrat, protocole, acte) ; l'auteur peut signer en dernier après le visa ou l'avis d'une autre personne |
+| PH-3 | Délégation sans limite de durée, de délégataire ni de portée ; une délégation retirée disparaît de la liste. | Haute | **Fait** (lot 4) : 30 jours au plus ; portée « visa et avis » ou « visa et signature » ; la signature ne se délègue qu'à un responsable ; une délégation retirée reste dans l'historique |
 | PH-4 | Le secrétariat de la DG ne voit pas la pile de documents qui attendent la DG. | Moyenne | À corriger : vue « parapheur de la DG » pour l'assistante (lecture seule) |
 | PH-5 | Après un rejet et une relance, les visas et le motif du premier circuit disparaissent de la fiche. | Moyenne | À corriger : garder l'historique de chaque circuit sur la fiche |
 | PH-6 | Tous les profils ont accès au parapheur : chacun peut lancer un circuit vers la DG. | Basse | À décider : qui peut adresser un document à la signature de la DG (passage obligé par le secrétariat ?) |
@@ -1604,7 +1604,7 @@ accès ; le profil « Responsable informatique » existe mais n'est attribué à
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| AD-1 | La DG est administratrice de la plateforme : pas de séparation entre la direction et l'administration technique, ni de contrôle croisé du journal. | Haute | À corriger : administrateur système distinct (responsable informatique), la DG garde le pilotage ; le journal des actions de l'administrateur relu par une autre personne |
+| AD-1 | La DG est administratrice de la plateforme : pas de séparation entre la direction et l'administration technique, ni de contrôle croisé du journal. | Haute | **Décidé et fait** (lot 4) : le responsable informatique est l'administrateur système ; la DG garde le pilotage et relit le journal de ses actions (page « Contrôle de l'administration », droit « Relire et viser le journal ») |
 | AD-2 | La double authentification est proposée mais pas imposée aux comptes à droits élevés (2 sans, signalés). | Haute | À corriger : double authentification obligatoire pour l'administrateur, la DG et les gestionnaires (RH, courrier, partenariats) |
 | AD-3 | La messagerie n'est pas configurée : aucun courriel ne part, alors que plusieurs écrans annoncent un envoi par courriel. | Moyenne | À corriger au déploiement ; dans l'interface, ne pas promettre un courriel quand la messagerie est absente |
 | AD-4 | L'analyse du journal d'audit par l'IA envoie des données nominatives à un service extérieur. Même famille que I-9. | Moyenne | À décider avec I-9 |
@@ -1621,7 +1621,7 @@ accès ; le profil « Responsable informatique » existe mais n'est attribué à
 
 ### Décisions ouvertes
 
-- AD-1 : qui est administrateur système de l'ANAT ?
+- AD-1 : qui est administrateur système de l'ANAT ? **Décidé le 18/11/2026 : le responsable informatique ; la DG relit le journal de ses actions.**
 - AD-2 : quels comptes doivent obligatoirement activer la double authentification ?
 
 ---
@@ -1730,3 +1730,33 @@ retiraient le profil de chef à une personne qui dirigeait une entité, 1 parce 
 
 **Remarques traitées** : A-3 (règle), A-6, E-7, F-7, RI-1, RI-2, PT-1, PA-1, EQ-1, S-3. A-4, S-5, D-8 et RH-6
 l'avaient été par le lot 1. **Reste** : AD-1 (séparer administration technique et direction), traité avec le thème 2.
+
+### Lot 4 — Validation humaine et contrôle croisé (18/11/2026, branche `lot-validation-humaine`)
+
+Thème 2 de la synthèse : rien d'isolé, préparer n'est pas valider. Décisions de la direction : DEC-1 **confirmation
+après coup**, DEC-3 **secrétariat ou DG**, I-1 **validation automatique supprimée**, AD-1 **responsable
+informatique administrateur, la DG relit**. I-4 tranché dans le sens de la règle : la personne visée ne valide pas.
+
+| Ce qui change | Avant | Après |
+|---|---|---|
+| Tâche confiée (T-1, T-2) | Le chargé repoussait l'échéance, changeait l'intitulé ou la priorité sans que le responsable le sache | Ces trois champs restent à qui a confié la tâche (ou à un administrateur du projet). Le chargé « demande un report » (nouvelle date et motif) ; le responsable accepte ou refuse ; tout est tracé et notifié. Le responsable est prévenu des autres changements |
+| Clôture d'une tâche confiée (T-3) | Un clic du chargé la sortait des retards | Le chargé la déclare réalisée ; elle reste en retard jusqu'à ce que le responsable confirme la clôture ou la renvoie avec un motif (écrit dans les commentaires). Une tâche que l'on se donne à soi-même se termine toujours d'un clic |
+| Décision inscrite par le secrétariat (DEC-1) | Rien ne la distinguait d'une décision vue par la DG | Numérotée et suivie dès l'inscription, marquée « à confirmer par la DG » ; la DG est prévenue et confirme (onglet « À confirmer ») |
+| Exécution d'une décision (DEC-3) | Le chargé la déclarait exécutée seul | Le chargé déclare l'exécution avec son compte rendu ; le secrétariat de la DG la confirme ou la renvoie avec un motif |
+| Coéquipiers IA (I-1, I-2, I-4) | Validation automatique possible ; un refus n'arrêtait rien ; la personne visée validait | Plus de validation automatique ; « Refuser et arrêter » met fin à l'intervention, « Refuser, laisser continuer » la laisse poursuivre ; la personne visée par une proposition ne la voit pas à valider et ne peut pas la valider |
+| Compte rendu validé (R-3) | Tout valideur pouvait le rouvrir | Seuls la personne qui l'a validé et la DG le rouvrent, avec un motif inscrit au journal ; valideur et rédacteur prévenus |
+| Signataire d'un document qui engage l'Agence (CV-1, PH-2) | N'importe quel détenteur du parapheur pouvait signer une convention ; la DG ne pouvait pas signer ce qu'elle avait préparé | Convention, accord, avenant, contrat, protocole, acte : la signature finale revient à la DG (droit « Signer au nom de l'Agence ») ou à son délégataire. L'auteur peut signer en dernier si une autre personne a visé ou donné son avis avant |
+| Délégations (PH-3) | Sans limite de durée, de délégataire ni de portée ; retirée, elle disparaissait | 30 jours au plus ; portée « visa et avis » ou « visa et signature » ; la signature ne se délègue qu'à un responsable (profil de chef, DGA, DG) ; retirée, elle reste dans la liste avec sa date de retrait |
+| Administration (AD-1) | La DG était administratrice de la plateforme, sans contrôle du journal | Dans la démonstration, Cédric Ilunga, responsable informatique, est l'administrateur système ; la DG ne l'est plus. Page « Contrôle de l'administration » : la DG relit les actions de l'administrateur depuis la dernière relecture et vise le journal ; l'administrateur ne relit jamais ses propres actions |
+
+Nouveaux droits, réservés à la DG : « Confirmer les décisions inscrites au nom de la DG », « Signer au nom de l'Agence »,
+« Relire et viser le journal des actions de l'administrateur système ». Migrations `045` à `049` : les bases en
+service gardent leur historique (décisions existantes réputées confirmées, règles IA repassées en validation humaine,
+documents engageants repérés par leur nature).
+
+Tests : `server/src/validation-humaine.test.ts` (19), `server/src/ia-validation.test.ts` (4) et un test de
+démonstration ; 7 anciens tests ajustés à la nouvelle règle (tâche récurrente confiée, exécution d'une décision,
+refus d'une action IA, réouverture d'un compte rendu, signature d'un accord) et la matrice des routes complétée.
+602 tests au vert.
+
+**Remarques traitées** : T-1, T-2, T-3, DEC-1, DEC-3, I-1, I-2, I-4, R-3, CV-1, PH-2, PH-3, AD-1.

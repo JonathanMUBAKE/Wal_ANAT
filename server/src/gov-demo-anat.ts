@@ -239,6 +239,19 @@ const PEOPLE: Person[] = [
     "2010-03-15",
   ],
   [
+    "u_cedric",
+    "Cédric Ilunga",
+    "cedric@cadence.app",
+    "Responsable informatique (administrateur système)",
+    "#12A594",
+    "Direction technique",
+    "informatique",
+    "M.",
+    "contractuel",
+    "Ingénieur informaticien",
+    "2019-06-03",
+  ],
+  [
     "u_jeanpierre",
     "Jean-Pierre Kabongo",
     "jean-pierre@cadence.app",
@@ -479,6 +492,10 @@ async function people(svc: Services, org: string) {
   }
   for (const [unit, chief] of CHIEFS)
     await db.query("UPDATE org_units SET manager_id = $3 WHERE org_id = $1 AND name = $2", [org, unit, chief]);
+  // L'administration technique est distincte de la direction (AD-1) : le responsable informatique administre la
+  // plateforme, la DG garde le pilotage et relit le journal de ses actions
+  await db.query("UPDATE users SET platform_role = NULL WHERE platform_role = 'super_admin' AND id <> 'u_cedric'");
+  await db.query("UPDATE users SET platform_role = 'super_admin' WHERE id = 'u_cedric'");
   // Le service RH tient les dossiers : sa cheffe reçoit le droit de les gérer
   await db.query(
     `UPDATE org_members SET permission_overrides = '{"hr.manage": true, "hr.view": true}' WHERE org_id = $1 AND user_id = 'u_sylvie'`,

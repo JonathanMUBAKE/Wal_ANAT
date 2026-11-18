@@ -189,11 +189,34 @@ export class Attributions {
       );
   }
 
+  /**
+   * Une fiche se rédige pour son périmètre : son entité, celles qui lui sont rattachées et leurs agents ; le pilotage
+   * partout (contrôle des testeurs).
+   */
+  private async assertSheetScope(actorId: string, orgId: string, unitId: string | null, userId: string | null) {
+    const scope = await this.svc.scopeOf(actorId, orgId);
+    if (scope.wide) return;
+    const managed = (
+      await this.svc.db.query<{ id: string }>(
+        `WITH RECURSIVE down(id) AS (
+           SELECT id FROM org_units WHERE org_id = $1 AND manager_id = $2
+           UNION SELECT u.id FROM org_units u JOIN down ON u.parent_id = down.id
+         ) SELECT id FROM down`,
+        [orgId, actorId],
+      )
+    ).map((r) => r.id);
+    const target = unitId
+      ? unitId
+      : (await this.svc.db.one<{ unit_id: string | null }>("SELECT unit_id FROM org_members WHERE org_id = $1 AND user_id = $2", [orgId, userId]))?.unit_id ?? null;
+    if (!target || !managed.includes(target)) throw forbidden("Cette fiche ne relève pas de votre périmètre");
+  }
+
   async create(actorId: string, orgId: string, input: SheetInput) {
     await this.svc.requirePerm(actorId, orgId, "attributions.manage");
     const unitId = input.unit_id ?? null;
     const userId = input.user_id ?? null;
     if (!unitId === !userId) throw badRequest("Une fiche porte sur une seule entité ou une seule personne");
+    await this.assertSheetScope(actorId, orgId, unitId, userId);
     if (unitId && !(await this.svc.db.one("SELECT 1 FROM org_units WHERE org_id = $1 AND id = $2", [orgId, unitId])))
       throw badRequest("Entité inconnue");
     if (userId && !(await this.svc.orgRole(userId, orgId)))
@@ -235,6 +258,7 @@ export class Attributions {
   async update(actorId: string, id: string, input: SheetInput) {
     const s = await this.row(id);
     await this.svc.requirePerm(actorId, s.org_id, "attributions.manage");
+    await this.assertSheetScope(actorId, s.org_id, s.unit_id, s.user_id);
     if (s.status !== "draft") throw notDraft();
     await this.assertContent(s.org_id, input);
     await this.svc.db.tx(async (q) => {
@@ -250,6 +274,7 @@ export class Attributions {
   async remove(actorId: string, id: string) {
     const s = await this.row(id);
     await this.svc.requirePerm(actorId, s.org_id, "attributions.manage");
+    await this.assertSheetScope(actorId, s.org_id, s.unit_id, s.user_id);
     if (s.status !== "draft") throw notDraft();
     await this.svc.db.query("DELETE FROM attribution_sheets WHERE id = $1", [id]);
     await this.svc.log(actorId, "attribution.deleted", { orgId: s.org_id, data: { id } });

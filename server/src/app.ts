@@ -293,6 +293,8 @@ export async function buildApp(opts: AppOptions = {}) {
       if (!demoLogin) return reply.status(400).send({ error: "E-mail et mot de passe obligatoires" });
       const u = await svc.user(body.user_id);
       if (u.is_ai) throw forbidden("Un coéquipier IA ne peut pas se connecter");
+      const st = await db.one<{ status: string }>("SELECT status FROM users WHERE id = $1", [u.id]);
+      if (st?.status !== "active") throw forbidden("Ce compte n'est pas actif");
       sessionCookie(reply, await authService.createSession(u.id, requestInfo(req)), secureCookies);
       await authService.record("login.success", { userId: u.id, ip: req.ip, data: { demo: true } });
       reply.clearCookie(ORG_COOKIE, { path: "/" });

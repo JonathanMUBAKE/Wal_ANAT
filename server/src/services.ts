@@ -393,7 +393,13 @@ export class Services {
 
   /** Annuaire visible par une personne : un invité ne connaît que les personnes de ses projets. */
   async visibleUsers(actorId: string, orgId: string): Promise<OrgUser[]> {
-    const all = await this.usersOf(orgId);
+    // Les préférences de notification et les consignes d'IA d'autrui restent à leurs titulaires (testeurs)
+    const admin = ["owner", "admin"].includes((await this.orgRole(actorId, orgId)) ?? "");
+    const all = (await this.usersOf(orgId)).map((u) =>
+      u.id === actorId || admin
+        ? u
+        : ({ ...u, notification_prefs: undefined, ai_instructions: u.is_ai ? (u as { ai_instructions?: unknown }).ai_instructions : undefined } as OrgUser),
+    );
     if ((await this.orgRole(actorId, orgId)) !== "guest") return all;
     const seen = new Set([actorId]);
     for (const projectId of await this.readableProjectIds(actorId, orgId, true))
@@ -517,7 +523,9 @@ export class Services {
   async requirePerm(actorId: string, orgId: string, perm: Permission) {
     if ((await this.userOrNull(actorId))?.is_ai) return;
     if (!(await this.permissionsOf(actorId, orgId)).includes(perm))
-      throw forbidden(`Votre profil ne vous autorise pas à : ${permissionLabel(perm).toLowerCase()}`);
+      throw forbidden(
+        `Votre profil ne vous autorise pas à : ${permissionLabel(perm).charAt(0).toLowerCase()}${permissionLabel(perm).slice(1)}`,
+      );
     if (isSensitive(perm)) await this.assertAdminMfa(actorId);
   }
   /** Sur un serveur exposé, administrer exige la double authentification. */
@@ -1208,7 +1216,10 @@ export class Services {
             : min === "editor"
               ? "modifier"
               : "administrer";
-      throw forbidden(`${(await this.user(actorId)).name} n'a pas le droit de ${verb} le projet « ${project.name} »`);
+      // Ni le nom d'un projet qu'on ne lit pas, ni une faute d'élision (testeurs)
+      throw forbidden(
+        `${(await this.user(actorId)).name} n'a pas le droit ${verb === "administrer" ? "d'administrer" : `de ${verb}`} ce projet`,
+      );
     }
     if (project.archived && min !== "viewer" && !opts.allowArchived) throw projectArchived();
     return role;

@@ -316,6 +316,11 @@ export class Plans {
     if (i.start_on && i.end_on && i.end_on < i.start_on) throw badRequest("La fin précède le début");
     if (i.responsible_id && !(await this.svc.orgRole(i.responsible_id, p.org_id)))
       throw badRequest("Le responsable doit être membre de l'organisation");
+    if (i.responsible_id && (await this.svc.userOrNull(i.responsible_id))?.is_ai)
+      throw badRequest("Le responsable d'une activité est une personne");
+    for (const d of [i.start_on, i.end_on])
+      if (d && Number(d.slice(0, 4)) !== Number(p.year))
+        throw badRequest(`Une activité du plan ${p.year} se déroule en ${p.year}`);
     if (
       i.domain_id &&
       !(await this.svc.db.one("SELECT 1 FROM activity_domains WHERE org_id = $1 AND id = $2", [p.org_id, i.domain_id]))

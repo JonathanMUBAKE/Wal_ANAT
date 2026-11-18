@@ -1957,3 +1957,26 @@ Migrations `059_avancement_justifie.sql` et `060_risques_rattaches_indicateur_ar
 `server/src/remarques-decisions.test.ts` ; quatre tests du parapheur ajustés (PH-6 : l'envoi passe par le cabinet).
 
 **Remarques traitées** : A-1, P-8, T-11, T-12, E-8, P-5, F-6, DEC-4, R-5, RI-5, RI-7, PT-2, PA-2, CV-5, PH-6, C-5, EQ-2, RH-2, RH-5, RH-8.
+
+### Lot 14 — Corrections issues des agents testeurs (19/11/2026, branche `lot-corrections-testeurs`)
+
+Quatre agents testeurs ont éprouvé l'API de la démonstration sous différents profils (DG et cabinet ; chefs et
+agents ; RH et administration ; partenariats et robustesse), en cherchant à contourner chaque règle. Leurs rapports
+ont relevé 19 anomalies graves, toutes corrigées et couvertes par `server/src/testeurs.test.ts`, ainsi que la plupart
+des anomalies moyennes et basses.
+
+| Domaine | Ce qui était possible | Ce qui est désormais refusé ou corrigé |
+|---|---|---|
+| Administration | L'administrateur système se créait un compte « Propriétaire », recevait le lien de réinitialisation de la DG ou des RH, se nommait chef de la Direction générale, laissait la plateforme sans administrateur | Pas de profil de direction attribué hors de l'institution ; le lien d'autrui ne revient jamais à l'administrateur ; personne ne se nomme chef ; la tête d'une entité tenue par la DG relève de la DG ; dernier administrateur protégé ; un compte sorti ne se réactive pas ; la RH ne déplace ni un chef ni la DG |
+| Parapheur, arbitrages, décisions | Le fichier d'un document confidentiel sortait dans la pile de la DG ; l'assistante tranchait les arbitrages, déclarait exécutée une décision non confirmée, remplaçait une décision de la DG | Le fichier ne sort d'aucune liste ; seule la DG tranche ; l'exécution se déclare par le chargé sur une décision confirmée ; un remplacement prend effet à la confirmation ; une décision du secrétariat ne clôt rien avant confirmation |
+| Tâches confiées | L'agent se désattribuait puis se réattribuait la tâche pour lever le verrou ; un chef de sous-entité contournait celui de son N+1 | Le chargé ne se retire pas, ne supprime pas, ne change ni calendrier ni récurrence ; il n'est jamais son propre responsable |
+| Réunions | L'assistante se désignait présidente et validait seule ; une IA présidait | La présidence est une personne habilitée à valider |
+| Accords, partenaires | Lier une fiche confidentielle invisible ; un avenant entrait en vigueur après la résiliation ; un accord faisait avancer un partenaire sans point focal | Fiche confidentielle inconnue de qui ne la lit pas ; avenant bloqué sur un accord qui n'est plus en vigueur ; résiliation non future ; le point focal de l'accord devient celui du partenaire |
+| IA | Retoucher une proposition pour se viser et la valider soi-même ; l'IA acceptée comme signataire, délégataire, imputée, responsable | Cible recalculée après retouche ; l'IA n'est jamais une intervenante humaine |
+| Livrables, contrats, risques | Un chef lisait et modifiait livrables, contrats et risques de toute l'institution, projets privés compris | Chacun agit dans son périmètre ; le pilotage voit tout ; les risques de l'Agence restent lisibles des gestionnaires |
+| Robustesse | Erreurs internes sur l'année 0000, une référence CONV/999 figée, formules dans les exports CSV, messages en anglais, réponses gardées en cache | Dates bornées, formules neutralisées, messages en français (zod en français), API non mise en cache |
+| Courrier, réunions, indicateurs | Réception future, réponse à soi-même, lien posé sur un courrier déjà traité, fin de séance avant le début, recommandation rouverte sans trace, mesure datée dans le futur | Tous refusés avec un message clair |
+
+Restent ouverts, de gravité basse : recherche globale étendue aux partenaires et accords et insensible aux accents,
+budgets des projets masqués aux agents non membres (C-M8), projet porté par une entité rendu privé par un agent
+(C-M9), fiche partenaire montrant des accords hors périmètre (P-M4), fusion qui ne reporte pas l'état (P-M6).

@@ -330,6 +330,10 @@ export class Registers {
       throw badRequest("Imputez le courrier à une direction ou un service : l'imputation à l'Agence entière revient à la DG");
     if (i.assignee_id && !(await this.svc.orgRole(i.assignee_id, m.org_id)))
       throw badRequest("La personne doit être membre de l'organisation");
+    for (const u of [i.assignee_id, ...(i.copies ?? []).map((c) => c.user_id)])
+      if (u && (await this.svc.userOrNull(u))?.is_ai) throw badRequest("Un courrier s'impute ou se copie à une personne");
+    if (!i.unit_id && !i.assignee_id && !(i.copies ?? []).length && !i.instruction?.trim())
+      throw badRequest("Indiquez à qui le courrier est imputé");
     if (i.due_on && !isRealDate(i.due_on)) throw badRequest(`Date invalide : ${i.due_on}`);
     if (i.due_on && i.due_on < String(m.received_on).slice(0, 10))
       throw badRequest("Le délai de réponse précède la date de réception");
@@ -613,6 +617,8 @@ export class Registers {
       throw badRequest("Accord inconnu");
     if (i.owner_id && !(await this.svc.orgRole(i.owner_id, orgId)))
       throw badRequest("Le responsable doit être membre de l'organisation");
+    if (i.owner_id && (await this.svc.userOrNull(i.owner_id))?.is_ai)
+      throw badRequest("Le responsable d'un risque est une personne");
     if (
       i.project_id &&
       !(await this.svc.db.one("SELECT 1 FROM projects WHERE org_id = $1 AND id = $2 AND kind = 'project'", [

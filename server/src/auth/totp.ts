@@ -40,5 +40,5 @@ export function matchTotp(secret: string, code: string): number | null {
   return null;
 }
 
-export const otpauthUri = (secret: string, account: string, issuer = "Cadence") =>
+export const otpauthUri = (secret: string, account: string, issuer = "ANAT Pilotage") =>
   `otpauth://totp/${encodeURIComponent(`${issuer}:${account}`)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=${PERIOD}`;

@@ -24,7 +24,7 @@ const PERSONAL =
 const DEMO_ONLY = "POST /api/orgs"; // Hors mode démo, réservé à l'administrateur système (voir auth.test.ts)
 /** Réponses normales du propriétaire : l'essai vise volontairement un refus métier. */
 const OWNER_EXPECTED =
-  /^(PUT|DELETE) \/api\/users\/:id\/avatar|^GET \/api\/avatars|^POST \/api\/auth\/(password|mfa\/confirm|mfa\/disable)|^POST \/api\/invitations\/:id|\/api\/admin\//;
+  /^(PUT|DELETE) \/api\/users\/:id\/avatar|^DELETE \/api\/auth\/sessions\/:id|^GET \/api\/avatars|^POST \/api\/auth\/(password|mfa\/confirm|mfa\/disable)|^POST \/api\/invitations\/:id|\/api\/admin\//;
 let n = 0;
 const u = (p: string) => `${p}${++n}`;
 const cookieOf = (r: Any) =>
@@ -180,8 +180,8 @@ async function boot(kind: Kind) {
           title: "A",
           responsible_id: "u_karim",
           target_value: 1,
-          start_on: "2026-12-01",
-          end_on: "2027-01-01",
+          start_on: `${p.year}-01-15`,
+          end_on: `${p.year}-06-30`,
         })
       ).body;
     },
@@ -323,7 +323,7 @@ async function boot(kind: Kind) {
       return d.id;
     },
     delegation: async () =>
-      (await inj(a, "POST", "/api/delegations", { to_user: "u_karim", start_on: "2026-01-01", end_on: "2026-01-02" }))
+      (await inj(a, "POST", "/api/delegations", { to_user: "u_karim", start_on: "2031-01-01", end_on: "2031-01-02" }))
         .body,
     mineMail: async () => {
       const m = await X.mail();
@@ -753,7 +753,7 @@ const TABLE = [
   })),
   R_("GET", "/api/delegations"),
   R_("POST", "/api/delegations", () => ({
-    body: { to_user: "u_karim", start_on: "2026-01-01", end_on: "2026-01-02" },
+    body: { to_user: "u_karim", start_on: "2031-01-01", end_on: "2031-01-02" },
   })),
   R_("DELETE", "/api/delegations/:id", async (X) => ({ url: `/api/delegations/${(await X.delegation()).id}` })),
   R_("GET", "/api/correspondence"),

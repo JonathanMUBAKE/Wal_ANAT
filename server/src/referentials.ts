@@ -458,7 +458,7 @@ export class Referentials {
     const key = input.trim();
     const v = all.find((x) => x.code === key) ?? all.find((x) => x.label.toLowerCase() === key.toLowerCase());
     const name = LIST_NAME[list];
-    if (!v) throw badRequest(`${name} inconnu : ${key}`);
+    if (!v) throw badRequest(`${name} : valeur inconnue (${key})`);
     if (v.archived && v.code !== current) throw badRequest(`${name} archivé : ${v.label}`);
     return v;
   }

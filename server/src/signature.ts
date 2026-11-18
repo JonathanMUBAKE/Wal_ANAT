@@ -149,6 +149,8 @@ export class Signature {
       }
       const role = await this.svc.orgRole(s.actor_id, orgId);
       if (!role) throw badRequest("Chaque intervenant doit être membre de l'organisation");
+      // Viser et signer sont des actes humains : l'IA propose, une personne décide (testeurs)
+      if ((await this.svc.userOrNull(s.actor_id))?.is_ai) throw badRequest("Un coéquipier IA ne vise ni ne signe");
       // Sans accès au parapheur, l'intervenant ne pourrait jamais agir : le document resterait bloqué à son étape
       if (role === "guest" || !(await this.svc.permissionsOf(s.actor_id, orgId)).includes("signature.use"))
         throw badRequest("Chaque intervenant doit avoir accès au parapheur");
@@ -554,6 +556,8 @@ export class Signature {
     if (i.to_user === actorId) throw badRequest("On ne se délègue pas à soi-même");
     for (const d of [i.start_on, i.end_on]) if (!isRealDate(d)) throw badRequest(`Date invalide : ${d}`);
     if (i.end_on < i.start_on) throw badRequest("La fin de délégation précède son début");
+    if (i.end_on < today()) throw badRequest("Une délégation entièrement passée n'a pas d'effet");
+    if ((await this.svc.userOrNull(i.to_user))?.is_ai) throw badRequest("On ne délègue pas sa signature à un coéquipier IA");
     if ((Date.parse(i.end_on) - Date.parse(i.start_on)) / 864e5 + 1 > DELEGATION_MAX_DAYS)
       throw badRequest(`Une délégation dure au plus ${DELEGATION_MAX_DAYS} jours : renouvelez-la si l'absence se prolonge`);
     const role = await this.svc.orgRole(i.to_user, orgId);

@@ -127,10 +127,11 @@ export class Auth {
     return rows.map(({ id, public_id, ...r }) => ({ ...r, id: public_id, current: id === currentSession }));
   }
   async revokeSession(userId: string, publicId: string) {
-    await this.svc.db.query("UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND public_id = $2", [
+    const r = await this.svc.db.query("UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND public_id = $2 RETURNING id", [
       userId,
       publicId,
     ]);
+    if (!r.length) throw notFound("Session introuvable");
   }
 
   // ---------------------------------------------------------------- connexion

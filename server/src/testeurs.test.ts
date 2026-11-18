@@ -316,3 +316,49 @@ describe("courrier, réunions, indicateurs : saisies cohérentes", () => {
     expect(((await g.api("u_alice", "GET", "/api/indicators")).body as Any[]).some((x) => x.name === "Taux")).toBe(false);
   });
 });
+
+describe("l'IA n'est jamais une intervenante humaine ; comptes et annuaire", () => {
+  it("ni circuit, ni délégation, ni imputation, ni responsabilité confiés à une IA", async () => {
+    const sig = await g.api("u_alice", "POST", "/api/signature", {
+      title: "Note",
+      body: "x",
+      steps: [{ actor_id: "ai_atlas", action: "visa" }, { actor_id: "u_alice", action: "signature" }],
+    });
+    expect(sig.status).toBe(400);
+    expect(
+      (await g.api("u_alice", "POST", "/api/delegations", { to_user: "ai_atlas", start_on: day(1), end_on: day(5), scope: "signature" })).status,
+    ).toBe(400);
+    expect((await g.api("u_alice", "POST", "/api/risks", { title: "R", probability: 1, impact: 1, owner_id: "ai_atlas" })).status).toBe(400);
+    const m = (await g.api("u_alice", "POST", "/api/correspondence", { direction: "entrant", subject: "S", correspondent: "X", received_on: day() })).body;
+    expect((await g.api("u_alice", "POST", `/api/correspondence/${m.id}/assign`, { assignee_id: "ai_atlas" })).status).toBe(400);
+    expect((await g.api("u_alice", "POST", `/api/correspondence/${m.id}/assign`, {})).status).toBe(400);
+  });
+
+  it("un compte suspendu ne se connecte pas, même en démonstration ; l'annuaire tait les préférences d'autrui", async () => {
+    await g.ctx.db.query("UPDATE users SET status = 'suspended' WHERE id = 'u_chloe'");
+    const r = await g.ctx.app.inject({ method: "POST", url: "/api/auth/login", payload: { user_id: "u_chloe" } });
+    expect(r.statusCode).toBe(403);
+    const users = (await g.api("u_hugo", "GET", "/api/users")).body as Any[];
+    expect(users.find((u) => u.id === "u_alice").notification_prefs).toBeUndefined();
+  });
+});
+
+describe("périmètres : attributions, dossiers de réunion, sessions", () => {
+  it("un chef ne rédige pas la fiche d'une entité qu'il ne dirige pas ; une réunion ne se rattache pas à un projet invisible", async () => {
+    const [mine, other] = await g.units(2);
+    await g.ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_karim'");
+    await g.ctx.db.query("UPDATE org_units SET manager_id = 'u_karim' WHERE id = $1", [mine]);
+    await g.api("u_alice", "PUT", "/api/org/members/u_karim/permissions", { overrides: { "attributions.manage": true, "meetings.manage": true } });
+    const sheet = (unit: string) =>
+      g.api("u_karim", "POST", "/api/attributions", { unit_id: unit, mission: "Mission", domains: [], relations: [] });
+    expect((await sheet(other)).status).toBe(403);
+    const secret = await g.project();
+    const m = await g.api("u_karim", "POST", "/api/meetings", { meeting_type: "Réunion", meeting_date: day(3), project_id: secret });
+    expect(m.status).toBe(400);
+    expect(JSON.stringify(m.body)).not.toMatch(/Projet fictif|privé/);
+  });
+
+  it("fermer une session qui n'est pas la sienne répond « introuvable »", async () => {
+    expect((await g.api("u_hugo", "DELETE", "/api/auth/sessions/ses_inconnue")).status).toBe(404);
+  });
+});

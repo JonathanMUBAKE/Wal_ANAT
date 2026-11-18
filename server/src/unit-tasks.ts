@@ -172,7 +172,7 @@ export class UnitTasks {
          SELECT DISTINCT ON (user_id) * FROM (
            SELECT u.id AS user_id, u.name, u.title, ou.id AS unit_id, ou.name AS unit_name, 1 AS prio
              FROM org_members om JOIN users u ON u.id = om.user_id JOIN org_units ou ON ou.id = om.unit_id
-            WHERE om.org_id = $1 AND om.unit_id IN (SELECT id FROM tree) AND NOT u.is_ai
+            WHERE om.org_id = $1 AND om.unit_id IN (SELECT id FROM tree) AND NOT u.is_ai AND u.status = 'active'
            UNION ALL
            SELECT u.id, u.name, u.title, ou.id, ou.name, 2
              FROM org_units ou JOIN users u ON u.id = ou.manager_id WHERE ou.id IN (SELECT id FROM tree)

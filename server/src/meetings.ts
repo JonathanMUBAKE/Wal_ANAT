@@ -362,8 +362,15 @@ export class Meetings {
   }
 
   /** Dossier rattaché : un projet ou une activité de l'institution, jamais les deux. */
-  private async assertDossier(orgId: string, i: { project_id?: string | null; activity_id?: string | null }) {
+  private async assertDossier(
+    orgId: string,
+    i: { project_id?: string | null; activity_id?: string | null },
+    actorId?: string,
+  ) {
     if (i.project_id && i.activity_id) throw badRequest("Une réunion se rattache à un seul dossier");
+    // Un projet qu'on ne lit pas reste inconnu : on n'y rattache rien et on n'en apprend pas le nom (testeurs)
+    if (i.project_id && actorId && !(await this.svc.readableProjectIds(actorId, orgId)).includes(i.project_id))
+      throw badRequest("Projet inconnu dans cette institution");
     if (
       i.project_id &&
       !(await this.svc.db.one("SELECT 1 FROM projects WHERE org_id = $1 AND id = $2", [orgId, i.project_id]))
@@ -725,7 +732,7 @@ export class Meetings {
     const writerId = input.writer_id ?? actorId;
     await this.assertMember(orgId, writerId, "Le rédacteur");
     if (input.chair_id) await this.assertChair(orgId, input.chair_id);
-    await this.assertDossier(orgId, input);
+    await this.assertDossier(orgId, input, actorId);
     const count = input.repeat?.count ?? 1;
     if (!Number.isInteger(count) || count < 1 || count > MAX_SERIES)
       throw badRequest(`Une série compte de 1 à ${MAX_SERIES} séances`);
@@ -855,7 +862,7 @@ export class Meetings {
       await this.assertDossier(m.org_id, {
         project_id: patch.project_id === undefined ? m.project_id : patch.project_id,
         activity_id: patch.activity_id === undefined ? m.activity_id : patch.activity_id,
-      });
+      }, actorId);
     if (patch.video_link !== undefined) fields.video_link = patch.video_link.trim();
     if (patch.partner_ids !== undefined) {
       const partners = await this.partnersOf(m.org_id, patch.partner_ids, [], await this.currentPartners(id), actorId);

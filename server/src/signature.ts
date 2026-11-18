@@ -174,10 +174,22 @@ export class Signature {
     const { d, steps } = await this.readable(actorId, id);
     const pending = steps.find((s) => s.status === "pending");
     const acts = pending ? await this.actsFor(actorId, d, steps, pending) : false;
+    const past = await this.svc.db.query<Record<string, unknown> & { round: number }>(
+      `SELECT h.round, h.position, h.actor_id, a.name AS actor_name, h.action, h.status, h.acted_by, b.name AS acted_by_name,
+              h.acted_at, h.comment
+         FROM sign_step_history h LEFT JOIN users a ON a.id = h.actor_id LEFT JOIN users b ON b.id = h.acted_by
+        WHERE h.document_id = $1 ORDER BY h.round DESC, h.position`,
+      [id],
+    );
+    const history = [...new Set(past.map((p) => p.round))].map((round) => ({
+      round,
+      steps: past.filter((p) => p.round === round),
+    }));
     return {
       ...d,
       reference: reference(d),
       steps,
+      history,
       intact: d.content_hash ? d.content_hash === hashOf(d) : null,
       can: {
         edit: d.status === "draft" && d.created_by === actorId,
@@ -300,10 +312,11 @@ export class Signature {
         [id],
       );
       await q.query("UPDATE sign_steps SET status = 'pending' WHERE id = $1", [first.id]);
-      await q.query("UPDATE sign_documents SET status = 'in_circuit', content_hash = $1 WHERE id = $2", [
-        hashOf(d),
-        id,
-      ]);
+      await q.query(
+        `UPDATE sign_documents SET status = 'in_circuit', content_hash = $1,
+           round = CASE WHEN status = 'rejected' THEN round + 1 ELSE round END WHERE id = $2`,
+        [hashOf(d), id],
+      );
     });
     await this.notifyActors(d, first.actor_id);
     await this.svc.log(actorId, "signature.started", { orgId: d.org_id, data: { id } });
@@ -326,7 +339,17 @@ export class Signature {
         [i.decision === "approve" ? "approved" : "rejected", actorId, i.comment?.trim() ?? "", pending.id],
       );
       if (!r.length) return false;
-      if (i.decision === "reject") await q.query("UPDATE sign_documents SET status = 'rejected' WHERE id = $1", [id]);
+      if (i.decision === "reject") {
+        await q.query("UPDATE sign_documents SET status = 'rejected' WHERE id = $1", [id]);
+        // Le circuit clos par le rejet est conservé tel quel : visas, auteurs, motif (thème 3, PH-5)
+        await q.query(
+          `INSERT INTO sign_step_history (id, org_id, document_id, round, position, actor_id, action, status, acted_by, acted_at, comment)
+           SELECT 'ssh_' || s.id || '_' || d.round, s.org_id, s.document_id, d.round, s.position, s.actor_id, s.action, s.status,
+                  s.acted_by, s.acted_at, s.comment
+             FROM sign_steps s JOIN sign_documents d ON d.id = s.document_id WHERE s.document_id = $1`,
+          [id],
+        );
+      }
       else if (next) await q.query("UPDATE sign_steps SET status = 'pending' WHERE id = $1", [next.id]);
       else await q.query("UPDATE sign_documents SET status = 'signed', signed_at = now() WHERE id = $1", [id]);
       return true;

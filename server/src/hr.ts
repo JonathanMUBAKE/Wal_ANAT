@@ -171,6 +171,19 @@ export class Hr {
   async get(actorId: string, orgId: string, userId: string) {
     if (!(await this.canRead(actorId, orgId, userId))) throw forbidden("Ce dossier ne vous est pas ouvert");
     const r = await this.row(orgId, userId);
+    // La consultation d'un dossier par un tiers est journalisée (thème 3, D-3), une fois par lecteur et par demi-heure
+    if (actorId !== userId) {
+      const recent = await this.svc.db.one(
+        `SELECT 1 FROM activity WHERE org_id = $1 AND actor_id = $2 AND kind = 'hr.agent.viewed'
+            AND data->>'user_id' = $3 AND created_at > now() - interval '30 minutes'`,
+        [orgId, actorId, userId],
+      );
+      if (!recent)
+        await this.svc.log(actorId, "hr.agent.viewed", {
+          orgId,
+          data: { user_id: userId, name: [r.first_names, r.last_name].filter(Boolean).join(" ") },
+        });
+    }
     const [diplomas, contacts, assignments] = await Promise.all([
       this.svc.db.query(
         "SELECT id, title, field, institution, year, level FROM agent_diplomas WHERE org_id = $1 AND user_id = $2 ORDER BY year DESC NULLS LAST, created_at",
@@ -359,6 +372,16 @@ export class Hr {
       orgId,
       data: { user_id: userId, name: before.last_name, fields: [...cols, ...(moved ? ["unit_id"] : [])] },
     });
+    // Même trace que depuis Structure : un changement d'entité se lit au même endroit du journal (S-1, S-2)
+    if (moved) {
+      const to = input.unit_id
+        ? ((await this.svc.db.one<{ name: string }>("SELECT name FROM org_units WHERE id = $1", [input.unit_id]))?.name ?? "")
+        : "";
+      await this.svc.log(actorId, "unit.member", {
+        orgId,
+        data: { user: userId, name: before.display_name ?? before.last_name, from: before.unit_name ?? "", to },
+      });
+    }
     return this.get(actorId, orgId, userId);
   }
 

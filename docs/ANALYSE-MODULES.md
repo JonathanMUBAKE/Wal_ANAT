@@ -1,13 +1,4 @@
-# Analyse module par module
-
-Revue d'ANAT Pilotage menée module par module, dans l'ordre du menu, en jouant la démonstration
-avec les six comptes fictifs. Aucune modification de code pendant l'analyse : chaque remarque est
-enregistrée ici, puis traitée dans un lot d'amélioration.
-
-Les personnes et les entités citées sont celles de la démonstration (données fictives).
-
-## Comptes utilisés
-
+**Fait** (lot 5) : chaque circuit clos par un rejet est conservé (visas, auteurs, dates, motif) et se relit sur la fiche, sous « Circuits précédents »
 | Personne | Profil | Fonction dans la démo |
 |---|---|---|
 | Bernadette Mbuyi | Propriétaire | Directrice générale |
@@ -1401,7 +1392,7 @@ La liste des profils comprend un profil **« DG »**, mais Bernadette a le profi
 
 ### Décisions ouvertes
 
-- S-2 : où change-t-on l'entité d'une personne (RH seulement, ou les deux avec le même effet) ?
+- S-2 : où change-t-on l'entité d'une personne (RH seulement, ou les deux avec le même effet) ? **Tranché le 18/11/2026 : les deux, avec le même effet.**
 - S-3 : la désignation d'un chef doit-elle ajuster ou contrôler son profil ?
 - S-4 : confirmation et motif pour les changements de profil ?
 
@@ -1760,3 +1751,24 @@ refus d'une action IA, réouverture d'un compte rendu, signature d'un accord) et
 602 tests au vert.
 
 **Remarques traitées** : T-1, T-2, T-3, DEC-1, DEC-3, I-1, I-2, I-4, R-3, CV-1, PH-2, PH-3, AD-1.
+
+### Lot 5 — Journal et traçabilité (18/11/2026, branche `lot-tracabilite`)
+
+Thème 3 de la synthèse : toute action sensible est journalisée. S-2 a été tranché dans le sens le moins disruptif :
+on garde les deux portes (Structure et Ressources humaines), mais avec le même effet.
+
+| Ce qui change | Avant | Après |
+|---|---|---|
+| Structure (S-1) | Seules la création et la suppression d'une entité étaient tracées | Renommer, déplacer, changer le chef ou le type d'une entité est journalisé, avec les noms d'avant et d'après. Une modification sans changement n'écrit rien |
+| Rattachement d'une personne (S-1, S-2) | Pas de trace ; depuis Structure, aucune affectation dans le dossier RH | Journalisé (« Entité d'une personne changée »), depuis Structure comme depuis les RH. Depuis Structure, l'affectation en cours du dossier RH se ferme et une nouvelle, datée, s'ouvre |
+| Équipes (EQ-3) | Ajouts, retraits et changements de responsable non tracés | Création, modification, ajout, retrait, changement de rôle, adhésion et réponse à une demande sont journalisés, avec le nom de l'équipe et de la personne |
+| Dossier d'agent (D-3) | La consultation par un tiers n'était pas tracée | Chaque consultation par une autre personne que l'agent est journalisée, une fois par lecteur et par demi-heure ; lire son propre dossier ne l'est pas |
+| Parapheur (PH-5) | Après un rejet et une relance, les visas et le motif disparaissaient de la fiche | Chaque circuit clos par un rejet est conservé et se relit sur la fiche, sous « Circuits précédents » |
+
+Le journal d'audit nomme ces nouveaux événements en français et les range sous « Organisation » ou « Ressources
+humaines » ; les plus sensibles (chef d'entité, rattachement, consultation d'un dossier) sont marqués « importants ».
+Migration `050_tracabilite.sql`.
+
+Tests : `server/src/tracabilite.test.ts` (6). Aucun ancien test modifié. 608 tests au vert.
+
+**Remarques traitées** : D-3, S-1, S-2, EQ-3, PH-5.

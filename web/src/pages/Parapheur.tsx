@@ -76,6 +76,8 @@ interface Detail extends Row {
   content_hash: string | null;
   intact: boolean | null;
   steps: Step[];
+  /** Circuits précédents, clos par un rejet (thème 3, PH-5). */
+  history?: { round: number; steps: Omit<Step, "id">[] }[];
   can: { edit: boolean; start: boolean; decide: boolean };
 }
 const STATE: Record<DocStatus, { label: string; tone: Tone }> = {
@@ -282,6 +284,41 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
             </li>
           ))}
         </ol>
+        {!!d.history?.length && (
+          <details className="rounded-lg border border-line px-3 py-2 text-[13px]">
+            <summary className="cursor-pointer font-medium text-muted">
+              Circuits précédents ({d.history.length}) : rejetés puis relancés
+            </summary>
+            {d.history.map((h) => (
+              <div key={h.round} className="mt-2">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-faint">Circuit {h.round}</p>
+                <ul className="mt-1 space-y-1">
+                  {h.steps.map((s) => (
+                    <li key={s.position}>
+                      <span className="font-medium">
+                        {ACTION[s.action]} · {s.actor_name}
+                      </span>
+                      <span className={s.status === "rejected" ? "text-danger" : "text-muted"}>
+                        {" "}
+                        ·{" "}
+                        {s.status === "approved"
+                          ? "accordé"
+                          : s.status === "rejected"
+                            ? "rejeté"
+                            : s.status === "pending"
+                              ? "en attente au moment du rejet"
+                              : "non atteint"}
+                        {s.acted_at && ` le ${frDate(s.acted_at.slice(0, 10))}`}
+                        {s.acted_by && s.acted_by !== s.actor_id && ` par délégation : ${s.acted_by_name}`}
+                      </span>
+                      {s.comment && <span className="block text-muted">« {s.comment} »</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </details>
+        )}
         {d.can.decide && (
           <div className="space-y-2 border-t border-line pt-3">
             <Field label="Observation" hint="Obligatoire en cas de rejet.">

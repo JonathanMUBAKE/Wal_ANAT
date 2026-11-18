@@ -781,15 +781,40 @@ export class Services {
       };
     const sets: string[] = [];
     const vals: unknown[] = [];
+    const changed: string[] = [];
     for (const k of ["name", "kind", "parent_id", "manager_id"] as const)
-      if (patch[k] !== undefined) {
+      if (patch[k] !== undefined && patch[k] !== (u as unknown as Row)[k]) {
         vals.push(patch[k]);
         sets.push(`${k} = $${vals.length}`);
+        changed.push(k);
       }
     if (sets.length) {
       vals.push(unitId);
       await this.db.query(`UPDATE org_units SET ${sets.join(", ")} WHERE id = $${vals.length}`, vals);
     }
+    // Toute modification de la structure est journalisée, avec les noms d'avant et d'après (thème 3, S-1)
+    const unitName = async (id: unknown) => (id ? ((await this.db.one<{ name: string }>("SELECT name FROM org_units WHERE id = $1", [id]))?.name ?? "") : "");
+    const userName = async (id: unknown) => (id ? ((await this.userOrNull(String(id)))?.name ?? "") : "");
+    const name = patch.name ?? u.name;
+    const o = { orgId: u.org_id };
+    if (changed.includes("name")) await this.log(actorId, "unit.renamed", { ...o, data: { id: unitId, from: u.name, to: patch.name } });
+    if (changed.includes("parent_id"))
+      await this.log(actorId, "unit.moved", {
+        ...o,
+        data: { id: unitId, name, from: await unitName(u.parent_id), to: await unitName(patch.parent_id) },
+      });
+    if (changed.includes("manager_id"))
+      await this.log(actorId, "unit.manager", {
+        ...o,
+        data: {
+          id: unitId,
+          name,
+          user: patch.manager_id ?? null,
+          from: await userName(u.manager_id),
+          to: await userName(patch.manager_id),
+        },
+      });
+    if (changed.includes("kind")) await this.log(actorId, "unit.kind", { ...o, data: { id: unitId, name, from: u.kind, to: patch.kind } });
     this.bus.emit({ type: "org.changed", actorId, orgId: u.org_id });
   }
   async deleteUnit(actorId: string, unitId: string) {
@@ -815,12 +840,55 @@ export class Services {
     await this.requirePerm(actorId, orgId, "org.structure");
     if (!(await this.orgRole(userId, orgId))) throw notFound("Cette personne n'est pas membre de l'organisation");
     if (unitId && (await this.unitRow(unitId)).org_id !== orgId) throw badRequest("Entité invalide");
-    await this.db.query("UPDATE org_members SET unit_id = $1 WHERE org_id = $2 AND user_id = $3", [
-      unitId,
-      orgId,
-      userId,
-    ]);
+    await this.moveMember(actorId, orgId, userId, unitId);
     this.bus.emit({ type: "org.changed", actorId, orgId });
+  }
+
+  /**
+   * Changer l'entité d'une personne : une seule règle, que le changement vienne de Structure ou des RH (thème 3,
+   * S-2). Le rattachement change, l'affectation en cours du dossier RH se ferme et une nouvelle, datée, s'ouvre ;
+   * le changement est journalisé (S-1).
+   */
+  async moveMember(
+    actorId: string,
+    orgId: string,
+    userId: string,
+    unitId: string | null,
+    o: { functionTitle?: string; reference?: string; q?: Queryable } = {},
+  ) {
+    const q = o.q ?? this.db;
+    const before = await this.db.one<{ unit_id: string | null; unit_name: string | null }>(
+      "SELECT om.unit_id, ou.name AS unit_name FROM org_members om LEFT JOIN org_units ou ON ou.id = om.unit_id WHERE om.org_id = $1 AND om.user_id = $2",
+      [orgId, userId],
+    );
+    const moved = (before?.unit_id ?? null) !== unitId;
+    if (moved)
+      await q.query("UPDATE org_members SET unit_id = $1 WHERE org_id = $2 AND user_id = $3", [unitId, orgId, userId]);
+    const record = await this.db.one<{ function_title: string | null }>(
+      "SELECT function_title FROM agent_records WHERE org_id = $1 AND user_id = $2",
+      [orgId, userId],
+    );
+    const newFunction = o.functionTitle !== undefined && o.functionTitle !== (record?.function_title ?? "");
+    if (record && (moved || newFunction)) {
+      const day = localDate();
+      await q.query("UPDATE agent_assignments SET ended_on = $3 WHERE org_id = $1 AND user_id = $2 AND ended_on IS NULL", [
+        orgId,
+        userId,
+        day,
+      ]);
+      await q.query(
+        "INSERT INTO agent_assignments (id, org_id, user_id, unit_id, function_title, started_on, reference, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+        [uid("asg"), orgId, userId, unitId, o.functionTitle ?? record.function_title ?? "", day, o.reference ?? "", actorId],
+      );
+    }
+    if (moved) {
+      const to = unitId ? ((await this.db.one<{ name: string }>("SELECT name FROM org_units WHERE id = $1", [unitId]))?.name ?? "") : "";
+      await this.log(actorId, "unit.member", {
+        orgId,
+        data: { user: userId, name: (await this.userOrNull(userId))?.name ?? "", from: before?.unit_name ?? "", to },
+      });
+    }
+    return { moved };
   }
 
   // ================================================================ équipes
@@ -908,6 +976,7 @@ export class Services {
       );
       await q.query("INSERT INTO team_members (team_id, user_id, role) VALUES ($1,$2,'lead')", [id, actorId]);
     });
+    await this.log(actorId, "team.created", { orgId, data: { id, team: input.name.trim() } });
     this.bus.emit({ type: "org.changed", actorId, orgId });
     return this.team(actorId, id);
   }
@@ -934,6 +1003,10 @@ export class Services {
     if (sets.length) {
       vals.push(teamId);
       await this.db.query(`UPDATE teams SET ${sets.join(", ")} WHERE id = $${vals.length}`, vals);
+      await this.log(actorId, "team.updated", {
+        orgId: t.org_id,
+        data: { id: teamId, team: patch.name ?? t.name, fields: Object.keys(patch).filter((k) => (patch as Row)[k] !== undefined) },
+      });
     }
     this.bus.emit({ type: "org.changed", actorId, orgId: t.org_id });
   }
@@ -950,6 +1023,7 @@ export class Services {
       );
       if (!leads?.n) throw badRequest("L'équipe doit garder au moins un responsable");
     }
+    const previous = await this.teamRole(userId, teamId);
     if (role === null) {
       await this.db.query("DELETE FROM team_members WHERE team_id = $1 AND user_id = $2", [teamId, userId]);
     } else {
@@ -958,6 +1032,14 @@ export class Services {
         [teamId, userId, role],
       );
     }
+    // Un ajout ou un retrait ouvre ou ferme l'accès aux projets de l'équipe : il est journalisé (thème 3, EQ-3)
+    const kind =
+      role === null ? (previous ? "team.member.removed" : null) : !previous ? "team.member.added" : previous !== role ? "team.member.role" : null;
+    if (kind)
+      await this.log(actorId, kind, {
+        orgId: t.org_id,
+        data: { id: teamId, team: t.name, user: userId, role, from: previous ?? null, to: role },
+      });
     this.bus.emit({ type: "org.changed", actorId, orgId: t.org_id });
   }
   async joinTeam(actorId: string, teamId: string): Promise<"joined" | "requested"> {
@@ -970,6 +1052,7 @@ export class Services {
         teamId,
         actorId,
       ]);
+      await this.log(actorId, "team.joined", { orgId: t.org_id, data: { id: teamId, team: t.name, user: actorId } });
       this.bus.emit({ type: "org.changed", actorId, orgId: t.org_id });
       return "joined";
     }
@@ -1016,6 +1099,10 @@ export class Services {
           "INSERT INTO team_members (team_id, user_id, role) VALUES ($1,$2,'member') ON CONFLICT DO NOTHING",
           [r.team_id, r.user_id],
         );
+    });
+    await this.log(actorId, approve ? "team.request.approved" : "team.request.rejected", {
+      orgId: t.org_id,
+      data: { id: r.team_id, team: t.name, user: r.user_id },
     });
     await this.notify(r.user_id, t.org_id, {
       kind: "team.request",

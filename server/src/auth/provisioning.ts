@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import { uid, type Queryable } from "../db.js";
-import { HttpError, badRequest, forbidden, notFound, type Services } from "../services.js";
+import { HttpError, badRequest, forbidden, isSensitive, notFound, type Services } from "../services.js";
 import type { Access } from "./access.js";
 import { fingerprint, maskEmail, newToken, type Auth, type RequestInfo } from "./service.js";
 
@@ -528,7 +528,30 @@ export class Provisioning {
       !(await this.svc.db.one("SELECT 1 FROM org_units WHERE id = $1 AND org_id = $2", [input.unit_id, input.org_id]))
     )
       throw badRequest("Entité inconnue dans cette institution");
+    await this.assertPlatformAssign(actorId, input.org_id, input.profile_id);
     return this.enrol(actorId, input.org_id, input, info);
+  }
+
+  /**
+   * Une institution qui a déjà son propriétaire ne reçoit pas de l'administrateur système un compte de niveau supérieur
+   * au sien : il ne se fabrique pas un compte « Propriétaire » (contrôle des testeurs, H1). Une institution neuve, sans
+   * propriétaire actif, reçoit le premier.
+   */
+  private async assertPlatformAssign(actorId: string, orgId: string, profileId: string) {
+    const led = await this.svc.db.one(
+      `SELECT 1 FROM org_members om JOIN users u ON u.id = om.user_id
+        WHERE om.org_id = $1 AND om.role = 'owner' AND u.status = 'active' AND NOT u.is_ai LIMIT 1`,
+      [orgId],
+    );
+    if (!led) return;
+    if (await this.svc.orgRole(actorId, orgId)) {
+      await this.access.assertCanAssign(actorId, orgId, profileId);
+      return;
+    }
+    // Hors de l'institution, l'administrateur système n'ouvre qu'un accès de base, sans droit sensible
+    const p = await this.access.profile(orgId, profileId);
+    if (!["member", "viewer", "guest"].includes(p.base_role) || p.permissions.some((x: string) => isSensitive(x)))
+      throw forbidden("Cette institution a son propriétaire : c'est à lui d'attribuer les profils de direction");
   }
 
   /** Renvoyer le lien de finalisation : le précédent n'est plus valable. */
@@ -610,6 +633,7 @@ export class Provisioning {
   async approve(actorId: string, userId: string, orgId: string, profileId: string, info: RequestInfo) {
     const u = await this.adminTarget(actorId, userId);
     if (u.status !== "pending") throw badRequest("Cette demande a déjà été traitée");
+    await this.assertPlatformAssign(actorId, orgId, profileId);
     const profile = await this.access.profile(orgId, profileId);
     const inv = await this.createInvitation(
       { org_id: orgId, email: u.email.toLowerCase(), name: u.name, profile_id: profile.id, created_account: true },
@@ -639,6 +663,8 @@ export class Provisioning {
   async reactivate(actorId: string, userId: string, info: RequestInfo) {
     const u = await this.adminTarget(actorId, userId);
     if (u.status !== "suspended") throw badRequest("Ce compte n'est pas suspendu");
+    if (await this.svc.db.one("SELECT 1 FROM agent_records WHERE user_id = $1 AND exit_applied", [userId]))
+      throw badRequest("Cette personne a quitté l'institution (acte de sortie) : son compte ne se réactive pas");
     await this.svc.db.query(
       "UPDATE users SET status = 'active', failed_logins = 0, locked_until = NULL WHERE id = $1",
       [userId],
@@ -674,7 +700,8 @@ export class Provisioning {
       "Réinitialiser votre mot de passe",
       `Bonjour ${u.name},\n\nUn administrateur vous envoie ce lien pour choisir un nouveau mot de passe, valable ${RESET_MINUTES} minutes :\n\n${link}\n\n— ANAT Pilotage`,
     );
-    await this.auth.record("password.reset_requested", { userId, actorId, ip: info.ip, data: { clear_mfa: clearMfa } });
-    return { sent, link: sent ? undefined : link };
+    await this.auth.record("password.reset_requested", { userId, actorId, ip: info.ip, data: { clear_mfa: clearMfa, sent } });
+    // L'administrateur ne détient jamais le moyen d'entrer dans le compte d'autrui (contrôle des testeurs, H2)
+    return { sent };
   }
 }

@@ -206,7 +206,8 @@ describe("messagerie des organisations et sécurité des comptes", () => {
     const send = vi.spyOn(ctx.mail, "send").mockResolvedValue({ ok: true } as never);
     const r = await api("u_karim", "POST", `/api/admin/users/${await idOf()}/reset`, {});
     expect(send).not.toHaveBeenCalled();
-    expect(r.body.link).toBeTruthy();
+    // Le lien d'autrui ne revient jamais à l'administrateur (contrôle des testeurs, H2)
+    expect(r.body.link).toBeUndefined();
   });
 });
 

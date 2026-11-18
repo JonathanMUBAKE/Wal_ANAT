@@ -263,20 +263,23 @@ export class Decisions {
               noExecution,
             ],
           );
-          // La décision attendue du dossier est levée : elle est désormais au registre
-          if (i.project_id) await q.query("UPDATE projects SET decision_needed = '' WHERE id = $1", [i.project_id]);
-          if (i.activity_id)
+          // La décision attendue du dossier est levée par une décision de la DG elle-même : une inscription du
+          // secrétariat ne la lève qu'à la confirmation (contrôle des testeurs)
+          if (confirmedNow && i.project_id) await q.query("UPDATE projects SET decision_needed = '' WHERE id = $1", [i.project_id]);
+          if (confirmedNow && i.activity_id)
             await q.query("UPDATE agency_activities SET decision_needed = '' WHERE id = $1", [i.activity_id]);
-          // Une seule porte : la décision inscrite sur un dossier tranche l'arbitrage qui y était en attente
-          if (i.project_id || i.activity_id)
+          // Une seule porte : la décision de la DG inscrite sur un dossier tranche l'arbitrage qui y était en attente,
+          // jamais au profit de celui qui l'a demandé
+          if (confirmedNow && (i.project_id || i.activity_id))
             closed = await q.query<{ requested_by: string | null; question: string }>(
               `UPDATE project_arbitrations SET status = 'tranche', decision_id = $2, decided_by = $3, decided_at = now(),
                  decision_note = CASE WHEN decision_note = '' THEN 'Tranché par une décision inscrite au registre' ELSE decision_note END
                WHERE org_id = $1 AND status = 'en_attente' AND (project_id = $4 OR activity_id = $5)
+                 AND requested_by IS DISTINCT FROM $3
                RETURNING requested_by, question`,
               [orgId, id, actorId, i.project_id ?? null, i.activity_id ?? null],
             );
-          if (old) {
+          if (old && confirmedNow) {
             const done = await q.query(
               "UPDATE dg_decisions SET status = 'remplacee' WHERE id = $1 AND status <> 'remplacee' RETURNING id",
               [old.id],
@@ -346,6 +349,11 @@ export class Decisions {
     if (STEP[i.status] <= STEP[d.status])
       throw new HttpError(409, "L'exécution d'une décision ne revient pas en arrière");
     if (d.execution_declared_at) throw new HttpError(409, "L'exécution est déclarée : elle attend la confirmation du secrétariat de la DG");
+    if (i.status === "executee" && !d.confirmed_at)
+      throw new HttpError(409, "La DG n'a pas encore confirmé cette décision : son exécution ne se déclare pas");
+    // Le secrétariat ne déclare pas à la place du chargé : il confirme ce que le chargé a déclaré (contrôle des testeurs)
+    if (i.status === "executee" && d.owner_id && d.owner_id !== actorId)
+      throw forbidden("Le chargé d'exécution déclare l'exécution ; le secrétariat de la DG la confirme ensuite");
     // Le chargé déclare l'exécution ; le secrétariat de la DG la confirme (DEC-3)
     if (i.status === "executee" && !(await this.manager(actorId, d.org_id))) return this.declare(actorId, d, i.note);
     const moved = await this.svc.db.one(
@@ -474,6 +482,12 @@ export class Decisions {
       [actorId, id],
     );
     if (!done) throw new HttpError(409, "Cette décision est déjà confirmée");
+    // Le remplacement prend effet à la confirmation de la DG (contrôle des testeurs)
+    const replaces = await this.svc.db.one<{ replaces_id: string | null }>("SELECT replaces_id FROM dg_decisions WHERE id = $1", [id]);
+    if (replaces?.replaces_id)
+      await this.svc.db.query("UPDATE dg_decisions SET status = 'remplacee' WHERE id = $1 AND status <> 'remplacee'", [
+        replaces.replaces_id,
+      ]);
     await this.svc.log(actorId, "decision.confirmed", { orgId: d.org_id, data: { id, reference: decisionRef(d) } });
     if (d.recorded_by && d.recorded_by !== actorId)
       await this.svc.notify(d.recorded_by, d.org_id, {

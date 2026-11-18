@@ -204,7 +204,8 @@ export class Signature {
        ) ORDER BY d.due_on NULLS LAST, d.created_at DESC`,
       [orgId, box, me, actorId, signers],
     );
-    return rows.map((d) => ({ ...d, body: undefined, reference: reference(d) }));
+    // Ni le texte ni le fichier ne sortent d'une liste (contrôle des testeurs) : ils se lisent en ouvrant le document
+    return rows.map((d) => ({ ...d, body: undefined, file_data: undefined, reference: reference(d) }));
   }
 
   /**
@@ -228,6 +229,8 @@ export class Signature {
     return rows.map((d) => ({
       ...d,
       body: undefined,
+      file_data: undefined,
+      file_name: d.confidential && d.created_by !== actorId ? null : d.file_name,
       title: d.confidential && d.created_by !== actorId ? "Document confidentiel" : d.title,
       reference: reference(d),
     }));

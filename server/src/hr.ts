@@ -419,6 +419,16 @@ export class Hr {
     if (LIMITED.has(status) && !end)
       throw badRequest("Un contractuel, un stagiaire ou un consultant a une date de fin : indiquez-la");
     await this.assertUnit(orgId, input.unit_id);
+    // Les RH rattachent les agents ; un chef en poste ou la DG se déplace par la structure, pas par le dossier (M5)
+    if (input.unit_id !== undefined) {
+      const cur = await this.svc.db.one<{ unit_id: string | null }>("SELECT unit_id FROM org_members WHERE org_id = $1 AND user_id = $2", [orgId, userId]);
+      if ((input.unit_id ?? null) !== (cur?.unit_id ?? null)) {
+        const leads = await this.svc.db.one("SELECT 1 FROM org_units WHERE org_id = $1 AND manager_id = $2 LIMIT 1", [orgId, userId]);
+        const dg = (await this.svc.permissionsOf(userId, orgId)).includes("signature.institution");
+        if (leads || dg)
+          throw forbidden("Le rattachement d'un chef en poste ou de la DG se change dans la structure, par qui la gère");
+      }
+    }
     const cols = FIELDS.filter((k) => (input as Record<string, unknown>)[k] !== undefined);
     if (input.matricule && input.matricule !== before.matricule) {
       if (
@@ -501,6 +511,16 @@ export class Hr {
       throw badRequest(
         `${r.display_name ?? r.last_name} dirige « ${led.map((u) => u.name).join(" », « ")} » : désignez d'abord un autre chef`,
       );
+    // La sortie d'un administrateur système ne laisse pas la plateforme sans administrateur (contrôle des testeurs, H5)
+    const admin = await this.svc.db.one<{ platform_role: string | null }>("SELECT platform_role FROM users WHERE id = $1", [userId]);
+    if (admin?.platform_role === "super_admin") {
+      const others = await this.svc.db.one<{ n: number }>(
+        "SELECT count(*)::int AS n FROM users WHERE platform_role = 'super_admin' AND status = 'active' AND id <> $1",
+        [userId],
+      );
+      if (!others?.n)
+        throw badRequest("C'est le dernier administrateur système : désignez-en d'abord un autre avant d'enregistrer sa sortie");
+    }
     await this.svc.db.query(
       "UPDATE agent_records SET exit_on = $3, exit_reason = $4, exit_reference = $5, exited_by = $6, updated_at = now() WHERE org_id = $1 AND user_id = $2",
       [orgId, userId, i.exit_on, i.reason, i.reference?.trim() ?? "", actorId],

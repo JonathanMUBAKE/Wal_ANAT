@@ -378,7 +378,8 @@ export class Portfolio {
 
   async decide(actorId: string, orgId: string, id: string, input: z.infer<typeof Decide>) {
     const a = await this.row(orgId, id);
-    await this.svc.requirePerm(actorId, orgId, "decisions.record");
+    // Trancher revient à la DG (droit de confirmer ses décisions), pas au secrétariat qui tient le registre
+    await this.svc.requirePerm(actorId, orgId, "decisions.confirm");
     if (a.requested_by === actorId) throw forbidden("Celui qui demande un arbitrage ne le tranche pas lui-même");
     if (a.status !== "en_attente") throw badRequest("Cette demande n'est plus en attente");
     const chosen = a.options[input.option];

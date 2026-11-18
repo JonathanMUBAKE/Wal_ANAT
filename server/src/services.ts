@@ -820,6 +820,17 @@ export class Services {
     }
     if (patch.manager_id && !(await this.orgRole(patch.manager_id, u.org_id)))
       throw badRequest("Le responsable doit être membre de l'organisation");
+    if (patch.manager_id !== undefined && (patch.manager_id ?? null) !== u.manager_id) {
+      // Personne ne se nomme soi-même chef (contrôle des testeurs, H3)
+      if (patch.manager_id === actorId)
+        throw forbidden("Personne ne se nomme soi-même à la tête d'une entité : une autre personne habilitée le fait");
+      // La tête de l'Agence, ou d'une entité dirigée par la DG, se change sur décision de la DG
+      const dgHeld =
+        u.parent_id === null ||
+        (!!u.manager_id && (await this.permissionsOf(u.manager_id, u.org_id)).includes("signature.institution"));
+      if (dgHeld && !(await this.permissionsOf(actorId, u.org_id)).includes("signature.institution"))
+        throw forbidden("La tête de cette entité relève de la DG");
+    }
     if (patch.manager_id && patch.manager_id !== u.manager_id) await this.assertCanLead(u.org_id, patch.manager_id);
     if (patch.kind !== undefined)
       patch = {

@@ -92,11 +92,11 @@ Activité des coéquipiers IA.
 | A-1 | L'Accueil de la DG est une page de collaborateur (mes tâches, mes projets, IA). Sa page de travail, le Tableau de bord DG, est ailleurs. | Haute | À décider : rediriger la DG vers le tableau de bord, ou remonter l'essentiel sur son Accueil |
 | A-2 | Les retards de l'Accueil comptent les sous-tâches, contrairement à la règle du lot 3 (« un retard = une tâche principale échue ») appliquée par le Tableau de bord DG et la vue par direction. Les chiffres diffèrent d'une page à l'autre. | Haute | **Fait** (lot 6) : l'Accueil compte les retards comme le tableau de bord (tâches principales) ; les sous-tâches échues restent listées sans être comptées |
 | A-3 | Profil et responsabilité se contredisent : Gaston et Clarisse (Agent) dirigent une entité, Esther (assistante) reste cheffe des RH, Fiston dirige aussi l'Antenne Sud et la Représentation Nord. L'outil ne contrôle pas cet écart. | Haute | Décidé le 17/11/2026 : on refuse la nomination (lot 3) ; démo corrigée (lot 1) |
-| A-4 | La DG apparaît comme « Propriétaire » dans l'en-tête, pas comme « DG ». | Moyenne | À corriger |
+| A-4 | La DG apparaît comme « Propriétaire » dans l'en-tête, pas comme « DG ». | Moyenne | **Fait** (lot 1) : la DG a le profil « DG » et s'affiche comme telle |
 | A-5 | « Viser ou signer » figure deux fois (Saisir et Ce qui vous attend). Pour un agent, le bloc Saisir se réduit à ce seul bouton. | Moyenne | À corriger |
-| A-6 | « Nouveau projet » s'affiche pour tout le monde sans vérifier le droit de créer un projet ; un stagiaire ou un consultant reçoit un refus en cliquant. | Moyenne | À corriger |
-| A-7 | Projets et tâches de démo issus d'une start-up (« Campagne de lancement », « Application mobile v2 », « Refonte du site web », « Tests de non-régression iOS »). | Moyenne (démo) | À corriger |
-| A-8 | Trois réunions s'appellent seulement « Réunion » dans « Mes prochaines réunions ». | Moyenne (démo) | À corriger |
+| A-6 | « Nouveau projet » s'affiche pour tout le monde sans vérifier le droit de créer un projet ; un stagiaire ou un consultant reçoit un refus en cliquant. | Moyenne | **Fait** (lot 3) : « Nouveau projet » ne s'affiche qu'à qui a le droit de créer un projet |
+| A-7 | Projets et tâches de démo issus d'une start-up (« Campagne de lancement », « Application mobile v2 », « Refonte du site web », « Tests de non-régression iOS »). | Moyenne (démo) | **Fait** (lot 1) : projets et tâches d'une agence d'aménagement (SIG national, schéma national, site institutionnel, archives cartographiques) |
+| A-8 | Trois réunions s'appellent seulement « Réunion » dans « Mes prochaines réunions ». | Moyenne (démo) | **Fait** (lot 1) : chaque réunion porte le nom de son type (Comité de direction, Comité de pilotage, Réunion avec les provinces) |
 | A-9 | Le bloc IA prend beaucoup de place (Assistant IA, Activité des coéquipiers IA vide, « Assignez une tâche à Atlas »). | Basse | À corriger |
 | A-10 | Vers 800 px de large, libellés coupés (« Inscrire une dé… ») et cartes de projets écrasées. Correct à 1440 px. | Basse | À corriger |
 | A-11 | Constat initial : le résumé du courrier renverrait les chiffres de toute l'organisation à tout le monde. **Infirmé à l'analyse du module Courrier** : les chiffres suivent les droits de chacun (un agent sans droit sur le courrier reçoit 0 ; un chef qui consulte le registre reçoit les chiffres du registre, qu'il a le droit de voir). | Sans objet | Aucune suite |
@@ -179,10 +179,10 @@ Une tâche du registre d'entité s'affiche avec l'étiquette « Tâche d'entité
 | T-7 | Le valideur ne voit pas un livrable en retard qu'il devra valider (Fiston ne voit pas le rapport de Didier tant qu'il n'est pas remis). | Basse | **Décidé** : le valideur voit les livrables attendus avant leur remise (« Attendus de vos équipes ») |
 | T-8 | « Tâche hors projet » ouvre « Confier une tâche » avec « Non attribuée » par défaut. Depuis Mes tâches, on veut une tâche pour soi : elle n'apparaît pas dans la liste après création. | Moyenne | À corriger : par défaut, la tâche est attribuée à la personne |
 | T-9 | Pour la DG, « Tâche hors projet » vise l'entité racine « ANAT », pas la Direction générale. | Moyenne | À corriger : viser l'entité de rattachement de la personne |
-| T-10 | Données de démo : Fiston est rattaché à Cartographie et SIG alors qu'il dirige l'Ingénierie territoriale. Même famille que A-3. | Moyenne (démo) | À corriger avec A-3 |
+| T-10 | Données de démo : Fiston est rattaché à Cartographie et SIG alors qu'il dirige l'Ingénierie territoriale. Même famille que A-3. | Moyenne (démo) | **Fait** (lot 1) : Fiston est rattaché à l'Ingénierie territoriale, qu'il dirige |
 | T-11 | Pas de recherche, de filtre par projet ou entité, ni de tri autre que par échéance. Pas d'export. | Basse | À décider |
 | T-12 | Un responsable ne voit pas ici les tâches qu'il a confiées aux autres (« confiées par moi »). Vérifié au module 3 : « Suivi des agents » montre les tâches des agents de l'entité et des entités rattachées, mais pas une tâche confiée à une personne hors de cet arbre. | Moyenne | À décider avec E-8 |
-| T-13 | Tâches de démo de start-up (paiement, Apple Pay, tunnel de conversion, stores). Même famille que A-7. | Moyenne (démo) | À corriger avec A-7 |
+| T-13 | Tâches de démo de start-up (paiement, Apple Pay, tunnel de conversion, stores). Même famille que A-7. | Moyenne (démo) | **Fait** (lot 1) : tâches de l'Agence (couches foncières, relevés de terrain, formation des agents provinciaux) |
 
 ### Ce qui fonctionne bien
 
@@ -266,9 +266,9 @@ propriétaire ou administrateur de l'organisation est responsable de toutes les 
 | E-4 | L'entité ouverte par défaut est la première entité dirigée, pas l'entité de rattachement (Esther arrive aux RH, la DG à la racine « ANAT » et non à la Direction générale). | Moyenne | À corriger : ouvrir par défaut l'entité de rattachement de la personne |
 | E-5 | Une réunion de l'entité que l'on préside apparaît deux fois dans la vue d'ensemble. | Basse | À corriger : ne pas répéter dans « Où vous êtes attendu·e » une réunion déjà listée |
 | E-6 | La réunion hebdomadaire présidée par Fiston, dans 7 jours, est « Pas encore convoquée », sans rappel visible. | Basse | À vérifier au module Réunions |
-| E-7 | Le bouton « Projet » s'affiche pour tout le monde ; le serveur refuse ensuite si le profil n'a pas le droit de créer un projet. Même famille que A-6. | Moyenne | À corriger avec A-6 |
+| E-7 | Le bouton « Projet » s'affiche pour tout le monde ; le serveur refuse ensuite si le profil n'a pas le droit de créer un projet. Même famille que A-6. | Moyenne | **Fait** (lot 3) : le bouton n'apparaît qu'avec le droit de créer un projet |
 | E-8 | Pas de vue « tâches que j'ai confiées » (voir T-12) : une tâche confiée hors de l'arbre de l'entité n'est suivie nulle part par celui qui l'a confiée. | Moyenne | À décider |
-| E-9 | Données de démo : départements vides ou presque (Fiston n'a qu'un agent, Didier et Clarisse aucun), Esther cheffe des RH, projets de start-up. Même famille que A-3 et A-7. | Haute (démo) | À corriger avec A-3 et A-7 : une démo crédible demande quelques agents par entité |
+| E-9 | Données de démo : départements vides ou presque (Fiston n'a qu'un agent, Didier et Clarisse aucun), Esther cheffe des RH, projets de start-up. Même famille que A-3 et A-7. | Haute (démo) | **Fait en partie** (lots 1 et 9) : un chef distinct par entité, des agents dans les services, projets de l'Agence ; certaines entités restent peu peuplées |
 | E-10 | Vers 800 px de large, les onglets débordent (« Suivi des agents » coupé) et défilent horizontalement. | Basse | À corriger avec A-10 |
 
 ### Ce qui fonctionne bien
@@ -353,10 +353,10 @@ d'identité, adresse personnelle, personnes à prévenir et observations du serv
 | D-2 | Un chef d'entité lit le dossier complet de ses agents, données personnelles comprises (famille, pièce d'identité, adresse, personnes à prévenir). | Haute | **Décidé et fait** (lot 7) : le chef lit la partie administrative (situation, affectations, diplômes) ; famille, pièce d'identité, coordonnées personnelles et personnes à prévenir restent à l'agent et aux RH |
 | D-3 | La consultation d'un dossier par quelqu'un d'autre que l'agent n'est pas journalisée. | Haute | **Fait** (lot 5) : chaque consultation par un tiers est journalisée (« Dossier d'agent consulté par un tiers », une fois par lecteur et par demi-heure) |
 | D-4 | L'agent ne peut rien corriger, mais aucun bouton ne lui permet de signaler une erreur ou de demander une mise à jour au service RH. | Moyenne | **Fait** (lot 8) : « Demander une correction » ; le service RH traite, l'agent est prévenu, la demande reste au dossier |
-| D-5 | Fonction et entité se contredisent dans les dossiers de démo (Fiston rangé dans Cartographie et SIG, Didier dans le service Communication). Même famille que A-3. | Moyenne (démo) | À corriger avec A-3 |
+| D-5 | Fonction et entité se contredisent dans les dossiers de démo (Fiston rangé dans Cartographie et SIG, Didier dans le service Communication). Même famille que A-3. | Moyenne (démo) | **Fait** (lot 1) : fonction et entité des dossiers alignées sur le rattachement |
 | D-6 | L'historique des affectations de la DG est vide. | Basse (démo) | À corriger dans la démo |
 | D-7 | Les adresses professionnelles sont en « @cadence.app » et la nationalité vaut « Fictivienne ». | Basse (démo) | **Fait** (lot 9) : adresses en « @anat.example » (domaine fictif réservé), domaine de l'institution assorti, nationalité « Congolaise » |
-| D-8 | Dans la démo, personne d'autre que la DG ne gère les dossiers RH : la cheffe des RH (Esther) n'en lit aucun. La DG ne pouvant pas modifier son propre dossier, il ne peut être tenu par personne. | Moyenne (démo) | À corriger : donner le profil RH à un agent du service RH dans la démo |
+| D-8 | Dans la démo, personne d'autre que la DG ne gère les dossiers RH : la cheffe des RH (Esther) n'en lit aucun. La DG ne pouvant pas modifier son propre dossier, il ne peut être tenu par personne. | Moyenne (démo) | **Fait** (lot 1) : la cheffe du service RH tient les dossiers (droit « gérer les RH ») |
 | D-9 | Le dossier ne contient ni congés, ni pièces (actes de nomination, contrats, arrêtés), ni formations, ni évaluations. | Moyenne | **Décidé et fait** (lot 8) : pièces du dossier (RH et agent), formations, évaluations (RH et agent), congés et absences |
 
 ### Ce qui fonctionne bien
@@ -427,8 +427,8 @@ Fiston crée, dans « Application mobile v2 », la tâche « Préparer un point 
 | I-3 | Deux coéquipiers peuvent travailler en même temps sur la même tâche (tâche confiée + règle) et proposer la même action. | Moyenne | À corriger : une seule intervention à la fois par tâche |
 | I-4 | La personne visée par une proposition peut la valider elle-même (Fiston valide la relance qui le concerne). | Moyenne | **Décidé et fait** (lot 4) : la personne visée (chargé de la tâche touchée, personne mentionnée) ne valide pas la proposition et n'est pas sollicitée |
 | I-5 | Les propositions sont visibles par des personnes qui ne peuvent pas les valider (Gaston, Clarisse) et absentes des notifications de ceux qui pourraient (autres éditeurs avec le droit). | Basse | À corriger : n'afficher que les propositions que l'on peut décider |
-| I-6 | Les coéquipiers ne sont membres que des projets de start-up. Aucun projet de l'ANAT (Schéma national d'aménagement, RH) ne les utilise. | Moyenne (démo) | À corriger avec A-7 |
-| I-7 | Les rôles et consignes viennent d'une start-up (« chef de projet IA », « analyste QA et triage », bugs, étapes de reproduction). | Moyenne | À corriger : des rôles utiles à l'ANAT (préparer une note, suivre les échéances d'un plan de travail, synthétiser un compte rendu) |
+| I-6 | Les coéquipiers ne sont membres que des projets de start-up. Aucun projet de l'ANAT (Schéma national d'aménagement, RH) ne les utilise. | Moyenne (démo) | **Fait** (lot 1) : les coéquipiers travaillent dans les projets de l'Agence |
+| I-7 | Les rôles et consignes viennent d'une start-up (« chef de projet IA », « analyste QA et triage », bugs, étapes de reproduction). | Moyenne | **Fait** (lot 1) : rôles de chargé de suivi et d'analyste des données, règle de tri sans vocabulaire de start-up |
 | I-8 | Le ton de la page (« Des collègues qui ne dorment jamais ») et le message vide « Assignez une tâche à Atlas ou Nova » ne conviennent pas à un outil institutionnel. | Basse | À corriger |
 | I-9 | Avec une clé configurée, le contenu des tâches, commentaires et pièces jointes lues est envoyé à un service d'IA hors de l'agence. La page ne le dit pas et aucun réglage ne permet d'exclure un projet ou une pièce confidentielle. | Haute | **Décidé et fait** (lot 7) : avec un service extérieur, l'IA demande la permission avant chaque lecture (et avant d'envoyer la tâche de départ) ; un refus arrête l'intervention ; la règle est affichée sur la page des coéquipiers |
 | I-10 | En mode démonstration, les propositions sont génériques (sous-tâches « Produire une première version ») et ne reflètent pas ce que ferait le vrai modèle. | Basse | À noter dans le guide |
@@ -518,7 +518,7 @@ assistante. Les chefs de direction et les agents reçoivent un refus.
 | P-3 | « Retards à résorber » additionne des natures différentes (tâches, recommandations, livrables, plan, courrier, décisions) et ne mène nulle part. | Moyenne | À corriger : rendre la carte cliquable vers la liste détaillée des retards |
 | P-4 | Le bloc « Assistant IA » affiche un « Point de situation » calculé par des règles, pas par l'IA. Le titre laisse croire que l'IA a analysé la situation. | Basse | À corriger : intituler « Point de situation », et réserver « Assistant IA » aux trois demandes |
 | P-5 | Les chefs de direction n'ont pas accès au tableau de bord, même limité à leur direction. | Moyenne | À décider : leur ouvrir la ligne et le détail de leur direction (« Par direction » existe déjà) |
-| P-6 | Données de démo : la DG est aussi responsable de la Direction technique ; l'Antenne Sud et la Représentation Nord sont vides ; les projets du portefeuille sont ceux d'une start-up (« Campagne de lancement », « Application mobile v2 »). Même famille que A-3 et A-7. | Moyenne (démo) | À corriger avec A-3 et A-7 |
+| P-6 | Données de démo : la DG est aussi responsable de la Direction technique ; l'Antenne Sud et la Représentation Nord sont vides ; les projets du portefeuille sont ceux d'une start-up (« Campagne de lancement », « Application mobile v2 »). Même famille que A-3 et A-7. | Moyenne (démo) | **Fait** (lot 1) : un chef distinct par direction, antenne et représentation peuplées, portefeuille de l'Agence |
 | P-7 | « 5 directions · 1 en alerte » alors que deux lignes sont en alerte (l'Agence et la Direction technique). | Basse | À corriger : préciser que la ligne Agence n'est pas comptée, ou la compter |
 | P-8 | La page reprend le bloc « Saisir » de l'Accueil : la DG le voit deux fois si elle passe d'une page à l'autre. | Basse | À décider avec A-1 |
 
@@ -600,8 +600,8 @@ gestionnaire de l'agenda, et ne se supprime que par un gestionnaire. La suppress
 | F-4 | Tous les agents voient toutes les activités non confidentielles de la DG (commissions, conférences, activités internes, leur état). | Moyenne | **Décidé et fait** (lot 7) : un agent voit les activités dont il est responsable, dont il suit une suite, ou de son entité ; la direction voit tout le non-confidentiel |
 | F-5 | L'onglet « Contrats et paiements » est ouvert aux chefs d'entité (Fiston, Didier) mais pas à l'assistante de la DG. | Basse | À vérifier au module Administration (profils) |
 | F-6 | Un responsable d'activité modifie lui-même l'état (santé) de son activité. L'état affiché est corrigé si des suites sont en retard, mais pas pour les autres signaux. | Basse | À noter : même logique déclaré / calculé que F-1 |
-| F-7 | « Nouveau projet » apparaît dans l'onglet Projets sans vérifier le droit. Même famille que A-6 et E-7. | Basse | À corriger avec A-6 |
-| F-8 | Données de démo : « Campagne de lancement » a pour responsable Fiston, chef de l'Ingénierie territoriale ; projets de start-up. Même famille que A-7. | Moyenne (démo) | À corriger avec A-7 |
+| F-7 | « Nouveau projet » apparaît dans l'onglet Projets sans vérifier le droit. Même famille que A-6 et E-7. | Basse | **Fait** (lot 3) : « Nouveau projet » ne s'affiche qu'avec le droit |
+| F-8 | Données de démo : « Campagne de lancement » a pour responsable Fiston, chef de l'Ingénierie territoriale ; projets de start-up. Même famille que A-7. | Moyenne (démo) | **Fait** (lot 1) : projets de l'Agence, confiés aux chefs concernés |
 
 ### Ce qui fonctionne bien
 
@@ -872,8 +872,8 @@ Aucun risque n'est rattaché à un projet, aucun indicateur à une activité du 
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| RI-1 | Les droits sont incohérents : les chefs d'entité peuvent créer et modifier risques et indicateurs mais ne peuvent pas voir la page ; l'assistante voit tout mais ne peut rien mettre à jour. | Haute | À corriger : qui modifie doit voir ; le responsable d'un risque le voit et met à jour ses mesures |
-| RI-2 | Un profil « gérer les risques » peut modifier les indicateurs stratégiques de la DG (cible, résultat). | Haute | À corriger : un droit distinct pour les indicateurs, ou modification réservée au pilotage |
+| RI-1 | Les droits sont incohérents : les chefs d'entité peuvent créer et modifier risques et indicateurs mais ne peuvent pas voir la page ; l'assistante voit tout mais ne peut rien mettre à jour. | Haute | **Fait** (lot 3) : qui gère les risques voit le registre ; le responsable d'un risque le voit et met à jour sa parade et son état |
+| RI-2 | Un profil « gérer les risques » peut modifier les indicateurs stratégiques de la DG (cible, résultat). | Haute | **Fait** (lot 3) : droit distinct « Gérer les indicateurs stratégiques » (DG, DGA) ; les chefs les lisent sans les modifier |
 | RI-3 | Aucun historique : ni des scores de risque, ni des valeurs d'indicateur. Pas de date de mesure, pas de date de dernière revue. | Moyenne | À corriger : chaque mise à jour garde la valeur, la date et l'auteur ; afficher la tendance |
 | RI-4 | Les indicateurs sont saisis à la main même quand l'outil connaît la valeur (plans approuvés, recommandations exécutées). | Moyenne | **Décidé et fait** (lot 6) : un indicateur peut être relié à une source de l'outil (plans approuvés, recommandations réalisées, décisions exécutées, accords en vigueur) ; son résultat se calcule seul et ne se saisit plus |
 | RI-5 | Un risque ne se rattache qu'à un projet, pas à une activité, une direction ou une convention ; il n'a pas d'échéance pour ses mesures de maîtrise. | Moyenne | À décider : rattachements et échéance de la mesure |
@@ -953,7 +953,7 @@ préparer ; seule la DG les approuve.
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| PT-1 | Le droit « gérer les plans » vaut pour toutes les entités : un chef de direction prépare, modifie ou supprime le plan d'une autre direction. | Haute | À corriger : un chef prépare le plan de son entité et des entités rattachées ; le service du plan prépare tous les plans |
+| PT-1 | Le droit « gérer les plans » vaut pour toutes les entités : un chef de direction prépare, modifie ou supprime le plan d'une autre direction. | Haute | **Fait** (lot 3) : un chef prépare le plan de son entité et des entités rattachées ; droit « Préparer les plans de toutes les entités » pour la DG, le DGA et le service du plan |
 | PT-2 | L'avancement saisi à la main par le responsable n'exige ni justification ni pièce. | Moyenne | À décider : commentaire obligatoire, ou validation par le chef pour une activité sans dossier |
 | PT-3 | L'avancement d'un plan est la moyenne simple de ses activités, sans pondération (un atelier pèse autant que la révision du schéma national). | Moyenne | **Décidé et fait** (lot 6) : chaque activité a un poids (1 par défaut, de 1 à 100) ; l'avancement du plan est la moyenne pondérée, partout |
 | PT-4 | Les activités de la démo n'ont pas de date de début : l'« avancement attendu à date » du Tableau de bord DG est alors approximatif. | Moyenne | À corriger : date de début obligatoire à la soumission |
@@ -1045,7 +1045,7 @@ présenté comme le bailleur du programme.
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| PA-1 | Le Directeur de la Communication et des Partenariats n'a pas le droit de gérer les partenaires ; seule la DG l'a. | Haute (profils) | À corriger : donner la gestion des partenaires à la direction chargée des partenariats (profil ou droit ajouté) |
+| PA-1 | Le Directeur de la Communication et des Partenariats n'a pas le droit de gérer les partenaires ; seule la DG l'a. | Haute (profils) | **Fait** (lot 3) : dans la démonstration, le directeur de la Communication et des Partenariats gère l'annuaire ; ailleurs, le droit se coche dans Profils et droits |
 | PA-2 | Un point focal ne peut pas suspendre une relation, même en urgence ; il n'a aucun moyen de le demander dans l'outil. | Moyenne | À décider : « Demander la suspension » qui notifie les gestionnaires, ou droit de suspendre avec motif |
 | PA-3 | Les notes d'échange sont lisibles par tous les profils qui voient l'annuaire. | Moyenne | **Fait** (lot 7) : notes d'échange réservées aux gestionnaires, aux points focaux et à la direction |
 | PA-4 | Rien ne signale un partenaire actif ou en discussion sans point focal (4 sur 6 dans la démo). | Moyenne | À corriger : alerte « sans point focal », point focal obligatoire pour passer « en discussion » ou « actif » |
@@ -1294,7 +1294,7 @@ Historique de ENT/2026/0001 : « Enregistré au bureau d'ordre », « **Imputé 
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| C-1 | L'historique du courrier porte encore « Imputé à Nova Mobile » : les annotations figées gardent l'ancien nom de l'organisation de démonstration. | Basse (démo) | À corriger dans la démo |
+| C-1 | L'historique du courrier porte encore « Imputé à Nova Mobile » : les annotations figées gardent l'ancien nom de l'organisation de démonstration. | Basse (démo) | **Fait** (lot 1) : les textes figés du courrier portent les noms de l'Agence |
 | C-2 | La clôture d'un courrier demande une référence de réponse en texte libre ; elle n'est pas reliée au courrier sortant enregistré. | Moyenne | À corriger : clôturer en choisissant le sortant de réponse (le lien inverse existe déjà) |
 | C-3 | Les chefs d'entité qui consultent le registre voient tout le courrier non confidentiel, pas seulement celui de leur entité. | Moyenne | **Décidé et fait** (lot 7) : un chef lit le courrier de son entité (et des entités rattachées) ; le secrétariat et la direction gardent le registre complet |
 | C-4 | Un correspondant saisi en texte libre (« Partenaire technique ») ne se rattache à aucune fiche partenaire. | Basse | À corriger : proposer de rattacher à une fiche existante ou d'en créer une |
@@ -1385,10 +1385,10 @@ La liste des profils comprend un profil **« DG »**, mais Bernadette a le profi
 | S-2 | L'entité d'une personne se change à deux endroits (Structure et Ressources humaines) avec des effets différents : seul le passage par les RH crée une affectation datée dans le dossier. | Haute | **Fait** (lot 5) : un seul effet, d'où que vienne le changement ; depuis Structure, il ferme aussi l'affectation en cours du dossier RH et en ouvre une nouvelle, datée |
 | S-3 | Désigner une personne chef d'une entité ne touche pas à son profil d'accès, et rien ne signale l'écart (un Agent chef de service, un chef de département chef d'antenne). Même famille que A-3. | Haute | Décidé le 17/11/2026 avec A-3 : le serveur refuse (lot 3) |
 | S-4 | Les listes déroulantes de profil et d'entité modifient immédiatement, sans confirmation. Un clic malheureux change les droits ou le rattachement de quelqu'un. | Moyenne | À corriger : confirmation, avec motif pour un changement de profil |
-| S-5 | Un profil « DG » existe, mais la DG de la démo a le profil « Propriétaire ». Même famille que A-4. | Moyenne (démo) | À corriger avec A-4 |
-| S-6 | Les écarts de participation gardent un texte figé avec les anciens noms (« Direction Produit & Technologie », « Nova Mobile »). Même famille que C-1. | Basse (démo) | À corriger dans la démo (régénérer les écarts après renommage) |
+| S-5 | Un profil « DG » existe, mais la DG de la démo a le profil « Propriétaire ». Même famille que A-4. | Moyenne (démo) | **Fait** (lot 1) : la DG a le profil « DG » |
+| S-6 | Les écarts de participation gardent un texte figé avec les anciens noms (« Direction Produit & Technologie », « Nova Mobile »). Même famille que C-1. | Basse (démo) | **Fait** (lot 1) : les écarts de participation portent les noms de l'Agence |
 | S-7 | Seules 2 entités sur 12 ont une fiche d'attributions : l'analyse des écarts ne couvre presque rien. | Moyenne (démo) | **Fait** (lot 9) : fiches d'attributions approuvées pour les entités (rédigées par leur chef, approuvées par la DG) |
-| S-8 | Structure de démo peu crédible : la DG dirige aussi la Direction technique ; un chef de département dirige aussi une antenne et une représentation provinciale ; les RH sont un service sans personne. | Moyenne (démo) | À corriger avec A-3 |
+| S-8 | Structure de démo peu crédible : la DG dirige aussi la Direction technique ; un chef de département dirige aussi une antenne et une représentation provinciale ; les RH sont un service sans personne. | Moyenne (démo) | **Fait** (lot 1) : un chef distinct par entité ; le service RH a sa cheffe et ses agents |
 
 ### Ce qui fonctionne bien
 
@@ -1452,10 +1452,10 @@ Les entités ont été renommées pour l'ANAT, les équipes non : leurs noms res
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| EQ-1 | Le responsable d'une équipe ne peut pas la gérer si son profil n'a pas le droit « gérer les équipes » (Clarisse, Esther). | Moyenne | À corriger : être responsable de l'équipe suffit pour gérer ses membres |
+| EQ-1 | Le responsable d'une équipe ne peut pas la gérer si son profil n'a pas le droit « gérer les équipes » (Clarisse, Esther). | Moyenne | **Fait** (lot 3) : être responsable d'une équipe suffit pour la gérer |
 | EQ-2 | Équipes et entités se recouvrent : deux façons de regrouper les personnes et de porter des projets. | Moyenne | À décider : garder les équipes pour les groupes transversaux seulement (comités, groupes de travail interdirections), ou les masquer |
 | EQ-3 | Ajouts, retraits et changements de responsable d'une équipe ne sont pas journalisés, alors qu'ils ouvrent ou ferment l'accès à des projets. | Moyenne | **Fait** (lot 5) : création, modification, ajout, retrait, changement de rôle, adhésion et réponse à une demande sont journalisés |
-| EQ-4 | Données de démo : équipes de start-up (« Marketing », « Produit & Design », « Équipe Mobile »). Même famille que A-7. | Moyenne (démo) | À corriger avec A-7 : par exemple « Comité technique du schéma national », « Groupe de travail données provinciales » |
+| EQ-4 | Données de démo : équipes de start-up (« Marketing », « Produit & Design », « Équipe Mobile »). Même famille que A-7. | Moyenne (démo) | **Fait** (lot 1) : Comité éditorial, Groupe de travail du site institutionnel, Comité de recrutement, Groupe projet SIG national |
 
 ### Ce qui fonctionne bien
 
@@ -1530,8 +1530,8 @@ Personne n'est « à identifier ». Seule la DG accède au registre : les cinq a
 | RH-3 | Aucune alerte sur les échéances : fin de contrat, fin de stage, départ à la retraite. Un contractuel peut n'avoir aucune date de fin. | Moyenne | **Fait** (lot 8) : date de fin obligatoire pour contractuels, stagiaires et consultants ; alertes à 90 et 30 jours (fin de contrat, retraite à 65 ans) au service RH et au chef |
 | RH-4 | La liste n'a ni filtre (entité, statut, grade), ni indicateurs (effectifs par entité, pyramide des âges, départs prévus). | Moyenne | À corriger |
 | RH-5 | Le matricule automatique suit l'année de saisie (AG-2026-…) et non l'année d'entrée ; le format diffère pour la DG (AG-DEMO-0001). | Basse | À décider : format du matricule de l'ANAT, saisi ou généré |
-| RH-6 | Dans la démo, seule la DG accède au registre ; la cheffe des RH n'a pas le droit « gérer les RH ». Même famille que D-8. | Moyenne (démo) | À corriger avec D-8 |
-| RH-7 | Entité du dossier en contradiction avec la fonction (Fiston, Didier). Même famille que D-5 et S-2. | Moyenne (démo) | À corriger avec S-2 |
+| RH-6 | Dans la démo, seule la DG accède au registre ; la cheffe des RH n'a pas le droit « gérer les RH ». Même famille que D-8. | Moyenne (démo) | **Fait** (lot 1) : la cheffe du service RH accède au registre et tient les dossiers |
+| RH-7 | Entité du dossier en contradiction avec la fonction (Fiston, Didier). Même famille que D-5 et S-2. | Moyenne (démo) | **Fait** (lot 1) : l'entité du dossier suit le rattachement ; depuis le lot 5, un changement d'entité ouvre une affectation datée (S-2) |
 | RH-8 | Le module ne couvre ni congés (lot reporté), ni carrière (avancements, promotions), ni formation, ni évaluation, ni pièces (actes, contrats). Même famille que D-9. | Moyenne | À décider avec D-9 : l'ordre des prochains volets |
 
 ### Ce qui fonctionne bien
@@ -1608,7 +1608,7 @@ accès ; le profil « Responsable informatique » existe mais n'est attribué à
 | AD-2 | La double authentification est proposée mais pas imposée aux comptes à droits élevés (2 sans, signalés). | Haute | À corriger : double authentification obligatoire pour l'administrateur, la DG et les gestionnaires (RH, courrier, partenariats) |
 | AD-3 | La messagerie n'est pas configurée : aucun courriel ne part, alors que plusieurs écrans annoncent un envoi par courriel. | Moyenne | À corriger au déploiement ; dans l'interface, ne pas promettre un courriel quand la messagerie est absente |
 | AD-4 | L'analyse du journal d'audit par l'IA envoie des données nominatives à un service extérieur. Même famille que I-9. | Moyenne | **Décidé et fait** (lot 7) : avec un service extérieur, l'appréciation du journal attend un accord explicite donné après avoir vu ce qui partirait |
-| AD-5 | Une seconde organisation de démonstration subsiste (« Studio Lumen »). Même famille que A-7. | Basse (démo) | À retirer de la démo ANAT |
+| AD-5 | Une seconde organisation de démonstration subsiste (« Studio Lumen »). Même famille que A-7. | Basse (démo) | **Fait** (lot 1) : le second espace « Studio Lumen » est retiré de la démonstration |
 | AD-6 | 30 sessions actives pour 6 personnes : les sessions s'accumulent (une par connexion) sans durée visible. | Basse | À vérifier : durée de vie des sessions, déconnexion des sessions anciennes |
 
 ### Ce qui fonctionne bien

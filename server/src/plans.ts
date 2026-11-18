@@ -212,11 +212,20 @@ export class Plans {
     );
     const unit = await this.svc.db.one<{ name: string }>("SELECT name FROM org_units WHERE id = $1", [p.unit_id]);
     const prepare = await this.mayPrepare(actorId, p.org_id, p.unit_id, perms);
+    // Les budgets restent à la direction, aux chefs de l'entité et à qui prépare ou approuve les plans (PT-6)
+    const budgets =
+      prepare ||
+      perms.includes("pilotage.view") ||
+      perms.includes("plans.approve") ||
+      (await this.svc.heads(actorId, p.unit_id));
     return {
       ...p,
       unit_name: unit?.name ?? "",
       progress: weightedProgress(activities.map((a) => ({ progress: a.progress_effective, weight: a.weight }))) ?? 0,
-      activities,
+      budgets_hidden: !budgets,
+      activities: budgets
+        ? activities
+        : activities.map((a) => ({ ...a, budget_planned: null, budget_committed: null, budget_spent: null })),
       revisions,
       reviews: await new PlanReviews(this.svc).ofPlan(id),
       can: {

@@ -36,6 +36,18 @@ export function AgentsPage() {
           Assignez-leur une tâche, mentionnez-les dans un commentaire, ou créez une règle d'automatisation dans un
           projet.
         </p>
+        {/* Ce qui part hors de l'Agence, dit clairement (thème 5, I-9) */}
+        {ai?.read_rule && (
+          <p
+            className={
+              ai.external
+                ? "mt-3 max-w-2xl rounded-lg border border-warning/40 bg-warning-soft/40 px-3 py-2 text-[13px]"
+                : "mt-3 max-w-2xl rounded-lg border border-line px-3 py-2 text-[13px] text-muted"
+            }
+          >
+            {ai.read_rule}
+          </p>
+        )}
       </header>
 
       <div className="mb-10 grid grid-cols-1 gap-3 md:grid-cols-3">

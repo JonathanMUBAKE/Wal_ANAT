@@ -295,7 +295,9 @@ export class Partners {
     );
     const focal = this.focal(p, actorId);
     const live = !p.merged_into;
-    const notes = history.filter((h) => h.kind === "note");
+    // Les notes d'échange restent aux gestionnaires, aux points focaux et à la direction (PA-3)
+    const readNotes = manager || focal || (await this.svc.permissionsOf(actorId, p.org_id)).includes("pilotage.view");
+    const notes = readNotes ? history.filter((h) => h.kind === "note") : [];
     const states = live ? NEXT[p.state].filter((s) => manager || (focal && FOCAL_MOVES.has(`${p.state}>${s}`))) : [];
     const focals = p.focal_ids.length
       ? await db.query<{ id: string; name: string }>(
@@ -346,8 +348,9 @@ export class Partners {
       ...links,
       contacts,
       notes,
-      history,
+      history: readNotes ? history : history.filter((h) => h.kind !== "note"),
       can: {
+        read_notes: readNotes,
         edit: live && (manager || focal),
         manage: live && manager,
         states,

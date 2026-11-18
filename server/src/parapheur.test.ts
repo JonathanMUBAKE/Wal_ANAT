@@ -135,6 +135,8 @@ describe("courrier", () => {
   });
   it("un membre consulte mais n'enregistre pas", async () => {
     await reg();
+    // Lecture au titre de la direction : sans le droit de pilotage, un agent ne voit que ce qui le concerne (thème 5)
+    await g.direction("u_karim");
     expect((await g.api("u_karim", "GET", "/api/correspondence")).body).toHaveLength(1);
     expect(
       (

@@ -9,7 +9,7 @@ import { Bus, type DomainEvent } from "./bus.js";
 import { HttpError, RECURRENCES, Services, badRequest, forbidden, withAvatar } from "./services.js";
 import { MailService } from "./mail.js";
 import { AiEngine } from "./ai/engine.js";
-import { AnthropicProvider, MODEL, type AiProvider } from "./ai/provider.js";
+import { AnthropicProvider, MODEL, isExternal, type AiProvider } from "./ai/provider.js";
 import { DemoProvider } from "./ai/demo.js";
 import { seedIfEmpty } from "./seed.js";
 import { ATTACHMENT_MAX_BYTES, Attachments } from "./attachments.js";
@@ -859,6 +859,11 @@ export async function buildApp(opts: AppOptions = {}) {
     r.get("/api/ai/status", async () => ({
       provider: provider.name,
       model: provider.name === "anthropic" ? MODEL : null,
+      // Règle affichée sur la page des coéquipiers IA (thème 5, I-9)
+      external: isExternal(provider),
+      read_rule: isExternal(provider)
+          ? "Le contenu lu par l'IA est envoyé à un service extérieur à l'Agence : chaque lecture et chaque action attend l'accord d'une personne habilitée."
+          : "Mode démonstration : l'IA fonctionne en local, rien n'est envoyé hors de l'Agence. Ses actions attendent toujours l'accord d'une personne.",
     }));
     r.get("/api/ai/agents", async (req) => svc.agents(org(req)));
     r.post<{ Params: { id: string } }>("/api/tasks/:id/ai/run", { onRequest: aiLimit }, async (req) => {

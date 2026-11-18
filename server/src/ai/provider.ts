@@ -44,15 +44,21 @@ export interface JsonRequest {
 
 export interface AiProvider {
   name: "anthropic" | "demo";
+  /** Le fournisseur envoie-t-il le contenu hors de l'Agence ? (thème 5, I-9) Claude : oui ; la démonstration : non. */
+  external?: boolean;
   turn(req: TurnRequest): Promise<TurnResult>;
   json<T>(req: JsonRequest): Promise<T>;
 }
+/** Un fournisseur est extérieur s'il le déclare ; Claude l'est toujours. */
+export const isExternal = (p: Pick<AiProvider, "name" | "external"> | null | undefined) =>
+  !!p && (p.external === true || p.name === "anthropic");
 
 export class RefusalError extends Error {}
 
 /** Fournisseur réel : Claude via le SDK officiel. */
 export class AnthropicProvider implements AiProvider {
   name = "anthropic" as const;
+  external = true;
   private client: Anthropic;
   constructor(client?: Anthropic) {
     this.client = client ?? new Anthropic();

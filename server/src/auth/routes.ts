@@ -206,6 +206,8 @@ export function privateAuthRoutes(r: FastifyInstance, d: AuthDeps) {
     user_id: z.string().max(100).optional(),
     source: z.enum(["activity", "security"]).optional(),
     limit: z.coerce.number().int().min(1).max(5000).optional(),
+    // Permission explicite d'envoyer le résumé au service d'IA extérieur (thème 5, AD-4)
+    consent: z.boolean().optional(),
   });
   const auditFilter = (req: FastifyRequest) => filterSchema.parse(req.query ?? {});
   r.get("/api/admin/audit", async (req) => {

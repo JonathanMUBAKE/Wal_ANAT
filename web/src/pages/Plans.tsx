@@ -64,6 +64,8 @@ interface PlanActivity {
 }
 interface Plan extends PlanRow {
   return_comment: string;
+  /** Budgets réservés à la direction, aux chefs de l'entité et à qui prépare le plan (thème 5, PT-6). */
+  budgets_hidden?: boolean;
   activities: PlanActivity[];
   revisions: {
     id: string;
@@ -342,6 +344,11 @@ export function PlanPage() {
             )
           }
         >
+          {p.budgets_hidden && (
+            <p className="px-5 pb-2 text-[12.5px] text-muted">
+              Les budgets de ce plan sont réservés à la direction et aux chefs de l'entité.
+            </p>
+          )}
           {p.activities.length ? (
             <Table head={["Activité", "Responsable", "Cible", "Échéance", "Avancement", ""]}>
               {p.activities.map((a) => (

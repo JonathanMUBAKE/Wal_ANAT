@@ -90,6 +90,9 @@ export async function boot() {
     const unit = list[0]?.id ?? (await api("b", "POST", "/api/org/units", { name: "Racine" })).body.id;
     return { who: "b", unit: unit as string };
   };
-  return { ctx, api, org, profile, promote, units, foreignOrg, login, project, upload };
+  /** Donne à une personne le droit de pilotage : elle lit tout le non-confidentiel, comme la direction (thème 5). */
+  const direction = (user: string) =>
+    api("u_alice", "PUT", `/api/org/members/${user}/permissions`, { overrides: { "pilotage.view": true } });
+  return { ctx, api, org, profile, promote, units, foreignOrg, login, project, upload, direction };
 }
 export type GovCtx = Awaited<ReturnType<typeof boot>>;

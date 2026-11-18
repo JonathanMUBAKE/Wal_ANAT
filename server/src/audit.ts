@@ -1,5 +1,5 @@
 import { describeError } from "./ai/engine.js";
-import type { AiProvider } from "./ai/provider.js";
+import { isExternal, type AiProvider } from "./ai/provider.js";
 import type { Auth } from "./auth/service.js";
 import { localDate, type Services } from "./services.js";
 
@@ -41,6 +41,8 @@ export interface AuditFilter {
   severity?: Severity;
   /** Tout ce que la personne a fait, et tout ce qui a été fait sur son compte. */
   user_id?: string;
+  /** Accord explicite pour envoyer le résumé au service d'IA extérieur (AD-4). */
+  consent?: boolean;
   source?: "activity" | "security";
   limit?: number;
 }
@@ -440,6 +442,9 @@ export interface AuditAnalysis {
     recommendations: string[];
   } | null;
   ai_error?: string;
+  /** Service extérieur : l'appréciation attend un accord explicite ; `preview` montre ce qui partirait (AD-4). */
+  consent_required?: boolean;
+  preview?: unknown;
 }
 
 const STEPS: [string, string][] = [
@@ -545,13 +550,15 @@ export class Audit {
     };
     let ai: AuditAnalysis["ai"] = null;
     let ai_error: string | undefined;
-    if (this.provider)
+    const facts = {
+      period: { from: f.from ?? entries.at(-1)?.created_at ?? null, to: f.to ?? entries[0]?.created_at ?? null },
+      stats,
+      signals: signals.map(({ evidence, ...s }) => ({ ...s, examples: evidence.slice(0, 3) })),
+    };
+    // Avec un service extérieur, rien ne part sans un accord explicite donné après avoir vu ce qui partirait (AD-4)
+    const consentRequired = isExternal(this.provider) && !f.consent;
+    if (this.provider && !consentRequired)
       try {
-        const facts = {
-          period: { from: f.from ?? entries.at(-1)?.created_at ?? null, to: f.to ?? entries[0]?.created_at ?? null },
-          stats,
-          signals: signals.map(({ evidence, ...s }) => ({ ...s, examples: evidence.slice(0, 3) })),
-        };
         ai = await this.provider.json<NonNullable<AuditAnalysis["ai"]>>({
           system: AI_SYSTEM,
           schema: AI_SCHEMA,
@@ -582,6 +589,7 @@ export class Audit {
       signals,
       ai,
       ...(ai_error ? { ai_error } : {}),
+      ...(consentRequired ? { consent_required: true, preview: facts } : {}),
     };
   }
 

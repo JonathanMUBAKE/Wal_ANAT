@@ -242,7 +242,8 @@ describe("compte rendu validé : réouverture motivée (R-3)", () => {
   beforeEach(async () => {
     // Didier peut lui aussi valider les comptes rendus
     await g.api("u_alice", "PUT", "/api/org/members/u_hugo/permissions", {
-      overrides: { "meetings.validate": true, "meetings.view": true },
+      // Il siège à la direction : sans le droit de pilotage, il ne verrait que les réunions qui le concernent (thème 5)
+      overrides: { "meetings.validate": true, "meetings.view": true, "pilotage.view": true },
     });
   });
 

@@ -872,7 +872,11 @@ function AnalysisDrawer({
   scope: string;
   onClose: () => void;
 }) {
-  const body = Object.fromEntries(Object.entries(filter).filter(([, v]) => !!v?.trim()));
+  const [consent, setConsent] = useState(false);
+  const body = {
+    ...Object.fromEntries(Object.entries(filter).filter(([, v]) => !!v?.trim())),
+    ...(consent ? { consent: true } : {}),
+  };
   const { data, isFetching, error, refetch } = useQuery({
     queryKey: ["admin-audit-analysis", JSON.stringify(body)],
     queryFn: () => api.post<AuditAnalysis>("/api/admin/audit/analysis", body),
@@ -938,6 +942,20 @@ function AnalysisDrawer({
                   Proposition de l'IA, rédigée à partir des seuls signaux ci-dessous : elle ne conclut à aucune faute.
                   Vous appréciez et décidez des suites.
                 </p>
+              </div>
+            ) : data.consent_required ? (
+              <div className="space-y-2 rounded-[10px] border border-line p-3 text-[13px]">
+                <p>
+                  L'appréciation est rédigée par un service d'IA extérieur à l'Agence. Voici ce qui lui serait envoyé :
+                  des chiffres et les signaux relevés, avec les noms des personnes concernées.
+                </p>
+                <pre className="max-h-48 overflow-auto rounded-lg bg-hover p-2 text-[11.5px]">
+                  {JSON.stringify(data.preview, null, 2)}
+                </pre>
+                <Button size="sm" variant="ai" onClick={() => setConsent(true)}>
+                  Accepter l'envoi et rédiger l'appréciation
+                </Button>
+                <p className="text-[12px] text-muted">Sans votre accord, rien ne part : les signaux calculés restent valables.</p>
               </div>
             ) : (
               <p className="text-[13px] text-muted">

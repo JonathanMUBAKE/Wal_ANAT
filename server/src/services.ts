@@ -494,6 +494,23 @@ export class Services {
     if (!(await this.db.one<{ on: boolean }>("SELECT TRUE AS on FROM users WHERE id = $1 AND totp_enabled", [actorId])))
       throw forbidden("Activez la double authentification dans « Sécurité du compte » pour administrer");
   }
+  /**
+   * Ce qui « concerne » une personne (thème 5 de l'analyse) : son entité, et les entités qu'elle dirige avec celles
+   * qui leur sont rattachées. `wide` : elle voit tout le non-confidentiel (droit de pilotage : DG, DGA, cabinet).
+   */
+  async scopeOf(actorId: string, orgId: string) {
+    const wide = (await this.permissionsOf(actorId, orgId)).includes("pilotage.view");
+    const rows = await this.db.query<{ id: string }>(
+      `WITH RECURSIVE down(id) AS (
+         SELECT id FROM org_units WHERE org_id = $1 AND manager_id = $2
+         UNION SELECT u.id FROM org_units u JOIN down ON u.parent_id = down.id
+       )
+       SELECT id FROM down
+       UNION SELECT unit_id FROM org_members WHERE org_id = $1 AND user_id = $2 AND unit_id IS NOT NULL`,
+      [orgId, actorId],
+    );
+    return { wide, units: rows.map((r) => r.id) };
+  }
   /** Dirige-t-il cette entité ou une entité au-dessus d'elle ? */
   async heads(actorId: string, unitId: string) {
     return !!(await this.db.one(

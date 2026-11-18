@@ -176,6 +176,8 @@ describe("fiche de réunion", () => {
 describe("droits", () => {
   it("un membre lit mais ne crée pas", async () => {
     const m = await create();
+    // Lecture au titre de la direction : sans le droit de pilotage, un agent ne voit que ce qui le concerne (thème 5)
+    await api("u_alice", "PUT", "/api/org/members/u_hugo/permissions", { overrides: { "pilotage.view": true } });
     expect((await api("u_hugo", "GET", `/api/meetings/${m.id}`)).status).toBe(200);
     expect((await api("u_hugo", "POST", "/api/meetings", base)).status).toBe(403);
     expect((await api("u_hugo", "PATCH", `/api/meetings/${m.id}`, { location: "x" })).status).toBe(403);
@@ -272,6 +274,8 @@ describe("suivi des recommandations", () => {
   });
   it("une personne non concernée ne change rien", async () => {
     const a = await firstAction();
+    // Lecture au titre de la direction : sans le droit de pilotage, un agent ne voit que ce qui le concerne (thème 5)
+    await api("u_alice", "PUT", "/api/org/members/u_hugo/permissions", { overrides: { "pilotage.view": true } });
     expect((await patch("u_hugo", a.id, { status: "en_cours" })).status).toBe(403);
   });
   it("un report exige un motif et conserve la date d'origine", async () => {

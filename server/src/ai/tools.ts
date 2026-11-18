@@ -476,6 +476,19 @@ export class ToolRunner {
       }
       case "remember":
         return "Mémoriser une information pour la suite";
+      // Lectures soumises à permission quand le contenu part vers un service d'IA extérieur (thème 5, I-9)
+      case "read_context":
+        return `Envoyer au service d'IA extérieur la tâche ${await taskTitle(input.task)}, son projet et ses commentaires`;
+      case "get_task":
+        return `Lire la tâche ${await taskTitle(input.task)} (envoyé au service d'IA extérieur)`;
+      case "read_attachment":
+        return `Lire une pièce jointe de ${await taskTitle(input.task)} (envoyé au service d'IA extérieur)`;
+      case "get_project":
+        return `Lire le projet ${String(input.project_id ?? "")} (envoyé au service d'IA extérieur)`;
+      case "list_projects":
+        return `Lire la liste des projets accessibles (envoyé au service d'IA extérieur)`;
+      case "search_tasks":
+        return `Rechercher des tâches (envoyé au service d'IA extérieur)`;
       default:
         return name;
     }

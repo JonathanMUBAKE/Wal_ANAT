@@ -76,6 +76,20 @@ const Contact = z.object({
 const FIELDS = Object.keys(Identity.shape).filter((k) => k !== "matricule");
 
 type Row = Record<string, unknown> & { org_id: string; user_id: string; last_name: string };
+/** Données personnelles du dossier : réservées à l'agent et au service RH, pas à son chef (thème 5, D-2). */
+const PERSONAL = [
+  "birth_date",
+  "birth_place",
+  "nationality",
+  "gender",
+  "marital_status",
+  "children_count",
+  "id_document_type",
+  "id_document_number",
+  "address",
+  "phone",
+  "personal_email",
+] as const;
 
 export class Hr {
   constructor(
@@ -202,11 +216,18 @@ export class Hr {
       ),
     ]);
     const p = await this.perms(actorId, orgId);
+    // Les observations du service RH restent au service RH (D-1) ; le chef lit la partie administrative (D-2)
+    const hr = p.view || p.manage;
+    const record: Record<string, unknown> = { ...r };
+    if (!hr) delete record.notes;
+    const restricted = !hr && actorId !== userId;
+    if (restricted) for (const k of PERSONAL) delete record[k];
     return {
-      ...r,
+      ...record,
       diplomas,
-      contacts,
+      contacts: restricted ? [] : contacts,
       assignments,
+      restricted,
       can: { manage: p.manage && actorId !== userId, self: actorId === userId },
     };
   }

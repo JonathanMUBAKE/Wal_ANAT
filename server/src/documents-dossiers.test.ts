@@ -77,6 +77,8 @@ describe("documents des dossiers", () => {
       issued_on: day(-3),
     });
     expect(scan.status).toBe(200);
+    // Lecture au titre de la direction : sans le droit de pilotage, un agent ne voit que ce qui le concerne (thème 5)
+    await g.direction("u_hugo");
     expect((await list("u_hugo", "mail", m.id)).body).toMatchObject({
       documents: [{ id: scan.body.id }],
       can: { add: false },
@@ -108,6 +110,8 @@ describe("documents des dossiers", () => {
       issued_on: day(),
     });
     expect(r.status).toBe(200);
+    // Lecture au titre de la direction : sans le droit de pilotage, un agent ne voit que ce qui le concerne (thème 5)
+    await g.direction("u_hugo");
     expect((await list("u_hugo", "activity", a.id)).body.documents.length).toBe(1);
     expect((await up("u_hugo", "activity", a.id, { nature: "autre", other_label: "Note" })).status).toBe(403);
     const b = await g.foreignOrg();

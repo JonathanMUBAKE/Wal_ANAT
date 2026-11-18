@@ -12,6 +12,8 @@ import { localDate } from "./services.js";
 let g: GovCtx;
 beforeEach(async () => {
   g = await boot();
+  // Lecture au titre de la direction : sans le droit de pilotage, un agent ne voit que ce qui le concerne (thème 5)
+  await g.direction("u_hugo");
 });
 afterEach(() => g.ctx.app.close());
 

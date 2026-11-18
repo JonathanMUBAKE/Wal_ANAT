@@ -92,6 +92,8 @@ describe("registre des décisions : une décision est figée, seule l'exécution
   it("le chargé d'exécution la fait avancer ; une autre personne ne le peut pas ; exécutée, elle est close", async () => {
     const d = (await decide({ owner_id: "u_karim", due_on: day(10) })).body;
     const url = `/api/decisions/${d.id}/execution`;
+    // Lecture au titre de la direction : sans le droit de pilotage, un agent ne voit que ce qui le concerne (thème 5)
+    await g.direction("u_hugo");
     expect((await g.api("u_hugo", "PATCH", url, { status: "en_cours" })).status).toBe(403);
     expect((await g.api("u_karim", "PATCH", url, { status: "en_cours" })).body.status).toBe("en_cours");
     // Le chargé déclare l'exécution ; le secrétariat de la DG la confirme (thème 2, DEC-3)

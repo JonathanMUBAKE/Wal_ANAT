@@ -90,6 +90,8 @@ describe("circuit du courrier", () => {
       ).status,
     ).toBe(200);
     // Lire le registre ne suffit pas pour annoter : il faut être concerné
+    // Lecture au titre de la direction : sans le droit de pilotage, un agent ne voit que ce qui le concerne (thème 5)
+    await g.direction("u_ines");
     expect(
       (await g.api("u_ines", "POST", `/api/correspondence/${mail}/annotations`, { text: "Intrusion" })).status,
     ).toBe(403);

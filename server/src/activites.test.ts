@@ -21,6 +21,8 @@ describe("activités de l'Agence", () => {
   });
   it("un membre lit mais ne crée pas", async () => {
     await add();
+    // Lecture au titre de la direction : sans le droit de pilotage, un agent ne voit que ce qui le concerne (thème 5)
+    await g.direction("u_karim");
     expect((await g.api("u_karim", "GET", "/api/activities")).body).toHaveLength(1);
     expect((await g.api("u_karim", "POST", "/api/activities", { kind: "interne", title: "x" })).status).toBe(403);
   });

@@ -10,6 +10,7 @@ import {
   type TextBlock,
   type ToolResultBlock,
   type ToolUseBlock,
+  isExternal,
 } from "./provider.js";
 
 export type RunKind = "task" | "mention" | "rule" | "assistant";
@@ -105,6 +106,10 @@ interface StartOpts {
 export class AiEngine {
   readonly tools: ToolRunner;
   private waiters = new Map<string, (ok: boolean, stop?: boolean, by?: string) => void>();
+  /** Le fournisseur envoie-t-il le contenu hors de l'Agence ? Le mode démonstration reste local. */
+  get external() {
+    return isExternal(this.provider);
+  }
   private controllers = new Map<string, AbortController>();
   private timer: NodeJS.Timeout | null = null;
   private closing = false;
@@ -403,10 +408,19 @@ export class AiEngine {
         .filter(Boolean)
         .join("\n\n");
       const mode: AgentMode = o.kind === "mention" ? "mention" : "teammate";
+      const approverIds = await this.approvers(o, agent.id);
+      if (this.external) {
+        const ok = await this.checkpoint(runId, ctx, approverIds, "read_context", { task: o.taskId }, o.projectId, o.taskId, ctl.signal);
+        if (!ok.ok) {
+          if (ctl.signal.aborted) throw new CancelledError();
+          await this.finish(runId, "done", "Intervention arrêtée : l'envoi de la tâche au service d'IA extérieur a été refusé.");
+          return;
+        }
+      }
       const text = await this.loop(runId, {
         system: teammateSystem(agent),
         ctx,
-        approverIds: await this.approvers(o, agent.id),
+        approverIds,
         autoApprove: !!o.autoApprove,
         messages: [{ role: "user", content: context }],
         signal: ctl.signal,
@@ -497,7 +511,8 @@ export class AiEngine {
         const input = (b.input && typeof b.input === "object" ? b.input : {}) as Record<string, unknown>;
         const stepId = await this.step(runId, { kind: "tool", tool: b.name, input, status: "running" });
         // L'IA propose, un humain décide : toute écriture passe par un checkpoint, sans validation automatique (I-1)
-        if (WRITE_TOOL_NAMES.has(b.name)) {
+        // Avec un service extérieur, chaque lecture demande aussi la permission : son contenu quitte l'Agence (I-9)
+        if (WRITE_TOOL_NAMES.has(b.name) || this.external) {
           const decision = await this.checkpoint(
             runId,
             o.ctx,

@@ -514,6 +514,9 @@ export interface AuditSignal {
 export interface AuditAnalysis {
   generated_at: string;
   provider: string;
+  /** Service extérieur : l'appréciation attend un accord ; `preview` montre ce qui partirait (thème 5, AD-4). */
+  consent_required?: boolean;
+  preview?: unknown;
   stats: {
     total: number;
     critique: number;

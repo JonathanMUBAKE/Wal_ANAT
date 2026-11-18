@@ -39,6 +39,8 @@ export interface AgentRow {
   contact_count: number;
 }
 export interface AgentDetail extends AgentRow {
+  /** Lu par le chef : partie administrative seulement (thème 5, D-2). */
+  restricted?: boolean;
   birth_date: string | null;
   birth_place: string;
   nationality: string;
@@ -563,19 +565,30 @@ export function AgentPage({ self }: { self?: boolean }) {
               adressez-vous à lui : vous ne pouvez pas la modifier vous-même.
             </p>
           )}
+          {a.restricted && (
+            <p className="rounded-lg border border-line bg-hover px-4 py-3 text-[13px] text-muted">
+              Vous lisez la partie administrative du dossier : situation, affectations et diplômes. Les données
+              personnelles (famille, pièce d'identité, coordonnées, personnes à prévenir) restent à l'agent et au
+              service des ressources humaines.
+            </p>
+          )}
           <Section title="Identité">
             <Facts>
               <Fact label="Matricule">{a.matricule}</Fact>
-              <Fact label="Né·e le">
-                {a.birth_date ? `${frDate(a.birth_date)}${a.birth_place ? ` à ${a.birth_place}` : ""}` : ""}
-              </Fact>
-              <Fact label="Nationalité">{a.nationality}</Fact>
-              <Fact label="Sexe">{a.gender === "F" ? "Féminin" : a.gender === "M" ? "Masculin" : ""}</Fact>
-              <Fact label="Situation de famille">{a.marital_status}</Fact>
-              <Fact label="Enfants à charge">{a.children_count ?? ""}</Fact>
-              <Fact label="Pièce d'identité">
-                {[a.id_document_type, a.id_document_number].filter(Boolean).join(" n° ")}
-              </Fact>
+              {!a.restricted && (
+                <>
+                  <Fact label="Né·e le">
+                    {a.birth_date ? `${frDate(a.birth_date)}${a.birth_place ? ` à ${a.birth_place}` : ""}` : ""}
+                  </Fact>
+                  <Fact label="Nationalité">{a.nationality}</Fact>
+                  <Fact label="Sexe">{a.gender === "F" ? "Féminin" : a.gender === "M" ? "Masculin" : ""}</Fact>
+                  <Fact label="Situation de famille">{a.marital_status}</Fact>
+                  <Fact label="Enfants à charge">{a.children_count ?? ""}</Fact>
+                  <Fact label="Pièce d'identité">
+                    {[a.id_document_type, a.id_document_number].filter(Boolean).join(" n° ")}
+                  </Fact>
+                </>
+              )}
             </Facts>
           </Section>
           <Section title="Situation administrative">
@@ -624,23 +637,29 @@ export function AgentPage({ self }: { self?: boolean }) {
           <Section title="Coordonnées">
             <Facts className="sm:grid-cols-1">
               <Fact label="Adresse professionnelle">{a.email}</Fact>
-              <Fact label="Téléphone">{a.phone}</Fact>
-              <Fact label="Courriel personnel">{a.personal_email}</Fact>
-              <Fact label="Adresse">{a.address}</Fact>
+              {!a.restricted && (
+                <>
+                  <Fact label="Téléphone">{a.phone}</Fact>
+                  <Fact label="Courriel personnel">{a.personal_email}</Fact>
+                  <Fact label="Adresse">{a.address}</Fact>
+                </>
+              )}
             </Facts>
           </Section>
-          <ListBlock
-            title="Personnes à prévenir"
-            icon={<Phone className="size-6" />}
-            agent={a}
-            kind="contacts"
-            empty="Aucune personne à prévenir."
-            rows={a.contacts.map((c) => ({
-              id: c.id,
-              main: c.name,
-              sub: [c.relation, c.phone, c.email].filter(Boolean).join(" · "),
-            }))}
-          />
+          {!a.restricted && (
+            <ListBlock
+              title="Personnes à prévenir"
+              icon={<Phone className="size-6" />}
+              agent={a}
+              kind="contacts"
+              empty="Aucune personne à prévenir."
+              rows={a.contacts.map((c) => ({
+                id: c.id,
+                main: c.name,
+                sub: [c.relation, c.phone, c.email].filter(Boolean).join(" · "),
+              }))}
+            />
+          )}
           <Section title="Compte">
             <Facts className="sm:grid-cols-1">
               <Fact label="Accès">

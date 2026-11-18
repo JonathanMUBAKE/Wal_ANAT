@@ -82,7 +82,8 @@ export class Registers {
   private async relation(actorId: string, m: Mail) {
     const perms = await this.svc.permissionsOf(actorId, m.org_id);
     const manager = perms.includes("correspondence.manage");
-    const registry = manager || perms.includes("correspondence.view");
+    // Registre complet : le secrétariat et la direction ; un chef lit le courrier de son entité (C-3)
+    const registry = manager || (perms.includes("correspondence.view") && perms.includes("pilotage.view"));
     const assignee = m.assignee_id === actorId;
     const head = !!m.unit_id && (await this.heads(actorId, m.unit_id));
     const copy = !!(await this.svc.db.one(
@@ -121,7 +122,7 @@ export class Registers {
     await this.svc.requireOrg(actorId, orgId, "member");
     const perms = await this.svc.permissionsOf(actorId, orgId);
     const manager = perms.includes("correspondence.manage");
-    const registry = manager || perms.includes("correspondence.view");
+    const registry = manager || (perms.includes("correspondence.view") && perms.includes("pilotage.view"));
     const rows = await this.svc.db.query<
       Mail & {
         unit_name: string | null;

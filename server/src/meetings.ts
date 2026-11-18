@@ -234,9 +234,22 @@ const nextDate = (d: string, every: Repeat["every"], n: number) => {
   else t.setUTCDate(t.getUTCDate() + n * (every === "week" ? 7 : 14));
   return t.toISOString().slice(0, 10);
 };
-/** Une réunion confidentielle ne se voit que de ses gestionnaires, de sa présidence, de son rédacteur et de ses participants. */
-const VISIBLE = (alias: string, actor: string, manager: string) =>
-  `(NOT ${alias}.confidential OR ${manager} OR ${alias}.writer_id = ${actor} OR ${alias}.chair_id = ${actor} OR EXISTS (SELECT 1 FROM meeting_attendees x WHERE x.meeting_id = ${alias}.id AND x.user_id = ${actor}))`;
+/**
+ * Qui voit une réunion. `level` vaut 'manage' (gestionnaire des réunions), 'wide' (droit de pilotage) ou 'none'.
+ * Une réunion confidentielle ne se voit que de ses gestionnaires, de sa présidence, de son rédacteur et de ses
+ * participants. Une réunion ordinaire se voit aussi de la direction et de qui elle concerne : son entité (ou une
+ * entité qu'il dirige), le projet dont il est membre, l'activité dont il est responsable (thème 5, R-8).
+ */
+const VISIBLE = (alias: string, actor: string, level: string) =>
+  `(${level}::text = 'manage' OR ${alias}.writer_id = ${actor} OR ${alias}.chair_id = ${actor}
+    OR EXISTS (SELECT 1 FROM meeting_attendees x WHERE x.meeting_id = ${alias}.id AND x.user_id = ${actor})
+    OR (NOT ${alias}.confidential AND (${level}::text = 'wide'
+      OR ${alias}.unit_id IN (WITH RECURSIVE down(id) AS (
+           SELECT id FROM org_units WHERE manager_id = ${actor}
+           UNION SELECT u.id FROM org_units u JOIN down ON u.parent_id = down.id)
+         SELECT id FROM down UNION SELECT unit_id FROM org_members WHERE user_id = ${actor} AND unit_id IS NOT NULL)
+      OR EXISTS (SELECT 1 FROM memberships ms WHERE ms.project_id = ${alias}.project_id AND ms.user_id = ${actor})
+      OR EXISTS (SELECT 1 FROM agency_activities aa WHERE aa.id = ${alias}.activity_id AND aa.lead_id = ${actor}))))`;
 
 export class Meetings {
   constructor(private svc: Services) {}
@@ -254,6 +267,12 @@ export class Meetings {
       manage: perms.includes("meetings.manage"),
       validate: perms.includes("meetings.validate"),
     };
+  }
+
+  /** Niveau de lecture pour VISIBLE : gestionnaire, direction (pilotage) ou personne concernée seulement. */
+  private async level(actorId: string, orgId: string, manage: boolean) {
+    if (manage) return "manage";
+    return (await this.svc.permissionsOf(actorId, orgId)).includes("pilotage.view") ? "wide" : "none";
   }
 
   private async attends(actorId: string, meetingId: string) {
@@ -286,6 +305,15 @@ export class Meetings {
       m.writer_id !== actorId &&
       m.chair_id !== actorId &&
       !(await this.attends(actorId, id))
+    )
+      throw notFound("Réunion introuvable");
+    if (
+      !can.manage &&
+      !(await this.svc.db.one(`SELECT 1 FROM meetings m WHERE m.id = $1 AND ${VISIBLE("m", "$2", "$3")}`, [
+        id,
+        actorId,
+        await this.level(actorId, m.org_id, false),
+      ]))
     )
       throw notFound("Réunion introuvable");
     return { m, can };
@@ -491,7 +519,7 @@ export class Meetings {
       [
         orgId,
         actorId,
-        can.manage,
+        await this.level(actorId, orgId, can.manage),
         f.project_id ?? null,
         f.activity_id ?? null,
         f.partner_id ?? null,
@@ -537,7 +565,7 @@ export class Meetings {
       `SELECT p.seq, p.service_code, p.writer_initials, p.meeting_date, a.* FROM meeting_actions a JOIN meetings p ON p.id = a.meeting_id
        WHERE a.org_id = $1 AND p.meeting_type = $2 AND p.meeting_date < $3 AND a.status NOT IN ('realise','annule') AND ${VISIBLE("p", "$4", "$5")}
        ORDER BY a.due_on NULLS LAST`,
-      [m.org_id, m.meeting_type, m.meeting_date, actorId, can.manage],
+      [m.org_id, m.meeting_type, m.meeting_date, actorId, await this.level(actorId, m.org_id, can.manage)],
     );
     const attendees = await db.query<Attendee>(
       "SELECT id, user_id, name, function_label, presence, invited, response, delegate_name, contact_id FROM meeting_attendees WHERE meeting_id = $1 ORDER BY invited DESC, name",
@@ -1494,7 +1522,7 @@ export class Meetings {
           AND (NOT $6 OR m.chair_id = $2 OR m.writer_id = $2
                OR EXISTS (SELECT 1 FROM meeting_attendees x WHERE x.meeting_id = m.id AND x.user_id = $2))
         ORDER BY COALESCE(m.series_id, m.id), m.meeting_date, m.start_time NULLS LAST`,
-      [orgId, actorId, manage, today(), f.unit_id ?? null, !!f.mine],
+      [orgId, actorId, await this.level(actorId, orgId, manage), today(), f.unit_id ?? null, !!f.mine],
     );
     return rows
       .sort((a, b) =>
@@ -1530,8 +1558,8 @@ export class Meetings {
     const can = await this.can(actorId, orgId);
     const rows = await this.svc.db.query<ActionWithMeeting & { meeting_type: string }>(
       `SELECT m.seq, m.service_code, m.writer_initials, m.meeting_date, m.meeting_type, a.* FROM meeting_actions a JOIN meetings m ON m.id = a.meeting_id
-       WHERE a.org_id = $1 AND ${VISIBLE("m", "$2", "$3")} AND ($4 = FALSE OR a.responsible_id = $2) ORDER BY a.due_on NULLS LAST, a.created_at`,
-      [orgId, actorId, can.manage, !!f.mine],
+       WHERE a.org_id = $1 AND (${VISIBLE("m", "$2", "$3")} OR a.responsible_id = $2) AND ($4 = FALSE OR a.responsible_id = $2) ORDER BY a.due_on NULLS LAST, a.created_at`,
+      [orgId, actorId, await this.level(actorId, orgId, can.manage), !!f.mine],
     );
     return rows.map((a) => ({ ...a, meeting_reference: meetingReference(a) }));
   }

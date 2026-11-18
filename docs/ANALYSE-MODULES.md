@@ -349,8 +349,8 @@ d'identité, adresse personnelle, personnes à prévenir et observations du serv
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| D-1 | Le serveur renvoie le champ « Observations » (notes internes des RH) à l'agent lui-même et à son chef. L'écran le masque, mais il est lisible dans la réponse. | Haute | À corriger côté serveur : ne renvoyer les observations qu'au service RH |
-| D-2 | Un chef d'entité lit le dossier complet de ses agents, données personnelles comprises (famille, pièce d'identité, adresse, personnes à prévenir). | Haute | À décider : quelle partie du dossier le chef voit-il ? Proposition : situation administrative, affectations et diplômes seulement |
+| D-1 | Le serveur renvoie le champ « Observations » (notes internes des RH) à l'agent lui-même et à son chef. L'écran le masque, mais il est lisible dans la réponse. | Haute | **Fait** (lot 7) : les observations du service RH ne quittent plus le serveur que pour le service RH |
+| D-2 | Un chef d'entité lit le dossier complet de ses agents, données personnelles comprises (famille, pièce d'identité, adresse, personnes à prévenir). | Haute | **Décidé et fait** (lot 7) : le chef lit la partie administrative (situation, affectations, diplômes) ; famille, pièce d'identité, coordonnées personnelles et personnes à prévenir restent à l'agent et aux RH |
 | D-3 | La consultation d'un dossier par quelqu'un d'autre que l'agent n'est pas journalisée. | Haute | **Fait** (lot 5) : chaque consultation par un tiers est journalisée (« Dossier d'agent consulté par un tiers », une fois par lecteur et par demi-heure) |
 | D-4 | L'agent ne peut rien corriger, mais aucun bouton ne lui permet de signaler une erreur ou de demander une mise à jour au service RH. | Moyenne | À corriger : « Demander une correction », qui notifie le service RH et garde la trace de la demande |
 | D-5 | Fonction et entité se contredisent dans les dossiers de démo (Fiston rangé dans Cartographie et SIG, Didier dans le service Communication). Même famille que A-3. | Moyenne (démo) | À corriger avec A-3 |
@@ -368,7 +368,7 @@ d'identité, adresse personnelle, personnes à prévenir et observations du serv
 
 ### Décisions ouvertes
 
-- D-2 : quelle partie du dossier d'un agent son chef peut-il lire ?
+- D-2 : quelle partie du dossier d'un agent son chef peut-il lire ? **Décidé le 18/11/2026 : la partie administrative seulement.**
 - D-4 : faut-il un bouton « Demander une correction » ?
 - D-9 : que doit contenir le dossier au-delà de l'existant (congés, pièces, formations, évaluations) ?
 
@@ -430,7 +430,7 @@ Fiston crée, dans « Application mobile v2 », la tâche « Préparer un point 
 | I-6 | Les coéquipiers ne sont membres que des projets de start-up. Aucun projet de l'ANAT (Schéma national d'aménagement, RH) ne les utilise. | Moyenne (démo) | À corriger avec A-7 |
 | I-7 | Les rôles et consignes viennent d'une start-up (« chef de projet IA », « analyste QA et triage », bugs, étapes de reproduction). | Moyenne | À corriger : des rôles utiles à l'ANAT (préparer une note, suivre les échéances d'un plan de travail, synthétiser un compte rendu) |
 | I-8 | Le ton de la page (« Des collègues qui ne dorment jamais ») et le message vide « Assignez une tâche à Atlas ou Nova » ne conviennent pas à un outil institutionnel. | Basse | À corriger |
-| I-9 | Avec une clé configurée, le contenu des tâches, commentaires et pièces jointes lues est envoyé à un service d'IA hors de l'agence. La page ne le dit pas et aucun réglage ne permet d'exclure un projet ou une pièce confidentielle. | Haute | À décider : quels projets ou documents peuvent être lus par l'IA ? Afficher clairement la règle |
+| I-9 | Avec une clé configurée, le contenu des tâches, commentaires et pièces jointes lues est envoyé à un service d'IA hors de l'agence. La page ne le dit pas et aucun réglage ne permet d'exclure un projet ou une pièce confidentielle. | Haute | **Décidé et fait** (lot 7) : avec un service extérieur, l'IA demande la permission avant chaque lecture (et avant d'envoyer la tâche de départ) ; un refus arrête l'intervention ; la règle est affichée sur la page des coéquipiers |
 | I-10 | En mode démonstration, les propositions sont génériques (sous-tâches « Produire une première version ») et ne reflètent pas ce que ferait le vrai modèle. | Basse | À noter dans le guide |
 
 ### Ce qui fonctionne bien
@@ -445,7 +445,7 @@ Fiston crée, dans « Application mobile v2 », la tâche « Préparer un point 
 
 - I-1 : garde-t-on une validation automatique, et pour quelles actions ? **Décidé le 18/11/2026 : non, supprimée.**
 - I-4 : la personne visée par une proposition peut-elle la valider ? **Décidé le 18/11/2026 : non.**
-- I-9 : quels projets et documents l'IA peut-elle lire, compte tenu de l'envoi à un service extérieur ?
+- I-9 : quels projets et documents l'IA peut-elle lire, compte tenu de l'envoi à un service extérieur ? **Décidé le 18/11/2026 : l'IA demande la permission avant chaque lecture envoyée au service extérieur.**
 
 ---
 
@@ -597,7 +597,7 @@ gestionnaire de l'agenda, et ne se supprime que par un gestionnaire. La suppress
 | F-1 | L'état d'un projet diffère selon l'onglet : déclaré (« Dans les temps ») dans Tous les dossiers et Projets, calculé (« À surveiller ») dans la revue et le Tableau de bord DG. | Haute | **Fait** (lot 6) : l'état calculé s'affiche partout (Tous les dossiers, Projets, Accueil), avec le déclaré à côté quand ils divergent et les raisons au survol |
 | F-2 | La liste des projets ne montre que les projets dont on est membre. Le portefeuille de l'assistante de la DG est incomplet (4 sur 6), alors qu'elle a accès au tableau de bord. | Haute | À corriger : un profil qui a le droit de pilotage voit tous les projets de l'institution au portefeuille |
 | F-3 | « 3 décisions attendues » (tableau de bord) et « Arbitrages attendus : 0 » (revue) : deux notions proches, deux chiffres. | Moyenne | **Décidé et fait** (lot 6) : une seule notion, « décision attendue de la DG » : dossier marqué « décision attendue » ou arbitrage en attente, compté une fois ; la revue précise son périmètre (« sur ces projets ») |
-| F-4 | Tous les agents voient toutes les activités non confidentielles de la DG (commissions, conférences, activités internes, leur état). | Moyenne | À décider : le portefeuille de la DG est-il public dans l'Agence ? |
+| F-4 | Tous les agents voient toutes les activités non confidentielles de la DG (commissions, conférences, activités internes, leur état). | Moyenne | **Décidé et fait** (lot 7) : un agent voit les activités dont il est responsable, dont il suit une suite, ou de son entité ; la direction voit tout le non-confidentiel |
 | F-5 | L'onglet « Contrats et paiements » est ouvert aux chefs d'entité (Fiston, Didier) mais pas à l'assistante de la DG. | Basse | À vérifier au module Administration (profils) |
 | F-6 | Un responsable d'activité modifie lui-même l'état (santé) de son activité. L'état affiché est corrigé si des suites sont en retard, mais pas pour les autres signaux. | Basse | À noter : même logique déclaré / calculé que F-1 |
 | F-7 | « Nouveau projet » apparaît dans l'onglet Projets sans vérifier le droit. Même famille que A-6 et E-7. | Basse | À corriger avec A-6 |
@@ -616,7 +616,7 @@ gestionnaire de l'agenda, et ne se supprime que par un gestionnaire. La suppress
 
 - F-1 : quel état afficher dans les listes (calculé, déclaré, ou les deux) ?
 - F-3 : « décision attendue » et « arbitrage » : une seule notion ou deux ?
-- F-4 : les agents voient-ils le portefeuille de la DG ?
+- F-4 : les agents voient-ils le portefeuille de la DG ? **Décidé le 18/11/2026 : un agent voit ce qui le concerne.**
 
 ---
 
@@ -686,7 +686,7 @@ Aucune n'est rattachée à un dossier.
 | DEC-3 | Le chargé déclare seul la décision exécutée, sans vérification. Même logique que T-3. | Moyenne | **Décidé et fait** (lot 4) : le secrétariat de la DG ou la DG confirme l'exécution déclarée par le chargé, ou la renvoie avec un motif |
 | DEC-4 | Aucune correction possible, même d'une faute de frappe : il faut remplacer, ce qui crée un nouveau numéro. | Basse | À décider : autoriser une correction de forme tracée pendant un court délai, ou garder le remplacement |
 | DEC-5 | Le formulaire « Inscrire une décision » de cette page ne propose pas de rattacher la décision à un dossier ; seule l'action « Arbitrer » depuis un dossier le fait. | Moyenne | À corriger : champ « Dossier » (projet, activité, réunion) dans le formulaire |
-| DEC-6 | Tous les profils, agents compris, voient toutes les décisions non confidentielles. | Basse | À décider avec F-4 |
+| DEC-6 | Tous les profils, agents compris, voient toutes les décisions non confidentielles. | Basse | **Décidé et fait** (lot 7) : un agent voit les décisions dont il est chargé ou dont le dossier le concerne (projet, activité, réunion) |
 | DEC-7 | Données de démo : deux décisions seulement, toutes deux pour Fiston, sans dossier d'origine. | Moyenne (démo) | À corriger : une dizaine de décisions réparties, issues de comités et de dossiers |
 
 ### Ce qui fonctionne bien
@@ -788,7 +788,7 @@ Fiston est rédacteur de 15 réunions sur 16, comité de direction compris.
 | R-5 | Les numéros de compte rendu sont attribués à la programmation : ordre non chronologique dans une série, trous en cas d'annulation. | Moyenne | À décider : numéroter à la validation, ou accepter et documenter |
 | R-6 | Une réunion passée non tenue (13/11) reste « Compte rendu à établir » indéfiniment ; rien ne propose de la déclarer non tenue ou annulée. | Basse | À corriger : proposer « Annuler » ou « Reporter » une séance passée sans compte rendu |
 | R-7 | Des réunions proches ne sont pas convoquées (revue avec le bailleur du 22/11, réunion avec les provinces du 24/11) et aucun rappel ne prévient le rédacteur. | Moyenne | À corriger : rappel au rédacteur 7 jours avant une séance non convoquée |
-| R-8 | Toutes les réunions non confidentielles sont visibles de tous, y compris le comité de direction et ses comptes rendus. | Moyenne | À décider avec F-4 et DEC-6 : qui lit les comptes rendus du comité de direction ? |
+| R-8 | Toutes les réunions non confidentielles sont visibles de tous, y compris le comité de direction et ses comptes rendus. | Moyenne | **Décidé et fait** (lot 7) : une réunion se voit de ses participants, de son entité, de son projet et de la direction ; le comité de direction reste à ses participants et à la direction |
 | R-9 | Données de démo : Fiston rédige 15 réunions sur 16, comité de direction compris ; le comité du 09/11 n'a que deux présents ; l'assistante n'est convoquée à rien. | Moyenne (démo) | À corriger : le secrétariat de la DG rédige les comités, les membres du comité sont convoqués |
 
 ### Ce qui fonctionne bien
@@ -806,7 +806,7 @@ Fiston est rédacteur de 15 réunions sur 16, comité de direction compris.
 
 - R-2 : validation d'un compte rendu par intérim en l'absence de la présidence ?
 - R-5 : numéro attribué à la programmation ou à la validation ?
-- R-8 : qui peut lire les comptes rendus du comité de direction ?
+- R-8 : qui peut lire les comptes rendus du comité de direction ? **Décidé le 18/11/2026 : participants et direction.**
 
 ---
 
@@ -958,7 +958,7 @@ préparer ; seule la DG les approuve.
 | PT-3 | L'avancement d'un plan est la moyenne simple de ses activités, sans pondération (un atelier pèse autant que la révision du schéma national). | Moyenne | **Décidé et fait** (lot 6) : chaque activité a un poids (1 par défaut, de 1 à 100) ; l'avancement du plan est la moyenne pondérée, partout |
 | PT-4 | Les activités de la démo n'ont pas de date de début : l'« avancement attendu à date » du Tableau de bord DG est alors approximatif. | Moyenne | À corriger : date de début obligatoire à la soumission |
 | PT-5 | Aucune campagne de préparation : pas de rappel pour le plan de l'année suivante, pas de vue « entités sans plan ». | Moyenne | À corriger : liste des entités sans plan pour l'année, rappel aux chefs |
-| PT-6 | Tous les profils voient tous les plans, budgets prévus et dépensés compris. | Basse | À décider avec F-4 : les budgets sont-ils visibles des agents ? |
+| PT-6 | Tous les profils voient tous les plans, budgets prévus et dépensés compris. | Basse | **Décidé et fait** (lot 7) : budgets des plans réservés à la direction, aux chefs de l'entité et à qui prépare ou approuve les plans |
 | PT-7 | Les retards de la liste des plans sont calculés sur la date UTC du serveur (`CURRENT_DATE`), pas sur la date de Kinshasa : entre minuit et 1 h, un jour d'écart. | Basse | À corriger (déjà noté dans le plan de travail) |
 | PT-8 | Données de démo : 3 plans pour 12 entités, aucun pour la Direction générale ni l'Ingénierie territoriale ; toutes les activités de l'Agence confiées à Fiston. | Moyenne (démo) | À compléter |
 
@@ -1047,7 +1047,7 @@ présenté comme le bailleur du programme.
 |---|---|---|---|
 | PA-1 | Le Directeur de la Communication et des Partenariats n'a pas le droit de gérer les partenaires ; seule la DG l'a. | Haute (profils) | À corriger : donner la gestion des partenaires à la direction chargée des partenariats (profil ou droit ajouté) |
 | PA-2 | Un point focal ne peut pas suspendre une relation, même en urgence ; il n'a aucun moyen de le demander dans l'outil. | Moyenne | À décider : « Demander la suspension » qui notifie les gestionnaires, ou droit de suspendre avec motif |
-| PA-3 | Les notes d'échange sont lisibles par tous les profils qui voient l'annuaire. | Moyenne | À décider : notes réservées aux gestionnaires, points focaux et direction |
+| PA-3 | Les notes d'échange sont lisibles par tous les profils qui voient l'annuaire. | Moyenne | **Fait** (lot 7) : notes d'échange réservées aux gestionnaires, aux points focaux et à la direction |
 | PA-4 | Rien ne signale un partenaire actif ou en discussion sans point focal (4 sur 6 dans la démo). | Moyenne | À corriger : alerte « sans point focal », point focal obligatoire pour passer « en discussion » ou « actif » |
 | PA-5 | Rien ne signale une relation sans échange depuis longtemps (date de dernière note connue mais non exploitée). | Basse | À corriger : « sans contact depuis 6 mois » dans la liste |
 | PA-6 | Données de démo : aucun partenaire rattaché à un projet ou une activité du portefeuille, contacts presque vides. | Moyenne (démo) | À compléter : le FFDT rattaché au programme qu'il finance |
@@ -1064,7 +1064,7 @@ présenté comme le bailleur du programme.
 
 - PA-1 : qui gère les partenaires (DG, direction des partenariats, service dédié) ?
 - PA-2 : le point focal peut-il suspendre une relation, ou seulement le demander ?
-- PA-3 : qui lit les notes d'échange ?
+- PA-3 : qui lit les notes d'échange ? **Décidé le 18/11/2026 : gestionnaires, points focaux et direction.**
 
 ---
 
@@ -1124,7 +1124,7 @@ Les six comptes voient les quatre accords.
 |---|---|---|---|
 | CV-1 | Le circuit de signature d'un accord est composé librement par qui l'envoie : n'importe quelle personne ayant accès au parapheur peut être signataire final, et sa signature fait entrer l'accord en vigueur. | Haute | **Fait** (lot 4) : un accord engage l'Agence : la signature finale revient à la DG (droit « Signer au nom de l'Agence ») ou à son délégataire |
 | CV-2 | Aucun volet financier : montant, contributions, échéancier de décaissement. (Décision « finance des partenariats » déjà reportée dans le plan de travail.) | Moyenne | À décider : reprendre le lot reporté, au moins un montant et une devise |
-| CV-3 | Tous les profils voient tous les accords non confidentiels, texte compris. | Basse | À décider avec F-4 |
+| CV-3 | Tous les profils voient tous les accords non confidentiels, texte compris. | Basse | **Décidé et fait** (lot 7) : un agent voit les accords de son entité ou qu'il suit ; la direction voit tout le non-confidentiel |
 | CV-4 | Un accord peut être préparé et envoyé au parapheur sans point focal. | Moyenne | À corriger : point focal obligatoire avant le parapheur |
 | CV-5 | Les risques ne se rattachent pas à un accord (voir RI-5). | Basse | À décider avec RI-5 |
 | CV-6 | Un avenant en préparation n'empêche pas l'échéance de l'accord principal : aucune alerte croisée « échéance proche, avenant non signé ». | Basse | À corriger : signaler l'avenant en attente dans le rappel d'échéance |
@@ -1296,7 +1296,7 @@ Historique de ENT/2026/0001 : « Enregistré au bureau d'ordre », « **Imputé 
 |---|---|---|---|
 | C-1 | L'historique du courrier porte encore « Imputé à Nova Mobile » : les annotations figées gardent l'ancien nom de l'organisation de démonstration. | Basse (démo) | À corriger dans la démo |
 | C-2 | La clôture d'un courrier demande une référence de réponse en texte libre ; elle n'est pas reliée au courrier sortant enregistré. | Moyenne | À corriger : clôturer en choisissant le sortant de réponse (le lien inverse existe déjà) |
-| C-3 | Les chefs d'entité qui consultent le registre voient tout le courrier non confidentiel, pas seulement celui de leur entité. | Moyenne | À décider : registre complet ou courrier de son entité seulement |
+| C-3 | Les chefs d'entité qui consultent le registre voient tout le courrier non confidentiel, pas seulement celui de leur entité. | Moyenne | **Décidé et fait** (lot 7) : un chef lit le courrier de son entité (et des entités rattachées) ; le secrétariat et la direction gardent le registre complet |
 | C-4 | Un correspondant saisi en texte libre (« Partenaire technique ») ne se rattache à aucune fiche partenaire. | Basse | À corriger : proposer de rattacher à une fiche existante ou d'en créer une |
 | C-5 | Imputer à l'entité racine « ANAT » fait remonter les retards à la DG elle-même. | Basse | À décider : interdire l'imputation à la racine, ou la réserver à la DG |
 | C-6 | Données de démo : la DG fait office de bureau d'ordre (enregistre et impute) ; trois courriers seulement, aucun sortant. | Moyenne (démo) | À compléter : l'assistante ou un agent du secrétariat comme bureau d'ordre, des sortants en réponse |
@@ -1313,7 +1313,7 @@ Historique de ENT/2026/0001 : « Enregistré au bureau d'ordre », « **Imputé 
 ### Décisions ouvertes
 
 - C-2 : la clôture doit-elle obligatoirement désigner le courrier sortant de réponse ?
-- C-3 : les chefs voient-ils tout le registre ou seulement le courrier de leur entité ?
+- C-3 : les chefs voient-ils tout le registre ou seulement le courrier de leur entité ? **Décidé le 18/11/2026 : le courrier de son entité.**
 - C-5 : l'imputation à l'entité racine est-elle permise ?
 
 ---
@@ -1607,7 +1607,7 @@ accès ; le profil « Responsable informatique » existe mais n'est attribué à
 | AD-1 | La DG est administratrice de la plateforme : pas de séparation entre la direction et l'administration technique, ni de contrôle croisé du journal. | Haute | **Décidé et fait** (lot 4) : le responsable informatique est l'administrateur système ; la DG garde le pilotage et relit le journal de ses actions (page « Contrôle de l'administration », droit « Relire et viser le journal ») |
 | AD-2 | La double authentification est proposée mais pas imposée aux comptes à droits élevés (2 sans, signalés). | Haute | À corriger : double authentification obligatoire pour l'administrateur, la DG et les gestionnaires (RH, courrier, partenariats) |
 | AD-3 | La messagerie n'est pas configurée : aucun courriel ne part, alors que plusieurs écrans annoncent un envoi par courriel. | Moyenne | À corriger au déploiement ; dans l'interface, ne pas promettre un courriel quand la messagerie est absente |
-| AD-4 | L'analyse du journal d'audit par l'IA envoie des données nominatives à un service extérieur. Même famille que I-9. | Moyenne | À décider avec I-9 |
+| AD-4 | L'analyse du journal d'audit par l'IA envoie des données nominatives à un service extérieur. Même famille que I-9. | Moyenne | **Décidé et fait** (lot 7) : avec un service extérieur, l'appréciation du journal attend un accord explicite donné après avoir vu ce qui partirait |
 | AD-5 | Une seconde organisation de démonstration subsiste (« Studio Lumen »). Même famille que A-7. | Basse (démo) | À retirer de la démo ANAT |
 | AD-6 | 30 sessions actives pour 6 personnes : les sessions s'accumulent (une par connexion) sans durée visible. | Basse | À vérifier : durée de vie des sessions, déconnexion des sessions anciennes |
 
@@ -1802,3 +1802,25 @@ Les règles communes sont dans `server/src/rules.ts`. Migration `051_regle_calcu
 Tests : `server/src/regle-calcul.test.ts` (8). Aucun ancien test modifié. 616 tests au vert.
 
 **Remarques traitées** : A-2, P-1, P-2, F-1, F-3, RI-4, PT-3, R-1.
+
+### Lot 7 — Confidentialité et données personnelles (18/11/2026, branche `lot-confidentialite`)
+
+Thème 5 de la synthèse. Décisions de la direction : D-2 **partie administrative pour le chef** ; F-4, DEC-6, R-8, CV-3,
+PT-6 **un agent voit ce qui le concerne** ; C-3 **le courrier de son entité** ; I-9 et AD-4 **l'IA demande la
+permission avant chaque lecture envoyée au service extérieur**. PA-3 suit la proposition de l'analyse.
+
+| Ce qui change | Avant | Après |
+|---|---|---|
+| Dossier d'agent (D-1, D-2) | Le serveur renvoyait les observations des RH à l'agent et à son chef ; le chef lisait tout le dossier | Les observations restent au service RH. Le chef lit la partie administrative : situation, affectations, diplômes ; un bandeau le lui dit, les blocs personnels ne s'affichent pas |
+| Ce qu'un agent voit du pilotage (F-4, DEC-6, R-8, CV-3) | Tout le non-confidentiel, pour tous | La direction (droit de pilotage) voit tout le non-confidentiel. Les autres voient ce qui les concerne : leur entité et les entités qu'ils dirigent, ce dont ils sont responsables ou chargés, les réunions où ils siègent, les projets dont ils sont membres. Le comité de direction reste à ses participants et à la direction |
+| Budgets des plans (PT-6) | Visibles de tous | Réservés à la direction, aux chefs de l'entité et à qui prépare ou approuve les plans |
+| Courrier (C-3) | Un chef voyait tout le registre non confidentiel | Un chef lit le courrier de son entité et des entités rattachées, et celui qui lui est imputé ou adressé en copie ; le secrétariat et la direction gardent le registre complet |
+| Notes d'échange avec les partenaires (PA-3) | Lisibles de tous ceux qui voient l'annuaire | Réservées aux gestionnaires des partenariats, aux points focaux et à la direction |
+| IA et service extérieur (I-9) | Le contenu lu partait sans le dire | Avec Claude (service extérieur), l'envoi de la tâche de départ et chaque lecture attendent l'accord d'une personne habilitée ; un refus arrête l'intervention. En mode démonstration, rien ne part. La règle est affichée sur la page des coéquipiers IA |
+| Analyse du journal (AD-4) | Les données nominatives partaient au service extérieur | L'appréciation attend un accord explicite, donné après avoir vu ce qui partirait ; sans accord, seuls les signaux calculés localement s'affichent |
+
+Tests : `server/src/confidentialite.test.ts` (11). 15 anciens tests adaptés : ils faisaient lire à un simple membre
+ce qui ne le concerne plus ; la personne y lit désormais au titre de la direction (droit de pilotage), ce que chaque
+test dit en commentaire. 627 tests au vert.
+
+**Remarques traitées** : D-1, D-2, I-9, AD-4, PA-3, F-4, DEC-6, R-8, CV-3, PT-6, C-3.

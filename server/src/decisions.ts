@@ -56,6 +56,15 @@ const SELECT = `SELECT d.*, o.name AS owner_name, r.name AS recorded_by_name,
   LEFT JOIN users r ON r.id = d.recorded_by
   LEFT JOIN dg_decisions old ON old.id = d.replaces_id
   LEFT JOIN dg_decisions nxt ON nxt.replaces_id = d.id`;
+/**
+ * Une décision concerne la personne ($2) quand elle en est chargée ou l'a inscrite, ou que son dossier d'origine la
+ * concerne : projet dont elle est membre, activité de son périmètre ($3 : ses entités), réunion où elle siégeait.
+ */
+const concerns = (me: string, units: string) => `(d.owner_id = ${me} OR d.recorded_by = ${me}
+  OR EXISTS (SELECT 1 FROM memberships ms WHERE ms.project_id = d.project_id AND ms.user_id = ${me})
+  OR EXISTS (SELECT 1 FROM agency_activities aa WHERE aa.id = d.activity_id AND (aa.lead_id = ${me} OR aa.unit_id = ANY(${units}::text[])))
+  OR EXISTS (SELECT 1 FROM meetings mt WHERE mt.id = d.meeting_id AND (mt.writer_id = ${me} OR mt.chair_id = ${me}
+     OR EXISTS (SELECT 1 FROM meeting_attendees x WHERE x.meeting_id = mt.id AND x.user_id = ${me}))))`;
 type Row = Decision & {
   owner_name: string | null;
   recorded_by_name: string | null;
@@ -110,7 +119,14 @@ export class Decisions {
     const mine = d.owner_id === actorId || d.recorded_by === actorId;
     if (!mine) {
       await this.svc.requirePerm(actorId, d.org_id, "decisions.view");
-      if (d.confidential && !(await this.manager(actorId, d.org_id))) throw notFound("Décision introuvable");
+      const manager = await this.manager(actorId, d.org_id);
+      if (d.confidential && !manager) throw notFound("Décision introuvable");
+      // Un agent voit les décisions qui le concernent (DEC-6)
+      if (!manager) {
+        const s = await this.svc.scopeOf(actorId, d.org_id);
+        const rows = await this.svc.db.query(`${SELECT} WHERE d.id = $1 AND ${concerns("$2", "$3")}`, [id, actorId, s.units]);
+        if (!s.wide && !rows.length) throw notFound("Décision introuvable");
+      }
     }
     return d;
   }
@@ -118,10 +134,13 @@ export class Decisions {
   async list(actorId: string, orgId: string, f: { status?: DecisionStatus } = {}) {
     await this.svc.requirePerm(actorId, orgId, "decisions.view");
     const manager = await this.manager(actorId, orgId);
+    const scope = await this.svc.scopeOf(actorId, orgId);
     const rows = await this.svc.db.query<Row>(
       `${SELECT} WHERE d.org_id = $1 AND (NOT d.confidential OR $2 OR d.owner_id = $3 OR d.recorded_by = $3)
-       AND ($4::text IS NULL OR d.status = $4) ORDER BY d.year DESC, d.seq DESC`,
-      [orgId, manager, actorId, f.status ?? null],
+       AND ($4::text IS NULL OR d.status = $4)
+       AND ($2 OR $5 OR ${concerns("$3", "$6")})
+       ORDER BY d.year DESC, d.seq DESC`,
+      [orgId, manager, actorId, f.status ?? null, scope.wide, scope.units],
     );
     const today = day();
     return rows.map((r) => this.view(r, today));

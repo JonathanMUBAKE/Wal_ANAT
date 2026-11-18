@@ -156,7 +156,10 @@ export const useApprovals = () =>
 export const useAiStatus = () =>
   useQuery({
     queryKey: ["ai-status"],
-    queryFn: () => api.get<{ provider: "anthropic" | "demo"; model: string | null }>("/api/ai/status"),
+    queryFn: () =>
+      api.get<{ provider: "anthropic" | "demo"; model: string | null; external?: boolean; read_rule?: string }>(
+        "/api/ai/status",
+      ),
     staleTime: Infinity,
   });
 export const useAgents = () =>

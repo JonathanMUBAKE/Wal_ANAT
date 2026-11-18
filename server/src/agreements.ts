@@ -120,6 +120,9 @@ export class Agreements {
     if (!manager && !mine) {
       await this.svc.requirePerm(actorId, a.org_id, "partners.view");
       if (a.confidential) throw notFound("Accord introuvable");
+      // Un agent voit les accords de son périmètre (CV-3)
+      const s = await this.svc.scopeOf(actorId, a.org_id);
+      if (!s.wide && !(a.unit_id && s.units.includes(a.unit_id))) throw notFound("Accord introuvable");
     }
     return { a, manager, edit: manager || this.follows(a, actorId) };
   }
@@ -152,16 +155,29 @@ export class Agreements {
     await this.svc.requirePerm(actorId, orgId, "partners.view");
     const manager = await this.manager(actorId, orgId);
     const q = f.q?.trim();
+    const scope = await this.svc.scopeOf(actorId, orgId);
     const rows = await this.svc.db.query<Row>(
       `${SELECT("$3")} WHERE a.org_id = $1
        AND (NOT a.confidential OR $2 OR a.focal_id = $3 OR a.created_by = $3 OR EXISTS (
+         SELECT 1 FROM agreement_parties ap JOIN partners p ON p.id = ap.partner_id WHERE ap.agreement_id = a.id
+         AND (p.focal_id = $3 OR EXISTS (SELECT 1 FROM partner_focals pf WHERE pf.partner_id = p.id AND pf.user_id = $3))))
+       AND ($2 OR $7 OR a.unit_id = ANY($8::text[]) OR a.focal_id = $3 OR a.created_by = $3 OR EXISTS (
          SELECT 1 FROM agreement_parties ap JOIN partners p ON p.id = ap.partner_id WHERE ap.agreement_id = a.id
          AND (p.focal_id = $3 OR EXISTS (SELECT 1 FROM partner_focals pf WHERE pf.partner_id = p.id AND pf.user_id = $3))))
        AND ($4::text IS NULL OR EXISTS (SELECT 1 FROM agreement_parties ap WHERE ap.agreement_id = a.id AND ap.partner_id = $4))
        AND ($5::text IS NULL OR a.type_code = $5)
        AND ($6::text IS NULL OR a.title ILIKE $6 ESCAPE '\\' OR a.partner_ref ILIKE $6 ESCAPE '\\')
        ORDER BY a.year DESC NULLS FIRST, a.seq DESC NULLS FIRST, a.created_at DESC`,
-      [orgId, manager, actorId, f.partner_id ?? null, f.type ?? null, q ? `%${q.replace(/[\\%_]/g, "\\$&")}%` : null],
+      [
+        orgId,
+        manager,
+        actorId,
+        f.partner_id ?? null,
+        f.type ?? null,
+        q ? `%${q.replace(/[\\%_]/g, "\\$&")}%` : null,
+        scope.wide,
+        scope.units,
+      ],
     );
     const now = today();
     return rows

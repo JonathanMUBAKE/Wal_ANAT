@@ -93,8 +93,17 @@ export class Activities {
   private async readable(actorId: string, id: string) {
     const a = await this.row(id);
     await this.svc.requirePerm(actorId, a.org_id, "agenda.view");
-    if (a.confidential && a.lead_id !== actorId && !(await this.canManage(actorId, a.org_id)))
-      throw notFound("Activité introuvable");
+    const manager = await this.canManage(actorId, a.org_id);
+    if (a.confidential && a.lead_id !== actorId && !manager) throw notFound("Activité introuvable");
+    // Un agent voit les activités qui le concernent : dont il est responsable, ou de son entité (F-4)
+    if (!manager && a.lead_id !== actorId) {
+      const s = await this.svc.scopeOf(actorId, a.org_id);
+      const follows = !!(await this.svc.db.one(
+        "SELECT 1 FROM activity_followups WHERE activity_id = $1 AND responsible_id = $2",
+        [a.id, actorId],
+      ));
+      if (!s.wide && !follows && !(a.unit_id && s.units.includes(a.unit_id))) throw notFound("Activité introuvable");
+    }
     return a;
   }
 
@@ -148,14 +157,17 @@ export class Activities {
   async list(actorId: string, orgId: string, f: { kind?: ActivityKind }) {
     await this.svc.requirePerm(actorId, orgId, "agenda.view");
     const manager = await this.canManage(actorId, orgId);
+    const scope = await this.svc.scopeOf(actorId, orgId);
     return this.svc.db.query<Activity & { lead_name: string | null; unit_name: string | null; open_followups: number }>(
       `SELECT a.*, u.name AS lead_name, ou.name AS unit_name, cp.name AS counterpart_partner_name,
         (SELECT count(*)::int FROM activity_followups x WHERE x.activity_id = a.id AND NOT x.done) AS open_followups
        FROM agency_activities a LEFT JOIN users u ON u.id = a.lead_id LEFT JOIN org_units ou ON ou.id = a.unit_id
        LEFT JOIN partners cp ON cp.id = a.counterpart_partner_id
        WHERE a.org_id = $1 AND (NOT a.confidential OR $2 OR a.lead_id = $3) AND ($4::text IS NULL OR a.kind = $4)
+         AND ($2 OR $5 OR a.lead_id = $3 OR a.unit_id = ANY($6::text[])
+              OR EXISTS (SELECT 1 FROM activity_followups x WHERE x.activity_id = a.id AND x.responsible_id = $3))
        ORDER BY a.start_on DESC NULLS LAST, a.created_at DESC`,
-      [orgId, manager, actorId, f.kind ?? null],
+      [orgId, manager, actorId, f.kind ?? null, scope.wide, scope.units],
     );
   }
 

@@ -135,6 +135,41 @@ export class Agreements {
     return r;
   }
 
+  // ------------------------------------------------------------------ volet financier (CV-2)
+  async setFinance(
+    actorId: string,
+    id: string,
+    i: { amount: number | null; currency: string; agency_contribution?: number | null; contributions?: { partner_id: string; amount: number }[] },
+  ) {
+    const { a } = await this.writable(actorId, id);
+    if (a.state !== "preparation") throw new HttpError(409, "Le volet financier se fixe pendant la préparation ; ensuite par avenant");
+    const currency = i.currency.trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) throw badRequest("Devise invalide : un code à trois lettres (USD, EUR, CDF…)");
+    const parties = new Set(a.parties.map((p) => p.id));
+    for (const c of i.contributions ?? [])
+      if (!parties.has(c.partner_id)) throw badRequest("Une contribution ne concerne que les parties de l'accord");
+    const total = (i.agency_contribution ?? 0) + (i.contributions ?? []).reduce((s, c) => s + c.amount, 0);
+    if (i.amount !== null && total > i.amount)
+      throw badRequest("Les contributions dépassent le montant de l'accord");
+    await this.svc.db.tx(async (q) => {
+      await q.query("UPDATE agreements SET amount = $1, currency = $2, agency_contribution = $3, updated_at = now() WHERE id = $4", [
+        i.amount,
+        currency,
+        i.agency_contribution ?? null,
+        id,
+      ]);
+      await q.query("UPDATE agreement_parties SET contribution = NULL WHERE agreement_id = $1", [id]);
+      for (const c of i.contributions ?? [])
+        await q.query("UPDATE agreement_parties SET contribution = $1 WHERE agreement_id = $2 AND partner_id = $3", [
+          c.amount,
+          id,
+          c.partner_id,
+        ]);
+    });
+    await this.svc.log(actorId, "agreement.finance", { orgId: a.org_id, data: { id, amount: i.amount, currency } });
+    return this.get(actorId, id);
+  }
+
   // ------------------------------------------------------------------ lecture
 
   private view(a: Row, now = today()) {
@@ -230,9 +265,19 @@ export class Agreements {
       : null;
     const type = (await this.ref.values(a.org_id, "agreement_type")).find((t) => t.code === a.type_code);
     const human = !(await this.svc.userOrNull(actorId))?.is_ai;
+    // Volet financier (CV-2) : montant, devise, contribution de l'Agence et de chaque partie
+    const money = await db.one<{ amount: number | null; currency: string | null; agency_contribution: number | null }>(
+      "SELECT amount::float8 AS amount, currency, agency_contribution::float8 AS agency_contribution FROM agreements WHERE id = $1",
+      [id],
+    );
+    const contributions = await db.query<{ partner_id: string; amount: number }>(
+      "SELECT partner_id, contribution::float8 AS amount FROM agreement_parties WHERE agreement_id = $1 AND contribution IS NOT NULL ORDER BY partner_id",
+      [id],
+    );
     const live = a.state === "vigueur";
     return {
       ...v,
+      finance: { ...money, contributions },
       binding: !!type?.props.binding,
       parent: parent && { id: parent.id, title: parent.title, reference: agreementRef(parent) },
       amendments,

@@ -136,7 +136,8 @@ export function PlansPage() {
           </>
         }
       />
-      <div className="mx-auto max-w-[1480px] p-4 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-[1480px] space-y-4 p-4 sm:px-8 sm:py-6">
+        {(can("plans.manage_all") || can("plans.approve") || can("pilotage.view")) && <Campaign />}
         <Section>
           {isLoading ? (
             <LoadingRows />
@@ -707,5 +708,55 @@ function Revise({
         </Field>
       </div>
     </Dialog>
+  );
+}
+
+/** Campagne de préparation des plans (thème 6, PT-5) : les entités sans plan pour l'année qui vient. */
+function Campaign() {
+  const can = useCan();
+  const next = new Date().getFullYear() + (new Date().getMonth() >= 8 ? 1 : 0);
+  const [year, setYear] = useState(next);
+  const { data } = useQuery({
+    queryKey: ["plans-campaign", year],
+    queryFn: () =>
+      api.get<{ year: number; total: number; missing: { unit_id: string; name: string; manager_name: string | null }[] }>(
+        `/api/plans/campaign?year=${year}`,
+      ),
+  });
+  const remind = useMutation({
+    mutationFn: () => api.post<{ sent: number }>("/api/plans/campaign/remind", { year }),
+    onSuccess: (r) => toast.success(`${r.sent} chef(s) d'entité relancé(s)`),
+    onError: fail,
+  });
+  if (!data) return null;
+  const ready = data.total - data.missing.length;
+  return (
+    <Section
+      title={`Campagne ${year} : ${ready} plan(s) sur ${data.total} entités`}
+      aside={
+        <div className="flex items-center gap-2">
+          <Select aria-label="Année" value={String(year)} onChange={(e) => setYear(Number(e.target.value))}>
+            {[next - 1, next, next + 1].map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </Select>
+          {(can("plans.manage_all") || can("plans.approve")) && data.missing.length > 0 && (
+            <Button size="sm" loading={remind.isPending} onClick={() => remind.mutate()}>
+              Relancer les chefs
+            </Button>
+          )}
+        </div>
+      }
+    >
+      {data.missing.length ? (
+        <p className="px-5 pb-4 text-[13px] text-muted">
+          Sans plan : {data.missing.map((u) => `${u.name}${u.manager_name ? ` (${u.manager_name})` : ""}`).join(" · ")}
+        </p>
+      ) : (
+        <p className="px-5 pb-4 text-[13px] text-muted">Toutes les entités ont un plan pour cette année.</p>
+      )}
+    </Section>
   );
 }

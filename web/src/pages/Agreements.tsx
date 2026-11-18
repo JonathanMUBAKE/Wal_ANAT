@@ -98,6 +98,13 @@ interface Detail extends AgreementRow {
   documents: PartnerDocument[];
   sign_document: { id: string; status: string; reference: string } | null;
   can: { edit: boolean; sign: boolean; activate: boolean; amend: boolean; terminate: boolean; delete: boolean };
+  /** Volet financier (thème 6, CV-2). */
+  finance?: {
+    amount: number | null;
+    currency: string | null;
+    agency_contribution: number | null;
+    contributions: { partner_id: string; amount: number }[];
+  };
 }
 
 const fail = (e: unknown) => toast.error((e as Error).message);
@@ -687,6 +694,7 @@ export function AgreementPage() {
               ))}
             </ul>
           </Section>
+          <Finance d={d} />
           <Section title="Dates et suivi">
             {editing ? (
               <div className="space-y-3 p-4 pt-2 text-[13px]">
@@ -1137,6 +1145,104 @@ export function PartnerAgreements({
         </Empty>
       )}
       {creating && <NewAgreement partner={partner} onClose={() => setCreating(false)} />}
+    </Section>
+  );
+}
+
+/** Volet financier d'un accord (thème 6, CV-2) : montant, devise, contribution de l'Agence et de chaque partie. */
+function Finance({ d }: { d: Detail }) {
+  const qc = useQueryClient();
+  const f = d.finance;
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<Record<string, string>>({});
+  const fmt = (n: number | null | undefined) =>
+    n === null || n === undefined ? "—" : `${n.toLocaleString("fr-FR")} ${f?.currency ?? ""}`.trim();
+  const editable = d.can.edit && d.state === "preparation";
+  const open = () => {
+    setForm({
+      amount: f?.amount?.toString() ?? "",
+      currency: f?.currency ?? "USD",
+      agency: f?.agency_contribution?.toString() ?? "",
+      ...Object.fromEntries(d.parties.map((p) => [p.id, f?.contributions.find((c) => c.partner_id === p.id)?.amount.toString() ?? ""])),
+    });
+    setEditing(true);
+  };
+  const num = (v: string) => (v.trim() ? Number(v.replace(/\s/g, "").replace(",", ".")) : null);
+  const save = useMutation({
+    mutationFn: () =>
+      api.put(`/api/agreements/${d.id}/finance`, {
+        amount: num(form.amount ?? ""),
+        currency: form.currency ?? "",
+        agency_contribution: num(form.agency ?? ""),
+        contributions: d.parties
+          .filter((p) => num(form[p.id] ?? "") !== null)
+          .map((p) => ({ partner_id: p.id, amount: num(form[p.id]) as number })),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["agreement", d.id] });
+      setEditing(false);
+      toast.success("Volet financier enregistré");
+    },
+    onError: fail,
+  });
+  return (
+    <Section
+      title="Volet financier"
+      aside={
+        editable && !editing ? (
+          <Button size="sm" onClick={open}>
+            {f?.amount ? "Modifier" : "Renseigner"}
+          </Button>
+        ) : null
+      }
+    >
+      {editing ? (
+        <div className="space-y-2 p-4 pt-2 text-[13px]">
+          <div className="grid grid-cols-[1fr_90px] gap-2">
+            <Field label="Montant total">
+              {(a) => <Input {...a} inputMode="decimal" value={form.amount ?? ""} onChange={(e) => setForm({ ...form, amount: e.target.value })} />}
+            </Field>
+            <Field label="Devise">
+              {(a) => <Input {...a} maxLength={3} value={form.currency ?? ""} onChange={(e) => setForm({ ...form, currency: e.target.value.toUpperCase() })} />}
+            </Field>
+          </div>
+          <Field label="Contribution de l'Agence">
+            {(a) => <Input {...a} inputMode="decimal" value={form.agency ?? ""} onChange={(e) => setForm({ ...form, agency: e.target.value })} />}
+          </Field>
+          {d.parties.map((p) => (
+            <Field key={p.id} label={`Contribution : ${p.name}`}>
+              {(a) => <Input {...a} inputMode="decimal" value={form[p.id] ?? ""} onChange={(e) => setForm({ ...form, [p.id]: e.target.value })} />}
+            </Field>
+          ))}
+          <div className="flex gap-2">
+            <Button size="sm" variant="primary" loading={save.isPending} onClick={() => save.mutate()}>
+              Enregistrer
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+              Annuler
+            </Button>
+          </div>
+        </div>
+      ) : f?.amount !== null && f?.amount !== undefined ? (
+        <ul className="space-y-1 p-4 pt-2 text-[13px]">
+          <li className="flex justify-between gap-2">
+            <span className="text-muted">Montant</span>
+            <span className="font-medium tabular">{fmt(f.amount)}</span>
+          </li>
+          <li className="flex justify-between gap-2">
+            <span className="text-muted">L'Agence</span>
+            <span className="tabular">{fmt(f.agency_contribution)}</span>
+          </li>
+          {f.contributions.map((c) => (
+            <li key={c.partner_id} className="flex justify-between gap-2">
+              <span className="truncate text-muted">{d.parties.find((p) => p.id === c.partner_id)?.name}</span>
+              <span className="tabular">{fmt(c.amount)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="p-4 pt-2 text-[13px] text-muted">Aucun montant renseigné.</p>
+      )}
     </Section>
   );
 }

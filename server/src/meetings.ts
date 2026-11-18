@@ -145,7 +145,7 @@ export interface MeetingDetail extends MeetingRow {
     end_time: string | null;
   } | null;
   carried: (MeetingAction & { meeting_reference: string })[];
-  can: { edit: boolean; validate: boolean; convene: boolean; submit: boolean; decide: boolean; respond: boolean; reopen: boolean };
+  can: { edit: boolean; validate: boolean; convene: boolean; submit: boolean; decide: boolean; respond: boolean; reopen: boolean; declare_not_held: boolean };
 }
 
 export type MeetingInput = Partial<
@@ -329,16 +329,27 @@ export class Meetings {
   }
 
   /** Valide ou retourne un compte rendu : la présidence de séance si elle est désignée, sinon un valideur ; jamais le rédacteur. */
-  private async assertDecider(actorId: string, m: MeetingRow) {
+  /** Valide-t-il ce compte rendu, et pour qui ? La présidence, ou son délégataire en son absence (R-2). */
+  private async assertDecider(actorId: string, m: MeetingRow): Promise<{ onBehalf: string | null }> {
     if (m.writer_id === actorId) throw forbidden("Le rédacteur ne peut pas valider son propre compte rendu");
     if (m.chair_id) {
-      if (m.chair_id !== actorId) {
-        const chair = await this.svc.db.one<{ name: string }>("SELECT name FROM users WHERE id = $1", [m.chair_id]);
-        throw forbidden(`Seule la présidence de séance (${chair?.name ?? "désignée"}) valide ce compte rendu`);
-      }
-      return;
+      if (m.chair_id === actorId) return { onBehalf: null };
+      if (await this.delegateOf(m.chair_id, actorId, m.org_id)) return { onBehalf: m.chair_id };
+      const chair = await this.svc.db.one<{ name: string }>("SELECT name FROM users WHERE id = $1", [m.chair_id]);
+      throw forbidden(
+        `Seule la présidence de séance (${chair?.name ?? "désignée"}) valide ce compte rendu, ou la personne à qui elle a délégué sa signature`,
+      );
     }
     await this.svc.requirePerm(actorId, m.org_id, "meetings.validate");
+    return { onBehalf: null };
+  }
+  /** Délégation de signature en cours de la présidence vers cette personne (celle du parapheur). */
+  private async delegateOf(chairId: string, actorId: string, orgId: string) {
+    return !!(await this.svc.db.one(
+      `SELECT 1 FROM delegations WHERE org_id = $1 AND from_user = $2 AND to_user = $3 AND scope = 'signature'
+         AND revoked_at IS NULL AND start_on <= $4::date AND end_on >= $4::date`,
+      [orgId, chairId, actorId, today()],
+    ));
   }
 
   /** Dossier rattaché : un projet ou une activité de l'institution, jamais les deux. */
@@ -586,7 +597,11 @@ export class Meetings {
     );
     const t = today();
     const writes = can.manage || m.writer_id === actorId;
-    const decides = m.writer_id !== actorId && (m.chair_id ? m.chair_id === actorId : can.validate);
+    const decides =
+      m.writer_id !== actorId &&
+      (m.chair_id
+        ? m.chair_id === actorId || (await this.delegateOf(m.chair_id, actorId, m.org_id))
+        : can.validate);
     const invited = attendees.find((a) => a.invited && a.user_id === actorId);
     // Rouvrir un compte rendu validé : la personne qui l'a validé, ou la DG (R-3)
     const reopens =
@@ -638,6 +653,8 @@ export class Meetings {
         decide: m.status === "submitted" && decides,
         respond: !!invited && !!m.convened_at && m.status === "planned" && m.meeting_date >= t,
         reopen: reopens,
+        // Séance passée restée sans compte rendu : la déclarer non tenue (R-6)
+        declare_not_held: m.status === "planned" && m.meeting_date < t && writes,
       },
     };
   }
@@ -1059,6 +1076,68 @@ export class Meetings {
     }
   }
 
+  /** Une séance passée qui n'a pas eu lieu se déclare non tenue, avec un motif ; les convoqués sont prévenus (R-6). */
+  async notHeld(actorId: string, id: string, reason: string) {
+    const { m, can } = await this.readable(actorId, id);
+    if (!can.manage && m.writer_id !== actorId)
+      throw forbidden("Seuls le rédacteur et les gestionnaires déclarent une séance non tenue");
+    if (m.status !== "planned") throw badRequest("Seule une séance sans compte rendu se déclare non tenue");
+    if (m.meeting_date >= today()) throw badRequest("Cette séance n'est pas encore passée : reportez-la ou annulez-la");
+    const why = reason.trim();
+    if (!why) throw badRequest("Le motif est obligatoire");
+    await this.svc.db.query(
+      "UPDATE meetings SET status = 'cancelled', not_held_reason = $1, updated_at = now() WHERE id = $2",
+      [why, id],
+    );
+    await this.svc.log(actorId, "meeting.not_held", { orgId: m.org_id, data: { reference: meetingReference(m), reason: why } });
+    if (m.convened_at)
+      await this.notifyInvited(actorId, m, {
+        kind: "meeting.cancelled",
+        title: `Séance non tenue : ${m.title || m.meeting_type}`,
+        body: why,
+      });
+    return this.get(actorId, id);
+  }
+
+  /** Rappels au rédacteur : séance proche non convoquée (R-7), séance passée restée sans suite (R-6). */
+  async sweep(now = today()) {
+    const in7 = new Date(Date.parse(`${now}T12:00:00`) + 7 * 864e5).toISOString().slice(0, 10);
+    const ago2 = new Date(Date.parse(`${now}T12:00:00`) - 2 * 864e5).toISOString().slice(0, 10);
+    const rows = await this.svc.db.query<{
+      id: string;
+      org_id: string;
+      writer_id: string;
+      title: string;
+      meeting_type: string;
+      meeting_date: string;
+      convened_at: string | null;
+    }>(
+      `SELECT id, org_id, writer_id, title, meeting_type, to_char(meeting_date, 'YYYY-MM-DD') AS meeting_date, convened_at
+         FROM meetings WHERE status = 'planned' AND writer_id IS NOT NULL
+          AND ((convened_at IS NULL AND meeting_date >= $1::date AND meeting_date <= $2::date) OR meeting_date <= $3::date)`,
+      [now, in7, ago2],
+    );
+    for (const r of rows) {
+      const past = r.meeting_date < now;
+      const key = `meeting:${past ? "unheld" : "convene"}:${r.id}:${r.meeting_date}`;
+      const fresh = await this.svc.db.query(
+        "INSERT INTO reminders_sent (key, org_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING key",
+        [key, r.org_id],
+      );
+      if (!fresh.length) continue;
+      const when = r.meeting_date.split("-").reverse().join("/");
+      const label = r.title || r.meeting_type;
+      await this.svc.notify(r.writer_id, r.org_id, {
+        kind: "meeting.reminder",
+        title: past ? `Réunion sans compte rendu : ${label} du ${when}` : `Réunion à convoquer : ${label} du ${when}`,
+        body: past
+          ? "Établissez le compte rendu, ou déclarez la séance non tenue."
+          : "La séance approche et n'est pas encore convoquée : envoyez la convocation.",
+        link: `/reunions/${r.id}`,
+      });
+    }
+  }
+
   async remove(actorId: string, id: string) {
     const { m, can } = await this.readable(actorId, id);
     if (!can.manage) throw forbidden("Seuls les gestionnaires des réunions suppriment une réunion");
@@ -1163,7 +1242,7 @@ export class Meetings {
     const { m } = await this.readable(actorId, id);
     if (m.status === "validated") throw locked();
     if (m.status !== "submitted") throw badRequest("Le compte rendu doit d'abord être soumis par son rédacteur");
-    await this.assertDecider(actorId, m);
+    const { onBehalf } = await this.assertDecider(actorId, m);
     const n = await this.svc.db.one<{ n: number }>(
       "SELECT count(*)::int AS n FROM meeting_agenda_items WHERE meeting_id = $1",
       [id],
@@ -1182,12 +1261,15 @@ export class Meetings {
       );
     if (
       !(await this.svc.db.one(
-        "UPDATE meetings SET status = 'validated', validated_by = $1, validated_at = now(), updated_at = now() WHERE id = $2 AND status = 'submitted' RETURNING id",
-        [actorId, id],
+        "UPDATE meetings SET status = 'validated', validated_by = $1, validated_on_behalf = $3, validated_at = now(), updated_at = now() WHERE id = $2 AND status = 'submitted' RETURNING id",
+        [actorId, id, onBehalf],
       ))
     )
       throw locked();
-    await this.svc.log(actorId, "meeting.validated", { orgId: m.org_id, data: { reference: meetingReference(m) } });
+    await this.svc.log(actorId, "meeting.validated", {
+      orgId: m.org_id,
+      data: { reference: meetingReference(m), ...(onBehalf ? { on_behalf: onBehalf } : {}) },
+    });
     // La séance alimente le registre et le projet (docs/PARCOURS-METIER.md, lot P3a)
     await this.registerDecisions(actorId, m);
     await this.createTasksFromActions(actorId, m);
@@ -1321,7 +1403,7 @@ export class Meetings {
     const why = reason.trim();
     if (!why) throw badRequest("Le motif de la réouverture est obligatoire");
     const moved = await this.svc.db.one(
-      "UPDATE meetings SET status = 'held', validated_by = NULL, validated_at = NULL, updated_at = now() WHERE id = $1 AND status = 'validated' RETURNING id",
+      "UPDATE meetings SET status = 'held', validated_by = NULL, validated_on_behalf = NULL, validated_at = NULL, updated_at = now() WHERE id = $1 AND status = 'validated' RETURNING id",
       [id],
     );
     if (!moved) throw new HttpError(409, "Le compte rendu a changé entre-temps, rechargez la page");

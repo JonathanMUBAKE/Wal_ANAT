@@ -997,6 +997,17 @@ const TABLE = [
     await X.db.query("UPDATE sign_documents SET status = 'signed', signed_at = now() WHERE id = $1", [d.id]);
     return { url: `/api/signature/${d.id}/bordereau?format=pdf` };
   }),
+  // Thème 6 : séance non tenue, campagne des plans, volet financier des accords
+  R_("POST", "/api/meetings/:id/not-held", async (X) => ({
+    url: `/api/meetings/${(await X.meeting()).id}/not-held`,
+    body: { reason: "Quorum non atteint" },
+  })),
+  R_("GET", "/api/plans/campaign", () => ({ url: "/api/plans/campaign?year=2031" })),
+  R_("POST", "/api/plans/campaign/remind", () => ({ body: { year: 2031 } })),
+  R_("PUT", "/api/agreements/:id/finance", async (X) => ({
+    url: `/api/agreements/${(await X.agreement()).id}/finance`,
+    body: { amount: 100, currency: "USD" },
+  })),
   R_("GET", "/api/org/admin-review"),
   R_("POST", "/api/org/admin-review", () => ({ body: { comment: "Vu" } })),
   R_("GET", "/api/decisions"),

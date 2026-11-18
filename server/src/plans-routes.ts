@@ -61,6 +61,12 @@ export function planRoutes(r: FastifyInstance, p: Plans, d: Deliverables) {
       z.object({ unit_id: id, year: z.number().int().min(2000).max(2100), title }).parse(req.body),
     ),
   );
+  r.get("/api/plans/campaign", async (req) =>
+    p.campaign(req.userId, req.orgId, z.object({ year: z.coerce.number().int().min(2000).max(2100) }).parse(req.query).year),
+  );
+  r.post("/api/plans/campaign/remind", async (req) =>
+    p.remindCampaign(req.userId, req.orgId, z.object({ year: z.number().int().min(2000).max(2100) }).parse(req.body).year),
+  );
   r.get<Id>("/api/plans/:id", async (req) => p.get(req.userId, req.params.id));
   r.delete<Id>("/api/plans/:id", async (req) => {
     await p.remove(req.userId, req.params.id);

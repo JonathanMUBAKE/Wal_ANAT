@@ -6,6 +6,7 @@ import { seedGovDemo } from "./gov-demo.js";
 import { Agreements } from "./agreements.js";
 import { Reminders } from "./reminders.js";
 import { Hr } from "./hr.js";
+import { Meetings } from "./meetings.js";
 import type { Provisioning } from "./auth/provisioning.js";
 import { Registers } from "./registers.js";
 import { loadLocalSecret, startupProblems } from "./secrets.js";
@@ -49,8 +50,10 @@ const agreements = new Agreements(svc);
 const reminders = new Reminders(svc);
 // Dossiers d'agents : sorties arrivées à leur date, fins de contrat et retraites à venir (thème 6)
 const hrSweep = new Hr(svc, null as unknown as Provisioning);
+// Réunions proches non convoquées et séances passées restées sans suite (thème 6, R-6 et R-7)
+const meetingSweep = new Meetings(svc);
 const sweepContracts = () =>
-  Promise.all([contracts.sweep(), mailRegister.sweep(), agreements.sweep(), reminders.sweep(), hrSweep.sweep()]).catch((e) =>
+  Promise.all([contracts.sweep(), mailRegister.sweep(), agreements.sweep(), reminders.sweep(), hrSweep.sweep(), meetingSweep.sweep()]).catch((e) =>
     app.log.error(e),
   );
 void sweepContracts();

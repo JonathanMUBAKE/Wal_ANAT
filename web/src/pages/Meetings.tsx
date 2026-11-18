@@ -151,7 +151,10 @@ export interface MeetingDetail extends MeetingRow {
     decide: boolean;
     respond: boolean;
     reopen?: boolean;
+    declare_not_held?: boolean;
   };
+  validated_on_behalf?: string | null;
+  not_held_reason?: string;
 }
 
 const MEETING: Record<MeetingRow["status"], { label: string; tone: Tone }> = {
@@ -719,6 +722,7 @@ export function MeetingPage() {
   const [justValidated, setJustValidated] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [reopening, setReopening] = useState(false);
+  const [notHeld, setNotHeld] = useState(false);
   const [reopenReason, setReopenReason] = useState("");
   useEffect(() => {
     if (m) {
@@ -909,6 +913,20 @@ export function MeetingPage() {
               <IconButton label="Supprimer la réunion" onClick={() => setRemoving(true)}>
                 <Trash2 className="size-4" />
               </IconButton>
+            )}
+            {!editing && draft.can.declare_not_held && (
+              <Button onClick={() => setNotHeld(true)}>Déclarer non tenue</Button>
+            )}
+            {notHeld && (
+              <NotHeldDialog
+                id={id as string}
+                onClose={() => setNotHeld(false)}
+                onDone={(r) => {
+                  qc.setQueryData(["meeting", id], r);
+                  qc.invalidateQueries({ queryKey: ["meetings"] });
+                  setNotHeld(false);
+                }}
+              />
             )}
             {!editing && draft.status === "validated" && draft.can.reopen && (
               <Button icon={<RotateCcw className="size-4" />} onClick={() => setReopening(true)}>
@@ -2004,5 +2022,39 @@ function MeetingReading({ m }: { m: MeetingDetail }) {
         </Section>
       )}
     </>
+  );
+}
+
+/** Une séance passée qui n'a pas eu lieu se déclare non tenue, avec un motif (thème 6, R-6). */
+function NotHeldDialog({ id, onClose, onDone }: { id: string; onClose: () => void; onDone: (r: MeetingDetail) => void }) {
+  const [reason, setReason] = useState("");
+  const save = useMutation({
+    mutationFn: () => api.post<MeetingDetail>(`/api/meetings/${id}/not-held`, { reason }),
+    onSuccess: (r) => {
+      toast.success("Séance déclarée non tenue");
+      onDone(r);
+    },
+    onError: fail,
+  });
+  return (
+    <Dialog
+      open
+      onOpenChange={onClose}
+      title="Déclarer la séance non tenue"
+      description="La séance est passée sans compte rendu. La déclarer non tenue la retire des comptes rendus à établir ; les convoqués en sont prévenus."
+      width={480}
+      footer={
+        <>
+          <Button onClick={onClose}>Annuler</Button>
+          <Button variant="primary" disabled={!reason.trim()} loading={save.isPending} onClick={() => save.mutate()}>
+            Déclarer non tenue
+          </Button>
+        </>
+      }
+    >
+      <Field label="Motif" required hint="Exemple : quorum non atteint, séance reportée sans nouvelle date">
+        {(a) => <Textarea {...a} value={reason} onChange={(e) => setReason(e.target.value)} />}
+      </Field>
+    </Dialog>
   );
 }

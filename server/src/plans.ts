@@ -238,6 +238,51 @@ export class Plans {
     };
   }
 
+  // ---------------------------------------------------------------- campagne (PT-5)
+  private async assertCampaign(actorId: string, orgId: string) {
+    const p = await this.svc.permissionsOf(actorId, orgId);
+    if (!["plans.manage_all", "plans.approve", "pilotage.view"].some((x) => p.includes(x as never)))
+      throw forbidden("La campagne des plans revient au service du plan et à la direction");
+    return p;
+  }
+  /** Les entités qui n'ont pas encore de plan pour l'année, avec leur chef. */
+  async campaign(actorId: string, orgId: string, year: number) {
+    await this.assertCampaign(actorId, orgId);
+    const missing = await this.svc.db.query<{ unit_id: string; name: string; manager_id: string | null; manager_name: string | null }>(
+      `SELECT u.id AS unit_id, u.name, u.manager_id, m.name AS manager_name FROM org_units u LEFT JOIN users m ON m.id = u.manager_id
+        WHERE u.org_id = $1 AND u.parent_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM work_plans w WHERE w.unit_id = u.id AND w.year = $2)
+        ORDER BY u.position, u.name`,
+      [orgId, year],
+    );
+    const total = (await this.svc.db.one<{ n: number }>(
+      "SELECT count(*)::int AS n FROM org_units WHERE org_id = $1 AND parent_id IS NOT NULL",
+      [orgId],
+    ))!.n;
+    return { year, total, missing };
+  }
+  /** Rappel aux chefs des entités sans plan : préparer le plan de l'année. */
+  async remindCampaign(actorId: string, orgId: string, year: number) {
+    const p = await this.assertCampaign(actorId, orgId);
+    if (!p.includes("plans.manage_all") && !p.includes("plans.approve"))
+      throw forbidden("Le rappel de campagne revient au service du plan");
+    const { missing } = await this.campaign(actorId, orgId, year);
+    let sent = 0;
+    for (const u of missing)
+      if (u.manager_id && u.manager_id !== actorId) {
+        await this.svc.notify(u.manager_id, orgId, {
+          kind: "plan.campaign",
+          title: `Plan de travail ${year} à préparer : ${u.name}`,
+          body: "La campagne de préparation des plans est ouverte : préparez le plan de votre entité et soumettez-le.",
+          actor_id: actorId,
+          link: "/plans",
+        });
+        sent++;
+      }
+    await this.svc.log(actorId, "plan.campaign", { orgId, data: { year, sent } });
+    return { sent };
+  }
+
   async create(actorId: string, orgId: string, i: { unit_id: string; year: number; title: string }) {
     await this.svc.requirePerm(actorId, orgId, "plans.manage");
     if (!(await this.svc.db.one("SELECT 1 FROM org_units WHERE org_id = $1 AND id = $2", [orgId, i.unit_id])))

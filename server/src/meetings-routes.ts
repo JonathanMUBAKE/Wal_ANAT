@@ -206,6 +206,9 @@ export function meetingRoutes(r: FastifyInstance, meetings: Meetings) {
     ),
   );
   r.post<Id>("/api/meetings/:id/validate", async (req) => meetings.validate(req.userId, req.params.id));
+  r.post<Id>("/api/meetings/:id/not-held", async (req) =>
+    meetings.notHeld(req.userId, req.params.id, z.object({ reason: z.string().max(2000) }).parse(req.body).reason),
+  );
   r.post<Id>("/api/meetings/:id/reopen", async (req) =>
     meetings.reopen(
       req.userId,

@@ -35,8 +35,24 @@ const Meta = z.object({
   notes: z.string().max(5000).optional(),
 });
 
+const money = z.number().min(0).max(1e14);
 /** Accords avec les partenaires (lot PA2) : aucune route ne modifie un accord conclu, sauf l'avenant et la résiliation. */
 export function agreementRoutes(r: FastifyInstance, a: Agreements) {
+  // Volet financier (thème 6, CV-2)
+  r.put<Id>("/api/agreements/:id/finance", async (req) =>
+    a.setFinance(
+      req.userId,
+      req.params.id,
+      z
+        .object({
+          amount: money.nullable(),
+          currency: z.string().max(10),
+          agency_contribution: money.nullable().optional(),
+          contributions: z.array(z.object({ partner_id: id, amount: money })).max(20).optional(),
+        })
+        .parse(req.body),
+    ),
+  );
   r.get("/api/agreements", async (req) =>
     a.list(
       req.userId,

@@ -52,6 +52,8 @@ async function boot(kind: Kind) {
   const a = "u_alice";
   const org = (await ctx.db.one<Any>("SELECT id FROM organizations WHERE name='Nova Mobile'")).id as string;
   const app = (await ctx.db.one<Any>("SELECT id FROM projects WHERE name LIKE '%Application mobile%'")).id as string;
+  // Une seule intervention de l'IA à la fois par tâche (I-3) : la règle de triage d'exemple ne prend pas les tâches des fixtures
+  await ctx.db.query("UPDATE ai_rules SET enabled = FALSE WHERE name = 'Triage du backlog'");
   const profs = (await inj(a, "GET", "/api/org/profiles")).body as Any[],
     prof = (x: string) => profs.find((p) => p.name === x).id as string;
   const detail = (await inj(a, "GET", `/api/projects/${app}`)).body;
@@ -65,7 +67,7 @@ async function boot(kind: Kind) {
     const p = (await inj(a, "POST", "/api/org/profiles", { name: "Sans droit", base_role: "member", permissions: [] }))
       .body;
     await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_hugo'"); // un chef garde un profil de chef (A-3)
-    await inj(a, "PUT", "/api/org/members/u_hugo/profile", { profile_id: p.id });
+    await inj(a, "PUT", "/api/org/members/u_hugo/profile", { profile_id: p.id, reason: "Changement de fonctions" });
     await inj(a, "PUT", `/api/projects/${app}/members/u_hugo`, { role: "viewer" });
   }
   if (kind === "P3") {
@@ -178,6 +180,7 @@ async function boot(kind: Kind) {
           title: "A",
           responsible_id: "u_karim",
           target_value: 1,
+          start_on: "2026-12-01",
           end_on: "2027-01-01",
         })
       ).body;
@@ -234,7 +237,8 @@ async function boot(kind: Kind) {
     },
     referential: async () =>
       ((await inj(a, "GET", "/api/referentials")).body.activity_type as Any[]).find((v) => v.code === "commission"),
-    partner: async () => (await inj(a, "POST", "/api/partners", { name: u("Partenaire"), type_code: "autre" })).body,
+    partner: async () =>
+      (await inj(a, "POST", "/api/partners", { name: u("Partenaire"), type_code: "autre", focal_id: a })).body,
     partnerContact: async () =>
       (await inj(a, "POST", `/api/partners/${(await X.partner()).id}/contacts`, { name: "Contact" })).body,
     agreement: async () =>
@@ -244,6 +248,7 @@ async function boot(kind: Kind) {
           title: u("Accord"),
           content: "Texte",
           partner_ids: [(await X.partner()).id],
+          focal_id: a,
         })
       ).body,
     agreementInForce: async () => {
@@ -772,7 +777,9 @@ const TABLE = [
   R_("GET", "/api/risks"),
   R_("POST", "/api/risks", () => ({ body: { title: "R", probability: 2, impact: 3 } })),
   R_("PATCH", "/api/risks/:id", async (X) => ({ url: `/api/risks/${(await X.risk()).id}`, body: { mitigation: "x" } })),
+  R_("GET", "/api/risks/:id/history", async (X) => ({ url: `/api/risks/${(await X.risk()).id}/history` })),
   R_("GET", "/api/indicators"),
+  R_("GET", "/api/indicators/:id/history", async (X) => ({ url: `/api/indicators/${(await X.indicator()).id}/history` })),
   R_("POST", "/api/indicators", () => ({ body: { name: "I", target: 3 } })),
   R_("PATCH", "/api/indicators/:id", async (X) => ({
     url: `/api/indicators/${(await X.indicator()).id}`,
@@ -1202,7 +1209,7 @@ const TABLE = [
   R_("DELETE", "/api/org/profiles/:id", async (X) => ({ url: `/api/org/profiles/${(await X.profile()).id}` })),
   R_("PUT", "/api/org/members/:userId/profile", (X) => ({
     url: "/api/org/members/u_karim/profile",
-    body: { profile_id: X.prof("Membre") },
+    body: { profile_id: X.prof("Membre"), reason: "Changement de fonctions" },
   })),
   R_("GET", "/api/org/members/:userId/access", () => ({ url: "/api/org/members/u_karim/access" })),
   R_("PUT", "/api/org/members/:userId/permissions", () => ({

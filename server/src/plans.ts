@@ -395,9 +395,12 @@ export class Plans {
       [id],
     );
     if (!rows.length) throw badRequest("Le plan doit comporter au moins une activité");
-    const missing = rows.filter((a) => !a.responsible_id || !a.end_on || a.target_value === null);
+    // La date de début fonde l'avancement attendu à date du tableau de bord (PT-4)
+    const missing = rows.filter((a) => !a.responsible_id || !a.start_on || !a.end_on || a.target_value === null);
     if (missing.length)
-      throw badRequest(`Responsable, cible et date de fin manquent pour : ${missing.map((a) => a.title).join(", ")}`);
+      throw badRequest(
+        `Responsable, cible, dates de début et de fin manquent pour : ${missing.map((a) => a.title).join(", ")}`,
+      );
     await this.svc.db.query(
       "UPDATE work_plans SET status = 'submitted', submitted_by = $1, submitted_at = now(), return_comment = '' WHERE id = $2",
       [actorId, id],

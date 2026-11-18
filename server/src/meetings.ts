@@ -947,6 +947,18 @@ export class Meetings {
     }
     for (const a of input.attendees)
       if (a.user_id && !people.has(a.user_id)) throw badRequest("Le participant doit être membre de l'organisation");
+    // Une recommandation parue dans un compte rendu validé ne se retire pas après réouverture : elle s'annule (R-4)
+    const keptIds = new Set(input.agenda.flatMap((i) => (i.actions ?? []).flatMap((a) => (a.id ? [a.id] : []))));
+    const dropped = (
+      await db.query<{ id: string; text: string }>(
+        "SELECT id, text FROM meeting_actions WHERE meeting_id = $1 AND published ORDER BY position",
+        [id],
+      )
+    ).filter((a) => !keptIds.has(a.id));
+    if (dropped.length)
+      throw badRequest(
+        `Une recommandation du compte rendu validé ne se supprime pas : annulez-la plutôt. Concernées : ${dropped.map((a) => a.text).join(", ")}`,
+      );
     await db.tx(async (q) => {
       const keptItems = input.agenda.flatMap((i) => (i.id ? [i.id] : []));
       await q.query("DELETE FROM meeting_agenda_items WHERE meeting_id = $1 AND NOT (id = ANY($2))", [id, keptItems]);
@@ -1266,6 +1278,8 @@ export class Meetings {
       ))
     )
       throw locked();
+    // Les recommandations du compte rendu validé sont publiées : elles ne se suppriment plus (R-4)
+    await this.svc.db.query("UPDATE meeting_actions SET published = TRUE WHERE meeting_id = $1", [id]);
     await this.svc.log(actorId, "meeting.validated", {
       orgId: m.org_id,
       data: { reference: meetingReference(m), ...(onBehalf ? { on_behalf: onBehalf } : {}) },

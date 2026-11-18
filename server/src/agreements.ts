@@ -549,6 +549,8 @@ export class Agreements {
     const { a } = await this.writable(actorId, id);
     if (a.state !== "preparation") throw new HttpError(409, "Seul un accord en préparation passe au parapheur");
     if (!a.content.trim()) throw badRequest("Rédigez le texte de l'accord avant de le soumettre à la signature");
+    // Un accord signé se suit : il part au parapheur avec son point focal (CV-4)
+    if (!a.focal_id) throw badRequest("Désignez le point focal de l'accord avant de l'envoyer au parapheur");
     const type = (await this.ref.values(a.org_id, "agreement_type")).find((t) => t.code === a.type_code);
     const parties = a.parties.map((p) => p.name).join(", ");
     const signature = new Signature(this.svc);

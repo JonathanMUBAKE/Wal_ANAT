@@ -165,13 +165,14 @@ export function privateAuthRoutes(r: FastifyInstance, d: AuthDeps) {
     return { ok: true };
   });
   r.put<UserId>("/api/org/members/:userId/profile", async (req) => {
-    await access.assign(
-      me(req),
-      org(req),
-      req.params.userId,
-      z.object({ profile_id: z.string() }).parse(req.body).profile_id,
-      info(req),
-    );
+    // Un changement de profil change les droits de quelqu'un : il se motive (S-4)
+    const b = z
+      .object({
+        profile_id: z.string(),
+        reason: z.string().max(500).optional(),
+      })
+      .parse(req.body);
+    await access.assign(me(req), org(req), req.params.userId, b.profile_id, info(req), b.reason ?? "");
     return { ok: true };
   });
   r.get<UserId>("/api/org/members/:userId/access", async (req) =>

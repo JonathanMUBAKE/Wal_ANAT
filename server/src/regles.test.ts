@@ -88,7 +88,7 @@ describe("R-04 : un administrateur n'agit pas sur un autre administrateur", () =
     expect((await api("u_theo", "PUT", "/api/org/members/u_ines", { role: null })).status).toBe(403);
     expect((await api("u_theo", "PUT", "/api/org/members/u_ines", { role: "member" })).status).toBe(403);
     expect(
-      (await api("u_theo", "PUT", "/api/org/members/u_ines/profile", { profile_id: (await profile("Membre")).id }))
+      (await api("u_theo", "PUT", "/api/org/members/u_ines/profile", { profile_id: (await profile("Membre")).id, reason: "Changement de fonctions" }))
         .status,
     ).toBe(403);
     expect(
@@ -145,6 +145,8 @@ describe("R-06 et S-06 : règles IA", () => {
 
   it("une règle s'arrête si sa créatrice perd le droit de déléguer", async () => {
     await start();
+    // Une seule intervention de l'IA à la fois par tâche (I-3) : la règle de triage d'exemple laisse la place
+    await ctx.db.query("UPDATE ai_rules SET enabled = FALSE WHERE name = 'Triage du backlog'");
     await api("u_alice", "PUT", "/api/org/members/u_ines", { role: "admin" });
     await api("u_alice", "PUT", `/api/projects/${await appId()}/members/u_ines`, { role: "admin" });
     const r = (
@@ -211,7 +213,7 @@ describe("R-07 : profil système Lecture seule", () => {
     expect(p).toMatchObject({ is_system: true, permissions: [] });
     expect((await api("u_alice", "DELETE", `/api/org/profiles/${p.id}`)).status).toBe(400);
     await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_theo'"); // un chef garde un profil de chef (A-3)
-    await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: p.id });
+    await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: p.id, reason: "Changement de fonctions" });
     expect((await api("u_theo", "POST", "/api/projects", { name: "X" })).status).toBe(403);
     const created = (await api("u_alice", "POST", "/api/orgs", { name: "Nouvelle" })).body as { id: string };
     expect(

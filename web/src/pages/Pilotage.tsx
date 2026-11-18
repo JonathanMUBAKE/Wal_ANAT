@@ -20,7 +20,7 @@ import {
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { Empty, cn } from "@/components/ui";
+import { Button, Dialog, Empty, cn } from "@/components/ui";
 import { CountUp, LoadingRows, frDate, isLate, type Tone } from "@/components/gov";
 import { HealthRing } from "@/components/territory";
 import { CollectionHeader } from "@/components/collection";
@@ -106,6 +106,7 @@ export function PilotagePage() {
   const can = useCan();
   const [day, setDay] = useState<string | null>(null);
   const [arbitrating, setArbitrating] = useState<DecisionSource | null>(null);
+  const [lateOpen, setLateOpen] = useState(false);
   const {
     data: o,
     isLoading,
@@ -200,7 +201,14 @@ export function PilotagePage() {
             lateItems,
           )}
           tone={o.counters.retards ? "bad" : "good"}
+          onClick={o.counters.retards ? () => setLateOpen(true) : undefined}
         />
+        {lateOpen && (
+          <LateDetail
+            detail={(o.counters as unknown as { retards_detail?: Record<string, number> }).retards_detail ?? {}}
+            onClose={() => setLateOpen(false)}
+          />
+        )}
         <Stat
           className="md:col-span-3 xl:col-span-3"
           Icon={FileSignature}
@@ -638,6 +646,52 @@ const LATE_LABEL: Record<string, [string, string]> = {
   courrier: ["courrier", "courriers"],
   decisions: ["décision à exécuter", "décisions à exécuter"],
 };
+/** Où se résorbe chaque nature de retard (P-3). */
+const LATE_PAGE: Record<string, string> = {
+  taches: "/pilotage#par-direction",
+  suites: "/activites",
+  recommandations: "/reunions",
+  livrables: "/activites",
+  activites_plan: "/plans",
+  courrier: "/courrier",
+  decisions: "/decisions",
+};
+/** Le détail de « Retards à résorber » : chaque nature, son nombre, la page où la traiter (P-3). */
+function LateDetail({ detail, onClose }: { detail: Record<string, number>; onClose: () => void }) {
+  const rows = Object.entries(detail).filter(([, n]) => n > 0);
+  return (
+    <Dialog
+      open
+      onOpenChange={onClose}
+      title="Retards à résorber"
+      description="Tout ce qui a dépassé son échéance, par nature. Ouvrez une ligne pour traiter les retards concernés."
+      footer={<Button onClick={onClose}>Fermer</Button>}
+    >
+      <ul className="divide-y divide-line rounded-xl border border-line">
+        {rows.map(([k, n]) => (
+          <li key={k}>
+            <Link
+              to={LATE_PAGE[k] ?? "/pilotage"}
+              onClick={(e) => {
+                onClose();
+                // Les tâches en retard se lisent par direction, sur cette page
+                if (k === "taches") {
+                  e.preventDefault();
+                  document.getElementById("par-direction")?.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+              className="flex items-center gap-3 px-3 py-2.5 text-[13.5px] hover:bg-hover"
+            >
+              <span className="flex-1">{LATE_LABEL[k]?.[n > 1 ? 1 : 0] ?? k}</span>
+              <span className="font-semibold tabular text-danger">{n}</span>
+              <ArrowUpRight className="size-4 text-faint" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Dialog>
+  );
+}
 const lateFoot = (detail: Record<string, number> | undefined, items: number) => {
   const parts = Object.entries(detail ?? {})
     .filter(([, n]) => n > 0)
@@ -706,6 +760,7 @@ function Stat({
   foot,
   tone,
   to,
+  onClick,
   className,
 }: {
   Icon: LucideIcon;
@@ -715,6 +770,7 @@ function Stat({
   foot: string;
   tone?: "good" | "warn" | "bad";
   to?: string;
+  onClick?: () => void;
   className?: string;
 }) {
   const body = (
@@ -742,7 +798,9 @@ function Stat({
           {foot}
         </span>
       </span>
-      {to && <ArrowUpRight className="size-4 shrink-0 self-start text-faint transition-colors group-hover:text-fg" />}
+      {(to || onClick) && (
+        <ArrowUpRight className="size-4 shrink-0 self-start text-faint transition-colors group-hover:text-fg" />
+      )}
     </>
   );
   const cls = cn("group flex min-w-0 items-center gap-4 rounded-2xl border border-line bg-panel p-4", className);
@@ -750,6 +808,10 @@ function Stat({
     <Link to={to} className={cn(cls, "transition-colors hover:border-line-strong")}>
       {body}
     </Link>
+  ) : onClick ? (
+    <button onClick={onClick} className={cn(cls, "text-left transition-colors hover:border-line-strong")}>
+      {body}
+    </button>
   ) : (
     <div className={cls}>{body}</div>
   );

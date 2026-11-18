@@ -138,7 +138,8 @@ export function LoginPage() {
   });
   const request = run(async () => {
     await api.post("/api/auth/request-access", { name, email, note });
-    setSentText("Votre demande est enregistrée. Vous recevrez un e-mail si un administrateur la valide.");
+    // La messagerie n'est pas forcément en service : ne rien promettre (AD-3)
+    setSentText("Votre demande est enregistrée. Un administrateur vous transmettra votre accès s'il la valide.");
     setStep("sent");
   });
   const demoLogin = async (id: string) => {

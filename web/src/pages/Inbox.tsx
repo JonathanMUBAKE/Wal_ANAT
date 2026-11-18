@@ -21,7 +21,7 @@ import {
 import { Drawer } from "@/components/drawer";
 import { Avatar, Button, Empty, cn } from "@/components/ui";
 import { ApprovalCard } from "@/components/ai";
-import { useApprovals, useNotifications, useUserMap } from "@/lib/hooks";
+import { useApprovals, useMe, useNotifications, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { ago } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -188,6 +188,7 @@ export function InboxPage() {
 /** Préférences : par domaine, recevoir aussi un courriel. L'avis dans l'outil reste toujours. */
 function PrefsDrawer({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
+  const { data: me } = useMe();
   const { data } = useQuery({
     queryKey: ["notification-prefs"],
     queryFn: () => api.get<NotificationPrefs>("/api/me/notification-prefs"),
@@ -212,6 +213,12 @@ function PrefsDrawer({ onClose }: { onClose: () => void }) {
       <p className="mb-4 text-[13px] text-muted">
         Chaque avis arrive toujours ici. Choisissez les domaines pour lesquels vous recevez aussi un courriel.
       </p>
+      {me && !me.mail_ready && (
+        <p className="mb-4 rounded-lg border border-line bg-hover px-3 py-2 text-[12.5px] text-muted">
+          La messagerie de l'institution n'est pas encore en service : aucun courriel ne part pour l'instant. Vos choix
+          s'appliqueront dès sa mise en service.
+        </p>
+      )}
       {data ? (
         <ul className="divide-y divide-line rounded-xl border border-line">
           {data.categories.map((c) => (

@@ -266,6 +266,8 @@ export async function seedGovDemo(svc: Services) {
       responsible_id: "u_karim",
       target_value: target,
       unit_label,
+      // La date de début fonde l'avancement attendu à date (PT-4)
+      start_on: day(offset - 150),
       end_on: day(offset),
       objective: "Objectif fixé au plan",
       budget_planned: 50000,
@@ -883,6 +885,7 @@ async function seedAgreements(svc: Services, org: string, me: string) {
     partner_ids: [ufgl],
     end_on: day(1100),
     tacit_renewal: true,
+    focal_id: me,
   });
   await ag.sign(me, conv.id, [{ actor_id: "u_karim", action: "signature" }]);
   await ag.create(me, org, {
@@ -982,6 +985,7 @@ async function seedPartners(svc: Services, org: string, me: string) {
     categories: ["mise_en_oeuvre"],
     country: "CD",
     description: "Accompagnement fictif des concertations communautaires.",
+    focal_id: me,
   });
   await p.setState(me, ngo.id, { state: "actif" });
   await p.setState(me, ngo.id, {

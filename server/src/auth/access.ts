@@ -175,8 +175,11 @@ export class Access {
     return { role, mine };
   }
 
-  async assign(actorId: string, orgId: string, userId: string, profileId: string, info: RequestInfo) {
+  async assign(actorId: string, orgId: string, userId: string, profileId: string, info: RequestInfo, reason: string) {
     await this.svc.requirePerm(actorId, orgId, "org.members");
+    // Un changement de profil change les droits de quelqu'un : il se motive (S-4)
+    reason = reason.trim();
+    if (!reason) throw badRequest("Indiquez le motif du changement de profil");
     const { role } = await this.target(actorId, orgId, userId);
     const p = await this.assertCanAssign(actorId, orgId, profileId);
     if (role === "owner" && p.base_role !== "owner") {
@@ -198,7 +201,7 @@ export class Access {
       userId,
       actorId,
       ip: info.ip,
-      data: { org_id: orgId, profile: p.name },
+      data: { org_id: orgId, profile: p.name, reason },
     });
     this.svc.bus.emit({ type: "org.changed", actorId, orgId });
   }

@@ -37,14 +37,23 @@ export class UnitTasks {
   /** Entités que la personne dirige (directement ou au-dessus) et entité dont elle est agent. */
   async mine(actorId: string, orgId: string) {
     await this.svc.requireOrg(actorId, orgId, "member");
-    const rows = await this.svc.db.query<{ id: string; name: string; parent_id: string | null; role: string }>(
+    const rows = await this.svc.db.query<{
+      id: string;
+      name: string;
+      parent_id: string | null;
+      role: string;
+      home: boolean;
+    }>(
       `WITH RECURSIVE managed(id) AS (
          SELECT id FROM org_units WHERE manager_id = $1 AND org_id = $2
          UNION SELECT u.id FROM org_units u JOIN managed m ON u.parent_id = m.id
        )
-       SELECT u.id, u.name, u.parent_id, 'responsable' AS role FROM org_units u WHERE u.id IN (SELECT id FROM managed)
+       SELECT u.id, u.name, u.parent_id, 'responsable' AS role,
+              -- L'entité de rattachement, même dirigée, est celle qui s'ouvre par défaut (T-9, E-4)
+              u.id = (SELECT unit_id FROM org_members WHERE user_id = $1 AND org_id = $2) AS home
+         FROM org_units u WHERE u.id IN (SELECT id FROM managed)
        UNION
-       SELECT u.id, u.name, u.parent_id, 'agent' FROM org_units u JOIN org_members om ON om.unit_id = u.id
+       SELECT u.id, u.name, u.parent_id, 'agent', TRUE FROM org_units u JOIN org_members om ON om.unit_id = u.id
         WHERE om.user_id = $1 AND om.org_id = $2 AND u.id NOT IN (SELECT id FROM managed)`,
       [actorId, orgId],
     );
@@ -56,7 +65,13 @@ export class UnitTasks {
     // À profondeur égale, l'entité qui en porte le plus d'autres passe devant (le département avant l'antenne)
     const below = (id: string) => rows.filter((x) => x.parent_id === id).length;
     return rows
-      .map((r) => ({ id: r.id, name: r.name, role: r.role as "responsable" | "agent", depth: depth(r.parent_id) }))
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        role: r.role as "responsable" | "agent",
+        home: !!r.home,
+        depth: depth(r.parent_id),
+      }))
       .sort((a, b) =>
         a.role === b.role
           ? a.depth - b.depth || below(b.id) - below(a.id) || a.name.localeCompare(b.name)
@@ -148,19 +163,29 @@ export class UnitTasks {
       unit_id: string;
       unit_name: string;
       is_head: boolean;
+      leads: string | null;
     }>(
-      // Le responsable de l'entité compte dans sa charge et ses chiffres, en tête (E-1)
-      `WITH RECURSIVE tree(id) AS (SELECT $2::text UNION SELECT c.id FROM org_units c JOIN tree ON c.parent_id = tree.id)
+      // Le responsable de l'entité compte dans sa charge et ses chiffres, en tête (E-1) ; viennent ensuite les chefs
+      // des entités rattachées, présentés comme tels (E-3), puis les agents
+      `WITH RECURSIVE tree(id) AS (SELECT $2::text UNION SELECT c.id FROM org_units c JOIN tree ON c.parent_id = tree.id),
+       people AS (
+         SELECT DISTINCT ON (user_id) * FROM (
+           SELECT u.id AS user_id, u.name, u.title, ou.id AS unit_id, ou.name AS unit_name, 1 AS prio
+             FROM org_members om JOIN users u ON u.id = om.user_id JOIN org_units ou ON ou.id = om.unit_id
+            WHERE om.org_id = $1 AND om.unit_id IN (SELECT id FROM tree) AND NOT u.is_ai
+           UNION ALL
+           SELECT u.id, u.name, u.title, ou.id, ou.name, 2
+             FROM org_units ou JOIN users u ON u.id = ou.manager_id WHERE ou.id IN (SELECT id FROM tree)
+         ) a ORDER BY user_id, prio
+       )
        SELECT * FROM (
-         SELECT u.id AS user_id, u.name, u.title, ou.id AS unit_id, ou.name AS unit_name, (u.id = ou2.manager_id) AS is_head
-           FROM org_members om JOIN users u ON u.id = om.user_id JOIN org_units ou ON ou.id = om.unit_id
-           JOIN org_units ou2 ON ou2.id = $2
-          WHERE om.org_id = $1 AND om.unit_id IN (SELECT id FROM tree) AND NOT u.is_ai
-         UNION
-         SELECT u.id, u.name, u.title, ou.id, ou.name, TRUE
-           FROM org_units ou JOIN users u ON u.id = ou.manager_id WHERE ou.id = $2
+       SELECT p.user_id, p.name, p.title, p.unit_id, p.unit_name,
+              (p.user_id = (SELECT manager_id FROM org_units WHERE id = $2)) AS is_head,
+              (SELECT string_agg(s.name, ', ' ORDER BY s.name) FROM org_units s
+                WHERE s.manager_id = p.user_id AND s.id IN (SELECT id FROM tree) AND s.id <> $2) AS leads
+         FROM people p
        ) x
-       ORDER BY is_head DESC, (unit_id = $2) DESC, unit_name, name`,
+        ORDER BY is_head DESC, (leads IS NOT NULL) DESC, (unit_id = $2) DESC, unit_name, name`,
       [orgId, unitId],
     );
     const readable = await this.svc.readableProjectIds(actorId, orgId);

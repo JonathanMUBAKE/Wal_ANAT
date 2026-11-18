@@ -140,6 +140,7 @@ describe("lot P3c — l'avancement des dossiers remonte au plan", () => {
       title: "Révision du schéma provincial",
       responsible_id: "u_karim",
       target_value: 1,
+      start_on: "2027-01-01",
       end_on: "2027-06-30",
     });
     await g.api("u_alice", "POST", `/api/plans/${p.id}/submit`);

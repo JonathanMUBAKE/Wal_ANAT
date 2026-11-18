@@ -184,6 +184,14 @@ export class Hr {
               a.function_title, to_char(a.hired_on, 'YYYY-MM-DD') AS hired_on,
               to_char(a.contract_end_on, 'YYYY-MM-DD') AS contract_end_on, u.email, u.status AS account_status,
               om.unit_id, ou.name AS unit_name, p.name AS profile_name,
+              -- Indicateurs du service (RH-4) : tranche d'âge, sans la date de naissance, et départ en retraite
+              CASE WHEN a.birth_date IS NULL THEN NULL
+                   WHEN date_part('year', age(a.birth_date)) < 30 THEN 'moins de 30 ans'
+                   WHEN date_part('year', age(a.birth_date)) < 40 THEN '30 à 39 ans'
+                   WHEN date_part('year', age(a.birth_date)) < 50 THEN '40 à 49 ans'
+                   WHEN date_part('year', age(a.birth_date)) < 60 THEN '50 à 59 ans'
+                   ELSE '60 ans et plus' END AS age_band,
+              to_char(a.birth_date + make_interval(years => ${RETIREMENT_AGE}), 'YYYY-MM-DD') AS retire_on,
               (SELECT count(*)::int FROM agent_diplomas d WHERE d.org_id = a.org_id AND d.user_id = a.user_id) AS diploma_count,
               (SELECT count(*)::int FROM agent_contacts c WHERE c.org_id = a.org_id AND c.user_id = a.user_id) AS contact_count
          FROM agent_records a JOIN users u ON u.id = a.user_id

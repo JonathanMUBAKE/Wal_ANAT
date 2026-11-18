@@ -59,7 +59,7 @@ export async function boot() {
   const profiles = (await api("u_alice", "GET", "/api/org/profiles")).body as { id: string; name: string }[];
   const profile = (name: string) => profiles.find((p) => p.name === name)!.id;
   const promote = (user: string, name = "Administrateur") =>
-    api("u_alice", "PUT", `/api/org/members/${user}/profile`, { profile_id: profile(name) });
+    api("u_alice", "PUT", `/api/org/members/${user}/profile`, { profile_id: profile(name), reason: "Changement de fonctions" });
   const units = async (n: number) => {
     const parent = (await api("u_alice", "GET", "/api/org/units")).body[0].id;
     const out: string[] = [];

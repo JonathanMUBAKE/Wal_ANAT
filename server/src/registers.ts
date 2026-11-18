@@ -64,6 +64,8 @@ export interface IndicatorInput {
   plan_activity_id?: string | null;
   /** Source de l'outil qui calcule le résultat (RI-4) ; vide : résultat saisi. */
   computed_from?: string | null;
+  /** Date de la mesure saisie (RI-3) ; à défaut, aujourd'hui. */
+  measured_on?: string;
 }
 const mailRef = (m: Pick<Mail, "direction" | "year" | "seq">) =>
   `${m.direction === "entrant" ? "ENT" : "SOR"}/${m.year}/${String(m.seq).padStart(4, "0")}`;
@@ -390,11 +392,23 @@ export class Registers {
     const r = await this.mail(id);
     return { ...r, reference: mailRef(r) };
   }
-  async closeMail(actorId: string, id: string, i: { response_ref?: string }) {
+  async closeMail(actorId: string, id: string, i: { response_ref?: string; reply_id?: string }) {
     const { m, manager, rel } = await this.mailReadable(actorId, id);
     if (!manager && !rel.assignee && !rel.head)
       throw forbidden("Seuls l'agent imputé, son chef et la direction clôturent ce courrier");
     if (m.status === "classe") throw new HttpError(409, "Ce courrier est classé sans suite");
+    // La réponse se choisit parmi les courriers sortants enregistrés : la clôture les relie (C-2)
+    if (i.reply_id) {
+      const out = await this.svc.db.one<Mail>("SELECT * FROM correspondence WHERE id = $1 AND org_id = $2", [
+        i.reply_id,
+        m.org_id,
+      ]);
+      if (!out || out.direction !== "sortant") throw badRequest("La réponse doit être un courrier sortant du registre");
+      if (out.reply_to_id && out.reply_to_id !== id)
+        throw badRequest("Ce courrier sortant répond déjà à un autre courrier");
+      await this.svc.db.query("UPDATE correspondence SET reply_to_id = $1 WHERE id = $2", [id, out.id]);
+      i = { ...i, response_ref: mailRef(out) };
+    }
     // Une clôture est un fait du registre : elle ne s'écrase pas
     const closed = await this.svc.db.one(
       "UPDATE correspondence SET status = 'traite', response_ref = $1, closed_at = now() WHERE id = $2 AND status <> 'traite' RETURNING id",
@@ -535,7 +549,10 @@ export class Registers {
       ownerOnly = !perms.includes("pilotage.view") && !perms.includes("risks.manage");
     }
     return this.svc.db.query(
-      `SELECT r.*, r.probability * r.impact AS score, u.name AS owner_name, p.name AS project_name
+      `SELECT r.*, r.probability * r.impact AS score, u.name AS owner_name, p.name AS project_name,
+              -- Tendance : le score de la révision précédente (RI-3)
+              (SELECT h.probability * h.impact FROM risk_history h WHERE h.risk_id = r.id
+                ORDER BY h.recorded_at DESC OFFSET 1 LIMIT 1) AS previous_score
          FROM risks r LEFT JOIN users u ON u.id = r.owner_id LEFT JOIN projects p ON p.id = r.project_id
         WHERE r.org_id = $1 AND ($2::text IS NULL OR r.project_id = $2) AND (NOT $3 OR r.owner_id = $4)
         ORDER BY r.status, score DESC, r.created_at DESC`,
@@ -544,7 +561,10 @@ export class Registers {
   }
   private async riskRow(id: string) {
     return this.svc.db.one(
-      `SELECT r.*, r.probability * r.impact AS score, u.name AS owner_name, p.name AS project_name
+      `SELECT r.*, r.probability * r.impact AS score, u.name AS owner_name, p.name AS project_name,
+              -- Tendance : le score de la révision précédente (RI-3)
+              (SELECT h.probability * h.impact FROM risk_history h WHERE h.risk_id = r.id
+                ORDER BY h.recorded_at DESC OFFSET 1 LIMIT 1) AS previous_score
          FROM risks r LEFT JOIN users u ON u.id = r.owner_id LEFT JOIN projects p ON p.id = r.project_id WHERE r.id = $1`,
       [id],
     );
@@ -587,13 +607,20 @@ export class Registers {
       projectId: i.project_id ?? null,
       data: { id, title: i.title },
     });
+    await this.riskRevision(orgId, id, actorId);
+    if (i.owner_id) await this.notifyRiskOwner(i.owner_id, actorId, orgId, i.title.trim(), "assigned");
     return this.riskRow(id);
   }
   async updateRisk(actorId: string, id: string, i: RiskInput) {
-    const r = await this.svc.db.one<{ org_id: string; project_id: string | null; owner_id: string | null }>(
-      "SELECT org_id, project_id, owner_id FROM risks WHERE id = $1",
-      [id],
-    );
+    const r = await this.svc.db.one<{
+      org_id: string;
+      project_id: string | null;
+      owner_id: string | null;
+      title: string;
+      probability: number;
+      impact: number;
+      status: string;
+    }>("SELECT org_id, project_id, owner_id, title, probability, impact, status FROM risks WHERE id = $1", [id]);
     if (!r) throw notFound("Risque introuvable");
     // Le responsable du risque tient sa parade et son état ; le reste revient à qui gère le registre
     const own = r.owner_id === actorId && !!(await this.svc.orgRole(actorId, r.org_id));
@@ -622,12 +649,73 @@ export class Registers {
       ],
     );
     await this.svc.log(actorId, "risk.updated", { orgId: r.org_id, projectId: r.project_id, data: { id, ...i } });
+    // Chaque révision est datée ; un changement de score ou d'état entre à l'historique (RI-3)
+    await this.svc.db.query("UPDATE risks SET last_reviewed_at = now() WHERE id = $1", [id]);
+    const after = { probability: i.probability ?? r.probability, impact: i.impact ?? r.impact, status: i.status ?? r.status };
+    const scoreChanged = after.probability * after.impact !== r.probability * r.impact;
+    if (scoreChanged || after.status !== r.status) await this.riskRevision(r.org_id, id, actorId);
+    // Le responsable est prévenu de son attribution et d'un changement de score (RI-6)
+    const owner = i.owner_id !== undefined ? i.owner_id : r.owner_id;
+    const title = i.title?.trim() || r.title;
+    if (owner && owner !== r.owner_id) await this.notifyRiskOwner(owner, actorId, r.org_id, title, "assigned");
+    else if (owner && scoreChanged)
+      await this.notifyRiskOwner(owner, actorId, r.org_id, title, "scored", r.probability * r.impact, after.probability * after.impact);
     return this.riskRow(id);
+  }
+  private async riskRevision(orgId: string, riskId: string, actorId: string) {
+    await this.svc.db.query(
+      `INSERT INTO risk_history (id, org_id, risk_id, probability, impact, status, author_id)
+       SELECT $1, org_id, id, probability, impact, status, $2 FROM risks WHERE id = $3`,
+      [uid("rkh"), actorId, riskId],
+    );
+    void orgId;
+  }
+  private async notifyRiskOwner(
+    ownerId: string,
+    actorId: string,
+    orgId: string,
+    title: string,
+    what: "assigned" | "scored",
+    before?: number,
+    after?: number,
+  ) {
+    if (ownerId === actorId) return;
+    await this.svc.notify(ownerId, orgId, {
+      kind: what === "assigned" ? "risk.assigned" : "risk.scored",
+      title: what === "assigned" ? `Risque à suivre : ${title}` : `Score du risque revu : ${title}`,
+      body:
+        what === "assigned"
+          ? "Vous êtes responsable de ce risque : tenez sa parade et son état à jour (Pilotage › Risques)."
+          : `Le score passe de ${before} à ${after}.`,
+      actor_id: actorId,
+      link: "/risques",
+    });
+  }
+  async riskHistory(actorId: string, id: string) {
+    const r = await this.svc.db.one<{ org_id: string; owner_id: string | null }>(
+      "SELECT org_id, owner_id FROM risks WHERE id = $1",
+      [id],
+    );
+    if (!r) throw notFound("Risque introuvable");
+    const perms = await this.svc.permissionsOf(actorId, r.org_id);
+    if (r.owner_id !== actorId && !perms.includes("pilotage.view") && !perms.includes("risks.manage"))
+      await this.svc.requirePerm(actorId, r.org_id, "risks.manage");
+    return (
+      await this.svc.db.query<{ score: number }>(
+        `SELECT h.probability, h.impact, h.probability * h.impact AS score, h.status, h.recorded_at, u.name AS author_name
+           FROM risk_history h LEFT JOIN users u ON u.id = h.author_id WHERE h.risk_id = $1 ORDER BY h.recorded_at DESC`,
+        [id],
+      )
+    ).map((h) => ({ ...h, score: Number(h.score) }));
   }
 
   private static INDICATOR =
     `SELECT i.id, i.name, i.unit_label, i.source, i.computed_from, i.baseline::float8 AS baseline, i.target::float8 AS target,
-      i.result::float8 AS result, i.plan_activity_id, pa.title AS plan_activity_title, wp.year AS plan_year, ou.name AS plan_unit_name
+      i.result::float8 AS result, i.plan_activity_id,
+      (SELECT to_char(v.measured_on, 'YYYY-MM-DD') FROM indicator_values v WHERE v.indicator_id = i.id
+        ORDER BY v.measured_on DESC, v.recorded_at DESC LIMIT 1) AS measured_on,
+      (SELECT v.result::float8 FROM indicator_values v WHERE v.indicator_id = i.id
+        ORDER BY v.measured_on DESC, v.recorded_at DESC OFFSET 1 LIMIT 1) AS previous_result, pa.title AS plan_activity_title, wp.year AS plan_year, ou.name AS plan_unit_name
     FROM indicators i LEFT JOIN plan_activities pa ON pa.id = i.plan_activity_id LEFT JOIN work_plans wp ON wp.id = pa.plan_id
     LEFT JOIN org_units ou ON ou.id = wp.unit_id`;
   async indicators(actorId: string, orgId: string) {
@@ -672,11 +760,16 @@ export class Registers {
       ],
     );
     await this.svc.log(actorId, "indicator.created", { orgId, data: { id, name: i.name } });
+    if (i.result && !i.computed_from)
+      await this.svc.db.query(
+        "INSERT INTO indicator_values (id, org_id, indicator_id, result, measured_on, author_id) VALUES ($1,$2,$3,$4,$5,$6)",
+        [uid("inv"), orgId, id, i.result, i.measured_on ?? localDate(), actorId],
+      );
     return this.oneIndicator(orgId, id);
   }
   async updateIndicator(actorId: string, id: string, i: IndicatorInput) {
-    const r = await this.svc.db.one<{ org_id: string; computed_from: string | null }>(
-      "SELECT org_id, computed_from FROM indicators WHERE id = $1",
+    const r = await this.svc.db.one<{ org_id: string; computed_from: string | null; result: number }>(
+      "SELECT org_id, computed_from, result::float8 AS result FROM indicators WHERE id = $1",
       [id],
     );
     if (!r) throw notFound("Indicateur introuvable");
@@ -707,6 +800,26 @@ export class Registers {
       ],
     );
     await this.svc.log(actorId, "indicator.updated", { orgId: r.org_id, data: { id, ...i } });
+    // Chaque mesure garde sa valeur, sa date et son auteur (RI-3)
+    if (i.result !== undefined && (i.result !== Number(r.result) || i.measured_on)) {
+      if (i.measured_on && !isRealDate(i.measured_on)) throw badRequest(`Date invalide : ${i.measured_on}`);
+      await this.svc.db.query(
+        "INSERT INTO indicator_values (id, org_id, indicator_id, result, measured_on, author_id) VALUES ($1,$2,$3,$4,$5,$6)",
+        [uid("inv"), r.org_id, id, i.result, i.measured_on ?? localDate(), actorId],
+      );
+    }
     return this.oneIndicator(r.org_id, id);
+  }
+  async indicatorHistory(actorId: string, id: string) {
+    const r = await this.svc.db.one<{ org_id: string }>("SELECT org_id FROM indicators WHERE id = $1", [id]);
+    if (!r) throw notFound("Indicateur introuvable");
+    await this.indicators(actorId, r.org_id);
+    return this.svc.db.query(
+      `SELECT v.result::float8 AS result, to_char(v.measured_on, 'YYYY-MM-DD') AS measured_on, v.recorded_at,
+              u.name AS author_name
+         FROM indicator_values v LEFT JOIN users u ON u.id = v.author_id
+        WHERE v.indicator_id = $1 ORDER BY v.measured_on DESC, v.recorded_at DESC`,
+      [id],
+    );
   }
 }

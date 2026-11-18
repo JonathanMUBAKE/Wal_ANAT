@@ -165,7 +165,7 @@ describe("R-01 : un rôle explicite plafonne les droits venus d'une équipe", ()
       })
     ).body;
     await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_hugo'"); // un chef garde un profil de chef (A-3)
-    await api("u_alice", "PUT", "/api/org/members/u_hugo/profile", { profile_id: p.id });
+    await api("u_alice", "PUT", "/api/org/members/u_hugo/profile", { profile_id: p.id, reason: "Changement de fonctions" });
     const refused = await api("u_hugo", "POST", `/api/teams/${team.id}/join`);
     expect(refused.status).toBe(403);
     expect(refused.body.error).toMatch(/profil/);

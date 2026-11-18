@@ -221,7 +221,7 @@ describe("ancienne route de rôle", () => {
       })
     ).body;
     await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_theo'"); // un chef garde un profil de chef (A-3)
-    await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: p.id });
+    await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: p.id, reason: "Changement de fonctions" });
   };
 
   it("ne permet pas de s'attribuer plus de droits", async () => {
@@ -358,7 +358,7 @@ describe("droit de déléguer à l'IA", () => {
       })
     ).body;
     await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_theo'"); // un chef garde un profil de chef (A-3)
-    await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: p.id });
+    await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: p.id, reason: "Changement de fonctions" });
   };
   const runs = async (taskId: string) =>
     (await ctx.db.one<{ n: number }>("SELECT count(*)::int AS n FROM ai_runs WHERE task_id = $1 AND kind <> 'rule'", [
@@ -420,6 +420,8 @@ describe("droit de déléguer à l'IA", () => {
   });
 
   it("une personne autorisée lance toujours l'IA", async () => {
+    // Une seule intervention à la fois par tâche (I-3) : la règle de triage d'exemple laisse la place à la mention
+    await ctx.db.query("UPDATE ai_rules SET enabled = FALSE WHERE name = 'Triage du backlog'");
     const t = await task();
     expect(
       (await api("u_karim", "POST", `/api/tasks/${t.id}/comments`, { body: "@Atlas où en est-on ?" })).status,

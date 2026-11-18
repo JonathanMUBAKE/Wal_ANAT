@@ -71,6 +71,7 @@ describe("plans de travail : la soumission atteint ceux qui approuvent", () => {
       title: "Étude",
       responsible_id: "u_karim",
       target_value: 1,
+      start_on: "2031-01-01",
       end_on: "2031-06-30",
     });
     await g.api("u_alice", "POST", `/api/plans/${p.id}/submit`);

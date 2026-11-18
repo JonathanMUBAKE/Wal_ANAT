@@ -569,7 +569,10 @@ function ActivityDialog({
         <Field label="Unité" hint="Exemple : rapports, ateliers">
           {(a) => <Input {...a} value={f.unit_label} onChange={set("unit_label")} />}
         </Field>
-        <Field label="Début">{(a) => <Input {...a} type="date" value={f.start_on} onChange={set("start_on")} />}</Field>
+        {/* Début et fin sont exigés à la soumission : l'avancement attendu à date en dépend (PT-4) */}
+        <Field label="Début" required>
+          {(a) => <Input {...a} type="date" value={f.start_on} onChange={set("start_on")} />}
+        </Field>
         <Field label="Fin">{(a) => <Input {...a} type="date" value={f.end_on} onChange={set("end_on")} />}</Field>
         <Field label="Budget prévu">
           {(a) => <Input {...a} inputMode="decimal" value={f.budget_planned} onChange={set("budget_planned")} />}

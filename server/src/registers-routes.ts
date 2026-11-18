@@ -41,6 +41,7 @@ const Indicator = z.object({
   source: z.string().max(300).optional(),
   plan_activity_id: id.nullable().optional(),
   computed_from: z.string().max(60).nullable().optional(),
+  measured_on: z.string().max(10).optional(),
 });
 
 export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers, g: Gaps) {
@@ -48,7 +49,7 @@ export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers,
     s.list(
       req.userId,
       req.orgId,
-      z.object({ box: z.enum(["to_sign", "mine", "all"]).default("to_sign") }).parse(req.query).box,
+      z.object({ box: z.enum(["to_sign", "mine", "all", "dg"]).default("to_sign") }).parse(req.query).box,
     ),
   );
   r.post("/api/signature", async (req) => s.create(req.userId, req.orgId, Doc.parse(req.body)));
@@ -165,7 +166,7 @@ export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers,
     reg.closeMail(
       req.userId,
       req.params.id,
-      z.object({ response_ref: z.string().max(200).optional() }).parse(req.body),
+      z.object({ response_ref: z.string().max(200).optional(), reply_id: id.optional() }).parse(req.body),
     ),
   );
 
@@ -176,7 +177,9 @@ export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers,
     reg.createRisk(req.userId, req.orgId, Risk.extend({ title, probability: score, impact: score }).parse(req.body)),
   );
   r.patch<Id>("/api/risks/:id", async (req) => reg.updateRisk(req.userId, req.params.id, Risk.parse(req.body)));
+  r.get<Id>("/api/risks/:id/history", async (req) => reg.riskHistory(req.userId, req.params.id));
   r.get("/api/indicators", async (req) => reg.indicators(req.userId, req.orgId));
+  r.get<Id>("/api/indicators/:id/history", async (req) => reg.indicatorHistory(req.userId, req.params.id));
   r.post("/api/indicators", async (req) =>
     reg.createIndicator(req.userId, req.orgId, Indicator.extend({ name: title, target: num }).parse(req.body)),
   );

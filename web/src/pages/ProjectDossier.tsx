@@ -853,23 +853,39 @@ function Evaluate({ contract, onClose }: { contract: ContractRow; onClose: () =>
 }
 
 // ---------------------------------------------------------------- vue « Mes tâches » : livrables à produire, à valider
-export function MyDeliverables() {
-  const { data: me } = useMe();
-  const [open, setOpen] = useState<string | null>(null);
-  const { data } = useQuery({
+const useMyDeliverables = () =>
+  useQuery({
     queryKey: ["deliverables", { mine: true }],
     queryFn: () => api.get<DeliverableRow[]>("/api/deliverables?mine=true"),
   });
+const TO_PRODUCE = ["prevu", "en_cours", "a_corriger"];
+/** Nombre de livrables à produire dont l'échéance est passée : ils comptent avec les retards (T-6). */
+export function useLateDeliverables(meId: string | undefined) {
+  const { data } = useMyDeliverables();
+  return (data ?? []).filter((d) => d.responsible_id === meId && TO_PRODUCE.includes(d.status) && isLate(d.due_on))
+    .length;
+}
+
+export function MyDeliverables() {
+  const { data: me } = useMe();
+  const [open, setOpen] = useState<string | null>(null);
+  const { data } = useMyDeliverables();
   if (!data || !me) return null;
-  const produce = data.filter(
-    (d) => d.responsible_id === me.id && ["prevu", "en_cours", "a_corriger"].includes(d.status),
-  );
+  const mine = data.filter((d) => d.responsible_id === me.id && TO_PRODUCE.includes(d.status));
+  // Un livrable en retard se range avec les retards, en tête (T-6)
+  const late = mine.filter((d) => isLate(d.due_on));
+  const produce = mine.filter((d) => !isLate(d.due_on));
   const check = data.filter((d) => d.validator_id === me.id && ["soumis", "en_revue"].includes(d.status));
-  if (!produce.length && !check.length) return null;
-  const block = (title: string, rows: DeliverableRow[], Icon: typeof Send) =>
+  if (!produce.length && !check.length && !late.length) return null;
+  const block = (title: string, rows: DeliverableRow[], Icon: typeof Send, danger = false) =>
     rows.length ? (
       <div>
-        <p className="mb-1.5 flex items-center gap-1.5 text-[12.5px] font-medium text-muted">
+        <p
+          className={cn(
+            "mb-1.5 flex items-center gap-1.5 text-[12.5px] font-medium",
+            danger ? "text-danger" : "text-muted",
+          )}
+        >
           <Icon className="size-3.5" />
           {title} · {rows.length}
         </p>
@@ -900,6 +916,7 @@ export function MyDeliverables() {
   return (
     <section className="space-y-3">
       <h2 className="text-[15px] font-semibold">Livrables</h2>
+      {block("En retard", late, Send, true)}
       {block("À valider", check, ShieldCheck)}
       {block("À produire", produce, Send)}
       {open && <DeliverableDialog id={open} onClose={() => setOpen(null)} />}

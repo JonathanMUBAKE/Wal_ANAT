@@ -166,6 +166,9 @@ const SELECT = `SELECT p.id, p.org_id, p.name, p.acronym, p.official_id, p.type_
   COALESCE((SELECT json_agg(pc.code ORDER BY pc.code) FROM partner_categories pc WHERE pc.partner_id = p.id), '[]'::json) AS categories,
   COALESCE((SELECT json_agg(pf.user_id ORDER BY pf.user_id) FROM partner_focals pf WHERE pf.partner_id = p.id), '[]'::json) AS focal_ids,
   (SELECT count(*)::int FROM partner_contacts c WHERE c.partner_id = p.id AND NOT c.archived) AS contacts_count,
+  -- Une relation en discussion ou active sans point focal n'est suivie par personne (PA-4)
+  (p.state IN ('en_discussion', 'actif') AND p.merged_into IS NULL AND p.focal_id IS NULL
+    AND NOT EXISTS (SELECT 1 FROM partner_focals pf WHERE pf.partner_id = p.id)) AS no_focal,
   (SELECT max(h.happened_on)::text FROM partner_history h WHERE h.partner_id = p.id AND h.kind = 'note') AS last_note_on,
   -- Une fiche sans histoire (jamais sortie de « Identifié », ni échange, ni lien) se supprime ; les autres se closent
   (NOT p.engaged AND p.merged_into IS NULL
@@ -578,6 +581,13 @@ export class Partners {
     if (!k.name) throw badRequest("Le nom du partenaire doit contenir des lettres ou des chiffres");
     await this.assertUnique(p.org_id, actorId, k, id);
     const focalId = i.focal_id !== undefined ? (i.focal_id ?? null) : p.focal_id;
+    // Une relation en discussion ou active garde au moins un point focal (PA-4)
+    if (
+      (p.state === "en_discussion" || p.state === "actif") &&
+      !focalId &&
+      !(i.focal_ids ?? p.focal_ids).length
+    )
+      throw badRequest(`Une relation « ${LABEL[p.state]} » garde au moins un point focal`);
     await this.onConflict(
       () =>
         this.svc.db.tx(async (q) => {
@@ -670,6 +680,8 @@ export class Partners {
           ? "Suspendre, clore ou rouvrir une relation est réservé aux gestionnaires des partenariats"
           : "Seuls les gestionnaires des partenariats et les points focaux changent l'état de cette fiche",
       );
+    if ((i.state === "en_discussion" || i.state === "actif") && !p.focal_id && !p.focal_ids.length)
+      throw badRequest(`Désignez un point focal avant de passer la relation à « ${LABEL[i.state]} »`);
     const reason = i.reason?.trim() ?? "";
     if ((i.state === "suspendu" || i.state === "clos" || p.state === "clos") && !reason)
       throw badRequest(

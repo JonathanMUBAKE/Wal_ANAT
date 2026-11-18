@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AtSign, ChevronRight, MapPin, Network, Plus, Trash2, Users } from "lucide-react";
 import { useReferentials, useUnitTypes } from "@/lib/referentials";
-import { Avatar, Button, ConfirmDialog, Empty, Spinner, cn } from "@/components/ui";
+import { Avatar, Button, ConfirmDialog, Dialog, Empty, Spinner, cn } from "@/components/ui";
 import { AssigneePicker } from "@/components/pickers";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { ORG_ROLE } from "@/components/Sidebar";
@@ -492,6 +492,15 @@ function People({
   const { data: me } = useMe();
   const profiles = useProfiles(canManage);
   const qc = useQueryClient();
+  // Un changement de profil ou de rattachement se confirme ; le profil se motive (S-4)
+  const [pending, setPending] = useState<{
+    kind: "profile" | "unit";
+    userId: string;
+    name: string;
+    value: string;
+    label: string;
+  } | null>(null);
+  const [reason, setReason] = useState("");
   const set = (url: string, body: unknown, ok: string) =>
     api.put(url, body).then(
       () => {
@@ -536,7 +545,13 @@ function People({
                       value={u.profile_id ?? ""}
                       className={sel}
                       onChange={(e) =>
-                        set(`/api/org/members/${u.id}/profile`, { profile_id: e.target.value }, "Profil mis à jour")
+                        setPending({
+                          kind: "profile",
+                          userId: u.id,
+                          name: u.name,
+                          value: e.target.value,
+                          label: profiles.find((p) => p.id === e.target.value)?.name ?? "",
+                        })
                       }
                     >
                       {profiles.map((p) => (
@@ -556,11 +571,13 @@ function People({
                     value={u.unit_id ?? ""}
                     className={sel}
                     onChange={(e) =>
-                      set(
-                        `/api/org/members/${u.id}/unit`,
-                        { unit_id: e.target.value || null },
-                        "Rattachement mis à jour",
-                      )
+                      setPending({
+                        kind: "unit",
+                        userId: u.id,
+                        name: u.name,
+                        value: e.target.value,
+                        label: units.find((x) => x.id === e.target.value)?.name ?? "Non rattaché",
+                      })
                     }
                   >
                     <option value="">Non rattaché</option>
@@ -583,6 +600,61 @@ function People({
         <Users className="size-3.5" />
         Les invités n'accèdent qu'aux projets partagés avec eux ; ils ne voient ni les équipes ni l'organigramme.
       </p>
+      {pending && (
+        <Dialog
+          open
+          onOpenChange={() => {
+            setPending(null);
+            setReason("");
+          }}
+          title={pending.kind === "profile" ? "Changer le profil" : "Changer le rattachement"}
+          description={
+            pending.kind === "profile"
+              ? `${pending.name} recevra le profil « ${pending.label} » et les droits qui vont avec.`
+              : `${pending.name} sera rattaché(e) à « ${pending.label} ».`
+          }
+          footer={
+            <>
+              <Button
+                onClick={() => {
+                  setPending(null);
+                  setReason("");
+                }}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="primary"
+                disabled={pending.kind === "profile" && !reason.trim()}
+                onClick={() => {
+                  const p = pending;
+                  setPending(null);
+                  setReason("");
+                  if (p.kind === "profile")
+                    set(`/api/org/members/${p.userId}/profile`, { profile_id: p.value, reason }, "Profil mis à jour");
+                  else
+                    set(`/api/org/members/${p.userId}/unit`, { unit_id: p.value || null }, "Rattachement mis à jour");
+                }}
+              >
+                Confirmer
+              </Button>
+            </>
+          }
+        >
+          {pending.kind === "profile" && (
+            <label className="block text-[13px]">
+              <span className="mb-1 block font-medium">Motif</span>
+              <input
+                autoFocus
+                className="h-9 w-full rounded-lg border border-line bg-panel px-2.5 text-[13px]"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Nouvelle fonction, affectation…"
+              />
+            </label>
+          )}
+        </Dialog>
+      )}
     </div>
   );
 }

@@ -93,7 +93,7 @@ export function ByDirection({ className }: { className?: string }) {
   });
   const alerts = data?.directions.filter((d) => d.assessment === "alerte").length ?? 0;
   return (
-    <section className={cn("flex min-w-0 flex-col rounded-2xl border border-line bg-panel", className)}>
+    <section id="par-direction" className={cn("flex min-w-0 flex-col scroll-mt-4 rounded-2xl border border-line bg-panel", className)}>
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-3 pt-4">
         <h2 className="text-[14.5px] font-semibold tracking-[-0.01em]">Par direction</h2>
         {data && (

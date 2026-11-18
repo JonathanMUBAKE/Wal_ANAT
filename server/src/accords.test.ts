@@ -91,6 +91,7 @@ describe("accords : référentiels et création", () => {
 
   it("un partenaire suspendu, clos ou fusionné ne reçoit pas de nouvel accord", async () => {
     const s = await partner();
+    await g.api("u_alice", "PATCH", `/api/partners/${s.id}`, { focal_ids: ["u_alice"] });
     await g.api("u_alice", "POST", `/api/partners/${s.id}/state`, { state: "actif" });
     await g.api("u_alice", "POST", `/api/partners/${s.id}/state`, { state: "suspendu", reason: "Gel" });
     expect((await create({ partner_ids: [s.id] })).status).toBe(409);
@@ -197,6 +198,7 @@ describe("accords : entrée en vigueur", () => {
   it("un partenaire suspendu entre-temps bloque l'entrée en vigueur", async () => {
     const p = await partner();
     const a = (await create({ partner_ids: [p.id] })).body;
+    await g.api("u_alice", "PATCH", `/api/partners/${p.id}`, { focal_ids: ["u_alice"] });
     await g.api("u_alice", "POST", `/api/partners/${p.id}/state`, { state: "actif" });
     await g.api("u_alice", "POST", `/api/partners/${p.id}/state`, { state: "suspendu", reason: "Différend" });
     expect((await activate(a.id)).status).toBe(409);

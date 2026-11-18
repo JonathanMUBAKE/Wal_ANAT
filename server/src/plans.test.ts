@@ -18,6 +18,7 @@ const full = {
   responsible_id: "u_karim",
   target_value: 3,
   unit_label: "rapports",
+  start_on: "2027-01-01",
   end_on: "2027-06-30",
   budget_planned: 1000,
 };

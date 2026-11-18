@@ -92,8 +92,11 @@ const ACTION = { avis: "Avis", visa: "Visa", signature: "Signature" };
 const fail = (e: unknown) => toast.error((e as Error).message);
 
 export function ParapheurPage() {
-  const [tab, setTab] = useState<"to_sign" | "mine" | "all" | "delegations">("to_sign");
+  const [tab, setTab] = useState<"to_sign" | "mine" | "all" | "dg" | "delegations">("to_sign");
   const [creating, setCreating] = useState(false);
+  const can = useCan();
+  // Le cabinet suit la pile de la DG, en lecture (PH-4) ; la DG la voit déjà dans « À traiter »
+  const cabinet = can("pilotage.view") && !can("signature.institution");
   const { data: pending } = useQuery({
     queryKey: ["signature", "to_sign"],
     queryFn: () => api.get<Row[]>("/api/signature?box=to_sign"),
@@ -118,6 +121,7 @@ export function ParapheurPage() {
           { id: "to_sign", label: "À traiter", badge: pending?.length },
           { id: "mine", label: "Mes documents" },
           { id: "all", label: "Tous mes circuits" },
+          ...(cabinet ? [{ id: "dg" as const, label: "Parapheur de la DG" }] : []),
           { id: "delegations", label: "Délégations" },
         ]}
       />
@@ -129,7 +133,7 @@ export function ParapheurPage() {
   );
 }
 
-function Box({ box }: { box: "to_sign" | "mine" | "all" }) {
+function Box({ box }: { box: "to_sign" | "mine" | "all" | "dg" }) {
   const [open, setOpen] = useState<string | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["signature", box],
@@ -141,7 +145,7 @@ function Box({ box }: { box: "to_sign" | "mine" | "all" }) {
       {data?.length ? (
         <Table head={["Référence", "Document", "Auteur", "Échéance", "Étape en cours", "Statut"]}>
           {data.map((d) => (
-            <Tr key={d.id} onClick={() => setOpen(d.id)}>
+            <Tr key={d.id} onClick={box === "dg" ? undefined : () => setOpen(d.id)}>
               <Td className="font-mono text-[12px]">{d.reference}</Td>
               <Td className="font-medium">
                 {d.title}
@@ -165,10 +169,15 @@ function Box({ box }: { box: "to_sign" | "mine" | "all" }) {
           ))}
         </Table>
       ) : (
-        <Empty icon={<Inbox className="size-6" />} title={box === "to_sign" ? "Rien à traiter" : "Aucun document"}>
-          {box === "to_sign"
-            ? "Les documents qui attendent votre visa ou votre signature apparaîtront ici."
-            : "Créez un document et définissez son circuit."}
+        <Empty
+          icon={<Inbox className="size-6" />}
+          title={box === "to_sign" || box === "dg" ? "Rien à traiter" : "Aucun document"}
+        >
+          {box === "dg"
+            ? "Aucun document n'attend la signature de la DG."
+            : box === "to_sign"
+              ? "Les documents qui attendent votre visa ou votre signature apparaîtront ici."
+              : "Créez un document et définissez son circuit."}
         </Empty>
       )}
       {open && <DocDialog id={open} onClose={() => setOpen(null)} />}
@@ -1257,6 +1266,14 @@ function MailDialog({
 }) {
   const qc = useQueryClient();
   const [filing, setFiling] = useState(false);
+  // Clôturer en choisissant le courrier sortant de réponse (C-2)
+  const [closing, setClosing] = useState(false);
+  const [replyId, setReplyId] = useState("");
+  const { data: outgoing } = useQuery({
+    queryKey: ["correspondence", "sortant"],
+    queryFn: () => api.get<MailRow[]>("/api/correspondence?direction=sortant"),
+    enabled: closing,
+  });
   const [reason, setReason] = useState("");
   const act = (path: string, body: unknown, ok: string) =>
     api.post(`/api/correspondence/${m.id}/${path}`, body).then(() => {
@@ -1289,7 +1306,7 @@ function MailDialog({
             <Button
               variant={m.assignee_id === meId ? "primary" : undefined}
               icon={<CheckCircle2 className="size-4" />}
-              onClick={() => act("close", {}, "Courrier traité")}
+              onClick={() => (m.direction === "entrant" ? setClosing(true) : act("close", {}, "Courrier traité"))}
             >
               Clôturer
             </Button>
@@ -1339,6 +1356,45 @@ function MailDialog({
         <DossierDocuments owner="mail" ownerId={m.id} title="Pièce numérisée et documents" />
         <MailThread id={m.id} />
       </div>
+      {closing && (
+        <Dialog
+          open
+          onOpenChange={() => setClosing(false)}
+          title="Clôturer le courrier"
+          description="Choisissez le courrier sortant qui y répond : les deux courriers sont reliés au registre."
+          footer={
+            <>
+              <Button onClick={() => setClosing(false)}>Annuler</Button>
+              <Button
+                variant="primary"
+                onClick={() => act("close", replyId ? { reply_id: replyId } : {}, "Courrier traité")}
+              >
+                Clôturer
+              </Button>
+            </>
+          }
+        >
+          <Field label="Réponse">
+            {(a) => (
+              <select
+                {...a}
+                className="h-9 w-full rounded-lg border border-line bg-panel px-2 text-[13px]"
+                value={replyId}
+                onChange={(e) => setReplyId(e.target.value)}
+              >
+                <option value="">Sans réponse écrite</option>
+                {(outgoing ?? [])
+                  .filter((o) => !o.reply_to_reference || o.reply_to_reference === m.reference)
+                  .map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.reference} · {o.subject}
+                    </option>
+                  ))}
+              </select>
+            )}
+          </Field>
+        </Dialog>
+      )}
       {filing && (
         <Dialog
           open

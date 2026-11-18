@@ -40,6 +40,7 @@ export const TaskRow = memo(function TaskRow({
       <span
         className={cn("min-w-0 flex-1 truncate text-[13.5px]", t.completed && "text-faint line-through decoration-1")}
       >
+        {t.parent_title && <span className="text-faint">{t.parent_title} › </span>}
         {t.title}
       </span>
       {aiActive && (

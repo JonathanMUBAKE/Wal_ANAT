@@ -354,6 +354,13 @@ export async function buildApp(opts: AppOptions = {}) {
         !!security?.platform_role ||
         ["owner", "admin"].includes(orgs.find((o) => o.id === org(req))?.role ?? "") ||
         permissions.some(isSensitive);
+      // La messagerie est-elle en service ? Sans elle, l'interface ne promet aucun courriel (AD-3)
+      const smtp = org(req)
+        ? await db.one<{ host: string | null }>(
+            "SELECT settings->'mail'->'smtp'->>'host' AS host FROM organizations WHERE id = $1",
+            [org(req)],
+          )
+        : null;
       return {
         ...(await svc.user(me(req))),
         org_id: org(req),
@@ -362,6 +369,7 @@ export async function buildApp(opts: AppOptions = {}) {
         platform_role: security?.platform_role ?? null,
         mfa_enabled: !!security?.totp_enabled,
         mfa_required: svc.requireAdminMfa && administers && !security?.totp_enabled,
+        mail_ready: !!process.env.SMTP_URL || !!smtp?.host,
       };
     });
     r.get("/api/users", async (req) => svc.visibleUsers(me(req), org(req)));

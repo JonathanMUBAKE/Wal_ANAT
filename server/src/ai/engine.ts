@@ -296,10 +296,11 @@ export class AiEngine {
   // Exécutions
   // ======================================================================
   async start(o: StartOpts): Promise<string | null> {
+    // Une seule intervention à la fois par tâche, quel que soit le coéquipier : deux IA ne proposent pas la même action (I-3)
     if (o.taskId && o.kind !== "assistant") {
       const active = await this.svc.db.one(
-        "SELECT id FROM ai_runs WHERE agent_id = $1 AND task_id = $2 AND status IN ('queued','running','waiting_approval')",
-        [o.agentId, o.taskId],
+        "SELECT id FROM ai_runs WHERE task_id = $1 AND status IN ('queued','running','waiting_approval')",
+        [o.taskId],
       );
       if (active) return null;
     }

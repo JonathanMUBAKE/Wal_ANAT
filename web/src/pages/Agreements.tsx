@@ -560,7 +560,12 @@ export function AgreementPage() {
             {!editing && (
               <>
                 {d.can.sign && d.binding && (
-                  <Button icon={<FileSignature className="size-4" />} onClick={() => setDialog("sign")}>
+                  <Button
+                    icon={<FileSignature className="size-4" />}
+                    onClick={() => setDialog("sign")}
+                    disabled={!d.focal_id}
+                    title={d.focal_id ? undefined : "Désignez d'abord le point focal de l'accord"}
+                  >
                     Soumettre au parapheur
                   </Button>
                 )}

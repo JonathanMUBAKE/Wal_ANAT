@@ -59,6 +59,8 @@ export interface Me extends User {
   platform_role: "super_admin" | null;
   mfa_enabled: boolean;
   mfa_required: boolean;
+  /** La messagerie est en service : sinon, l'interface ne promet aucun courriel (AD-3). */
+  mail_ready?: boolean;
 }
 export interface PermissionGroup {
   group: string;
@@ -226,6 +228,8 @@ export interface MyUnit {
   id: string;
   name: string;
   role: "responsable" | "agent";
+  /** L'entité de rattachement de la personne, même quand elle la dirige (T-9, E-4). */
+  home?: boolean;
   depth: number;
 }
 export interface UnitBoard {
@@ -243,6 +247,10 @@ export interface UnitFollowUp {
     title: string | null;
     unit_id: string;
     unit_name: string;
+    /** Responsable de l'entité suivie (E-1). */
+    is_head?: boolean;
+    /** Entités rattachées que la personne dirige (E-3). */
+    leads?: string | null;
     open: number;
     overdue: number;
     due_soon: number;
@@ -294,6 +302,10 @@ export interface Task {
   subtask_count?: number;
   subtask_done?: number;
   comment_count?: number;
+  /** Titre de la tâche parente d'une sous-tâche (T-5). */
+  parent_title?: string | null;
+  /** Entité d'une tâche hors projet (T-4). */
+  unit_name?: string | null;
 }
 export interface Comment {
   id: string;

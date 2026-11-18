@@ -171,7 +171,8 @@ export class Signature {
       throw badRequest("Entité inconnue");
   }
 
-  async list(actorId: string, orgId: string, box: "to_sign" | "mine" | "all") {
+  async list(actorId: string, orgId: string, box: "to_sign" | "mine" | "all" | "dg") {
+    if (box === "dg") return this.dgPile(actorId, orgId);
     await this.svc.requirePerm(actorId, orgId, "signature.use");
     const me = [actorId, ...(await this.delegators(orgId, actorId))];
     const signers = [actorId, ...(await this.delegators(orgId, actorId, "signature"))];
@@ -189,6 +190,32 @@ export class Signature {
       [orgId, box, me, actorId, signers],
     );
     return rows.map((d) => ({ ...d, body: undefined, reference: reference(d) }));
+  }
+
+  /**
+   * La pile de la DG (PH-4) : ce qui attend la signature de qui signe au nom de l'Agence, en lecture pour le cabinet
+   * (droit de pilotage). Le texte n'en sort pas ; l'intitulé d'un document confidentiel est masqué.
+   */
+  private async dgPile(actorId: string, orgId: string) {
+    await this.svc.requirePerm(actorId, orgId, "pilotage.view");
+    const dg: string[] = [];
+    for (const u of await this.svc.usersOf(orgId))
+      if (!u.is_ai && (await this.svc.permissionsOf(u.id, orgId)).includes("signature.institution")) dg.push(u.id);
+    if (!dg.length) return [];
+    const rows = await this.svc.db.query<SignDoc & { pending_action: string; pending_actor: string; author_name: string | null }>(
+      `SELECT d.*, u.name AS author_name, p.action AS pending_action, a.name AS pending_actor
+         FROM sign_documents d LEFT JOIN users u ON u.id = d.created_by
+         JOIN sign_steps p ON p.document_id = d.id AND p.status = 'pending' JOIN users a ON a.id = p.actor_id
+        WHERE d.org_id = $1 AND d.status = 'in_circuit' AND p.actor_id = ANY($2)
+        ORDER BY d.due_on NULLS LAST, d.created_at`,
+      [orgId, dg],
+    );
+    return rows.map((d) => ({
+      ...d,
+      body: undefined,
+      title: d.confidential && d.created_by !== actorId ? "Document confidentiel" : d.title,
+      reference: reference(d),
+    }));
   }
 
   async get(actorId: string, id: string) {

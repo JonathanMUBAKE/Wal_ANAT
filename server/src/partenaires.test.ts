@@ -25,6 +25,8 @@ const create = (body: Record<string, unknown> = {}, who = "u_alice") =>
 const get = (id: string, who = "u_alice") => g.api(who, "GET", `/api/partners/${id}`);
 const state = (id: string, body: Record<string, unknown>, who = "u_alice") =>
   g.api(who, "POST", `/api/partners/${id}/state`, body);
+/** Une relation qui passe « En discussion » ou « Actif » a un point focal (PA-4). */
+const withFocal = (id: string) => g.api("u_alice", "PATCH", `/api/partners/${id}`, { focal_ids: ["u_alice"] });
 const list = async (q = "", who = "u_alice") => (await g.api(who, "GET", `/api/partners${q}`)).body as Any[];
 const sysAdmin = () => g.ctx.db.query("UPDATE users SET platform_role = 'super_admin' WHERE id = 'u_alice'");
 
@@ -200,6 +202,12 @@ describe("partenaires : états", () => {
   it("suit le cycle Identifié → En discussion → Actif → Suspendu → Actif → Clos, avec motif pour suspendre et clore", async () => {
     const p = (await create()).body;
     expect((await state(p.id, { state: "suspendu", reason: "x" })).status).toBe(409);
+    // Sans point focal, la relation ne passe pas « En discussion » (PA-4)
+    const alone = await state(p.id, { state: "en_discussion" });
+    expect(alone.status).toBe(400);
+    expect(alone.body.error).toMatch(/point focal/);
+    expect((await get(p.id)).body.no_focal).toBe(false);
+    await withFocal(p.id);
     expect((await state(p.id, { state: "en_discussion" })).body.state).toBe("en_discussion");
     expect((await state(p.id, { state: "actif" })).body.state).toBe("actif");
     expect((await state(p.id, { state: "actif" })).status).toBe(409);
@@ -242,6 +250,7 @@ describe("partenaires : états", () => {
     expect((await g.api("u_alice", "DELETE", `/api/partners/${a.id}`)).status).toBe(200);
     expect((await get(a.id)).status).toBe(404);
     const b = (await create()).body;
+    await withFocal(b.id);
     await state(b.id, { state: "en_discussion" });
     expect((await g.api("u_alice", "DELETE", `/api/partners/${b.id}`)).status).toBe(409);
     const c = (await create()).body;

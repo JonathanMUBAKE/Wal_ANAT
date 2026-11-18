@@ -35,7 +35,7 @@ import {
 } from "@/components/gov";
 import { api } from "@/lib/api";
 import { Drawer } from "@/components/drawer";
-import { useCan, useMe, useUsers } from "@/lib/hooks";
+import { useCan, useMe, useProjects, useUsers } from "@/lib/hooks";
 
 export type DecisionStatus = "a_executer" | "en_cours" | "executee" | "remplacee";
 interface Decision {
@@ -508,7 +508,21 @@ export function DecisionDialog({
     due_on: replaces?.due_on ?? "",
     confidential: false,
     no_execution: false,
+    // Le dossier de la décision : projet, activité ou réunion (DEC-5), prérempli depuis « Arbitrer »
+    dossier: source ? `${source.kind}:${source.id}` : "",
   });
+  const { data: projects } = useProjects();
+  const { data: activities } = useQuery({
+    queryKey: ["activities"],
+    queryFn: () => api.get<{ id: string; title: string }[]>("/api/activities"),
+    enabled: !source,
+  });
+  const { data: meetings } = useQuery({
+    queryKey: ["meetings"],
+    queryFn: () => api.get<{ id: string; title: string | null; meeting_type: string; meeting_date: string }[]>("/api/meetings"),
+    enabled: !source,
+  });
+  const [kind, dossierId] = f.dossier.split(":");
   const set = (k: "title" | "content" | "decided_on" | "due_on") => (e: { target: { value: string } }) =>
     setF({ ...f, [k]: e.target.value });
   const record = useMutation({
@@ -517,9 +531,10 @@ export function DecisionDialog({
         ...f,
         owner_id: f.no_execution ? null : f.owner_id || null,
         due_on: f.no_execution ? null : f.due_on || null,
-        project_id: source?.kind === "project" ? source.id : null,
-        activity_id: source?.kind === "activity" ? source.id : null,
-        meeting_id: source?.kind === "meeting" ? source.id : null,
+        dossier: undefined,
+        project_id: kind === "project" ? dossierId : null,
+        activity_id: kind === "activity" ? dossierId : null,
+        meeting_id: kind === "meeting" ? dossierId : null,
         replaces_id: replaces?.id ?? null,
       }),
     onSuccess: (r) => {
@@ -582,6 +597,41 @@ export function DecisionDialog({
         <Field label="Date de la décision" required error={future ? "La date ne peut pas être dans le futur" : null}>
           {(a) => <Input {...a} type="date" max={today()} value={f.decided_on} onChange={set("decided_on")} />}
         </Field>
+        {!source && (
+          <Field label="Dossier">
+            {(a) => (
+              <select
+                {...a}
+                className="h-9 w-full rounded-lg border border-line bg-panel px-2 text-[13px]"
+                value={f.dossier}
+                onChange={(e) => setF({ ...f, dossier: e.target.value })}
+              >
+                <option value="">Aucun dossier</option>
+                <optgroup label="Projets">
+                  {(projects ?? []).map((p) => (
+                    <option key={p.id} value={`project:${p.id}`}>
+                      {p.name}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Activités">
+                  {(activities ?? []).map((x) => (
+                    <option key={x.id} value={`activity:${x.id}`}>
+                      {x.title}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Réunions">
+                  {(meetings ?? []).map((m) => (
+                    <option key={m.id} value={`meeting:${m.id}`}>
+                      {m.title || m.meeting_type} · {m.meeting_date}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            )}
+          </Field>
+        )}
         <label className="flex items-center gap-2 text-[13px] sm:col-span-2">
           <input
             type="checkbox"

@@ -24,7 +24,8 @@ export function useOpenFromUrl(open: () => void) {
   }, [params, setParams, open]);
 }
 
-export function QuickEntry({ className, wide }: { className?: string; wide?: boolean }) {
+/** noSign : la page affiche déjà le parapheur dans « Ce qui vous attend » ; viser n'est pas une saisie (A-5). */
+export function QuickEntry({ className, wide, noSign }: { className?: string; wide?: boolean; noSign?: boolean }) {
   const can = useCan();
   const { data: pending } = useQuery({
     queryKey: ["arbitrations", "en_attente"],
@@ -34,7 +35,7 @@ export function QuickEntry({ className, wide }: { className?: string; wide?: boo
   const { data: toSign } = useQuery({
     queryKey: ["signature", "to_sign"],
     queryFn: () => api.get<unknown[]>("/api/signature?box=to_sign"),
-    enabled: can("signature.use"),
+    enabled: can("signature.use") && !noSign,
   });
   const items = [
     can("decisions.record") && {
@@ -68,7 +69,8 @@ export function QuickEntry({ className, wide }: { className?: string; wide?: boo
       label: "Nouvelle activité",
       hint: "commission, conférence, rendez-vous",
     },
-    can("signature.use") && {
+    !noSign &&
+      can("signature.use") && {
       to: "/parapheur",
       Icon: FileSignature,
       label: "Viser ou signer",

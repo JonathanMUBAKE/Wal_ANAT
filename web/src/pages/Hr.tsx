@@ -39,6 +39,9 @@ export interface AgentRow {
   profile_name: string | null;
   diploma_count: number;
   contact_count: number;
+  /** Indicateurs du service (RH-4) : tranche d'âge et date de départ en retraite. */
+  age_band?: string | null;
+  retire_on?: string | null;
 }
 export interface AgentDetail extends AgentRow {
   /** Lu par le chef : partie administrative seulement (thème 5, D-2). */
@@ -114,11 +117,83 @@ const fullName = (a: Pick<AgentRow, "civility" | "first_names" | "last_name">) =
   [a.civility, a.first_names, a.last_name.toUpperCase()].filter(Boolean).join(" ");
 
 /** Registre des agents (service RH). */
+const AGE_BANDS = ["moins de 30 ans", "30 à 39 ans", "40 à 49 ans", "50 à 59 ans", "60 ans et plus"];
+/** Effectifs par entité, pyramide des âges, départs des douze prochains mois (RH-4). */
+function HrIndicators({ rows }: { rows: AgentRow[] }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const inYear = new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10);
+  const byUnit = Object.entries(
+    rows.reduce<Record<string, number>>((m, a) => ({ ...m, [a.unit_name ?? "Non rattaché"]: (m[a.unit_name ?? "Non rattaché"] ?? 0) + 1 }), {}),
+  ).sort((a, b) => b[1] - a[1]);
+  const ages = AGE_BANDS.map((b) => [b, rows.filter((a) => a.age_band === b).length] as const);
+  const maxAge = Math.max(1, ...ages.map(([, n]) => n));
+  const leaving = rows.filter(
+    (a) =>
+      (a.contract_end_on && a.contract_end_on >= today && a.contract_end_on <= inYear) ||
+      (a.retire_on && a.retire_on >= today && a.retire_on <= inYear),
+  );
+  const box = "rounded-2xl border border-line bg-panel p-4";
+  return (
+    <div className="grid gap-3 md:grid-cols-3">
+      <section className={box}>
+        <h3 className="mb-2 text-[13px] font-semibold">Effectifs par entité · {rows.length}</h3>
+        <ul className="space-y-1 text-[12.5px]">
+          {byUnit.slice(0, 6).map(([u, n]) => (
+            <li key={u} className="flex justify-between gap-2">
+              <span className="truncate text-muted">{u}</span>
+              <span className="tabular font-medium">{n}</span>
+            </li>
+          ))}
+          {byUnit.length > 6 && <li className="text-faint">et {byUnit.length - 6} autres entités</li>}
+        </ul>
+      </section>
+      <section className={box}>
+        <h3 className="mb-2 text-[13px] font-semibold">Pyramide des âges</h3>
+        <ul className="space-y-1.5 text-[12.5px]">
+          {ages.map(([b, n]) => (
+            <li key={b} className="grid grid-cols-[110px_1fr_24px] items-center gap-2">
+              <span className="text-muted">{b}</span>
+              <span className="h-2 rounded-full bg-hover">
+                <span className="block h-2 rounded-full bg-primary" style={{ width: `${(100 * n) / maxAge}%` }} />
+              </span>
+              <span className="text-right tabular">{n}</span>
+            </li>
+          ))}
+        </ul>
+        {rows.some((a) => !a.age_band) && (
+          <p className="mt-2 text-[11.5px] text-faint">
+            {rows.filter((a) => !a.age_band).length} dossier(s) sans date de naissance
+          </p>
+        )}
+      </section>
+      <section className={box}>
+        <h3 className="mb-2 text-[13px] font-semibold">Départs prévus sous 12 mois · {leaving.length}</h3>
+        <ul className="space-y-1 text-[12.5px]">
+          {leaving.slice(0, 6).map((a) => (
+            <li key={a.user_id} className="flex justify-between gap-2">
+              <span className="truncate">{fullName(a)}</span>
+              <span className="shrink-0 text-muted">
+                {a.retire_on && a.retire_on <= inYear && a.retire_on >= today
+                  ? `retraite ${frDate(a.retire_on)}`
+                  : `fin de contrat ${frDate(a.contract_end_on)}`}
+              </span>
+            </li>
+          ))}
+          {!leaving.length && <li className="text-faint">Aucun départ prévu</li>}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
 export function HrPage() {
   const nav = useNavigate();
   const [tab, setTab] = useState<"agents" | "a-identifier">("agents");
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
+  // Filtres par entité et par grade (RH-4)
+  const [unitF, setUnitF] = useState("");
+  const [gradeF, setGradeF] = useState("");
   const [creating, setCreating] = useState<{ user_id?: string; name?: string } | null>(null);
   const { data, error } = useQuery({ queryKey: ["hr-agents"], queryFn: () => api.get<AgentRow[]>("/api/hr/agents") });
   const { data: pending } = useQuery({
@@ -129,6 +204,8 @@ export function HrPage() {
   const rows = (data ?? []).filter(
     (a) =>
       (!status || a.status === status) &&
+      (!unitF || (a.unit_name ?? "") === unitF) &&
+      (!gradeF || a.grade === gradeF) &&
       (!q ||
         [a.matricule, a.last_name, a.first_names, a.function_title, a.grade, a.unit_name ?? "", a.email]
           .join(" ")
@@ -199,7 +276,8 @@ export function HrPage() {
         ) : tab === "agents" ? (
           <>
             <HrInbox />
-            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_220px]">
+            <HrIndicators rows={data} />
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_200px_200px_200px]">
               <Input
                 aria-label="Rechercher un agent"
                 placeholder="Rechercher par nom, matricule, fonction, grade, entité…"
@@ -211,6 +289,22 @@ export function HrPage() {
                 {Object.entries(STATUS_LABEL).map(([v, l]) => (
                   <option key={v} value={v}>
                     {l}
+                  </option>
+                ))}
+              </Select>
+              <Select aria-label="Entité" value={unitF} onChange={(e) => setUnitF(e.target.value)}>
+                <option value="">Toutes les entités</option>
+                {[...new Set(data.map((a) => a.unit_name ?? "").filter(Boolean))].sort().map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
+              </Select>
+              <Select aria-label="Grade" value={gradeF} onChange={(e) => setGradeF(e.target.value)}>
+                <option value="">Tous les grades</option>
+                {[...new Set(data.map((a) => a.grade).filter(Boolean))].sort().map((x) => (
+                  <option key={x} value={x}>
+                    {x}
                   </option>
                 ))}
               </Select>

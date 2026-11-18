@@ -64,6 +64,8 @@ interface MeetingAction {
   meeting_reference?: string;
   meeting_type?: string;
   task_id?: string | null;
+  /** Parue dans un compte rendu validé : elle s'annule, elle ne se retire pas (R-4). */
+  published?: boolean;
 }
 /** Décision annoncée en séance : inscrite au registre des décisions à la validation du compte rendu. */
 interface MeetingDecision {
@@ -1549,7 +1551,7 @@ export function MeetingPage() {
                               value={a.due_on ?? ""}
                               onChange={(e) => setAction(i, j, { due_on: e.target.value || null })}
                             />
-                            {!ro && (
+                            {!ro && !a.published && (
                               <IconButton
                                 label="Retirer"
                                 onClick={() => setItem(i, { actions: item.actions.filter((_, n) => n !== j) })}

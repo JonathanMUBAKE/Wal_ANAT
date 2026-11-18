@@ -21,8 +21,10 @@ import {
   Textarea,
   Tr,
   type Tone,
+  frDate,
 } from "@/components/gov";
 import { ExportMenu, tableDoc } from "@/components/export-menu";
+import { todayIso } from "@/lib/format";
 import { useCan, useMe, useProjects, useUsers } from "@/lib/hooks";
 import { api } from "@/lib/api";
 
@@ -44,6 +46,9 @@ export interface Risk {
   status: "open" | "mitigated" | "closed";
   project_id: string | null;
   project_name: string | null;
+  /** Score de la révision précédente et date de la dernière revue (RI-3). */
+  previous_score?: number | null;
+  last_reviewed_at?: string | null;
 }
 interface Indicator {
   id: string;
@@ -60,7 +65,13 @@ interface Indicator {
   plan_activity_title: string | null;
   plan_year: number | null;
   plan_unit_name: string | null;
+  /** Date de la dernière mesure et valeur précédente (RI-3). */
+  measured_on?: string | null;
+  previous_result?: number | null;
 }
+/** Tendance par rapport à la mesure précédente (RI-3). */
+const trend = (now: number, before: number | null | undefined, up = "en hausse", down = "en baisse") =>
+  before === null || before === undefined || before === now ? "" : now > before ? `↑ ${up} (${before})` : `↓ ${down} (${before})`;
 const RISK_STATUS: Record<Risk["status"], { label: string; tone: Tone }> = {
   open: { label: "Ouvert", tone: "warning" },
   mitigated: { label: "Maîtrisé", tone: "info" },
@@ -202,7 +213,8 @@ export function RisksPage() {
                   <Td className="tabular-nums font-medium">
                     {i.result} {i.unit_label}
                     <span className="block text-[11px] font-normal text-faint">
-                      {i.computed ? "calculé par l'outil" : "saisi"}
+                      {i.computed ? "calculé par l'outil" : i.measured_on ? `mesuré le ${frDate(i.measured_on)}` : "saisi"}
+                      {trend(i.result, i.previous_result) && <> · {trend(i.result, i.previous_result)}</>}
                     </span>
                   </Td>
                   <Td className="min-w-[140px]">
@@ -261,6 +273,13 @@ export function RiskTable({
             <span className="block text-[11.5px] text-muted">
               probabilité {r.probability} × impact {r.impact}
             </span>
+            {(trend(r.score, r.previous_score) || r.last_reviewed_at) && (
+              <span className="block text-[11px] text-faint">
+                {trend(r.score, r.previous_score)}
+                {trend(r.score, r.previous_score) && r.last_reviewed_at ? " · " : ""}
+                {r.last_reviewed_at ? `revu le ${frDate(r.last_reviewed_at.slice(0, 10))}` : ""}
+              </span>
+            )}
           </Td>
           <Td className="text-muted">{r.owner_name ?? "—"}</Td>
           <Td className="min-w-[220px] text-[12.5px] text-muted">{r.mitigation || "—"}</Td>
@@ -435,6 +454,7 @@ function IndicatorDrawer({ indicator, onClose }: { indicator: Indicator | null; 
     source: indicator?.source ?? "",
     plan_activity_id: indicator?.plan_activity_id ?? "",
     computed_from: indicator?.computed_from ?? "",
+    measured_on: todayIso(),
   });
   const [busy, setBusy] = useState(false);
   const save = async () => {
@@ -447,7 +467,7 @@ function IndicatorDrawer({ indicator, onClose }: { indicator: Indicator | null; 
         baseline: num(f.baseline) ?? 0,
         target: num(f.target),
         // Un résultat calculé par l'outil ne se saisit pas
-        ...(f.computed_from ? {} : { result: num(f.result) ?? 0 }),
+        ...(f.computed_from ? {} : { result: num(f.result) ?? 0, measured_on: f.measured_on || undefined }),
         computed_from: f.computed_from || null,
         plan_activity_id: f.plan_activity_id || null,
       };
@@ -514,6 +534,13 @@ function IndicatorDrawer({ indicator, onClose }: { indicator: Indicator | null; 
               />
             )}
           </Field>
+          {!f.computed_from && (
+            <Field label="Date de la mesure">
+              {(a) => (
+                <Input {...a} type="date" value={f.measured_on} onChange={(e) => setF({ ...f, measured_on: e.target.value })} />
+              )}
+            </Field>
+          )}
           <Field label="Calcul" className="sm:col-span-3" hint="Quand l'outil connaît la valeur, l'indicateur se calcule seul">
             {(a) => (
               <Select {...a} value={f.computed_from} onChange={(e) => setF({ ...f, computed_from: e.target.value })}>

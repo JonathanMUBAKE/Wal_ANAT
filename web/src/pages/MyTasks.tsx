@@ -10,10 +10,12 @@ import { GiveTask } from "./Unit";
 import { useShell } from "@/lib/shell";
 import { isoIn, todayIso } from "@/lib/format";
 import type { ProjectSummary, Task } from "@/lib/types";
-import { MyDeliverables } from "./ProjectDossier";
+import { MyDeliverables, useLateDeliverables } from "./ProjectDossier";
 
 /** Une tâche hors projet vit dans le registre de son entité, qui n'est pas un projet du portefeuille. */
 const UNIT_TASK = { name: "Tâche d'entité", icon: "users", color: "#64748B" } as unknown as ProjectSummary;
+/** Le nom de l'entité distingue les tâches d'un chef qui en dirige plusieurs (T-4). */
+const unitTask = (t: Task) => (t.unit_name ? { ...UNIT_TASK, name: t.unit_name } : UNIT_TASK);
 
 const BUCKETS: { id: string; label: string; test: (t: Task) => boolean }[] = [
   { id: "overdue", label: "En retard", test: (t) => !!t.due_on && t.due_on < todayIso() },
@@ -32,7 +34,10 @@ export function MyTasksPage() {
   const [showDone, setShowDone] = useState(false);
   // Une tâche hors projet se range dans le registre de l'entité de la personne (lot T1)
   const { data: units } = useMyUnits();
-  const home = units?.find((u) => u.role === "agent") ?? units?.[0];
+  // L'entité de rattachement, même dirigée : pour la DG, la Direction générale et non la racine (T-9)
+  const home = units?.find((u) => u.home) ?? units?.find((u) => u.role === "agent") ?? units?.[0];
+  // Les livrables à produire en retard comptent avec les retards (T-6)
+  const lateDeliverables = useLateDeliverables(me?.id);
   const [board, setBoard] = useState<UnitBoard | null>(null);
   const newTask = () =>
     home && api.get<UnitBoard>(`/api/units/${home.id}/board`).then(setBoard, (e: Error) => toast.error(e.message));
@@ -70,13 +75,21 @@ export function MyTasksPage() {
           Afficher les terminées
         </label>
       </header>
-      {board && <GiveTask board={board} onClose={() => setBoard(null)} />}
+      {board && <GiveTask board={board} self onClose={() => setBoard(null)} />}
       {/* Les livrables à produire ou à valider vivent dans leur projet ; ils se retrouvent ici (docs/PARCOURS-METIER.md) */}
       <div className="px-4 pb-6 sm:px-8">
         <MyDeliverables />
       </div>
       <div className="border-t border-line">
         {open.length === 0 && <Empty title="Vous êtes à jour">Aucune tâche ouverte ne vous est assignée.</Empty>}
+        {!open.some(BUCKETS[0].test) && lateDeliverables > 0 && (
+          <div className="flex h-10 items-center gap-2 border-b border-line px-4 sm:px-8">
+            <span className="text-[13px] font-semibold text-danger">En retard</span>
+            <span className="text-[12px] text-danger">
+              {lateDeliverables} livrable{lateDeliverables > 1 ? "s" : ""} en retard, ci-dessus
+            </span>
+          </div>
+        )}
         {BUCKETS.map((b) => {
           const items = open.filter(b.test);
           if (!items.length) return null;
@@ -91,6 +104,11 @@ export function MyTasksPage() {
                 />
                 <span className={cn("text-[13px] font-semibold", b.id === "overdue" && "text-danger")}>{b.label}</span>
                 <span className="text-[12px] tabular text-faint">{items.length}</span>
+                {b.id === "overdue" && lateDeliverables > 0 && (
+                  <span className="text-[12px] text-danger">
+                    + {lateDeliverables} livrable{lateDeliverables > 1 ? "s" : ""} en retard, ci-dessus
+                  </span>
+                )}
               </button>
               {!collapsed[b.id] && (
                 <div className="sm:px-4">
@@ -99,7 +117,7 @@ export function MyTasksPage() {
                       key={t.id}
                       t={t}
                       assignee={me}
-                      project={pm.get(t.project_id) ?? UNIT_TASK}
+                      project={pm.get(t.project_id) ?? unitTask(t)}
                       onOpen={() => shell.openTask(t.id)}
                       onToggle={(v) => update.mutate({ id: t.id, completed: v })}
                     />
@@ -121,7 +139,7 @@ export function MyTasksPage() {
                   key={t.id}
                   t={t}
                   assignee={me}
-                  project={pm.get(t.project_id) ?? UNIT_TASK}
+                  project={pm.get(t.project_id) ?? unitTask(t)}
                   onOpen={() => shell.openTask(t.id)}
                   onToggle={(v) => update.mutate({ id: t.id, completed: v })}
                 />

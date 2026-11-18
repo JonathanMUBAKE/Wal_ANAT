@@ -214,6 +214,7 @@ export async function anatLife(svc: Services, org: string) {
           responsible_id: resp,
           target_value: target,
           unit_label: label,
+          start_on: `${year}-01-15`,
           end_on: `${year}-12-15`,
           objective: t,
         }),

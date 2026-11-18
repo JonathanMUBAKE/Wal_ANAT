@@ -65,6 +65,7 @@ describe("indicateurs", () => {
         title: "Élaborer le schéma",
         responsible_id: "u_karim",
         target_value: 1,
+        start_on: "2027-01-01",
         end_on: "2027-12-31",
       })
     ).body;

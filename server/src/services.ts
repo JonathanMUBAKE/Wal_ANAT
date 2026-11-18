@@ -1616,7 +1616,10 @@ export class Services {
       SELECT ${TASK_COLS},
         (SELECT count(*)::int FROM tasks s WHERE s.parent_id = t.id) AS subtask_count,
         (SELECT count(*)::int FROM tasks s WHERE s.parent_id = t.id AND s.completed) AS subtask_done,
-        (SELECT count(*)::int FROM comments c WHERE c.task_id = t.id) AS comment_count
+        (SELECT count(*)::int FROM comments c WHERE c.task_id = t.id) AS comment_count,
+        -- La tâche parente d'une sous-tâche (T-5) et l'entité d'une tâche hors projet (T-4)
+        (SELECT pt.title FROM tasks pt WHERE pt.id = t.parent_id) AS parent_title,
+        CASE WHEN p.kind = 'unit' THEN (SELECT ou.name FROM org_units ou WHERE ou.id = p.unit_id) END AS unit_name
       FROM tasks t JOIN projects p ON p.id = t.project_id WHERE ${where.join(" AND ")}
       ORDER BY t.position LIMIT $${params.length}`,
         params,

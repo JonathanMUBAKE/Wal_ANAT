@@ -564,7 +564,7 @@ describe("profils et droits à cocher", () => {
     ).body;
     expect((await task("u_theo", pid)).status).toBe(200);
     await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_theo'"); // un chef garde un profil de chef (A-3)
-    expect((await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: profile.id })).status).toBe(
+    expect((await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: profile.id, reason: "Changement de fonctions" })).status).toBe(
       200,
     );
     const denied = await task("u_theo", pid);
@@ -620,8 +620,8 @@ describe("profils et droits à cocher", () => {
     expect(
       (await api("u_karim", "PUT", "/api/org/members/u_karim/permissions", { overrides: { "org.mail": true } })).status,
     ).toBe(403);
-    expect((await api("u_karim", "PUT", "/api/org/members/u_theo/profile", { profile_id: admin })).status).toBe(403);
-    expect((await api("u_karim", "PUT", "/api/org/members/u_karim/profile", { profile_id: owner })).status).toBe(403);
+    expect((await api("u_karim", "PUT", "/api/org/members/u_theo/profile", { profile_id: admin, reason: "Changement de fonctions" })).status).toBe(403);
+    expect((await api("u_karim", "PUT", "/api/org/members/u_karim/profile", { profile_id: owner, reason: "Changement de fonctions" })).status).toBe(403);
     expect(
       (
         await api("u_karim", "POST", "/api/org/profiles", {
@@ -646,7 +646,7 @@ describe("profils et droits à cocher", () => {
       (await api("u_karim", "PUT", "/api/org/members/u_alice/permissions", { overrides: { "tasks.create": false } }))
         .status,
     ).toBe(403);
-    expect((await api("u_karim", "PUT", "/api/org/members/u_theo/profile", { profile_id: member })).status).toBe(200);
+    expect((await api("u_karim", "PUT", "/api/org/members/u_theo/profile", { profile_id: member, reason: "Changement de fonctions" })).status).toBe(200);
   });
 
   it("protège le profil Propriétaire et les profils utilisés", async () => {
@@ -662,9 +662,9 @@ describe("profils et droits à cocher", () => {
       })
     ).body;
     await ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_theo'"); // un chef garde un profil de chef (A-3)
-    await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: p.id });
+    await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: p.id, reason: "Changement de fonctions" });
     expect((await api("u_alice", "DELETE", `/api/org/profiles/${p.id}`)).status).toBe(400);
-    await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: await profileId("Membre") });
+    await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: await profileId("Membre"), reason: "Changement de fonctions" });
     expect((await api("u_alice", "DELETE", `/api/org/profiles/${p.id}`)).status).toBe(200);
   });
 
@@ -682,7 +682,7 @@ describe("profils et droits à cocher", () => {
     const other = (await api("u_alice", "POST", "/api/orgs", { name: "Autre" })).body as { id: string };
     await demo("u_alice");
     expect(
-      (await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: `prf_member_${other.id}` })).status,
+      (await api("u_alice", "PUT", "/api/org/members/u_theo/profile", { profile_id: `prf_member_${other.id}`, reason: "x" })).status,
     ).toBe(400);
   });
 

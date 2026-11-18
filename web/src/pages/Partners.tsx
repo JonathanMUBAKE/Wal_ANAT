@@ -107,6 +107,8 @@ interface Partner {
   merged_into: string | null;
   merged_into_name: string | null;
   contacts_count: number;
+  /** Relation en discussion ou active que personne ne suit (PA-4). */
+  no_focal?: boolean;
   deletable: boolean;
   last_note_on: string | null;
   created_at: string;
@@ -348,7 +350,9 @@ export function PartnersPage() {
                         : "—"}
                     </span>
                   </Td>
-                  <Td className="text-muted">{p.focal_name ?? "—"}</Td>
+                  <Td className="text-muted">
+                    {p.no_focal ? <Status label="Sans point focal" tone="warning" /> : (p.focal_name ?? "—")}
+                  </Td>
                   <Td className="tabular text-muted">{frDate(p.last_note_on)}</Td>
                   <Td>
                     <RowActions
@@ -689,6 +693,7 @@ export function PartnerPage() {
         actions={
           <>
             <Status label={S.label} tone={S.tone} />
+            {d.no_focal && <Status label="Sans point focal" tone="warning" />}
             {!editing && d.can.states.length > 0 && (
               <Menu>
                 <MenuTrigger asChild>

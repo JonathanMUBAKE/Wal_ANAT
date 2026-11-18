@@ -55,7 +55,8 @@ export function UnitPage() {
   const can = useCan();
   const { data: units } = useMyUnits();
   const [params, setParams] = useSearchParams();
-  const unitId = params.get("unite") || units?.[0]?.id || "";
+  // L'entité de rattachement s'ouvre par défaut, même quand la personne en dirige d'autres (E-4)
+  const unitId = params.get("unite") || units?.find((u) => u.home)?.id || units?.[0]?.id || "";
   const unit = units?.find((u) => u.id === unitId);
   const { data: board, error } = useQuery({
     queryKey: ["unit-board", unitId],
@@ -433,7 +434,13 @@ function FollowUp({ unitId }: { unitId: string }) {
               <Tr key={a.user_id} onClick={() => setAgent(agent === a.user_id ? null : a.user_id)}>
                 <Td>
                   <span className={cn("block font-medium", agent === a.user_id && "underline")}>{a.name}</span>
-                  {a.title && <span className="block text-[12px] text-muted">{a.title}</span>}
+                  {a.is_head ? (
+                    <span className="block text-[12px] text-muted">Responsable de l'entité</span>
+                  ) : a.leads ? (
+                    <span className="block text-[12px] text-muted">Responsable · {a.leads}</span>
+                  ) : (
+                    a.title && <span className="block text-[12px] text-muted">{a.title}</span>
+                  )}
                 </Td>
                 <Td className="text-muted">{a.unit_name}</Td>
                 <Td className="tabular-nums">{a.open}</Td>
@@ -499,13 +506,14 @@ function FollowUp({ unitId }: { unitId: string }) {
 }
 
 /** Confier (responsable) ou noter (agent) une tâche d'entité. Un agent ne se l'attribue qu'à lui-même. */
-export function GiveTask({ board, onClose }: { board: UnitBoard; onClose: () => void }) {
+export function GiveTask({ board, onClose, self }: { board: UnitBoard; onClose: () => void; self?: boolean }) {
   const qc = useQueryClient();
   const { data: me } = useMe();
   const [f, setF] = useState({
     title: "",
     description: "",
-    assignee_id: "",
+    // Depuis Mes tâches, on note une tâche pour soi (T-8)
+    assignee_id: self ? (me?.id ?? "") : "",
     due_on: "",
     priority: "none",
     recurrence: "",
@@ -592,7 +600,10 @@ export function GiveTask({ board, onClose }: { board: UnitBoard; onClose: () => 
         <DrawerSection title="Attribution et échéance">
           <div className="grid gap-3 sm:grid-cols-2">
             {board.can.assign ? (
-              <Field label="Confiée à" hint="Agent de l'entité ; il est prévenu par notification et courriel.">
+              <Field
+                label="Confiée à"
+                hint={`Agent de l'entité ; il est prévenu par notification${me?.mail_ready ? " et courriel" : ""}.`}
+              >
                 {(a) => (
                   <Select {...a} value={f.assignee_id} onChange={set("assignee_id")}>
                     <option value="">Non attribuée pour l'instant</option>

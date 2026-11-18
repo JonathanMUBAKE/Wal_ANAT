@@ -56,9 +56,17 @@ interface Decision {
   source: { kind: "project" | "activity" | "meeting"; id: string; href: string; label: string } | null;
   replaces_reference: string | null;
   replaced_by_reference: string | null;
+  /** Inscrite par le secrétariat, pas encore confirmée par la DG (thème 2, DEC-1). */
+  to_confirm: boolean;
+  confirmed_by: string | null;
+  confirmed_at: string | null;
+  /** Exécution déclarée par le chargé, à confirmer par le secrétariat de la DG (DEC-3). */
+  execution_declared_by: string | null;
+  execution_declared_at: string | null;
+  execution_confirmed_by: string | null;
 }
 interface Detail extends Decision {
-  can: { execute: boolean; replace: boolean };
+  can: { execute: boolean; replace: boolean; confirm: boolean; confirm_execution: boolean };
 }
 /** Dossier dont la décision est attendue : il est prérempli quand on arbitre depuis le tableau de bord. */
 export interface DecisionSource {
@@ -88,7 +96,7 @@ const today = () => todayIso();
 export function DecisionsPage() {
   const can = useCan();
   const { data: me } = useMe();
-  const [tab, setTab] = useState<"all" | "mine">("all");
+  const [tab, setTab] = useState<"all" | "mine" | "confirm">("all");
   const [open, setOpen] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   useOpenFromUrl(() => setCreating(true));
@@ -96,7 +104,13 @@ export function DecisionsPage() {
     queryKey: ["decisions"],
     queryFn: () => api.get<Decision[]>("/api/decisions"),
   });
-  const rows = (data ?? []).filter((d) => tab === "all" || d.owner_id === me?.id);
+  const rows = (data ?? []).filter(
+    (d) =>
+      tab === "all" ||
+      (tab === "mine" && d.owner_id === me?.id) ||
+      (tab === "confirm" && (d.to_confirm || (!!d.execution_declared_at && d.status === "en_cours"))),
+  );
+  const toConfirm = (data ?? []).filter((d) => d.to_confirm || (!!d.execution_declared_at && d.status === "en_cours"));
   const mine = (data ?? []).filter(
     (d) => d.owner_id === me?.id && (d.status === "a_executer" || d.status === "en_cours"),
   );
@@ -146,6 +160,9 @@ export function DecisionsPage() {
         items={[
           { id: "all", label: "Toutes les décisions" },
           { id: "mine", label: "À exécuter par moi", badge: mine.length },
+          ...(can("decisions.confirm") || can("decisions.record")
+            ? [{ id: "confirm" as const, label: "À confirmer", badge: toConfirm.length }]
+            : []),
         ]}
       />
       <div className="mx-auto max-w-[1480px] p-4 sm:px-8 sm:py-6">
@@ -181,6 +198,16 @@ export function DecisionsPage() {
                     <span className="flex items-center gap-1.5">
                       <span className="truncate font-medium">{d.title}</span>
                       {d.confidential && <Lock className="size-3 shrink-0 text-faint" aria-label="Confidentielle" />}
+                      {d.to_confirm && (
+                        <span className="shrink-0 rounded-full bg-warning-soft px-1.5 text-[11px] font-medium text-warning">
+                          À confirmer par la DG
+                        </span>
+                      )}
+                      {d.execution_declared_at && d.status === "en_cours" && (
+                        <span className="shrink-0 rounded-full bg-info-soft px-1.5 text-[11px] font-medium text-primary">
+                          Exécution déclarée
+                        </span>
+                      )}
                     </span>
                     {d.source && (
                       <span className="block truncate text-[12px] text-muted">
@@ -233,6 +260,35 @@ function DecisionPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();
   const [note, setNote] = useState("");
   const [replacing, setReplacing] = useState(false);
+  const [returning, setReturning] = useState(false);
+  const [motive, setMotive] = useState("");
+  const { data: users } = useUsers();
+  const nameOf = (uid: string | null) => users?.find((u) => u.id === uid)?.name ?? "—";
+  const after = (r: Detail, msg: string) => {
+    qc.setQueryData(["decision", id], r);
+    qc.invalidateQueries({ queryKey: ["decisions"] });
+    qc.invalidateQueries({ queryKey: ["pilotage"] });
+    toast.success(msg);
+  };
+  const confirm = useMutation({
+    mutationFn: () => api.post<Detail>(`/api/decisions/${id}/confirm`),
+    onSuccess: (r) => after(r, "Décision confirmée"),
+    onError: fail,
+  });
+  const confirmExec = useMutation({
+    mutationFn: () => api.post<Detail>(`/api/decisions/${id}/execution/confirm`),
+    onSuccess: (r) => after(r, "Exécution confirmée : la décision est close"),
+    onError: fail,
+  });
+  const returnExec = useMutation({
+    mutationFn: () => api.post<Detail>(`/api/decisions/${id}/execution/return`, { comment: motive }),
+    onSuccess: (r) => {
+      setReturning(false);
+      setMotive("");
+      after(r, "Exécution renvoyée au chargé");
+    },
+    onError: fail,
+  });
   const { data: d } = useQuery({
     queryKey: ["decision", id],
     queryFn: () => api.get<Detail>(`/api/decisions/${id}`),
@@ -245,7 +301,13 @@ function DecisionPanel({ id, onClose }: { id: string; onClose: () => void }) {
       qc.invalidateQueries({ queryKey: ["decisions"] });
       qc.invalidateQueries({ queryKey: ["pilotage"] });
       setNote("");
-      toast.success(r.status === "executee" ? "Exécution enregistrée" : "Décision passée en cours d'exécution");
+      toast.success(
+        r.status === "executee"
+          ? "Exécution enregistrée"
+          : r.execution_declared_at
+            ? "Exécution déclarée : le secrétariat de la DG la confirmera"
+            : "Décision passée en cours d'exécution",
+      );
     },
     onError: fail,
   });
@@ -291,6 +353,63 @@ function DecisionPanel({ id, onClose }: { id: string; onClose: () => void }) {
             </span>
           )}
         </div>
+        {d.to_confirm && (
+          <div className="rounded-xl border border-line bg-warning-soft/40 px-4 py-3 text-[13px]">
+            <p>
+              Inscrite par {d.recorded_by_name ?? "le secrétariat"} au nom de la DG, en attente de sa confirmation. La
+              décision est numérotée et suivie dès son inscription.
+            </p>
+            {d.can.confirm && (
+              <Button className="mt-2" size="sm" variant="primary" loading={confirm.isPending} onClick={() => confirm.mutate()}>
+                Confirmer la décision
+              </Button>
+            )}
+          </div>
+        )}
+        {d.confirmed_at && d.confirmed_by && d.recorded_by_name && nameOf(d.confirmed_by) !== d.recorded_by_name && (
+          <p className="text-[12.5px] text-muted">
+            Confirmée par {nameOf(d.confirmed_by)} le {frDate(d.confirmed_at.slice(0, 10))}
+          </p>
+        )}
+        {d.execution_declared_at && d.status === "en_cours" && (
+          <div className="rounded-xl border border-line bg-hover/40 px-4 py-3 text-[13px]">
+            <p>
+              Exécution déclarée par {nameOf(d.execution_declared_by)} le {frDate(d.execution_declared_at.slice(0, 10))}
+              , en attente de la confirmation du secrétariat de la DG.
+            </p>
+            {d.can.confirm_execution && !returning && (
+              <div className="mt-2 flex gap-2">
+                <Button size="sm" variant="primary" loading={confirmExec.isPending} onClick={() => confirmExec.mutate()}>
+                  Confirmer l'exécution
+                </Button>
+                <Button size="sm" onClick={() => setReturning(true)}>
+                  Renvoyer
+                </Button>
+              </div>
+            )}
+            {returning && (
+              <div className="mt-2 space-y-2">
+                <Field label="Motif du renvoi" hint="Ce qui manque pour clore la décision">
+                  {(a) => <Textarea {...a} value={motive} onChange={(e) => setMotive(e.target.value)} />}
+                </Field>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    disabled={!motive.trim()}
+                    loading={returnExec.isPending}
+                    onClick={() => returnExec.mutate()}
+                  >
+                    Renvoyer au chargé
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setReturning(false)}>
+                    Annuler
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <blockquote className="whitespace-pre-wrap rounded-xl border border-line bg-hover/40 px-4 py-3 leading-relaxed">
           {d.content}
         </blockquote>

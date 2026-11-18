@@ -29,6 +29,12 @@ export function decisionRoutes(r: FastifyInstance, d: Decisions) {
   );
   r.post("/api/decisions", async (req) => d.record(req.userId, req.orgId, Record_.parse(req.body)));
   r.get<Id>("/api/decisions/:id", async (req) => d.get(req.userId, req.params.id));
+  // Contrôle croisé (thème 2) : la DG confirme une décision inscrite en son nom ; le secrétariat confirme l'exécution
+  r.post<Id>("/api/decisions/:id/confirm", async (req) => d.confirm(req.userId, req.params.id));
+  r.post<Id>("/api/decisions/:id/execution/confirm", async (req) => d.confirmExecution(req.userId, req.params.id));
+  r.post<Id>("/api/decisions/:id/execution/return", async (req) =>
+    d.returnExecution(req.userId, req.params.id, z.object({ comment: z.string().max(2000) }).parse(req.body).comment),
+  );
   r.patch<Id>("/api/decisions/:id/execution", async (req) =>
     d.execute(
       req.userId,

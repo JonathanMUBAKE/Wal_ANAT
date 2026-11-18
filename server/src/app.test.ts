@@ -128,7 +128,8 @@ describe("coéquipier IA", () => {
       async () => {
         const pending = (await api("u_alice", "GET", "/api/ai/approvals")).body as { id: string }[];
         for (const a of pending) {
-          await api("u_alice", "POST", `/api/ai/approvals/${a.id}`, { approve: !first });
+          // Refuser en laissant continuer : sinon le refus arrête l'intervention (thème 2, I-2)
+          await api("u_alice", "POST", `/api/ai/approvals/${a.id}`, { approve: !first, continue: true });
           first = false;
         }
         return (await api("u_alice", "GET", `/api/ai/runs/${run.id}`)).body;

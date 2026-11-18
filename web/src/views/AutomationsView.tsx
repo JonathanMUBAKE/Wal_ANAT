@@ -92,11 +92,7 @@ export function AutomationsView({ project }: ViewProps) {
                     <ArrowRight className="size-3.5" />
                     <Avatar user={users.get(r.agent_id)} size={16} />
                     <b className="font-medium text-fg">{users.get(r.agent_id)?.name}</b>
-                    {r.auto_approve ? (
-                      <span className="text-warning">agit sans validation</span>
-                    ) : (
-                      <span>demande validation</span>
-                    )}
+                    <span>propose, un humain valide</span>
                   </p>
                   <p className="mt-2 rounded-lg bg-hover px-3 py-2 text-[13px] leading-relaxed">{r.instructions}</p>
                 </div>
@@ -310,20 +306,10 @@ function RuleEditor({
             className={cn(field, "resize-y leading-relaxed")}
           />
         </label>
-        <label className="flex items-start gap-2.5 rounded-xl border border-line p-3">
-          <input
-            type="checkbox"
-            checked={!!r.auto_approve}
-            onChange={(e) => setR({ ...r, auto_approve: e.target.checked })}
-            className="mt-0.5 accent-[var(--warning)]"
-          />
-          <span>
-            <span className="block text-[13px] font-medium">Agir sans validation</span>
-            <span className="block text-[12px] text-muted">
-              Les actions de cette règle s'exécutent sans attendre d'accord humain. Elles restent journalisées.
-            </span>
-          </span>
-        </label>
+        <p className="rounded-xl border border-line p-3 text-[12.5px] text-muted">
+          Chaque action proposée par le coéquipier attend l'accord d'une personne habilitée : l'IA propose, un humain
+          décide. La personne visée par une proposition ne la valide pas elle-même.
+        </p>
       </div>
     </Dialog>
   );

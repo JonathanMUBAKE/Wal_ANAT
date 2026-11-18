@@ -697,6 +697,25 @@ export async function buildApp(opts: AppOptions = {}) {
           .parse(req.body),
       ),
     );
+    // Tâche confiée : renvoi d'une tâche déclarée réalisée, demande de report et réponse du responsable (thème 2)
+    r.post<{ Params: { id: string } }>("/api/tasks/:id/return", async (req) =>
+      svc.returnTask(me(req), req.params.id, z.object({ comment: z.string().max(4000) }).parse(req.body).comment),
+    );
+    r.post<{ Params: { id: string } }>("/api/tasks/:id/postpone", async (req) =>
+      svc.requestPostpone(
+        me(req),
+        req.params.id,
+        z.object({ due_on: z.string().max(10), reason: z.string().max(4000) }).parse(req.body),
+      ),
+    );
+    r.post<{ Params: { id: string; pid: string } }>("/api/tasks/:id/postpone/:pid", async (req) =>
+      svc.decidePostpone(
+        me(req),
+        req.params.id,
+        req.params.pid,
+        z.object({ accept: z.boolean(), comment: z.string().max(4000).optional() }).parse(req.body),
+      ),
+    );
     r.post<{ Params: { id: string } }>("/api/tasks/:id/duplicate", async (req) =>
       svc.duplicateTask(me(req), req.params.id, z.object({ subtasks: z.boolean().optional() }).parse(req.body ?? {})),
     );
@@ -885,8 +904,15 @@ export async function buildApp(opts: AppOptions = {}) {
     });
     r.get("/api/ai/approvals", async (req) => ai.pendingApprovals(me(req), org(req)));
     r.post<{ Params: { id: string } }>("/api/ai/approvals/:id", async (req) => {
-      const b = z.object({ approve: z.boolean(), edits: z.record(z.string(), z.unknown()).optional() }).parse(req.body);
-      return ai.decide(req.params.id, me(req), b.approve, b.edits);
+      const b = z
+        .object({
+          approve: z.boolean(),
+          edits: z.record(z.string(), z.unknown()).optional(),
+          // Après un refus : laisser le coéquipier poursuivre au lieu d'arrêter son intervention (I-2)
+          continue: z.boolean().optional(),
+        })
+        .parse(req.body);
+      return ai.decide(req.params.id, me(req), b.approve, b.edits, { continue: b.continue });
     });
     r.post<{ Params: { id: string } }>("/api/tasks/:id/ai/subtasks", { onRequest: aiLimit }, async (req) => ({
       subtasks: await ai.suggestSubtasks(me(req), req.params.id),

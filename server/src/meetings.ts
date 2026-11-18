@@ -145,7 +145,7 @@ export interface MeetingDetail extends MeetingRow {
     end_time: string | null;
   } | null;
   carried: (MeetingAction & { meeting_reference: string })[];
-  can: { edit: boolean; validate: boolean; convene: boolean; submit: boolean; decide: boolean; respond: boolean };
+  can: { edit: boolean; validate: boolean; convene: boolean; submit: boolean; decide: boolean; respond: boolean; reopen: boolean };
 }
 
 export type MeetingInput = Partial<
@@ -560,6 +560,11 @@ export class Meetings {
     const writes = can.manage || m.writer_id === actorId;
     const decides = m.writer_id !== actorId && (m.chair_id ? m.chair_id === actorId : can.validate);
     const invited = attendees.find((a) => a.invited && a.user_id === actorId);
+    // Rouvrir un compte rendu validé : la personne qui l'a validé, ou la DG (R-3)
+    const reopens =
+      m.status === "validated" &&
+      can.validate &&
+      (m.validated_by === actorId || (await this.svc.permissionsOf(actorId, m.org_id)).includes("decisions.confirm"));
     return {
       ...m,
       reference: meetingReference(m),
@@ -604,6 +609,7 @@ export class Meetings {
         submit: (m.status === "planned" || m.status === "held") && writes && m.meeting_date <= t,
         decide: m.status === "submitted" && decides,
         respond: !!invited && !!m.convened_at && m.status === "planned" && m.meeting_date >= t,
+        reopen: reopens,
       },
     };
   }
@@ -1270,15 +1276,38 @@ export class Meetings {
     }
   }
 
-  async reopen(actorId: string, id: string) {
+  /**
+   * Un document validé reste figé (thème 2, R-3) : seule la personne qui l'a validé, ou la DG, le rouvre, avec un
+   * motif écrit, tracé au journal ; le valideur est prévenu quand un autre rouvre à sa place.
+   */
+  async reopen(actorId: string, id: string, reason = "") {
     const { m } = await this.readable(actorId, id);
     await this.svc.requirePerm(actorId, m.org_id, "meetings.validate");
     if (m.status !== "validated") throw badRequest("Ce compte rendu n'est pas validé");
-    await this.svc.db.query(
-      "UPDATE meetings SET status = 'held', validated_by = NULL, validated_at = NULL, updated_at = now() WHERE id = $1",
+    const dg = (await this.svc.permissionsOf(actorId, m.org_id)).includes("decisions.confirm");
+    if (m.validated_by && m.validated_by !== actorId && !dg) {
+      const by = (await this.svc.userOrNull(m.validated_by))?.name ?? "la personne qui l'a validé";
+      throw forbidden(`Seule la personne qui a validé ce compte rendu (${by}) ou la DG peut le rouvrir`);
+    }
+    const why = reason.trim();
+    if (!why) throw badRequest("Le motif de la réouverture est obligatoire");
+    const moved = await this.svc.db.one(
+      "UPDATE meetings SET status = 'held', validated_by = NULL, validated_at = NULL, updated_at = now() WHERE id = $1 AND status = 'validated' RETURNING id",
       [id],
     );
-    await this.svc.log(actorId, "meeting.reopened", { orgId: m.org_id, data: { reference: meetingReference(m) } });
+    if (!moved) throw new HttpError(409, "Le compte rendu a changé entre-temps, rechargez la page");
+    await this.svc.log(actorId, "meeting.reopened", {
+      orgId: m.org_id,
+      data: { reference: meetingReference(m), reason: why, validated_by: m.validated_by },
+    });
+    for (const to of new Set([m.validated_by, m.writer_id]))
+      if (to && to !== actorId)
+        await this.svc.notify(to, m.org_id, {
+          kind: "meeting.reopened",
+          title: `Compte rendu rouvert : ${meetingReference(m)}`,
+          body: `Par ${(await this.svc.user(actorId)).name} · ${why}`,
+          actor_id: actorId,
+        });
     return this.get(actorId, id);
   }
 

@@ -127,6 +127,207 @@ export function TaskDrawer({
   );
 }
 
+/**
+ * Tâche confiée (thème 2) : qui l'a confiée, la déclaration de réalisation à confirmer ou renvoyer, la demande de
+ * report et sa réponse. Le serveur vérifie chaque geste ; l'écran ne propose que ce que chacun peut faire.
+ */
+function ConfidedPanel({ t }: { t: TaskDetail }) {
+  const qc = useQueryClient();
+  const users = useUserMap();
+  const { data: me } = useMe();
+  const update = useUpdateTask();
+  const [mode, setMode] = useState<null | "return" | "postpone" | "refuse">(null);
+  const [text, setText] = useState("");
+  const [date, setDate] = useState("");
+  const [busy, setBusy] = useState(false);
+  const r = t.responsible!;
+  const p = t.postponement;
+  const pending = p?.status === "pending" ? p : null;
+  const amAssignee = t.assignee_id === me?.id;
+  const name = (id: string | null | undefined) => (id ? (users.get(id)?.name ?? "—") : "—");
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["task", t.id] });
+    qc.invalidateQueries({ queryKey: ["tasks"] });
+  };
+  const run = async (fn: () => Promise<unknown>, ok: string) => {
+    setBusy(true);
+    try {
+      await fn();
+      toast.success(ok);
+      setMode(null);
+      setText("");
+      setDate("");
+      refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const box = "mt-2 w-full rounded-lg border border-line bg-raised px-3 py-2 text-[13px] outline-none focus:border-line-strong";
+  return (
+    <section className="mt-4 rounded-xl border border-line bg-hover/40 px-3.5 py-3 text-[13px]">
+      <p className="text-muted">
+        Confiée par <span className="font-medium text-fg">{r.name}</span>
+        {!r.is_me && " : l'intitulé, l'échéance et la priorité restent à cette personne."}
+      </p>
+      {t.done_declared_at && !t.completed && (
+        <div className="mt-2.5">
+          <p className="text-fg">
+            Déclarée réalisée par {name(t.done_declared_by)} le {shortDate(t.done_declared_at)}
+            {r.is_me ? " : à vous de confirmer la clôture." : `, en attente de la confirmation de ${r.name}.`}
+          </p>
+          {r.is_me && mode !== "return" && (
+            <div className="mt-2 flex gap-2">
+              <Button size="sm" variant="primary" loading={update.isPending} onClick={() => update.mutate({ id: t.id, completed: true })}>
+                Confirmer la clôture
+              </Button>
+              <Button size="sm" onClick={() => setMode("return")}>
+                Renvoyer
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      {mode === "return" && (
+        <div className="mt-2">
+          <textarea
+            className={box}
+            rows={2}
+            autoFocus
+            placeholder="Ce qui manque pour clore la tâche (obligatoire)"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          <div className="mt-2 flex gap-2">
+            <Button
+              size="sm"
+              variant="primary"
+              loading={busy}
+              disabled={!text.trim()}
+              onClick={() => run(() => api.post(`/api/tasks/${t.id}/return`, { comment: text }), "Tâche renvoyée")}
+            >
+              Renvoyer la tâche
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setMode(null)}>
+              Annuler
+            </Button>
+          </div>
+        </div>
+      )}
+      {pending && (
+        <div className="mt-2.5">
+          <p className="text-fg">
+            Report demandé par {name(pending.requested_by)} : échéance au {shortDate(pending.due_on)}
+            {pending.from_due ? ` au lieu du ${shortDate(pending.from_due)}` : ""}.
+          </p>
+          <p className="mt-0.5 text-muted">Motif : {pending.reason}</p>
+          {r.is_me && !amAssignee && mode !== "refuse" && (
+            <div className="mt-2 flex gap-2">
+              <Button
+                size="sm"
+                variant="primary"
+                loading={busy}
+                onClick={() =>
+                  run(() => api.post(`/api/tasks/${t.id}/postpone/${pending.id}`, { accept: true }), "Report accepté")
+                }
+              >
+                Accepter le report
+              </Button>
+              <Button size="sm" onClick={() => setMode("refuse")}>
+                Refuser
+              </Button>
+            </div>
+          )}
+          {amAssignee && <p className="mt-1 text-faint">En attente de la réponse de {r.name}.</p>}
+        </div>
+      )}
+      {mode === "refuse" && pending && (
+        <div className="mt-2">
+          <textarea
+            className={box}
+            rows={2}
+            autoFocus
+            placeholder="Pourquoi l'échéance doit être tenue (facultatif)"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          <div className="mt-2 flex gap-2">
+            <Button
+              size="sm"
+              variant="primary"
+              loading={busy}
+              onClick={() =>
+                run(
+                  () => api.post(`/api/tasks/${t.id}/postpone/${pending.id}`, { accept: false, comment: text }),
+                  "Report refusé",
+                )
+              }
+            >
+              Refuser le report
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setMode(null)}>
+              Annuler
+            </Button>
+          </div>
+        </div>
+      )}
+      {p && p.status !== "pending" && (
+        <p className="mt-2 text-faint">
+          Dernier report {p.status === "accepted" ? "accepté" : "refusé"} par {name(p.decided_by)}
+          {p.decided_at ? ` le ${shortDate(p.decided_at)}` : ""}
+          {p.comment ? ` : ${p.comment}` : ""}
+        </p>
+      )}
+      {amAssignee && !r.is_me && !pending && !t.completed && mode !== "postpone" && (
+        <Button size="sm" className="mt-2.5" onClick={() => setMode("postpone")}>
+          Demander un report
+        </Button>
+      )}
+      {mode === "postpone" && (
+        <div className="mt-2.5">
+          <label className="flex items-center gap-2 text-muted">
+            Nouvelle échéance
+            <input
+              type="date"
+              className="h-8 rounded-lg border border-line bg-raised px-2 text-fg"
+              value={date}
+              min={t.due_on ?? undefined}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </label>
+          <textarea
+            className={box}
+            rows={2}
+            placeholder="Motif du report (obligatoire)"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          <div className="mt-2 flex gap-2">
+            <Button
+              size="sm"
+              variant="primary"
+              loading={busy}
+              disabled={!date || !text.trim()}
+              onClick={() =>
+                run(
+                  () => api.post(`/api/tasks/${t.id}/postpone`, { due_on: date, reason: text }),
+                  `Demande envoyée à ${r.name}`,
+                )
+              }
+            >
+              Envoyer la demande
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setMode(null)}>
+              Annuler
+            </Button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function DrawerBody({
   taskId,
   onClose,
@@ -147,6 +348,8 @@ function DrawerBody({
   const can = useCan();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const canEdit = t?.role === "editor" || t?.role === "admin";
+  // Tâche confiée : l'intitulé, l'échéance et la priorité restent à la personne qui l'a confiée (thème 2, T-1)
+  const locked = !!t?.responsible && !t.responsible.is_me;
   const roleAllowsRemoval = t?.role === "admin" || (canEdit && t?.creator_id === me?.id);
   const canDelete = roleAllowsRemoval && can("tasks.delete");
   const canMove = roleAllowsRemoval && can("tasks.move");
@@ -287,8 +490,14 @@ function DrawerBody({
             <div className="pt-[7px]">
               <Checkbox checked={t.completed} size={22} onChange={(v) => canEdit && save({ completed: v })} />
             </div>
-            <TitleEditor value={t.title} disabled={!canEdit} onSave={(title) => save({ title })} done={t.completed} />
+            <TitleEditor
+              value={t.title}
+              disabled={!canEdit || locked}
+              onSave={(title) => save({ title })}
+              done={t.completed}
+            />
           </div>
+          {t.responsible && canEdit && <ConfidedPanel t={t} />}
 
           {/* Champs */}
           <dl className="mt-5 grid grid-cols-[112px_1fr] items-center gap-x-3 gap-y-1 text-[13px]">
@@ -317,7 +526,11 @@ function DrawerBody({
             </Field>
             <Field icon={<CalendarDays className="size-3.5" />} label="Échéance">
               <DuePicker value={t.due_on} onChange={(d) => save({ due_on: d })}>
-                <button disabled={!canEdit} className="flex h-8 items-center gap-2 rounded-md px-1.5 hover:bg-hover">
+                <button
+                  disabled={!canEdit || locked}
+                  title={locked ? `Échéance fixée par ${t.responsible?.name} : demandez un report` : undefined}
+                  className="flex h-8 items-center gap-2 rounded-md px-1.5 hover:bg-hover disabled:hover:bg-transparent"
+                >
                   <DueChip due={t.due_on} done={t.completed} empty={<span className="text-faint">Aucune</span>} />
                   {t.due_on && dueLabel(t.due_on)?.label !== shortDate(t.due_on) && (
                     <span className="text-[12px] text-faint">{shortDate(t.due_on)}</span>
@@ -327,7 +540,10 @@ function DrawerBody({
             </Field>
             <Field icon={<Flag className="size-3.5" />} label="Priorité">
               <PriorityPicker value={t.priority} onChange={(p) => save({ priority: p })}>
-                <button disabled={!canEdit} className="flex h-8 items-center rounded-md px-1.5 hover:bg-hover">
+                <button
+                  disabled={!canEdit || locked}
+                  className="flex h-8 items-center rounded-md px-1.5 hover:bg-hover disabled:hover:bg-transparent"
+                >
                   <PriorityFlag p={t.priority} showLabel />
                 </button>
               </PriorityPicker>
@@ -912,6 +1128,11 @@ const ACTIVITY_LABEL: Record<string, (d: Record<string, unknown>) => string> = {
   "task.description": () => "a modifié la description",
   "task.tags": () => "a modifié les étiquettes",
   "task.start_on": () => "a changé la date de début",
+  "task.done_declared": () => "a déclaré la tâche réalisée",
+  "task.returned": () => "a renvoyé la tâche",
+  "task.postpone.requested": (d) => `a demandé un report au ${shortDate(String(d.to))}`,
+  "task.postpone.accepted": (d) => `a accepté le report au ${shortDate(String(d.to))}`,
+  "task.postpone.refused": () => "a refusé le report",
   "attachment.added": (d) => `a joint « ${d.filename} »`,
   "attachment.removed": (d) => `a retiré « ${d.filename} »`,
   "ai.approved": (d) => `a autorisé : ${d.summary}`,

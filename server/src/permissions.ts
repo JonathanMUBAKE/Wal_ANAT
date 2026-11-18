@@ -81,6 +81,7 @@ export const PERMISSION_GROUPS = [
       { key: "pilotage.view", label: "Accéder au poste de pilotage" },
       { key: "decisions.view", label: "Consulter le registre des décisions" },
       { key: "decisions.record", label: "Enregistrer les décisions de la DG" },
+      { key: "decisions.confirm", label: "Confirmer les décisions inscrites au nom de la DG" },
       { key: "risks.manage", label: "Gérer le registre des risques" },
       { key: "indicators.manage", label: "Gérer les indicateurs stratégiques" },
       { key: "agenda.view", label: "Consulter l'agenda de la direction" },
@@ -144,6 +145,7 @@ const GOVERNANCE = new Set<Permission>([
   "correspondence.manage",
   "pilotage.view",
   "decisions.record",
+  "decisions.confirm",
   "partners.manage",
   "risks.manage",
   "indicators.manage",
@@ -228,7 +230,7 @@ const DGA: Permission[] = [
   "partners.manage",
   "hr.view",
 ];
-const DG: Permission[] = [...DGA, "projects.delete", "decisions.record", "ai.rules"];
+const DG: Permission[] = [...DGA, "projects.delete", "decisions.record", "decisions.confirm", "ai.rules"];
 /** L'assistant(e) de la DG saisit pour elle (courrier, agenda, réunions, décisions dictées) ; il ne signe ni n'approuve. */
 const ASSISTANT_DG: Permission[] = [
   ...new Set<Permission>([

@@ -143,7 +143,15 @@ export interface MeetingDetail extends MeetingRow {
   attendees: Attendee[];
   previous: { id: string; reference: string; meeting_date: string } | null;
   carried: MeetingAction[];
-  can: { edit: boolean; validate: boolean; convene: boolean; submit: boolean; decide: boolean; respond: boolean };
+  can: {
+    edit: boolean;
+    validate: boolean;
+    convene: boolean;
+    submit: boolean;
+    decide: boolean;
+    respond: boolean;
+    reopen?: boolean;
+  };
 }
 
 const MEETING: Record<MeetingRow["status"], { label: string; tone: Tone }> = {
@@ -710,6 +718,8 @@ export function MeetingPage() {
   const [editing, setEditing] = useState(false);
   const [justValidated, setJustValidated] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [reopening, setReopening] = useState(false);
+  const [reopenReason, setReopenReason] = useState("");
   useEffect(() => {
     if (m) {
       setDraft(structuredClone(m));
@@ -782,10 +792,13 @@ export function MeetingPage() {
     onError: fail,
   });
   const reopen = useMutation({
-    mutationFn: () => api.post<MeetingDetail>(`/api/meetings/${id}/reopen`),
+    mutationFn: () => api.post<MeetingDetail>(`/api/meetings/${id}/reopen`, { reason: reopenReason }),
     onSuccess: (r) => {
       setJustValidated(false);
+      setReopening(false);
+      setReopenReason("");
       qc.setQueryData(["meeting", id], r);
+      toast.success("Compte rendu rouvert : le motif est inscrit au journal");
     },
     onError: fail,
   });
@@ -897,14 +910,36 @@ export function MeetingPage() {
                 <Trash2 className="size-4" />
               </IconButton>
             )}
-            {!editing && draft.status === "validated" && draft.can.validate && (
-              <Button
-                icon={<RotateCcw className="size-4" />}
-                loading={reopen.isPending}
-                onClick={() => reopen.mutate()}
-              >
+            {!editing && draft.status === "validated" && draft.can.reopen && (
+              <Button icon={<RotateCcw className="size-4" />} onClick={() => setReopening(true)}>
                 Rouvrir
               </Button>
+            )}
+            {reopening && (
+              <Dialog
+                open
+                onOpenChange={() => setReopening(false)}
+                title="Rouvrir le compte rendu validé"
+                description="Un compte rendu validé est figé. Le rouvrir est inscrit au journal avec son motif, et la personne qui l'a validé en est prévenue."
+                width={480}
+                footer={
+                  <>
+                    <Button onClick={() => setReopening(false)}>Annuler</Button>
+                    <Button
+                      variant="primary"
+                      disabled={!reopenReason.trim()}
+                      loading={reopen.isPending}
+                      onClick={() => reopen.mutate()}
+                    >
+                      Rouvrir
+                    </Button>
+                  </>
+                }
+              >
+                <Field label="Motif de la réouverture" required>
+                  {(a) => <Textarea {...a} value={reopenReason} onChange={(e) => setReopenReason(e.target.value)} />}
+                </Field>
+              </Dialog>
             )}
             {!editing && draft.can.submit && (
               <Button

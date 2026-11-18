@@ -78,6 +78,7 @@ async function boot(kind: Kind) {
   }
   if (kind === "P4") who = a;
   const X: Any = {
+    db: ctx.db,
     org,
     app,
     prof,
@@ -554,6 +555,30 @@ const TABLE = [
     body: { section_id: X.detail.sections[1].id },
   })),
   R_("POST", "/api/tasks/:id/duplicate", async (X) => ({ ...(await taskUrl("/duplicate")(X)), body: {} })),
+  // Tâche confiée : le propriétaire la confie à Fiston (renvoi, réponse au report) ou la reçoit de lui (demande)
+  R_("POST", "/api/tasks/:id/return", async (X) => {
+    const t = await X.task();
+    await X.db.query(
+      "UPDATE tasks SET assignee_id = 'u_karim', assigned_by = creator_id, done_declared_at = now(), done_declared_by = 'u_karim' WHERE id = $1",
+      [t.id],
+    );
+    return { url: `/api/tasks/${t.id}/return`, body: { comment: "x" } };
+  }),
+  R_("POST", "/api/tasks/:id/postpone", async (X) => {
+    const t = await X.task();
+    await X.db.query("UPDATE tasks SET assignee_id = creator_id, assigned_by = 'u_karim' WHERE id = $1", [t.id]);
+    return { url: `/api/tasks/${t.id}/postpone`, body: { due_on: "2099-01-01", reason: "x" } };
+  }),
+  R_("POST", "/api/tasks/:id/postpone/:pid", async (X) => {
+    const t = await X.task();
+    const pid = u("tpo_");
+    await X.db.query("UPDATE tasks SET assignee_id = 'u_karim', assigned_by = creator_id WHERE id = $1", [t.id]);
+    await X.db.query(
+      "INSERT INTO task_postponements (id, task_id, requested_by, due_on, reason) VALUES ($1, $2, 'u_karim', '2099-01-01', 'x')",
+      [pid, t.id],
+    );
+    return { url: `/api/tasks/${t.id}/postpone/${pid}`, body: { accept: true } };
+  }),
   R_("POST", "/api/tasks/:id/move-project", async (X) => {
     const p = await X.project();
     return { ...(await taskUrl("/move-project")(X)), body: { project_id: p.id } };
@@ -918,6 +943,22 @@ const TABLE = [
     url: `/api/decisions/${(await X.decision()).id}/execution`,
     body: { status: "en_cours" },
   })),
+  // Contrôle croisé : une décision inscrite par le secrétariat, une exécution déclarée par le chargé
+  R_("POST", "/api/decisions/:id/confirm", async (X) => {
+    const d = await X.decision();
+    await X.db.query("UPDATE dg_decisions SET confirmed_at = NULL, confirmed_by = NULL WHERE id = $1", [d.id]);
+    return { url: `/api/decisions/${d.id}/confirm` };
+  }),
+  ...["confirm", "return"].map((a) =>
+    R_("POST", `/api/decisions/:id/execution/${a}`, async (X) => {
+      const d = await X.decision();
+      await X.db.query(
+        "UPDATE dg_decisions SET status = 'en_cours', execution_declared_at = now(), execution_declared_by = 'u_karim' WHERE id = $1",
+        [d.id],
+      );
+      return { url: `/api/decisions/${d.id}/execution/${a}`, body: { comment: "x" } };
+    }),
+  ),
   R_("GET", "/api/activities"),
   R_("POST", "/api/activities", () => ({ body: { kind: "commission", title: "Commission" } })),
   R_("GET", "/api/activities/:id", async (X) => ({ url: `/api/activities/${(await X.activity()).id}` })),
@@ -1014,7 +1055,10 @@ const TABLE = [
   R_("POST", "/api/meetings/:id/validate", async (X) => ({
     url: `/api/meetings/${(await X.submitted()).id}/validate`,
   })),
-  R_("POST", "/api/meetings/:id/reopen", async (X) => ({ url: `/api/meetings/${(await X.validated()).id}/reopen` })),
+  R_("POST", "/api/meetings/:id/reopen", async (X) => ({
+    url: `/api/meetings/${(await X.validated()).id}/reopen`,
+    body: { reason: "Correction" },
+  })),
   R_("GET", "/api/meetings/:id/report", async (X) => ({
     url: `/api/meetings/${(await X.filled()).id}/report?format=pdf`,
   })),

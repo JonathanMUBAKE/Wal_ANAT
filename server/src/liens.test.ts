@@ -89,7 +89,7 @@ describe("décisions de séance → registre des décisions", () => {
     const id = await held({ decisions: [{ text: "Décision unique." }] });
     await submit(id);
     await validate(id);
-    await g.api("u_alice", "POST", `/api/meetings/${id}/reopen`);
+    await g.api("u_alice", "POST", `/api/meetings/${id}/reopen`, { reason: "Correction" });
     await submit(id);
     await validate(id);
     const reg = (await g.api("u_alice", "GET", "/api/decisions")).body as { content: string }[];
@@ -112,7 +112,7 @@ describe("décisions de séance → registre des décisions", () => {
     await submit(id);
     const v = await validate(id);
     const dec = v.body.agenda[0].decisions[0];
-    await g.api("u_alice", "POST", `/api/meetings/${id}/reopen`);
+    await g.api("u_alice", "POST", `/api/meetings/${id}/reopen`, { reason: "Correction" });
     await g.api("u_alice", "PUT", `/api/meetings/${id}/content`, {
       agenda: [
         {

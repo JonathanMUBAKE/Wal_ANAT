@@ -1,6 +1,6 @@
 import type { Services, Task, Priority } from "../services.js";
 import { uid } from "../db.js";
-import { badRequest, forbidden } from "../services.js";
+import { badRequest, forbidden, mentionPattern } from "../services.js";
 import { Attachments } from "../attachments.js";
 
 export interface ToolDef {
@@ -410,6 +410,31 @@ export class ToolRunner {
       default:
         throw badRequest(`Outil inconnu : ${name}`);
     }
+  }
+
+  /**
+   * Les personnes visées par une action proposée : le chargé de la tâche touchée ou créée, et les personnes
+   * mentionnées dans un commentaire. Elles ne valident pas elles-mêmes ce qui les concerne (thème 2, I-4).
+   */
+  async targets(ctx: ToolCtx, name: string, input: Input): Promise<string[]> {
+    const out = new Set<string>();
+    const user = async (ref: unknown) => {
+      const id = await this.resolveUser(ctx.orgId, ref).catch(() => undefined);
+      if (id) out.add(id);
+    };
+    if (name === "create_task" || name === "update_task") await user(input.assignee);
+    if (name === "update_task" || name === "add_comment") {
+      const t = await this.scopedTask(ctx, input.task).catch(() => null);
+      if (t?.assignee_id) out.add(t.assignee_id);
+    }
+    if (name === "add_comment") {
+      const text = String(input.body ?? "");
+      for (const u of await this.svc.usersOf(ctx.orgId)) if (!u.is_ai && mentionPattern(u.name).test(text)) out.add(u.id);
+    }
+    out.delete(ctx.actorId);
+    const humans: string[] = [];
+    for (const id of out) if (!(await this.svc.userOrNull(id))?.is_ai) humans.push(id);
+    return humans;
   }
 
   /** Phrase lisible pour la carte de validation. */

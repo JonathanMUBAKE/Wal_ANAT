@@ -276,6 +276,10 @@ export interface Task {
   description: string;
   assignee_id: string | null;
   creator_id: string | null;
+  /** Qui a confié la tâche : il en garde l'intitulé, l'échéance et la priorité, et confirme sa clôture. */
+  assigned_by?: string | null;
+  done_declared_at?: string | null;
+  done_declared_by?: string | null;
   priority: Priority;
   start_on: string | null;
   due_on: string | null;
@@ -351,8 +355,23 @@ export interface ImportAnalysis {
   truncated: boolean;
   proposal: ImportProposal;
 }
+export interface TaskPostponement {
+  id: string;
+  requested_by: string;
+  from_due: string | null;
+  due_on: string;
+  reason: string;
+  status: "pending" | "accepted" | "refused";
+  decided_by: string | null;
+  decided_at: string | null;
+  comment: string;
+  created_at: string;
+}
 export interface TaskDetail extends Task {
   role: Role;
+  /** Tâche confiée : la personne qui l'a confiée, et si c'est moi (ou un administrateur du projet). */
+  responsible: { id: string; name: string; is_me: boolean } | null;
+  postponement: TaskPostponement | null;
   attachments: Attachment[];
   project: { id: string; name: string; color: string; icon: string; description: string; key: string; org_id: string };
   section: Section | null;
@@ -433,6 +452,8 @@ export interface AiApproval {
   status: "pending" | "approved" | "rejected" | "expired";
   decided_by: string | null;
   decided_at: string | null;
+  /** Les personnes visées par la proposition : elles ne la valident pas elles-mêmes. */
+  target_ids?: string[];
   created_at: string;
 }
 export interface AiRunDetail extends AiRun {

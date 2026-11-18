@@ -16,7 +16,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { Avatar, Button, Markdown, cn } from "./ui";
-import { useDecide, useRun, useUserMap } from "@/lib/hooks";
+import { useDecide, useMe, useRun, useUserMap } from "@/lib/hooks";
 import { ago } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { AiApproval, AiRun, AiStep } from "@/lib/types";
@@ -120,7 +120,10 @@ function StepRow({ s }: { s: AiStep }) {
 export function ApprovalCard({ a, compact }: { a: AiApproval; compact?: boolean }) {
   const users = useUserMap();
   const decide = useDecide();
+  const { data: me } = useMe();
   const agent = users.get(a.agent_id);
+  // La personne visée par la proposition ne la valide pas elle-même (thème 2, I-4)
+  const targeted = !!me && (a.target_ids ?? []).includes(me.id);
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(String(a.input.body ?? ""));
   const [decided, setDecided] = useState<null | boolean>(null);
@@ -166,7 +169,12 @@ export function ApprovalCard({ a, compact }: { a: AiApproval; compact?: boolean 
               className="mt-1.5 w-full resize-y rounded-lg border border-ai-line bg-panel px-2.5 py-2 text-[13px] outline-none"
             />
           )}
-          {pending && (
+          {pending && targeted && (
+            <p className="mt-2 text-[12.5px] text-muted">
+              Cette proposition vous concerne : une autre personne habilitée l'autorise ou la refuse.
+            </p>
+          )}
+          {pending && !targeted && (
             <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
               <Button
                 size="sm"
@@ -185,9 +193,20 @@ export function ApprovalCard({ a, compact }: { a: AiApproval; compact?: boolean 
               <Button
                 size="sm"
                 icon={<X className="size-3.5" />}
+                title="Refuser cette action : le coéquipier arrête son intervention"
                 onClick={() => decide.mutate({ id: a.id, approve: false }, { onSuccess: () => setDecided(false) })}
               >
-                Refuser
+                Refuser et arrêter
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                title="Refuser cette action seulement : le coéquipier poursuit avec la suivante"
+                onClick={() =>
+                  decide.mutate({ id: a.id, approve: false, continue: true }, { onSuccess: () => setDecided(false) })
+                }
+              >
+                Refuser, laisser continuer
               </Button>
               {a.tool === "add_comment" && !editing && (
                 <Button

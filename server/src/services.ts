@@ -105,6 +105,11 @@ export interface Task {
   description: string;
   assignee_id: string | null;
   creator_id: string | null;
+  /** Qui a confié la tâche à son chargé : il en garde l'intitulé, l'échéance et la priorité, et confirme sa clôture. */
+  assigned_by: string | null;
+  /** Le chargé a déclaré la tâche réalisée : elle attend la confirmation du responsable. */
+  done_declared_at: string | null;
+  done_declared_by: string | null;
   priority: Priority;
   start_on: string | null;
   due_on: string | null;
@@ -1490,9 +1495,14 @@ export class Services {
     const role = await this.require(actorId, task.project_id);
     const project = await this.projectRow(task.project_id);
     const parent = task.parent_id ? await this.taskRow(task.parent_id) : null;
+    const guard = await this.confidedGuard(actorId, task);
     return {
       ...task,
       role,
+      responsible: guard.ownerId
+        ? { id: guard.ownerId, name: guard.ownerName, is_me: guard.responsible }
+        : null,
+      postponement: guard.ownerId ? await this.postponementOf(task.id) : null,
       project: {
         id: project.id,
         name: project.name,
@@ -1576,8 +1586,8 @@ export class Services {
         [input.project_id],
       );
       await q.query(
-        `INSERT INTO tasks (id, number, project_id, section_id, parent_id, title, description, assignee_id, creator_id, priority, start_on, due_on, position, tags, recurrence)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        `INSERT INTO tasks (id, number, project_id, section_id, parent_id, title, description, assignee_id, creator_id, priority, start_on, due_on, position, tags, recurrence, assigned_by)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
         [
           id,
           task_seq,
@@ -1594,6 +1604,7 @@ export class Services {
           await this.endPosition(q, input.project_id, sectionId, parentId),
           JSON.stringify(input.tags ?? []),
           input.recurrence ?? null,
+          input.assignee_id && input.assignee_id !== actorId ? actorId : null,
         ],
       );
     });
@@ -1671,6 +1682,7 @@ export class Services {
       assignee: patch.assignee_id ?? null,
     });
     assertDates(patch.start_on, patch.due_on);
+    const guard = await this.confidedGuard(actorId, before);
     const start = patch.start_on !== undefined ? patch.start_on : before.start_on;
     const due = patch.due_on !== undefined ? patch.due_on : before.due_on;
     if (start && due && start > due) throw badRequest("La date de début doit précéder l'échéance");
@@ -1711,6 +1723,26 @@ export class Services {
       const same =
         k === "tags" ? JSON.stringify(before.tags) === JSON.stringify(v) : (before as unknown as Row)[k] === v;
       if (same) continue;
+      if (guard.locked && (k === "title" || k === "due_on" || k === "priority"))
+        throw forbidden(
+          `Cette tâche a été confiée par ${guard.ownerName} : son intitulé, son échéance et sa priorité restent à ${guard.ownerName}. Demandez un report si l'échéance ne peut pas être tenue`,
+        );
+      if (k === "completed" && v && guard.locked) {
+        if (actorId !== before.assignee_id)
+          throw forbidden(`Seul ${guard.ownerName}, qui a confié la tâche, en confirme la clôture`);
+        if (before.done_declared_at) continue;
+        // Le chargé déclare la tâche réalisée : elle attend la confirmation du responsable
+        sets.push(`done_declared_at = $${vals.push(now())}`, `done_declared_by = $${vals.push(actorId)}`);
+        changes.push("done_declared");
+        continue;
+      }
+      if (k === "completed") sets.push("done_declared_at = NULL", "done_declared_by = NULL");
+      if (k === "assignee_id")
+        sets.push(
+          `assigned_by = $${vals.push(v && v !== actorId ? actorId : null)}`,
+          "done_declared_at = NULL",
+          "done_declared_by = NULL",
+        );
       vals.push(k === "tags" ? JSON.stringify(v) : v);
       sets.push(`${k} = $${vals.length}`);
       changes.push(k);
@@ -1732,6 +1764,10 @@ export class Services {
     }
     for (const k of changes) {
       if (k === "position") continue;
+      if (k === "done_declared") {
+        await this.log(actorId, "task.done_declared", { projectId: after.project_id, taskId: after.id });
+        continue;
+      }
       await this.log(actorId, `task.${k}`, {
         projectId: after.project_id,
         taskId: after.id,
@@ -1741,6 +1777,23 @@ export class Services {
     if (changes.includes("assignee_id") && after.assignee_id && after.assignee_id !== actorId)
       await this.notifyAssigned(actorId, after);
     await this.notifyTaskChanges(actorId, before, after, changes);
+    if (changes.includes("done_declared") && guard.ownerId)
+      await this.notify(guard.ownerId, await this.orgOfProject(after.project_id), {
+        kind: "task.done_declared",
+        title: `${(await this.user(actorId)).name} déclare « ${after.title} » réalisée`,
+        body: "À vous de confirmer la clôture, ou de renvoyer la tâche avec un motif.",
+        task_id: after.id,
+        project_id: after.project_id,
+        actor_id: actorId,
+      });
+    if (changes.includes("completed") && after.completed && before.done_declared_by && before.done_declared_by !== actorId)
+      await this.notify(before.done_declared_by, await this.orgOfProject(after.project_id), {
+        kind: "task.done_confirmed",
+        title: `${(await this.user(actorId)).name} a confirmé la clôture de « ${after.title} »`,
+        task_id: after.id,
+        project_id: after.project_id,
+        actor_id: actorId,
+      });
     if (changes.includes("completed") && after.completed && after.creator_id && after.creator_id !== actorId) {
       await this.notify(after.creator_id, await this.orgOfProject(after.project_id), {
         kind: "task.completed",
@@ -1770,6 +1823,138 @@ export class Services {
     }
     this.bus.emit({ type: "task.updated", actorId, projectId: after.project_id, taskId: after.id, changes, previous });
     return after;
+  }
+
+  /**
+   * Tâche confiée (thème 2, T-1 à T-3) : qui l'a confiée en reste responsable. Le responsable, ou un administrateur
+   * du projet, garde l'intitulé, l'échéance et la priorité et confirme la clôture ; les autres en sont tenus.
+   */
+  async confidedGuard(actorId: string, t: Task) {
+    const none = { locked: false, responsible: true, ownerId: null as string | null, ownerName: "" };
+    if (!t.assignee_id || !t.assigned_by || t.assigned_by === t.assignee_id) return none;
+    const [assignee, owner] = [await this.userOrNull(t.assignee_id), await this.userOrNull(t.assigned_by)];
+    if (!assignee || assignee.is_ai || !owner) return none;
+    const responsible = actorId === owner.id || (await this.projectRole(actorId, t.project_id)) === "admin";
+    return { locked: !responsible, responsible, ownerId: owner.id, ownerName: owner.name };
+  }
+
+  /** Le responsable renvoie au chargé une tâche déclarée réalisée, avec un motif écrit dans les commentaires. */
+  async returnTask(actorId: string, ref: string, comment: string): Promise<Task> {
+    const t = await this.taskRow(await this.resolveTaskId(actorId, ref));
+    await this.require(actorId, t.project_id, "editor");
+    const guard = await this.confidedGuard(actorId, t);
+    if (!guard.ownerId || !guard.responsible)
+      throw forbidden("Seul le responsable de la tâche la renvoie à son chargé");
+    if (!t.done_declared_at) throw badRequest("Cette tâche n'a pas été déclarée réalisée");
+    const why = comment.trim();
+    if (!why) throw badRequest("Dites ce qui manque : le motif du renvoi est obligatoire");
+    await this.db.query(
+      "UPDATE tasks SET done_declared_at = NULL, done_declared_by = NULL, updated_at = $1 WHERE id = $2",
+      [now(), t.id],
+    );
+    await this.addComment(actorId, t.id, `Tâche renvoyée : ${why}`);
+    await this.log(actorId, "task.returned", { projectId: t.project_id, taskId: t.id, data: { comment: why } });
+    const to = t.done_declared_by ?? t.assignee_id;
+    if (to && to !== actorId)
+      await this.notify(to, await this.orgOfProject(t.project_id), {
+        kind: "task.returned",
+        title: `${(await this.user(actorId)).name} a renvoyé « ${t.title} »`,
+        body: why,
+        task_id: t.id,
+        project_id: t.project_id,
+        actor_id: actorId,
+      });
+    this.bus.emit({ type: "task.updated", actorId, projectId: t.project_id, taskId: t.id, changes: ["done_declared"], previous: {} });
+    return this.taskRow(t.id);
+  }
+
+  /** La demande de report en attente sur une tâche, ou la dernière tranchée. */
+  async postponementOf(taskId: string) {
+    return (
+      (await this.db.one<Row>(
+        `SELECT id, task_id, requested_by, from_due::text AS from_due, due_on::text AS due_on, reason, status, decided_by,
+                decided_at, comment, created_at
+           FROM task_postponements WHERE task_id = $1 ORDER BY (status = 'pending') DESC, created_at DESC LIMIT 1`,
+        [taskId],
+      )) ?? null
+    );
+  }
+
+  /** Le chargé d'une tâche confiée demande à reporter l'échéance ; le responsable accepte ou refuse (T-1). */
+  async requestPostpone(actorId: string, ref: string, input: { due_on: string; reason: string }) {
+    const t = await this.taskRow(await this.resolveTaskId(actorId, ref));
+    await this.require(actorId, t.project_id, "editor");
+    const guard = await this.confidedGuard(actorId, t);
+    if (!guard.ownerId || actorId !== t.assignee_id)
+      throw forbidden("Seul le chargé d'une tâche confiée demande un report");
+    if (t.completed) throw badRequest("La tâche est terminée");
+    assertDates(undefined, input.due_on);
+    if (!input.due_on) throw badRequest("Indiquez la nouvelle échéance demandée");
+    if (t.due_on && input.due_on <= String(t.due_on).slice(0, 10))
+      throw badRequest("Un report repousse l'échéance : choisissez une date plus tardive");
+    const reason = input.reason?.trim();
+    if (!reason) throw badRequest("Le motif du report est obligatoire");
+    if (await this.db.one("SELECT 1 FROM task_postponements WHERE task_id = $1 AND status = 'pending'", [t.id]))
+      throw badRequest("Une demande de report attend déjà la réponse du responsable");
+    const id = uid("tpo");
+    await this.db.query(
+      "INSERT INTO task_postponements (id, task_id, requested_by, from_due, due_on, reason) VALUES ($1,$2,$3,$4::date,$5::date,$6)",
+      [id, t.id, actorId, t.due_on ? String(t.due_on).slice(0, 10) : null, input.due_on, reason],
+    );
+    await this.log(actorId, "task.postpone.requested", {
+      projectId: t.project_id,
+      taskId: t.id,
+      data: { from: t.due_on, to: input.due_on, reason },
+    });
+    const fr = (d: string) => d.slice(0, 10).split("-").reverse().join("/");
+    await this.notify(guard.ownerId, await this.orgOfProject(t.project_id), {
+      kind: "task.postpone.requested",
+      title: `${(await this.user(actorId)).name} demande de reporter « ${t.title} » au ${fr(input.due_on)}`,
+      body: reason,
+      task_id: t.id,
+      project_id: t.project_id,
+      actor_id: actorId,
+    });
+    return this.postponementOf(t.id);
+  }
+
+  async decidePostpone(actorId: string, ref: string, id: string, input: { accept: boolean; comment?: string }) {
+    const t = await this.taskRow(await this.resolveTaskId(actorId, ref));
+    await this.require(actorId, t.project_id, "editor");
+    const guard = await this.confidedGuard(actorId, t);
+    if (!guard.ownerId || !guard.responsible || actorId === t.assignee_id)
+      throw forbidden(`La demande de report revient à ${guard.ownerName || "la personne qui a confié la tâche"}`);
+    const p = await this.db.one<{ id: string; requested_by: string; due_on: string; status: string }>(
+      "SELECT id, requested_by, due_on::text AS due_on, status FROM task_postponements WHERE id = $1 AND task_id = $2",
+      [id, t.id],
+    );
+    if (!p) throw notFound("Demande de report introuvable");
+    if (p.status !== "pending") throw badRequest("Cette demande a déjà reçu une réponse");
+    const comment = input.comment?.trim() ?? "";
+    await this.db.tx(async (q) => {
+      await q.query(
+        "UPDATE task_postponements SET status = $1, decided_by = $2, decided_at = now(), comment = $3 WHERE id = $4",
+        [input.accept ? "accepted" : "refused", actorId, comment, p.id],
+      );
+      if (input.accept)
+        await q.query("UPDATE tasks SET due_on = $1::date, updated_at = $2 WHERE id = $3", [p.due_on, now(), t.id]);
+    });
+    await this.log(actorId, input.accept ? "task.postpone.accepted" : "task.postpone.refused", {
+      projectId: t.project_id,
+      taskId: t.id,
+      data: { from: t.due_on, to: p.due_on, comment },
+    });
+    const fr = (d: string) => d.slice(0, 10).split("-").reverse().join("/");
+    await this.notify(p.requested_by, await this.orgOfProject(t.project_id), {
+      kind: input.accept ? "task.postpone.accepted" : "task.postpone.refused",
+      title: `${(await this.user(actorId)).name} a ${input.accept ? "accepté" : "refusé"} le report de « ${t.title} »`,
+      body: input.accept ? `Nouvelle échéance : ${fr(p.due_on)}${comment ? `. ${comment}` : ""}` : comment,
+      task_id: t.id,
+      project_id: t.project_id,
+      actor_id: actorId,
+    });
+    this.bus.emit({ type: "task.updated", actorId, projectId: t.project_id, taskId: t.id, changes: ["due_on"], previous: {} });
+    return this.postponementOf(t.id);
   }
 
   /**
@@ -2160,8 +2345,8 @@ export class Services {
           actor_id: actorId,
         });
     }
-    // Le chargé (inchangé) est prévenu de ce qui touche sa tâche
-    if (!after.assignee_id || after.assignee_id === actorId || changes.includes("assignee_id")) return;
+    // Le chargé (inchangé) est prévenu de ce qui touche sa tâche, le responsable d'une tâche confiée aussi
+    if (!after.assignee_id || changes.includes("assignee_id")) return;
     const fr = (d: unknown) => (d ? String(d).slice(0, 10).split("-").reverse().join("/") : "aucune");
     const PRIO: Record<string, string> = {
       none: "aucune",
@@ -2179,7 +2364,20 @@ export class Services {
     if (changes.includes("description")) lines.push("Description modifiée");
     if (changes.includes("completed") && !after.completed) lines.push("Tâche rouverte");
     if (changes.includes("section_id")) lines.push("Tâche déplacée dans une autre colonne");
+    if (changes.includes("tags")) lines.push("Étiquettes modifiées");
     if (!lines.length) return;
+    // Tâche confiée : le responsable est prévenu de ce que d'autres y changent (T-2)
+    const owner = after.assigned_by;
+    if (owner && owner !== actorId && owner !== after.assignee_id)
+      await this.notify(owner, orgId, {
+        kind: "task.changed",
+        title: `${actor} a modifié « ${after.title} »`,
+        body: lines.join("\n"),
+        task_id: after.id,
+        project_id: after.project_id,
+        actor_id: actorId,
+      });
+    if (after.assignee_id === actorId) return;
     const assignee = await this.userOrNull(after.assignee_id);
     if (!assignee || assignee.is_ai) return;
     await this.notify(after.assignee_id, orgId, {

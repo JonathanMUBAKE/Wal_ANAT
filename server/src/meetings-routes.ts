@@ -206,7 +206,13 @@ export function meetingRoutes(r: FastifyInstance, meetings: Meetings) {
     ),
   );
   r.post<Id>("/api/meetings/:id/validate", async (req) => meetings.validate(req.userId, req.params.id));
-  r.post<Id>("/api/meetings/:id/reopen", async (req) => meetings.reopen(req.userId, req.params.id));
+  r.post<Id>("/api/meetings/:id/reopen", async (req) =>
+    meetings.reopen(
+      req.userId,
+      req.params.id,
+      z.object({ reason: z.string().max(2000).optional() }).parse(req.body ?? {}).reason,
+    ),
+  );
   r.get<Id>("/api/meetings/:id/report", async (req, reply) => {
     const format = formatOf(req.query, ["docx", "pdf"]);
     const m = await meetings.get(req.userId, req.params.id);

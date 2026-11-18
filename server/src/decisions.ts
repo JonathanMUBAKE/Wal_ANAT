@@ -22,6 +22,13 @@ interface Decision {
   executed_at: string | null;
   replaces_id: string | null;
   recorded_by: string | null;
+  /** Confirmation après coup par la DG d'une décision inscrite par son secrétariat (DEC-1). */
+  confirmed_by: string | null;
+  confirmed_at: string | null;
+  /** Le chargé a déclaré l'exécution : elle attend la confirmation du secrétariat de la DG (DEC-3). */
+  execution_declared_by: string | null;
+  execution_declared_at: string | null;
+  execution_confirmed_by: string | null;
   created_at: string;
 }
 export interface DecisionInput {
@@ -79,7 +86,12 @@ export class Decisions {
       replaces_reference: old_year ? decisionRef({ year: old_year, seq: old_seq ?? 0 }) : null,
       replaced_by_reference: new_year ? decisionRef({ year: new_year, seq: new_seq ?? 0 }) : null,
       late: !!d.due_on && d.due_on < today && (d.status === "a_executer" || d.status === "en_cours"),
+      to_confirm: !d.confirmed_at && d.status !== "remplacee",
     };
+  }
+
+  private async confirmer(actorId: string, orgId: string) {
+    return (await this.svc.permissionsOf(actorId, orgId)).includes("decisions.confirm");
   }
 
   private async manager(actorId: string, orgId: string) {
@@ -119,9 +131,15 @@ export class Decisions {
     const d = await this.readable(actorId, id);
     const manager = await this.manager(actorId, d.org_id);
     const open = d.status === "a_executer" || d.status === "en_cours";
+    const declared = !!d.execution_declared_at;
     return {
       ...this.view(d),
-      can: { execute: open && (manager || d.owner_id === actorId), replace: manager && d.status !== "remplacee" },
+      can: {
+        execute: open && !declared && (manager || d.owner_id === actorId),
+        confirm_execution: open && declared && manager && d.execution_declared_by !== actorId,
+        confirm: !d.confirmed_at && d.status !== "remplacee" && (await this.confirmer(actorId, d.org_id)),
+        replace: manager && d.status !== "remplacee",
+      },
     };
   }
 
@@ -183,12 +201,14 @@ export class Decisions {
     let closed: { requested_by: string | null; question: string }[] = [];
     const year = Number(i.decided_on.slice(0, 4));
     const confidential = !!i.confidential || src.confidential || !!old?.confidential;
+    // Inscrite par la DG : confirmée d'emblée ; par son secrétariat : numérotée, puis confirmée après coup (DEC-1)
+    const confirmedNow = await this.confirmer(actorId, orgId);
     for (let attempt = 0; ; attempt++) {
       try {
         await this.svc.db.tx(async (q) => {
           await q.query(
-            `INSERT INTO dg_decisions (id, org_id, year, seq, title, content, decided_on, project_id, activity_id, meeting_id, source_label, owner_id, due_on, confidential, replaces_id, recorded_by)
-             VALUES ($1,$2,$3,(SELECT COALESCE(max(seq),0)+1 FROM dg_decisions WHERE org_id = $2 AND year = $3),$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+            `INSERT INTO dg_decisions (id, org_id, year, seq, title, content, decided_on, project_id, activity_id, meeting_id, source_label, owner_id, due_on, confidential, replaces_id, recorded_by, confirmed_by, confirmed_at)
+             VALUES ($1,$2,$3,(SELECT COALESCE(max(seq),0)+1 FROM dg_decisions WHERE org_id = $2 AND year = $3),$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
             [
               id,
               orgId,
@@ -205,6 +225,8 @@ export class Decisions {
               confidential,
               i.replaces_id ?? null,
               actorId,
+              confirmedNow ? actorId : null,
+              confirmedNow ? new Date().toISOString() : null,
             ],
           );
           // La décision attendue du dossier est levée : elle est désormais au registre
@@ -252,6 +274,14 @@ export class Decisions {
       projectId: i.project_id ?? null,
       data: { id, reference: decisionRef(d), replaces: i.replaces_id ?? null },
     });
+    if (!confirmedNow)
+      for (const to of await this.confirmers(orgId, actorId))
+        await this.svc.notify(to, orgId, {
+          kind: "decision.to_confirm",
+          title: `Décision inscrite en votre nom, à confirmer : ${d.title}`,
+          body: `${decisionRef(d)} · inscrite par ${(await this.svc.user(actorId)).name}`,
+          actor_id: actorId,
+        });
     if (i.owner_id && i.owner_id !== actorId)
       await this.svc.notify(i.owner_id, orgId, {
         kind: "decision.assigned",
@@ -281,6 +311,9 @@ export class Decisions {
       );
     if (STEP[i.status] <= STEP[d.status])
       throw new HttpError(409, "L'exécution d'une décision ne revient pas en arrière");
+    if (d.execution_declared_at) throw new HttpError(409, "L'exécution est déclarée : elle attend la confirmation du secrétariat de la DG");
+    // Le chargé déclare l'exécution ; le secrétariat de la DG la confirme (DEC-3)
+    if (i.status === "executee" && !(await this.manager(actorId, d.org_id))) return this.declare(actorId, d, i.note);
     const moved = await this.svc.db.one(
       `UPDATE dg_decisions SET status = $1, execution_note = CASE WHEN $2::text IS NULL THEN execution_note ELSE $2 END,
         executed_at = CASE WHEN $1 = 'executee' THEN now() ELSE executed_at END
@@ -297,6 +330,122 @@ export class Decisions {
         kind: "decision.executed",
         title: `Décision exécutée : ${d.title}`,
         body: `${decisionRef(d)}${i.note?.trim() ? ` · ${i.note.trim()}` : ""}`,
+        actor_id: actorId,
+      });
+    return this.get(actorId, id);
+  }
+
+  private async declare(actorId: string, d: Row, note?: string) {
+    const moved = await this.svc.db.one(
+      `UPDATE dg_decisions SET status = 'en_cours', execution_declared_by = $1, execution_declared_at = now(),
+        execution_note = CASE WHEN $2::text IS NULL THEN execution_note ELSE $2 END
+       WHERE id = $3 AND status = $4 AND execution_declared_at IS NULL RETURNING id`,
+      [actorId, note?.trim() ?? null, d.id, d.status],
+    );
+    if (!moved) throw new HttpError(409, "La décision a changé entre-temps, rechargez la page");
+    await this.svc.log(actorId, "decision.execution_declared", {
+      orgId: d.org_id,
+      data: { id: d.id, reference: decisionRef(d), note: note?.trim() ?? "" },
+    });
+    for (const to of await this.secretariat(d.org_id, actorId))
+      await this.svc.notify(to, d.org_id, {
+        kind: "decision.execution_declared",
+        title: `Exécution déclarée, à confirmer : ${d.title}`,
+        body: `${decisionRef(d)}${note?.trim() ? ` · ${note.trim()}` : ""}`,
+        actor_id: actorId,
+      });
+    return this.get(actorId, d.id);
+  }
+
+  /** Qui tient le registre (secrétariat de la DG et DG), sauf l'auteur du geste. */
+  private async secretariat(orgId: string, except: string) {
+    const out: string[] = [];
+    const members = await this.svc.db.query<{ user_id: string }>(
+      "SELECT om.user_id FROM org_members om JOIN users u ON u.id = om.user_id WHERE om.org_id = $1 AND NOT u.is_ai AND u.status = 'active'",
+      [orgId],
+    );
+    for (const m of members)
+      if (m.user_id !== except && (await this.manager(m.user_id, orgId))) out.push(m.user_id);
+    return out;
+  }
+  private async confirmers(orgId: string, except: string) {
+    const out: string[] = [];
+    for (const id of await this.secretariat(orgId, except)) if (await this.confirmer(id, orgId)) out.push(id);
+    return out;
+  }
+
+  /** Le secrétariat de la DG confirme l'exécution déclarée par le chargé : la décision est close. */
+  async confirmExecution(actorId: string, id: string) {
+    const d = await this.readable(actorId, id);
+    if (!(await this.manager(actorId, d.org_id)))
+      throw forbidden("Seul le secrétariat de la DG confirme l'exécution d'une décision");
+    if (!d.execution_declared_at) throw badRequest("Aucune exécution n'a été déclarée pour cette décision");
+    if (d.execution_declared_by === actorId)
+      throw forbidden("Celui qui déclare l'exécution ne la confirme pas : une autre personne du secrétariat le fait");
+    const moved = await this.svc.db.one(
+      `UPDATE dg_decisions SET status = 'executee', executed_at = now(), execution_confirmed_by = $1
+       WHERE id = $2 AND status = 'en_cours' AND execution_declared_at IS NOT NULL RETURNING id`,
+      [actorId, id],
+    );
+    if (!moved) throw new HttpError(409, "La décision a changé entre-temps, rechargez la page");
+    await this.svc.log(actorId, "decision.execution_confirmed", {
+      orgId: d.org_id,
+      data: { id, reference: decisionRef(d) },
+    });
+    for (const to of new Set([d.execution_declared_by, d.recorded_by]))
+      if (to && to !== actorId)
+        await this.svc.notify(to, d.org_id, {
+          kind: to === d.execution_declared_by ? "decision.execution_confirmed" : "decision.executed",
+          title: `Décision exécutée : ${d.title}`,
+          body: `${decisionRef(d)}${d.execution_note ? ` · ${d.execution_note}` : ""}`,
+          actor_id: actorId,
+        });
+    return this.get(actorId, id);
+  }
+
+  /** Le secrétariat renvoie l'exécution déclarée, avec un motif : la décision reste en cours. */
+  async returnExecution(actorId: string, id: string, comment: string) {
+    const d = await this.readable(actorId, id);
+    if (!(await this.manager(actorId, d.org_id)))
+      throw forbidden("Seul le secrétariat de la DG renvoie l'exécution d'une décision");
+    if (!d.execution_declared_at) throw badRequest("Aucune exécution n'a été déclarée pour cette décision");
+    const why = comment.trim();
+    if (!why) throw badRequest("Dites ce qui manque : le motif du renvoi est obligatoire");
+    await this.svc.db.query(
+      "UPDATE dg_decisions SET execution_declared_at = NULL, execution_declared_by = NULL WHERE id = $1",
+      [id],
+    );
+    await this.svc.log(actorId, "decision.execution_returned", {
+      orgId: d.org_id,
+      data: { id, reference: decisionRef(d), comment: why },
+    });
+    if (d.execution_declared_by && d.execution_declared_by !== actorId)
+      await this.svc.notify(d.execution_declared_by, d.org_id, {
+        kind: "decision.execution_returned",
+        title: `Exécution renvoyée : ${d.title}`,
+        body: `${decisionRef(d)} · ${why}`,
+        actor_id: actorId,
+      });
+    return this.get(actorId, id);
+  }
+
+  /** La DG confirme après coup une décision inscrite en son nom (DEC-1). */
+  async confirm(actorId: string, id: string) {
+    const d = await this.readable(actorId, id);
+    if (!(await this.confirmer(actorId, d.org_id)))
+      throw forbidden("Seule la DG confirme une décision inscrite en son nom");
+    if (d.status === "remplacee") throw new HttpError(409, "Cette décision a été remplacée");
+    const done = await this.svc.db.one(
+      "UPDATE dg_decisions SET confirmed_by = $1, confirmed_at = now() WHERE id = $2 AND confirmed_at IS NULL RETURNING id",
+      [actorId, id],
+    );
+    if (!done) throw new HttpError(409, "Cette décision est déjà confirmée");
+    await this.svc.log(actorId, "decision.confirmed", { orgId: d.org_id, data: { id, reference: decisionRef(d) } });
+    if (d.recorded_by && d.recorded_by !== actorId)
+      await this.svc.notify(d.recorded_by, d.org_id, {
+        kind: "decision.confirmed",
+        title: `Décision confirmée par la DG : ${d.title}`,
+        body: decisionRef(d),
         actor_id: actorId,
       });
     return this.get(actorId, id);

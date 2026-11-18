@@ -94,16 +94,25 @@ describe("registre des décisions : une décision est figée, seule l'exécution
     const url = `/api/decisions/${d.id}/execution`;
     expect((await g.api("u_hugo", "PATCH", url, { status: "en_cours" })).status).toBe(403);
     expect((await g.api("u_karim", "PATCH", url, { status: "en_cours" })).body.status).toBe("en_cours");
-    const done = await g.api("u_karim", "PATCH", url, { status: "executee", note: "Contrat signé" });
+    // Le chargé déclare l'exécution ; le secrétariat de la DG la confirme (thème 2, DEC-3)
+    const declared = await g.api("u_karim", "PATCH", url, { status: "executee", note: "Contrat signé" });
+    expect(declared.body).toMatchObject({ status: "en_cours", execution_declared_by: "u_karim" });
+    expect((await notes("u_alice")).some((n) => n.kind === "decision.execution_declared")).toBe(true);
+    const done = await g.api("u_alice", "POST", `${url}/confirm`);
     expect(done.body.status).toBe("executee");
     expect(done.body.executed_at).toBeTruthy();
     expect(done.body.execution_note).toBe("Contrat signé");
-    expect((await notes("u_alice")).some((n) => n.kind === "decision.executed")).toBe(true);
+    expect((await notes("u_karim")).some((n) => n.kind === "decision.execution_confirmed")).toBe(true);
     expect((await g.api("u_alice", "PATCH", url, { status: "en_cours" })).status).toBe(409);
     const events = await g.ctx.db.query<{ kind: string }>(
       "SELECT kind FROM activity WHERE kind LIKE 'decision.%' ORDER BY created_at",
     );
-    expect(events.map((e) => e.kind)).toEqual(["decision.recorded", "decision.execution", "decision.execution"]);
+    expect(events.map((e) => e.kind)).toEqual([
+      "decision.recorded",
+      "decision.execution",
+      "decision.execution_declared",
+      "decision.execution_confirmed",
+    ]);
   });
 
   it("se corrige par une nouvelle décision qui la remplace", async () => {

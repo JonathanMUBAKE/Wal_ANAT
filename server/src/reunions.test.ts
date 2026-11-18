@@ -238,7 +238,9 @@ describe("validation", () => {
     expect((await api("u_alice", "PATCH", `/api/meetings/${m.id}`, { location: "x" })).status).toBe(409);
     expect((await api("u_alice", "PUT", `/api/meetings/${m.id}/content`, content())).status).toBe(409);
     expect((await api("u_alice", "DELETE", `/api/meetings/${m.id}`)).status).toBe(409);
-    expect((await api("u_alice", "POST", `/api/meetings/${m.id}/reopen`)).body.status).toBe("held");
+    expect((await api("u_alice", "POST", `/api/meetings/${m.id}/reopen`, { reason: "Erreur de lieu" })).body.status).toBe(
+      "held",
+    );
     expect(await ctx.db.one("SELECT 1 FROM activity WHERE kind = 'meeting.reopened'")).toBeTruthy();
     expect((await api("u_alice", "PATCH", `/api/meetings/${m.id}`, { location: "x" })).status).toBe(200);
   });

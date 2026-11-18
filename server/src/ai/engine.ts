@@ -54,6 +54,8 @@ export interface AiApproval {
   status: "pending" | "approved" | "rejected" | "expired";
   decided_by: string | null;
   decided_at: string | null;
+  /** Les personnes visées par la proposition : elles ne la valident pas (I-4). */
+  target_ids?: string[];
   created_at: string;
 }
 export interface AiRule {
@@ -72,8 +74,6 @@ export interface AiRule {
 
 const MAX_ROUNDS = 12;
 const RULE_RUNS_PER_HOUR = 30;
-/** Une règle peut créer ou commenter seule ; modifier l'existant reste soumis à un humain, même si le contenu lu tente de l'y pousser. */
-const AUTO_APPROVABLE = new Set(["create_task", "add_comment", "remember"]);
 const LOCKED_INPUTS = new Set(["task", "project_id", "parent", "object_type", "object_id", "__run_id"]);
 /** Assez large pour une recherche complète ou une analyse : un JSON coupé est inexploitable. */
 const TOOL_RESULT_MAX = 24_000;
@@ -104,7 +104,7 @@ interface StartOpts {
 
 export class AiEngine {
   readonly tools: ToolRunner;
-  private waiters = new Map<string, (ok: boolean) => void>();
+  private waiters = new Map<string, (ok: boolean, stop?: boolean, by?: string) => void>();
   private controllers = new Map<string, AbortController>();
   private timer: NodeJS.Timeout | null = null;
   private closing = false;
@@ -496,7 +496,8 @@ export class AiEngine {
         if (o.signal.aborted) throw new CancelledError();
         const input = (b.input && typeof b.input === "object" ? b.input : {}) as Record<string, unknown>;
         const stepId = await this.step(runId, { kind: "tool", tool: b.name, input, status: "running" });
-        if (WRITE_TOOL_NAMES.has(b.name) && !(o.autoApprove && AUTO_APPROVABLE.has(b.name))) {
+        // L'IA propose, un humain décide : toute écriture passe par un checkpoint, sans validation automatique (I-1)
+        if (WRITE_TOOL_NAMES.has(b.name)) {
           const decision = await this.checkpoint(
             runId,
             o.ctx,
@@ -507,6 +508,12 @@ export class AiEngine {
             o.hint.taskId ?? null,
             o.signal,
           );
+          if (!decision.ok && decision.stop) {
+            // Un refus arrête l'intervention (I-2) : le coéquipier ne poursuit pas avec d'autres propositions
+            await this.updateStep(stepId, "rejected", "Refusé par un humain : intervention arrêtée");
+            if (o.signal.aborted) throw new CancelledError();
+            return `Intervention arrêtée : ${decision.by ?? "un humain"} a refusé la proposition « ${await this.tools.describe(o.ctx, b.name, input)} ».`;
+          }
           if (!decision.ok) {
             await this.updateStep(stepId, "rejected", "Refusé par un humain");
             results.push({
@@ -564,18 +571,20 @@ export class AiEngine {
     projectId: string | null,
     taskId: string | null,
     signal: AbortSignal,
-  ): Promise<{ ok: boolean; input: Record<string, unknown> }> {
+  ): Promise<{ ok: boolean; stop?: boolean; by?: string; input: Record<string, unknown> }> {
     const id = uid("apr");
     const summary = await this.tools.describe(ctx, tool, input);
+    const run = await this.getRun(runId);
+    // Les personnes visées par la proposition ne la valident pas elles-mêmes (I-4) ; l'assistant reste à son auteur
+    const targets = run.kind === "assistant" ? [] : await this.tools.targets(ctx, tool, input);
     await this.svc.db.query(
-      `INSERT INTO ai_approvals (id, run_id, agent_id, task_id, project_id, tool, input, summary, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending')`,
-      [id, runId, ctx.actorId, taskId, projectId, tool, JSON.stringify(input), summary],
+      `INSERT INTO ai_approvals (id, run_id, agent_id, task_id, project_id, tool, input, summary, status, target_ids) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending',$9)`,
+      [id, runId, ctx.actorId, taskId, projectId, tool, JSON.stringify(input), summary, JSON.stringify(targets)],
     );
     await this.setStatus(runId, "waiting_approval");
     const agent = await this.svc.user(ctx.actorId);
-    const run = await this.getRun(runId);
     if (run.kind !== "assistant") {
-      for (const u of approverIds)
+      for (const u of approverIds.filter((x) => !targets.includes(x)))
         await this.svc.notify(u, ctx.orgId, {
           kind: "approval",
           title: `${agent.name} attend votre accord`,
@@ -596,21 +605,29 @@ export class AiEngine {
       };
       signal.addEventListener("abort", onAbort, { once: true });
       // La personne qui valide peut avoir retouché l'action : on relit l'input enregistré.
-      this.waiters.set(id, (ok) => {
+      this.waiters.set(id, (ok, stop, by) => {
         signal.removeEventListener("abort", onAbort);
         void (async () => {
           await this.setStatus(runId, "running");
-          resolve({ ok, input: (await this.getApproval(id)).input });
+          resolve({ ok, stop, by, input: (await this.getApproval(id)).input });
         })();
       });
     });
   }
 
-  async decide(approvalId: string, userId: string, approve: boolean, edits?: Record<string, unknown>) {
+  async decide(
+    approvalId: string,
+    userId: string,
+    approve: boolean,
+    edits?: Record<string, unknown>,
+    opts: { continue?: boolean } = {},
+  ) {
     const a = await this.getApproval(approvalId);
     if (a.status !== "pending") throw badRequest("Cette demande a déjà été traitée");
     const run = await this.getRun(a.run_id);
     if (run.org_id) await this.svc.requirePerm(userId, run.org_id, "ai.approve");
+    if (run.kind !== "assistant" && (a.target_ids ?? []).includes(userId))
+      throw forbidden("Cette proposition vous vise : une autre personne habilitée la valide ou la refuse");
     if (run.kind === "assistant") {
       if (run.requested_by !== userId) throw forbidden("Seule la personne qui a lancé l'assistant peut valider");
     } else if (a.project_id) await this.svc.require(userId, a.project_id, "editor");
@@ -651,7 +668,9 @@ export class AiEngine {
     const w = this.waiters.get(approvalId);
     this.waiters.delete(approvalId);
     this.bus.emit({ type: "ai.approval", approvalId, runId: a.run_id, projectId: a.project_id, taskId: a.task_id });
-    if (w) w(approve);
+    // Un refus arrête l'intervention d'un coéquipier, sauf si l'on choisit de le laisser continuer (I-2)
+    const stop = !approve && run.kind !== "assistant" && !opts.continue;
+    if (w) w(approve, stop, (await this.svc.user(userId)).name);
     else await this.svc.db.query("UPDATE ai_approvals SET status = 'expired' WHERE id = $1", [approvalId]);
     return this.getApproval(approvalId);
   }
@@ -825,6 +844,10 @@ export class AiEngine {
   async saveRule(userId: string, input: Partial<AiRule> & { project_id: string }) {
     await this.svc.require(userId, input.project_id, "admin");
     await this.svc.projectPerm(userId, input.project_id, "ai.rules");
+    if (input.auto_approve)
+      throw badRequest(
+        "La validation automatique n'existe plus : l'IA propose, un humain valide chacune de ses actions",
+      );
     const agent = await this.svc.user(String(input.agent_id));
     if (!agent.is_ai) throw badRequest("L'agent doit être un coéquipier IA");
     if (!(await this.svc.projectRole(agent.id, input.project_id)))
@@ -949,7 +972,9 @@ export class AiEngine {
       if (
         a.kind === "assistant"
           ? a.requested_by === userId
-          : a.project_id && ["editor", "admin"].includes((await this.svc.projectRole(userId, a.project_id)) ?? "")
+          : a.project_id &&
+            !(a.target_ids ?? []).includes(userId) &&
+            ["editor", "admin"].includes((await this.svc.projectRole(userId, a.project_id)) ?? "")
       ) {
         const { kind: _k, requested_by: _r, ...rest } = a;
         void _k;

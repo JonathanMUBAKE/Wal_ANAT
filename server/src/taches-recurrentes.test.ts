@@ -46,7 +46,10 @@ describe("tâches récurrentes", () => {
     expect(t.recurrence).toBe("weekly");
     await g.api("u_alice", "POST", "/api/tasks", { project_id: p, parent_id: t.id, title: "Préparer l'ordre du jour" });
 
-    const done = await g.api("u_karim", "PATCH", `/api/tasks/${t.id}`, { completed: true });
+    // Tâche confiée : Fiston la déclare réalisée, Bernadette confirme la clôture (thème 2, T-3)
+    const declared = await g.api("u_karim", "PATCH", `/api/tasks/${t.id}`, { completed: true });
+    expect(declared.body).toMatchObject({ completed: false, next_occurrence_id: null });
+    const done = await g.api("u_alice", "PATCH", `/api/tasks/${t.id}`, { completed: true });
     expect(done.status).toBe(200);
     expect(done.body.next_occurrence_id).toBeTruthy();
     const next = (await g.api("u_karim", "GET", `/api/tasks/${done.body.next_occurrence_id}`)).body;

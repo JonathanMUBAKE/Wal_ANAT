@@ -186,6 +186,11 @@ export function useUpdateTask() {
       if (ctx?.detail) qc.setQueryData(["task", v.id], ctx.detail);
       errorToast(e);
     },
+    onSuccess: (t, v) => {
+      // Tâche confiée : la terminer revient à la déclarer réalisée, le responsable confirme (thème 2, T-3)
+      if (v.completed && !t.completed && t.done_declared_at)
+        toast.success("Tâche déclarée réalisée : la personne qui vous l'a confiée confirmera la clôture");
+    },
     onSettled: (_d, _e, v) => {
       invalidateTask(qc, v.id);
     },
@@ -228,10 +233,11 @@ export function useDeleteTask() {
 export function useDecide() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { id: string; approve: boolean; edits?: Record<string, unknown> }) =>
+    mutationFn: (v: { id: string; approve: boolean; edits?: Record<string, unknown>; continue?: boolean }) =>
       api.post<AiApproval>(`/api/ai/approvals/${v.id}`, v),
     onSuccess: (a) => {
       toast.success(a.status === "approved" ? "Action autorisée" : "Action refusée");
+      qc.invalidateQueries({ queryKey: ["runs"] });
       qc.invalidateQueries({ queryKey: ["approvals"] });
       qc.invalidateQueries({ queryKey: ["run", a.run_id] });
       qc.invalidateQueries({ queryKey: ["notifications"] });

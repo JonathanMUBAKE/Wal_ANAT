@@ -362,7 +362,7 @@ function ArbitrationDrawer({ id, list, onClose }: { id: string; list: Arbitratio
               variant="primary"
               icon={<Gavel className="size-4" />}
               loading={busy}
-              disabled={choice === null}
+              disabled={choice === null || !due}
               onClick={() =>
                 act(
                   "decide",
@@ -435,7 +435,7 @@ function ArbitrationDrawer({ id, list, onClose }: { id: string; list: Arbitratio
             <Field label="Observations" hint="Inscrites au registre avec l'option retenue.">
               {(x) => <Textarea {...x} value={note} onChange={(e) => setNote(e.target.value)} />}
             </Field>
-            <Field label="Échéance d'exécution">
+            <Field label="Échéance d'exécution" required>
               {(x) => <Input {...x} type="date" value={due} onChange={(e) => setDue(e.target.value)} />}
             </Field>
           </div>

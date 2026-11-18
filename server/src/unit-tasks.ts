@@ -147,13 +147,21 @@ export class UnitTasks {
       title: string | null;
       unit_id: string;
       unit_name: string;
+      is_head: boolean;
     }>(
+      // Le responsable de l'entité compte dans sa charge et ses chiffres, en tête (E-1)
       `WITH RECURSIVE tree(id) AS (SELECT $2::text UNION SELECT c.id FROM org_units c JOIN tree ON c.parent_id = tree.id)
-       SELECT u.id AS user_id, u.name, u.title, ou.id AS unit_id, ou.name AS unit_name
-         FROM org_members om JOIN users u ON u.id = om.user_id JOIN org_units ou ON ou.id = om.unit_id
-        WHERE om.org_id = $1 AND om.unit_id IN (SELECT id FROM tree) AND NOT u.is_ai AND u.id <> $3
-        ORDER BY (ou.id = $2) DESC, ou.name, u.name`,
-      [orgId, unitId, actorId],
+       SELECT * FROM (
+         SELECT u.id AS user_id, u.name, u.title, ou.id AS unit_id, ou.name AS unit_name, (u.id = ou2.manager_id) AS is_head
+           FROM org_members om JOIN users u ON u.id = om.user_id JOIN org_units ou ON ou.id = om.unit_id
+           JOIN org_units ou2 ON ou2.id = $2
+          WHERE om.org_id = $1 AND om.unit_id IN (SELECT id FROM tree) AND NOT u.is_ai
+         UNION
+         SELECT u.id, u.name, u.title, ou.id, ou.name, TRUE
+           FROM org_units ou JOIN users u ON u.id = ou.manager_id WHERE ou.id = $2
+       ) x
+       ORDER BY is_head DESC, (unit_id = $2) DESC, unit_name, name`,
+      [orgId, unitId],
     );
     const readable = await this.svc.readableProjectIds(actorId, orgId);
     const today = localDate();
@@ -315,8 +323,10 @@ export class UnitTasks {
       task_count: number;
       done_count: number;
       overdue_count: number;
+      carried: boolean;
     }>(
       `SELECT p.id, p.name, p.color, p.icon, p.status, to_char(p.due_on, 'YYYY-MM-DD') AS due_on, o.name AS owner_name,
+              (p.unit_id = $2) AS carried,
               (SELECT count(*)::int FROM tasks t WHERE t.project_id = p.id AND t.parent_id IS NULL) AS task_count,
               (SELECT count(*)::int FROM tasks t WHERE t.project_id = p.id AND t.parent_id IS NULL AND t.completed) AS done_count,
               (SELECT count(*)::int FROM tasks t WHERE t.project_id = p.id AND t.parent_id IS NULL AND NOT t.completed AND t.due_on < $3::date) AS overdue_count
@@ -326,9 +336,11 @@ export class UnitTasks {
                 SELECT 1 FROM memberships ms WHERE ms.project_id = p.id AND (
                   ms.user_id = (SELECT manager_id FROM org_units WHERE id = $2)
                   OR ms.user_id IN (SELECT user_id FROM org_members WHERE org_id = $1 AND unit_id = $2))))
-        ORDER BY p.created_at DESC`,
+        ORDER BY (p.unit_id = $2) DESC, p.created_at DESC`,
       [orgId, unitId, today, readable],
     );
+    // Un projet porté par l'entité se distingue d'un projet auquel elle contribue par un membre (E-2)
+    const carried = projects.filter((p) => p.carried);
     const PRIORITIES = ["urgent", "high", "medium", "low", "none"];
     // Réunions à mettre en avant : celles de l'entité (une séance par série) et celles où la personne est attendue
     const meetings = new Meetings(this.svc);
@@ -348,7 +360,8 @@ export class UnitTasks {
         unassigned: open.filter((t) => !t.assignee_id).length,
         completion_rate:
           done30.length + open.length ? Math.round((100 * done30.length) / (done30.length + open.length)) : 0,
-        projects: projects.length,
+        projects: carried.length,
+        projects_contributed: projects.length - carried.length,
         agents: follow?.agents.length ?? null,
       },
       meetings: meetingsOf,
@@ -363,13 +376,15 @@ export class UnitTasks {
       by_priority: PRIORITIES.map((p) => ({ priority: p, count: open.filter((t) => t.priority === p).length })),
       overdue: overdue.sort(byDue).slice(0, 8).map(pick),
       upcoming: dueWeek.sort(byDue).slice(0, 8).map(pick),
-      projects: projects.map((p) => ({
+      projects: projects.map(({ carried: c, ...p }) => ({
         ...p,
+        role: c ? ("porte" as const) : ("contribue" as const),
         progress: p.task_count ? Math.round((100 * p.done_count) / p.task_count) : 0,
       })),
       workload: follow
         ? follow.agents.map((a) => ({
             user_id: a.user_id,
+            is_head: a.is_head,
             name: a.name,
             unit_name: a.unit_name,
             open: a.open,

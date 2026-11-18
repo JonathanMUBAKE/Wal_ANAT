@@ -98,6 +98,7 @@ describe("administration système : journal d'audit", () => {
       title: "Décision tracée",
       content: "Texte",
       decided_on: "2026-01-05",
+      no_execution: true,
     });
     expect((await g.api("u_karim", "GET", "/api/admin/audit")).status).toBe(403);
     const all = (await g.api("u_alice", "GET", "/api/admin/audit")).body as Any;

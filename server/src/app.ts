@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { openDb, type Db } from "./db.js";
 import { Bus, type DomainEvent } from "./bus.js";
-import { HttpError, RECURRENCES, Services, badRequest, forbidden, withAvatar } from "./services.js";
+import { HttpError, RECURRENCES, Services, badRequest, forbidden, withAvatar, isSensitive } from "./services.js";
 import { MailService } from "./mail.js";
 import { AiEngine } from "./ai/engine.js";
 import { AnthropicProvider, MODEL, isExternal, type AiProvider } from "./ai/provider.js";
@@ -348,13 +348,17 @@ export async function buildApp(opts: AppOptions = {}) {
         [me(req)],
       );
       const orgs = await svc.orgsOf(me(req));
+      const permissions = org(req) ? await svc.permissionsOf(me(req), org(req)) : [];
+      // Comptes sensibles (AD-2) : administrateurs et détenteurs d'un droit sensible
       const administers =
-        !!security?.platform_role || ["owner", "admin"].includes(orgs.find((o) => o.id === org(req))?.role ?? "");
+        !!security?.platform_role ||
+        ["owner", "admin"].includes(orgs.find((o) => o.id === org(req))?.role ?? "") ||
+        permissions.some(isSensitive);
       return {
         ...(await svc.user(me(req))),
         org_id: org(req),
         orgs,
-        permissions: org(req) ? await svc.permissionsOf(me(req), org(req)) : [],
+        permissions,
         platform_role: security?.platform_role ?? null,
         mfa_enabled: !!security?.totp_enabled,
         mfa_required: svc.requireAdminMfa && administers && !security?.totp_enabled,

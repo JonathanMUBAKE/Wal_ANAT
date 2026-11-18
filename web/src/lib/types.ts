@@ -555,6 +555,8 @@ export interface UnitDashboard {
     unassigned: number;
     completion_rate: number;
     projects: number;
+    /** Projets auxquels l'entité contribue sans les porter (E-2). */
+    projects_contributed?: number;
     agents: number | null;
   };
   meetings: { unit: UpcomingMeeting[]; mine: UpcomingMeeting[] };
@@ -575,10 +577,14 @@ export interface UnitDashboard {
     done_count: number;
     overdue_count: number;
     progress: number;
+    /** Porté par l'entité, ou projet auquel elle contribue (E-2). */
+    role?: "porte" | "contribue";
   }[];
   workload:
     | {
         user_id: string;
+        /** Le responsable de l'entité, compté en tête (E-1). */
+        is_head?: boolean;
         name: string;
         unit_name: string;
         open: number;

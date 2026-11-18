@@ -72,9 +72,9 @@ describe("pilotage, dossiers et courrier", () => {
 
   it("DEC-6 : un agent voit les décisions qui le concernent", async () => {
     const decide = (body: Record<string, unknown>) =>
-      g.api("u_alice", "POST", "/api/decisions", { title: "D", content: "Texte", decided_on: day(), ...body });
+      g.api("u_alice", "POST", "/api/decisions", { title: "D", content: "Texte", decided_on: day(), due_on: day(30), ...body });
     const his = (await decide({ owner_id: "u_hugo" })).body;
-    const other = (await decide({})).body;
+    const other = (await decide({ owner_id: "u_alice" })).body;
     const list = (await g.api("u_hugo", "GET", "/api/decisions")).body as Any[];
     expect(list.map((d) => d.id)).toContain(his.id);
     expect(list.map((d) => d.id)).not.toContain(other.id);

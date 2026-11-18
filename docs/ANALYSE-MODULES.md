@@ -260,8 +260,8 @@ propriétaire ou administrateur de l'organisation est responsable de toutes les 
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| E-1 | Le responsable est exclu de la charge et du suivi de son entité. Ses tâches de projet ne comptent pas, ses tâches d'entité comptent : le périmètre des chiffres est incohérent. Un directeur seul dans sa direction voit « 0 » alors qu'il a un retard. | Haute | À corriger : inclure les tâches du responsable dans les chiffres de l'entité, et l'afficher dans la charge (à part ou en premier) |
-| E-2 | Les projets « de l'entité » incluent tout projet dont le responsable ou un agent est simple membre (Refonte du site web chez l'Ingénierie territoriale, Schéma national chez plusieurs entités). Les mêmes projets se retrouvent comptés dans plusieurs entités. | Haute | À corriger : distinguer « projets portés par l'entité » et « projets auxquels l'entité contribue » |
+| E-1 | Le responsable est exclu de la charge et du suivi de son entité. Ses tâches de projet ne comptent pas, ses tâches d'entité comptent : le périmètre des chiffres est incohérent. Un directeur seul dans sa direction voit « 0 » alors qu'il a un retard. | Haute | **Fait** (lot 10) : le responsable compte dans les chiffres et la charge de son entité, en tête, avec la mention « Responsable » |
+| E-2 | Les projets « de l'entité » incluent tout projet dont le responsable ou un agent est simple membre (Refonte du site web chez l'Ingénierie territoriale, Schéma national chez plusieurs entités). Les mêmes projets se retrouvent comptés dans plusieurs entités. | Haute | **Fait** (lot 10) : projets portés par l'entité et projets auxquels elle contribue, distingués et comptés à part |
 | E-3 | Le chef d'une entité rattachée apparaît comme simple « agent » dans le suivi de l'entité du dessus (Gaston, chef du Suivi-évaluation, dans le suivi de Fiston). | Moyenne | À corriger : présenter les entités rattachées et leur responsable, puis les agents |
 | E-4 | L'entité ouverte par défaut est la première entité dirigée, pas l'entité de rattachement (Esther arrive aux RH, la DG à la racine « ANAT » et non à la Direction générale). | Moyenne | À corriger : ouvrir par défaut l'entité de rattachement de la personne |
 | E-5 | Une réunion de l'entité que l'on préside apparaît deux fois dans la vue d'ensemble. | Basse | À corriger : ne pas répéter dans « Où vous êtes attendu·e » une réunion déjà listée |
@@ -595,7 +595,7 @@ gestionnaire de l'agenda, et ne se supprime que par un gestionnaire. La suppress
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
 | F-1 | L'état d'un projet diffère selon l'onglet : déclaré (« Dans les temps ») dans Tous les dossiers et Projets, calculé (« À surveiller ») dans la revue et le Tableau de bord DG. | Haute | **Fait** (lot 6) : l'état calculé s'affiche partout (Tous les dossiers, Projets, Accueil), avec le déclaré à côté quand ils divergent et les raisons au survol |
-| F-2 | La liste des projets ne montre que les projets dont on est membre. Le portefeuille de l'assistante de la DG est incomplet (4 sur 6), alors qu'elle a accès au tableau de bord. | Haute | À corriger : un profil qui a le droit de pilotage voit tous les projets de l'institution au portefeuille |
+| F-2 | La liste des projets ne montre que les projets dont on est membre. Le portefeuille de l'assistante de la DG est incomplet (4 sur 6), alors qu'elle a accès au tableau de bord. | Haute | **Fait** (lot 10) : le droit de pilotage donne la lecture de tous les projets non privés de l'institution |
 | F-3 | « 3 décisions attendues » (tableau de bord) et « Arbitrages attendus : 0 » (revue) : deux notions proches, deux chiffres. | Moyenne | **Décidé et fait** (lot 6) : une seule notion, « décision attendue de la DG » : dossier marqué « décision attendue » ou arbitrage en attente, compté une fois ; la revue précise son périmètre (« sur ces projets ») |
 | F-4 | Tous les agents voient toutes les activités non confidentielles de la DG (commissions, conférences, activités internes, leur état). | Moyenne | **Décidé et fait** (lot 7) : un agent voit les activités dont il est responsable, dont il suit une suite, ou de son entité ; la direction voit tout le non-confidentiel |
 | F-5 | L'onglet « Contrats et paiements » est ouvert aux chefs d'entité (Fiston, Didier) mais pas à l'assistante de la DG. | Basse | À vérifier au module Administration (profils) |
@@ -682,7 +682,7 @@ Aucune n'est rattachée à un dossier.
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
 | DEC-1 | Une décision inscrite par l'assistante entre au registre sans confirmation de la DG. Rien ne la distingue d'une décision que la DG a vue. (Décision déjà ouverte dans le plan de travail.) | Haute | **Décidé et fait** (lot 4) : confirmation après coup. La décision est numérotée dès son inscription, marquée « à confirmer par la DG », et la DG la confirme (droit « Confirmer les décisions inscrites au nom de la DG ») |
-| DEC-2 | Le chargé d'exécution et l'échéance sont facultatifs : une décision peut rester sans suivi ni retard possible. | Haute | À corriger : chargé et échéance obligatoires, sauf décision sans exécution (à marquer comme telle) |
+| DEC-2 | Le chargé d'exécution et l'échéance sont facultatifs : une décision peut rester sans suivi ni retard possible. | Haute | **Fait** (lot 10) : chargé et échéance obligatoires, sauf décision marquée « sans exécution » ; une décision de séance sans chargé est inscrite sans exécution ; un arbitrage se tranche avec une échéance |
 | DEC-3 | Le chargé déclare seul la décision exécutée, sans vérification. Même logique que T-3. | Moyenne | **Décidé et fait** (lot 4) : le secrétariat de la DG ou la DG confirme l'exécution déclarée par le chargé, ou la renvoie avec un motif |
 | DEC-4 | Aucune correction possible, même d'une faute de frappe : il faut remplacer, ce qui crée un nouveau numéro. | Basse | À décider : autoriser une correction de forme tracée pendant un court délai, ou garder le remplacement |
 | DEC-5 | Le formulaire « Inscrire une décision » de cette page ne propose pas de rattacher la décision à un dossier ; seule l'action « Arbitrer » depuis un dossier le fait. | Moyenne | À corriger : champ « Dossier » (projet, activité, réunion) dans le formulaire |
@@ -1605,7 +1605,7 @@ accès ; le profil « Responsable informatique » existe mais n'est attribué à
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
 | AD-1 | La DG est administratrice de la plateforme : pas de séparation entre la direction et l'administration technique, ni de contrôle croisé du journal. | Haute | **Décidé et fait** (lot 4) : le responsable informatique est l'administrateur système ; la DG garde le pilotage et relit le journal de ses actions (page « Contrôle de l'administration », droit « Relire et viser le journal ») |
-| AD-2 | La double authentification est proposée mais pas imposée aux comptes à droits élevés (2 sans, signalés). | Haute | À corriger : double authentification obligatoire pour l'administrateur, la DG et les gestionnaires (RH, courrier, partenariats) |
+| AD-2 | La double authentification est proposée mais pas imposée aux comptes à droits élevés (2 sans, signalés). | Haute | **Fait** (lot 10) : sur un serveur exposé, la double authentification est exigée pour l'administration et les droits sensibles (pilotage de la DG, RH, courrier, partenariats, signature au nom de l'Agence) |
 | AD-3 | La messagerie n'est pas configurée : aucun courriel ne part, alors que plusieurs écrans annoncent un envoi par courriel. | Moyenne | À corriger au déploiement ; dans l'interface, ne pas promettre un courriel quand la messagerie est absente |
 | AD-4 | L'analyse du journal d'audit par l'IA envoie des données nominatives à un service extérieur. Même famille que I-9. | Moyenne | **Décidé et fait** (lot 7) : avec un service extérieur, l'appréciation du journal attend un accord explicite donné après avoir vu ce qui partirait |
 | AD-5 | Une seconde organisation de démonstration subsiste (« Studio Lumen »). Même famille que A-7. | Basse (démo) | **Fait** (lot 1) : le second espace « Studio Lumen » est retiré de la démonstration |
@@ -1872,3 +1872,21 @@ le test de rechargement compte aussi les décisions et le courrier. 658 tests au
 
 **Remarques traitées** : D-7, R-9, DEC-7, C-6, RI-8, PT-8, PA-6, S-7. Toutes les remarques de l'analyse sont désormais
 traitées ou décidées, sauf celles marquées « À décider » sans suite donnée à ce jour.
+
+### Lot 10 — Remarques graves restantes (18/11/2026, branche `lot-remarques-graves`)
+
+Les cinq remarques de gravité haute restées hors des thèmes de la synthèse.
+
+| Ce qui change | Avant | Après |
+|---|---|---|
+| Responsable dans son entité (E-1) | Exclu de la charge et des chiffres : un directeur seul voyait « 0 » malgré un retard | Il compte dans les chiffres et la charge de son entité, en tête, avec la mention « Responsable » |
+| Projets de l'entité (E-2) | Tout projet dont un agent est membre, compté dans plusieurs entités | « Portés » (rattachés à l'entité) et « en contribution » (un membre de l'entité y participe), comptés à part |
+| Portefeuille du cabinet (F-2) | L'assistante de la DG ne voyait que 4 projets sur 6 | Le droit de pilotage donne la lecture de tous les projets non privés ; les projets privés restent à leurs membres |
+| Décision sans suivi (DEC-2) | Chargé et échéance facultatifs | Obligatoires, sauf décision marquée « sans exécution à suivre » (prise de position, orientation), qui n'entre pas dans le suivi ; une décision de compte rendu sans chargé est inscrite sans exécution ; un arbitrage se tranche avec une échéance |
+| Double authentification (AD-2) | Imposée aux seuls administrateurs | Sur un serveur exposé, exigée aussi pour les droits sensibles : pilotage de la DG (inscrire, confirmer), RH, courrier, partenariats, signature au nom de l'Agence, relecture du journal ; l'en-tête le rappelle à la personne concernée |
+
+Migration `056_decision_sans_execution.sql`. Tests : `server/src/remarques-graves.test.ts` (6) ; 12 anciens tests
+ajustés pour donner un chargé et une échéance à leurs décisions (ou les marquer sans exécution), et un test de Mon
+entité aligné sur E-1 (le chef compte désormais avec ses propres tâches). 664 tests au vert.
+
+**Remarques traitées** : E-1, E-2, F-2, DEC-2, AD-2.

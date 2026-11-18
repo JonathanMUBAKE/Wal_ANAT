@@ -20,13 +20,25 @@ const day = (offset = 0) => localDate(new Date(Date.now() + offset * 864e5));
 const year = () => day().slice(0, 4);
 type Note = { kind: string };
 const notes = async (who: string) => (await g.api(who, "GET", "/api/notifications")).body as Note[];
+/** Une décision a un chargé et une échéance, ou se marque sans exécution (DEC-2) : complète ce que le test ne fixe pas. */
+const fill = (b: Record<string, unknown>) =>
+  b.no_execution !== undefined
+    ? b
+    : b.owner_id || b.due_on
+      ? { owner_id: "u_karim", due_on: day(30), ...b }
+      : { no_execution: true, ...b };
 const decide = (body: Record<string, unknown>, who = "u_alice") =>
-  g.api(who, "POST", "/api/decisions", {
-    title: "Choix du prestataire",
-    content: "Le cabinet Géo est retenu.",
-    decided_on: day(),
-    ...body,
-  });
+  g.api(
+    who,
+    "POST",
+    "/api/decisions",
+    fill({
+      title: "Choix du prestataire",
+      content: "Le cabinet Géo est retenu.",
+      decided_on: day(),
+      ...body,
+    }),
+  );
 
 describe("registre des décisions : enregistrer", () => {
   it("numérote chaque année, lève la décision attendue du dossier et prévient le chargé d'exécution", async () => {

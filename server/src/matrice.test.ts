@@ -280,6 +280,7 @@ async function boot(kind: Kind) {
           content: "Texte",
           decided_on: "2026-03-02",
           owner_id: "u_karim",
+          due_on: "2030-12-31",
         })
       ).body,
     toPay: async () => {
@@ -813,7 +814,7 @@ const TABLE = [
   })),
   R_("POST", "/api/arbitrations/:id/decide", async (X) => ({
     url: `/api/arbitrations/${(await X.arbitration()).id}/decide`,
-    body: { option: 0 },
+    body: { option: 0, due_on: "2030-12-31" },
   })),
   R_("POST", "/api/arbitrations/:id/withdraw", async (X) => ({
     url: `/api/arbitrations/${(await X.arbitration()).id}/withdraw`,
@@ -1035,7 +1036,7 @@ const TABLE = [
   R_("GET", "/api/org/admin-review"),
   R_("POST", "/api/org/admin-review", () => ({ body: { comment: "Vu" } })),
   R_("GET", "/api/decisions"),
-  R_("POST", "/api/decisions", () => ({ body: { title: "D", content: "Texte", decided_on: "2026-03-02" } })),
+  R_("POST", "/api/decisions", () => ({ body: { title: "D", content: "Texte", decided_on: "2026-03-02", no_execution: true } })),
   R_("GET", "/api/decisions/:id", async (X) => ({ url: `/api/decisions/${(await X.decision()).id}` })),
   R_("PATCH", "/api/decisions/:id/execution", async (X) => ({
     url: `/api/decisions/${(await X.decision()).id}/execution`,

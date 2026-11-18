@@ -149,11 +149,14 @@ describe("tâche confiée : la clôture est confirmée par le responsable (T-3)"
 });
 
 describe("décisions de la DG : confirmation après coup et clôture vérifiée (DEC-1, DEC-3)", () => {
+  // Une décision a un chargé et une échéance (DEC-2)
   const record = (who: string, body: Record<string, unknown> = {}) =>
     g.api(who, "POST", "/api/decisions", {
       title: "Lancement des ateliers provinciaux",
       content: "Les ateliers démarrent dans les six provinces pilotes.",
       decided_on: day(),
+      owner_id: "u_hugo",
+      due_on: day(30),
       ...body,
     });
   beforeEach(async () => {

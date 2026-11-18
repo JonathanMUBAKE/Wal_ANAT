@@ -42,6 +42,8 @@ export interface DecisionInput {
   due_on?: string | null;
   confidential?: boolean;
   replaces_id?: string | null;
+  /** Décision sans exécution à suivre (prise de position, orientation) : ni chargé ni échéance (DEC-2). */
+  no_execution?: boolean;
 }
 
 export const decisionRef = (d: Pick<Decision, "year" | "seq">) => `DEC/${d.year}/${String(d.seq).padStart(4, "0")}`;
@@ -200,6 +202,17 @@ export class Decisions {
     if (!opts.viaValidation) await this.svc.requirePerm(actorId, orgId, "decisions.record");
     for (const d of [i.decided_on, i.due_on]) if (d && !isRealDate(d)) throw badRequest(`Date invalide : ${d}`);
     if (i.decided_on > day()) throw badRequest("La date de la décision ne peut pas être dans le futur");
+    // Une décision est suivie jusqu'à son exécution : chargé et échéance, sauf décision sans exécution (DEC-2).
+    // Une décision de séance qui n'en désigne pas est inscrite comme décision sans exécution.
+    let noExecution = !!i.no_execution;
+    if (!noExecution && (!i.owner_id || !i.due_on)) {
+      if (opts.viaValidation) noExecution = true;
+      else
+        throw badRequest(
+          "Une décision a un chargé d'exécution et une échéance ; sinon, marquez-la « sans exécution »",
+        );
+    }
+    if (noExecution) i = { ...i, owner_id: null, due_on: null };
     if (i.due_on && i.due_on < i.decided_on) throw badRequest("L'échéance d'exécution précède la date de la décision");
     if ([i.project_id, i.activity_id, i.meeting_id].filter(Boolean).length > 1)
       throw badRequest("Une décision se rattache à un seul dossier : projet, activité ou réunion");
@@ -226,8 +239,9 @@ export class Decisions {
       try {
         await this.svc.db.tx(async (q) => {
           await q.query(
-            `INSERT INTO dg_decisions (id, org_id, year, seq, title, content, decided_on, project_id, activity_id, meeting_id, source_label, owner_id, due_on, confidential, replaces_id, recorded_by, confirmed_by, confirmed_at)
-             VALUES ($1,$2,$3,(SELECT COALESCE(max(seq),0)+1 FROM dg_decisions WHERE org_id = $2 AND year = $3),$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+            `INSERT INTO dg_decisions (id, org_id, year, seq, title, content, decided_on, project_id, activity_id, meeting_id, source_label, owner_id, due_on, confidential, replaces_id, recorded_by, confirmed_by, confirmed_at, no_execution, status, executed_at)
+             VALUES ($1,$2,$3,(SELECT COALESCE(max(seq),0)+1 FROM dg_decisions WHERE org_id = $2 AND year = $3),$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,
+               CASE WHEN $18 THEN 'executee' ELSE 'a_executer' END, CASE WHEN $18 THEN now() ELSE NULL END)`,
             [
               id,
               orgId,
@@ -246,6 +260,7 @@ export class Decisions {
               actorId,
               confirmedNow ? actorId : null,
               confirmedNow ? new Date().toISOString() : null,
+              noExecution,
             ],
           );
           // La décision attendue du dossier est levée : elle est désormais au registre

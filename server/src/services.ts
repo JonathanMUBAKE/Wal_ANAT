@@ -227,6 +227,20 @@ const assertDates = (...values: (string | null | undefined)[]) => {
 export const mentionPattern = (name: string, prefix = "@") =>
   new RegExp(`${prefix}${name.split(" ")[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}_])`, "iu");
 const KEY_RE = /^[A-Z][A-Z0-9]{1,9}$/;
+/**
+ * Droits sensibles (AD-2) : administration, pilotage de la DG, gestion RH, courrier, partenariats, signature au nom de
+ * l'Agence. Sur un serveur exposé, les exercer exige la double authentification.
+ */
+const SENSITIVE = new Set([
+  "hr.manage",
+  "correspondence.manage",
+  "partners.manage",
+  "decisions.record",
+  "decisions.confirm",
+  "signature.institution",
+  "audit.review",
+]);
+export const isSensitive = (perm: string) => perm.startsWith("org.") || SENSITIVE.has(perm);
 const projectArchived = () => new HttpError(409, "Ce projet est archivé : restaurez-le pour le modifier");
 
 /**
@@ -249,6 +263,11 @@ const ACCESS_SQL = `
         CASE WHEN om.role <> 'guest' AND p.access = 'team' AND t.visibility <> 'private' AND t.unit_id IN (SELECT id FROM managed) THEN 1 ELSE 0 END,
         CASE WHEN om.role <> 'guest' AND p.access = 'team' AND t.visibility = 'public' THEN 1 ELSE 0 END
       )),
+    -- Le droit de pilotage (DG, DGA, cabinet) donne la lecture de tous les projets non privés (F-2)
+    CASE WHEN p.kind = 'project' AND p.access = 'team' AND om.role <> 'guest'
+          AND COALESCE((om.permission_overrides->>'pilotage.view')::boolean,
+                       COALESCE((SELECT ap.permissions ? 'pilotage.view' FROM access_profiles ap WHERE ap.id = om.profile_id), FALSE))
+         THEN 1 ELSE 0 END,
     CASE WHEN p.kind = 'project' AND p.access = 'team' AND om.role <> 'guest' AND p.unit_id IN (SELECT id FROM managed) THEN 1
          WHEN p.kind = 'unit' AND om.role <> 'guest' AND p.unit_id IN (SELECT id FROM managed) THEN 4
          WHEN p.kind = 'unit' AND om.role <> 'guest' AND om.unit_id = p.unit_id THEN 3 ELSE 0 END
@@ -495,13 +514,15 @@ export class Services {
     if ((await this.userOrNull(actorId))?.is_ai) return;
     if (!(await this.permissionsOf(actorId, orgId)).includes(perm))
       throw forbidden(`Votre profil ne vous autorise pas à : ${permissionLabel(perm).toLowerCase()}`);
-    if (perm.startsWith("org.")) await this.assertAdminMfa(actorId);
+    if (isSensitive(perm)) await this.assertAdminMfa(actorId);
   }
   /** Sur un serveur exposé, administrer exige la double authentification. */
   async assertAdminMfa(actorId: string) {
     if (!this.requireAdminMfa) return;
     if (!(await this.db.one<{ on: boolean }>("SELECT TRUE AS on FROM users WHERE id = $1 AND totp_enabled", [actorId])))
-      throw forbidden("Activez la double authentification dans « Sécurité du compte » pour administrer");
+      throw forbidden(
+        "Activez la double authentification dans « Sécurité du compte » : vos droits (administration, pilotage, RH, courrier, partenariats) l'exigent",
+      );
   }
   /**
    * Ce qui « concerne » une personne (thème 5 de l'analyse) : son entité, et les entités qu'elle dirige avec celles

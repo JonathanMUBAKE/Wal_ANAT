@@ -252,7 +252,7 @@ function Workload({ rows }: { rows: NonNullable<UnitDashboard["workload"]> }) {
       />
       <ul className="space-y-2.5">
         {[...rows]
-          .sort((a, b) => b.open - a.open)
+          .sort((a, b) => Number(!!b.is_head) - Number(!!a.is_head) || b.open - a.open)
           .map((r) => (
             <li
               key={r.user_id}
@@ -262,7 +262,10 @@ function Workload({ rows }: { rows: NonNullable<UnitDashboard["workload"]> }) {
             >
               <span className="truncate">
                 {r.name}
-                <span className="block truncate text-[11.5px] text-faint">{r.unit_name}</span>
+                <span className="block truncate text-[11.5px] text-faint">
+                  {r.is_head ? "Responsable · " : ""}
+                  {r.unit_name}
+                </span>
               </span>
               <span className="flex h-3 gap-[2px]">
                 {r.overdue > 0 && (
@@ -342,6 +345,7 @@ export function UnitProjects({ rows, onCreate }: { rows: UnitDashboard["projects
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[14px] font-medium">{p.name}</span>
               <span className="block truncate text-[12px] text-muted">
+                {p.role === "contribue" ? "Contribution · " : ""}
                 {STATUS[p.status] ?? p.status}
                 {p.owner_name ? ` · ${p.owner_name}` : ""}
               </span>
@@ -547,7 +551,7 @@ export function UnitDashboardView({
       </div>
 
       <Card
-        title={`Projets de l'entité (${data.projects.length})`}
+        title={`Projets de l'entité : ${data.projects.filter((p) => p.role !== "contribue").length} porté(s), ${data.projects.filter((p) => p.role === "contribue").length} en contribution`}
         aside={<FolderKanban className="size-4 text-faint" />}
       >
         <UnitProjects rows={data.projects} onCreate={onNewProject} />

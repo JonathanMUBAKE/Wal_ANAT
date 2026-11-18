@@ -16,6 +16,7 @@ const Record_ = z.object({
   due_on: date.nullable().optional(),
   confidential: z.boolean().optional(),
   replaces_id: id.nullable().optional(),
+  no_execution: z.boolean().optional(),
 });
 
 /** Registre des décisions de la DG : aucune route ne modifie ni ne supprime une décision enregistrée. */

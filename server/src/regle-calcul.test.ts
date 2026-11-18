@@ -40,7 +40,10 @@ describe("une seule règle des retards (A-2, P-1)", () => {
     const t = (await g.api("u_karim", "POST", "/api/tasks", { project_id: board.project_id ?? board.project.id, title: "Relevés", assignee_id: "u_hugo", due_on: day(-2) })).body;
     await g.api("u_karim", "POST", "/api/tasks", { project_id: t.project_id, parent_id: t.id, title: "Sous", assignee_id: "u_hugo", due_on: day(-2) });
     const dash = (await g.api("u_karim", "GET", `/api/units/${u}/dashboard`)).body;
-    expect(dash.kpis.overdue).toBe(1);
+    // La sous-tâche échue ne compte pas ; le chef, lui, compte avec ses propres tâches (E-1)
+    const titles = (dash.overdue as Any[]).map((x) => x.title);
+    expect(titles).toContain("Relevés");
+    expect(titles).not.toContain("Sous");
   });
 });
 

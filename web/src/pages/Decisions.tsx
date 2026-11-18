@@ -56,6 +56,8 @@ interface Decision {
   source: { kind: "project" | "activity" | "meeting"; id: string; href: string; label: string } | null;
   replaces_reference: string | null;
   replaced_by_reference: string | null;
+  /** Décision sans exécution à suivre (DEC-2). */
+  no_execution?: boolean;
   /** Inscrite par le secrétariat, pas encore confirmée par la DG (thème 2, DEC-1). */
   to_confirm: boolean;
   confirmed_by: string | null;
@@ -341,7 +343,9 @@ function DecisionPanel({ id, onClose }: { id: string; onClose: () => void }) {
     >
       <div className="space-y-4 text-[13.5px]">
         <div className="flex flex-wrap items-center gap-2">
-          {d.status === "executee" ? (
+          {d.no_execution ? (
+            <Status label="Sans exécution à suivre" tone="neutral" />
+          ) : d.status === "executee" ? (
             <Stamp>Exécutée</Stamp>
           ) : (
             <Status label={S.label} tone={d.late ? "danger" : S.tone} />
@@ -503,6 +507,7 @@ export function DecisionDialog({
     owner_id: replaces?.owner_id ?? "",
     due_on: replaces?.due_on ?? "",
     confidential: false,
+    no_execution: false,
   });
   const set = (k: "title" | "content" | "decided_on" | "due_on") => (e: { target: { value: string } }) =>
     setF({ ...f, [k]: e.target.value });
@@ -510,8 +515,8 @@ export function DecisionDialog({
     mutationFn: () =>
       api.post<Detail>("/api/decisions", {
         ...f,
-        owner_id: f.owner_id || null,
-        due_on: f.due_on || null,
+        owner_id: f.no_execution ? null : f.owner_id || null,
+        due_on: f.no_execution ? null : f.due_on || null,
         project_id: source?.kind === "project" ? source.id : null,
         activity_id: source?.kind === "activity" ? source.id : null,
         meeting_id: source?.kind === "meeting" ? source.id : null,
@@ -545,7 +550,15 @@ export function DecisionDialog({
           <Button onClick={onClose}>Annuler</Button>
           <Button
             variant="primary"
-            disabled={!f.title.trim() || !f.content.trim() || !f.decided_on || dueBefore || future}
+            disabled={
+              !f.title.trim() ||
+              !f.content.trim() ||
+              !f.decided_on ||
+              dueBefore ||
+              future ||
+              // Une décision a un chargé et une échéance, sauf décision sans exécution (DEC-2)
+              (!f.no_execution && (!f.owner_id || !f.due_on))
+            }
             loading={record.isPending}
             onClick={() => record.mutate()}
           >
@@ -569,20 +582,37 @@ export function DecisionDialog({
         <Field label="Date de la décision" required error={future ? "La date ne peut pas être dans le futur" : null}>
           {(a) => <Input {...a} type="date" max={today()} value={f.decided_on} onChange={set("decided_on")} />}
         </Field>
-        <Field label="Chargé d'exécution">
-          {(a) => (
-            <PeopleSelect
-              {...a}
-              people={users}
-              placeholder="Non désigné"
-              value={f.owner_id}
-              onChange={(v) => setF({ ...f, owner_id: v })}
-            />
-          )}
-        </Field>
-        <Field label="Échéance d'exécution" error={dueBefore ? "L'échéance précède la date de la décision" : null}>
-          {(a) => <Input {...a} type="date" min={f.decided_on} value={f.due_on} onChange={set("due_on")} />}
-        </Field>
+        <label className="flex items-center gap-2 text-[13px] sm:col-span-2">
+          <input
+            type="checkbox"
+            className="size-4 accent-[var(--primary)]"
+            checked={f.no_execution}
+            onChange={(e) => setF({ ...f, no_execution: e.target.checked })}
+          />
+          Décision sans exécution à suivre (prise de position, orientation)
+        </label>
+        {!f.no_execution && (
+          <>
+            <Field label="Chargé d'exécution" required>
+              {(a) => (
+                <PeopleSelect
+                  {...a}
+                  people={users}
+                  placeholder="Choisir…"
+                  value={f.owner_id}
+                  onChange={(v) => setF({ ...f, owner_id: v })}
+                />
+              )}
+            </Field>
+            <Field
+              label="Échéance d'exécution"
+              required
+              error={dueBefore ? "L'échéance précède la date de la décision" : null}
+            >
+              {(a) => <Input {...a} type="date" min={f.decided_on} value={f.due_on} onChange={set("due_on")} />}
+            </Field>
+          </>
+        )}
         <label className="flex items-center gap-2 self-end pb-2 text-[13px]">
           <input
             type="checkbox"

@@ -154,6 +154,8 @@ describe("une seule porte pour les décisions", () => {
       content: "Décision d'essai",
       decided_on: day(0),
       project_id: p,
+      owner_id: "u_karim",
+      due_on: day(30),
     });
     expect(d.status).toBe(200);
     const hist = (await g.api("u_alice", "GET", `/api/projects/${p}/arbitrations`)).body as Any[];
@@ -197,7 +199,8 @@ describe("une seule porte pour les décisions", () => {
     expect(((await g.api("u_alice", "GET", "/api/arbitrations")).body as Any[]).some((x) => x.id === a.body.id)).toBe(
       true,
     );
-    const d = await g.api("u_alice", "POST", `/api/arbitrations/${a.body.id}/decide`, { option: 0 });
+    // Une décision a une échéance d'exécution (DEC-2)
+    const d = await g.api("u_alice", "POST", `/api/arbitrations/${a.body.id}/decide`, { option: 0, due_on: day(30) });
     expect(d.status).toBe(200);
     const reg = (await g.api("u_alice", "GET", "/api/decisions")).body as Any[];
     expect(reg.find((x) => x.id === d.body.decision_id)?.source).toMatchObject({ kind: "activity", id: act.id });

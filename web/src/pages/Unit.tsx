@@ -225,7 +225,7 @@ function Overview({
       ) : !data ? (
         <Spinner />
       ) : projectsOnly ? (
-        <Section title={`Projets de l'entité (${data.projects.length})`}>
+        <Section title={`Projets de l'entité : ${data.projects.filter((p) => p.role !== "contribue").length} porté(s), ${data.projects.filter((p) => p.role === "contribue").length} en contribution`}>
           <div className="p-5 pt-3">
             <UnitProjects rows={data.projects} onCreate={onNewProject} />
           </div>

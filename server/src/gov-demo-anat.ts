@@ -534,6 +534,8 @@ async function people(svc: Services, org: string) {
           function_since: hired_on,
           nationality: "Congolaise",
           unit_id: unitId.get(unit) ?? null,
+          // Un contractuel a une date de fin (thème 6, RH-3) : fictive dans la démonstration
+          ...(status === "contractuel" ? { contract_end_on: "2027-06-30" } : {}),
         },
         info,
       )

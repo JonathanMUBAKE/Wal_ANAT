@@ -3,7 +3,7 @@ import { z } from "zod";
 import { uid } from "./db.js";
 import type { Provisioning } from "./auth/provisioning.js";
 import type { RequestInfo } from "./auth/service.js";
-import { badRequest, forbidden, localDate, notFound, type Services } from "./services.js";
+import { HttpError, badRequest, forbidden, localDate, notFound, type Services } from "./services.js";
 
 /*
  * Module RH — identification des agents (premier jet, appelé à grandir : carrière, congés, évaluation).
@@ -66,6 +66,30 @@ const Diploma = z.object({
   year: z.number().int().min(1940).max(2100).nullable().optional(),
   level: txt(60).optional(),
 });
+/** Sortie d'un agent (RH-1) : date, motif, référence de l'acte. */
+export const EXIT_REASONS = ["retraite", "fin_contrat", "mutation", "demission", "licenciement", "deces", "autre"] as const;
+const Exit = z.object({
+  exit_on: date,
+  reason: z.enum(EXIT_REASONS, { message: "Motif de sortie inconnu" }),
+  reference: txt(300).optional(),
+});
+const Training = z.object({
+  title: txt(300).min(1, "L'intitulé de la formation est obligatoire"),
+  provider: txt(300).optional(),
+  start_on: date.nullable().optional(),
+  end_on: date.nullable().optional(),
+});
+const RATINGS = ["excellent", "tres_bien", "bien", "passable", "insuffisant"] as const;
+const Evaluation = z.object({
+  year: z.number().int().min(1990).max(2100),
+  rating: z.enum(RATINGS, { message: "Appréciation inconnue" }),
+  comment: txt(5000).optional(),
+});
+/** Statuts à durée limitée : leur date de fin est obligatoire (RH-3). */
+const LIMITED = new Set(["contractuel", "stagiaire", "consultant"]);
+/** Âge de départ à la retraite retenu pour l'alerte (paramètre de l'Agence). */
+const RETIREMENT_AGE = 65;
+const addDays = (d: string, n: number) => localDate(new Date(Date.parse(`${d}T12:00:00`) + n * 864e5));
 const Contact = z.object({
   name: txt(200).min(1, "Le nom de la personne à prévenir est obligatoire"),
   relation: txt(80).optional(),
@@ -218,6 +242,29 @@ export class Hr {
     const p = await this.perms(actorId, orgId);
     // Les observations du service RH restent au service RH (D-1) ; le chef lit la partie administrative (D-2)
     const hr = p.view || p.manage;
+    const self = actorId === userId;
+    const trainings = await this.svc.db.query(
+      `SELECT id, title, provider, to_char(start_on, 'YYYY-MM-DD') AS start_on, to_char(end_on, 'YYYY-MM-DD') AS end_on
+         FROM agent_trainings WHERE org_id = $1 AND user_id = $2 ORDER BY start_on DESC NULLS LAST, created_at DESC`,
+      [orgId, userId],
+    );
+    // L'évaluation reste au service RH et à l'agent (D-9)
+    const evaluations =
+      hr || self
+        ? await this.svc.db.query(
+            `SELECT e.id, e.year, e.rating, e.comment, u.name AS evaluator_name FROM agent_evaluations e
+               LEFT JOIN users u ON u.id = e.evaluator_id WHERE e.org_id = $1 AND e.user_id = $2 ORDER BY e.year DESC`,
+            [orgId, userId],
+          )
+        : [];
+    const corrections =
+      hr || self
+        ? await this.svc.db.query(
+            `SELECT id, message, status, response, created_at, handled_at FROM agent_corrections
+               WHERE org_id = $1 AND user_id = $2 ORDER BY created_at DESC`,
+            [orgId, userId],
+          )
+        : [];
     const record: Record<string, unknown> = { ...r };
     if (!hr) delete record.notes;
     const restricted = !hr && actorId !== userId;
@@ -227,6 +274,9 @@ export class Hr {
       diplomas,
       contacts: restricted ? [] : contacts,
       assignments,
+      trainings,
+      evaluations,
+      corrections,
       restricted,
       can: { manage: p.manage && actorId !== userId, self: actorId === userId },
     };
@@ -305,6 +355,8 @@ export class Hr {
     }
     if (await this.svc.db.one("SELECT 1 FROM agent_records WHERE org_id = $1 AND user_id = $2", [orgId, userId]))
       throw badRequest("Cette personne a déjà un dossier d'agent");
+    if (LIMITED.has(input.status ?? "") && !input.contract_end_on)
+      throw badRequest("Un contractuel, un stagiaire ou un consultant a une date de fin : indiquez-la");
     const matricule = input.matricule || (await this.nextMatricule(orgId));
     const cols = FIELDS.filter((k) => (input as Record<string, unknown>)[k] !== undefined);
     await this.svc.db.tx(async (q) => {
@@ -340,6 +392,10 @@ export class Hr {
   async update(actorId: string, orgId: string, userId: string, input: z.infer<typeof Patch>) {
     await this.requireWrite(actorId, orgId, userId);
     const before = await this.row(orgId, userId);
+    const status = String(input.status ?? before.status);
+    const end = input.contract_end_on !== undefined ? input.contract_end_on : before.contract_end_on;
+    if (LIMITED.has(status) && !end)
+      throw badRequest("Un contractuel, un stagiaire ou un consultant a une date de fin : indiquez-la");
     await this.assertUnit(orgId, input.unit_id);
     const cols = FIELDS.filter((k) => (input as Record<string, unknown>)[k] !== undefined);
     if (input.matricule && input.matricule !== before.matricule) {
@@ -406,6 +462,242 @@ export class Hr {
     return this.get(actorId, orgId, userId);
   }
 
+  // ---------------------------------------------------------------- sortie (RH-1)
+  /**
+   * L'acte de sortie : date, motif, référence. À sa date, l'affectation en cours se clôt, le compte est suspendu et
+   * ses sessions fermées ; le chef est prévenu des tâches encore ouvertes. Un chef en poste est d'abord remplacé.
+   */
+  async exit(actorId: string, orgId: string, userId: string, i: z.infer<typeof Exit>) {
+    await this.requireWrite(actorId, orgId, userId);
+    const r = await this.row(orgId, userId);
+    if (r.exit_on) throw new HttpError(409, "La sortie de cet agent est déjà enregistrée");
+    const led = await this.svc.db.query<{ name: string }>(
+      "SELECT name FROM org_units WHERE org_id = $1 AND manager_id = $2 ORDER BY name",
+      [orgId, userId],
+    );
+    if (led.length)
+      throw badRequest(
+        `${r.display_name ?? r.last_name} dirige « ${led.map((u) => u.name).join(" », « ")} » : désignez d'abord un autre chef`,
+      );
+    await this.svc.db.query(
+      "UPDATE agent_records SET exit_on = $3, exit_reason = $4, exit_reference = $5, exited_by = $6, updated_at = now() WHERE org_id = $1 AND user_id = $2",
+      [orgId, userId, i.exit_on, i.reason, i.reference?.trim() ?? "", actorId],
+    );
+    await this.svc.log(actorId, "hr.agent.exit", {
+      orgId,
+      data: { user_id: userId, name: r.last_name, on: i.exit_on, reason: i.reason, reference: i.reference ?? "" },
+    });
+    if (i.exit_on <= localDate()) await this.applyExit(orgId, userId, actorId);
+    return this.get(actorId, orgId, userId);
+  }
+
+  /** Effets de la sortie, une seule fois : affectation close, compte suspendu, chef prévenu. */
+  private async applyExit(orgId: string, userId: string, actorId: string | null) {
+    const r = await this.svc.db.one<{ exit_on: string; applied: boolean; last_name: string }>(
+      "SELECT to_char(exit_on, 'YYYY-MM-DD') AS exit_on, exit_applied AS applied, last_name FROM agent_records WHERE org_id = $1 AND user_id = $2",
+      [orgId, userId],
+    );
+    if (!r?.exit_on || r.applied) return;
+    await this.svc.db.tx(async (q) => {
+      await q.query("UPDATE agent_records SET exit_applied = TRUE WHERE org_id = $1 AND user_id = $2", [orgId, userId]);
+      await q.query(
+        "UPDATE agent_assignments SET ended_on = $3 WHERE org_id = $1 AND user_id = $2 AND ended_on IS NULL",
+        [orgId, userId, r.exit_on],
+      );
+      await q.query("UPDATE users SET status = 'suspended' WHERE id = $1 AND status <> 'suspended'", [userId]);
+      await q.query("UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL", [userId]);
+    });
+    const name = (await this.svc.userOrNull(userId))?.name ?? r.last_name;
+    const open = await this.svc.db.query<{ key: string; title: string }>(
+      `SELECT p.key || '-' || t.number AS key, t.title FROM tasks t JOIN projects p ON p.id = t.project_id
+        WHERE t.assignee_id = $1 AND NOT t.completed AND p.org_id = $2 ORDER BY t.due_on NULLS LAST LIMIT 20`,
+      [userId, orgId],
+    );
+    const chief = await this.chiefOf(orgId, userId);
+    if (chief)
+      await this.svc.notify(chief, orgId, {
+        kind: "hr.exit",
+        title: `${name} a quitté l'Agence le ${r.exit_on.split("-").reverse().join("/")}`,
+        body: open.length
+          ? `Tâches encore ouvertes à réattribuer : ${open.map((t) => `${t.key} « ${t.title} »`).join(" ; ")}`
+          : "Aucune tâche ouverte.",
+        actor_id: actorId,
+      });
+  }
+
+  /** Le chef de l'agent : celui de son entité, ou de l'entité au-dessus quand il dirige la sienne. */
+  private async chiefOf(orgId: string, userId: string) {
+    return (
+      (
+        await this.svc.db.one<{ manager_id: string }>(
+          `WITH RECURSIVE up(id, manager_id, parent_id, depth) AS (
+             SELECT u.id, u.manager_id, u.parent_id, 0 FROM org_units u
+               JOIN org_members om ON om.unit_id = u.id AND om.org_id = $1 AND om.user_id = $2
+             UNION SELECT p.id, p.manager_id, p.parent_id, up.depth + 1 FROM org_units p JOIN up ON p.id = up.parent_id
+           ) SELECT manager_id FROM up WHERE manager_id IS NOT NULL AND manager_id <> $2 ORDER BY depth LIMIT 1`,
+          [orgId, userId],
+        )
+      )?.manager_id ?? null
+    );
+  }
+  /** Les gestionnaires RH de l'institution. */
+  private async hrManagers(orgId: string, except?: string) {
+    const out: string[] = [];
+    for (const m of await this.svc.db.query<{ user_id: string }>(
+      "SELECT om.user_id FROM org_members om JOIN users u ON u.id = om.user_id WHERE om.org_id = $1 AND NOT u.is_ai AND u.status = 'active'",
+      [orgId],
+    ))
+      if (m.user_id !== except && (await this.svc.permissionsOf(m.user_id, orgId)).includes("hr.manage"))
+        out.push(m.user_id);
+    return out;
+  }
+
+  // ---------------------------------------------------------------- échéances (RH-3)
+  /** Fins de contrat et départs à la retraite dans les 90 jours, pour le service RH. */
+  async deadlines(actorId: string, orgId: string) {
+    if (!(await this.perms(actorId, orgId)).view) throw forbidden("Réservé au service des ressources humaines");
+    return this.due(orgId, localDate(), 90);
+  }
+  private async due(orgId: string, now: string, ahead: number) {
+    const rows = await this.svc.db.query<{
+      user_id: string;
+      name: string;
+      status: string;
+      contract_end_on: string | null;
+      birth_date: string | null;
+    }>(
+      `SELECT a.user_id, u.name, a.status, to_char(a.contract_end_on, 'YYYY-MM-DD') AS contract_end_on,
+              to_char(a.birth_date, 'YYYY-MM-DD') AS birth_date
+         FROM agent_records a JOIN users u ON u.id = a.user_id WHERE a.org_id = $1 AND a.exit_on IS NULL`,
+      [orgId],
+    );
+    const limit = addDays(now, ahead);
+    const out: { user_id: string; name: string; kind: "fin_contrat" | "retraite"; on: string; days: number }[] = [];
+    const days = (d: string) => Math.round((Date.parse(d) - Date.parse(now)) / 864e5);
+    for (const r of rows) {
+      if (r.contract_end_on && r.contract_end_on >= now && r.contract_end_on <= limit)
+        out.push({ user_id: r.user_id, name: r.name, kind: "fin_contrat", on: r.contract_end_on, days: days(r.contract_end_on) });
+      if (r.birth_date) {
+        const retire = `${Number(r.birth_date.slice(0, 4)) + RETIREMENT_AGE}${r.birth_date.slice(4)}`;
+        if (retire >= now && retire <= limit)
+          out.push({ user_id: r.user_id, name: r.name, kind: "retraite", on: retire, days: days(retire) });
+      }
+    }
+    return out.sort((a, b) => a.on.localeCompare(b.on));
+  }
+
+  /** Tâche périodique : sorties arrivées à leur date, alertes d'échéance à 90 puis 30 jours. */
+  async sweep(now = localDate()) {
+    const exits = await this.svc.db.query<{ org_id: string; user_id: string }>(
+      "SELECT org_id, user_id FROM agent_records WHERE exit_on IS NOT NULL AND NOT exit_applied AND exit_on <= $1::date",
+      [now],
+    );
+    for (const e of exits) await this.applyExit(e.org_id, e.user_id, null);
+    const orgs = await this.svc.db.query<{ org_id: string }>("SELECT DISTINCT org_id FROM agent_records");
+    for (const { org_id } of orgs)
+      for (const d of await this.due(org_id, now, 90)) {
+        const step = d.days <= 30 ? 30 : 90;
+        const fresh = await this.svc.db.query(
+          "INSERT INTO reminders_sent (key, org_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING key",
+          [`hr:${d.kind}:${d.user_id}:${d.on}:${step}`, org_id],
+        );
+        if (!fresh.length) continue;
+        const label = d.kind === "fin_contrat" ? "Fin de contrat" : "Départ à la retraite";
+        const when = d.on.split("-").reverse().join("/");
+        const to = new Set([...(await this.hrManagers(org_id)), (await this.chiefOf(org_id, d.user_id)) ?? ""]);
+        for (const u of to)
+          if (u)
+            await this.svc.notify(u, org_id, {
+              kind: "hr.deadline",
+              title: `${label} de ${d.name} le ${when}`,
+              body: `Dans ${d.days} jours : prévoir le renouvellement, la relève ou l'acte de sortie.`,
+            });
+      }
+  }
+
+  // ---------------------------------------------------------------- demandes de correction (D-4)
+  async requestCorrection(actorId: string, orgId: string, message: string) {
+    if (!(await this.svc.db.one("SELECT 1 FROM agent_records WHERE org_id = $1 AND user_id = $2", [orgId, actorId])))
+      throw notFound("Vous n'avez pas encore de dossier");
+    const text = message.trim();
+    if (!text) throw badRequest("Décrivez ce qui doit être corrigé");
+    const id = uid("cor");
+    await this.svc.db.query("INSERT INTO agent_corrections (id, org_id, user_id, message) VALUES ($1,$2,$3,$4)", [
+      id,
+      orgId,
+      actorId,
+      text,
+    ]);
+    await this.svc.log(actorId, "hr.correction.requested", { orgId, data: { user_id: actorId } });
+    const name = (await this.svc.user(actorId)).name;
+    for (const u of await this.hrManagers(orgId, actorId))
+      await this.svc.notify(u, orgId, {
+        kind: "hr.correction",
+        title: `${name} demande une correction de son dossier`,
+        body: text,
+        actor_id: actorId,
+      });
+    return { id };
+  }
+  async corrections(actorId: string, orgId: string) {
+    await this.requireManage(actorId, orgId);
+    return this.svc.db.query(
+      `SELECT c.id, c.user_id, u.name, c.message, c.status, c.response, c.created_at, c.handled_at
+         FROM agent_corrections c JOIN users u ON u.id = c.user_id WHERE c.org_id = $1
+        ORDER BY (c.status = 'open') DESC, c.created_at DESC`,
+      [orgId],
+    );
+  }
+  async closeCorrection(actorId: string, orgId: string, id: string, response: string) {
+    const c = await this.svc.db.one<{ user_id: string; status: string }>(
+      "SELECT user_id, status FROM agent_corrections WHERE org_id = $1 AND id = $2",
+      [orgId, id],
+    );
+    if (!c) throw notFound("Demande introuvable");
+    await this.requireWrite(actorId, orgId, c.user_id);
+    if (c.status !== "open") throw new HttpError(409, "Cette demande est déjà traitée");
+    await this.svc.db.query(
+      "UPDATE agent_corrections SET status = 'done', response = $1, handled_by = $2, handled_at = now() WHERE id = $3",
+      [response.trim(), actorId, id],
+    );
+    await this.svc.log(actorId, "hr.correction.closed", { orgId, data: { user_id: c.user_id } });
+    await this.svc.notify(c.user_id, orgId, {
+      kind: "hr.correction.closed",
+      title: "Votre demande de correction a été traitée",
+      body: response.trim(),
+      actor_id: actorId,
+    });
+    return { ok: true };
+  }
+
+  // ---------------------------------------------------------------- formations et évaluations (D-9)
+  async addTraining(actorId: string, orgId: string, userId: string, i: z.infer<typeof Training>) {
+    await this.canEditLists(actorId, orgId, userId);
+    if (i.start_on && i.end_on && i.end_on < i.start_on) throw badRequest("La fin de la formation précède son début");
+    const id = uid("trn");
+    await this.svc.db.query(
+      "INSERT INTO agent_trainings (id, org_id, user_id, title, provider, start_on, end_on, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+      [id, orgId, userId, i.title, i.provider ?? "", i.start_on ?? null, i.end_on ?? null, actorId],
+    );
+    await this.svc.log(actorId, "hr.training.added", { orgId, data: { user_id: userId, title: i.title } });
+    return { id };
+  }
+  async addEvaluation(actorId: string, orgId: string, userId: string, i: z.infer<typeof Evaluation>) {
+    await this.canEditLists(actorId, orgId, userId);
+    const id = uid("evl");
+    try {
+      await this.svc.db.query(
+        "INSERT INTO agent_evaluations (id, org_id, user_id, year, rating, comment, evaluator_id) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+        [id, orgId, userId, i.year, i.rating, i.comment ?? "", actorId],
+      );
+    } catch (e) {
+      if ((e as { code?: string }).code === "23505") throw badRequest(`L'évaluation ${i.year} existe déjà`);
+      throw e;
+    }
+    await this.svc.log(actorId, "hr.evaluation.added", { orgId, data: { user_id: userId, year: i.year } });
+    return { id };
+  }
+
   /** Diplômes et personnes à prévenir : le service RH, pour le dossier d'un autre. */
   private async canEditLists(actorId: string, orgId: string, userId: string) {
     await this.requireWrite(actorId, orgId, userId);
@@ -431,7 +723,12 @@ export class Hr {
     await this.svc.log(actorId, "hr.contact.added", { orgId, data: { user_id: userId, name: i.name } });
     return { id };
   }
-  async remove(actorId: string, orgId: string, table: "agent_diplomas" | "agent_contacts", id: string) {
+  async remove(
+    actorId: string,
+    orgId: string,
+    table: "agent_diplomas" | "agent_contacts" | "agent_trainings" | "agent_evaluations",
+    id: string,
+  ) {
     const r = await this.svc.db.one<{ user_id: string }>(`SELECT user_id FROM ${table} WHERE id = $1 AND org_id = $2`, [
       id,
       orgId,
@@ -439,7 +736,13 @@ export class Hr {
     if (!r) throw notFound("Élément introuvable");
     await this.canEditLists(actorId, orgId, r.user_id);
     await this.svc.db.query(`DELETE FROM ${table} WHERE id = $1`, [id]);
-    await this.svc.log(actorId, table === "agent_diplomas" ? "hr.diploma.deleted" : "hr.contact.deleted", {
+    const kind = {
+      agent_diplomas: "hr.diploma.deleted",
+      agent_contacts: "hr.contact.deleted",
+      agent_trainings: "hr.training.deleted",
+      agent_evaluations: "hr.evaluation.deleted",
+    }[table];
+    await this.svc.log(actorId, kind, {
       orgId,
       data: { user_id: r.user_id },
     });
@@ -457,6 +760,33 @@ export function hrRoutes(r: FastifyInstance, hr: Hr) {
   r.get("/api/hr/unregistered", async (req) => hr.unregistered(req.userId, req.orgId));
   r.post("/api/hr/agents", async (req) => hr.create(req.userId, req.orgId, Create.parse(req.body), info(req)));
   r.get("/api/hr/me", async (req) => hr.mine(req.userId, req.orgId));
+  // Thème 6 : sortie, échéances, demandes de correction, formations et évaluations
+  r.post<Id>("/api/hr/agents/:id/exit", async (req) =>
+    hr.exit(req.userId, req.orgId, req.params.id, Exit.parse(req.body)),
+  );
+  r.get("/api/hr/deadlines", async (req) => hr.deadlines(req.userId, req.orgId));
+  r.post("/api/hr/me/corrections", async (req) =>
+    hr.requestCorrection(req.userId, req.orgId, z.object({ message: z.string().max(5000) }).parse(req.body).message),
+  );
+  r.get("/api/hr/corrections", async (req) => hr.corrections(req.userId, req.orgId));
+  r.post<Id>("/api/hr/corrections/:id/close", async (req) =>
+    hr.closeCorrection(
+      req.userId,
+      req.orgId,
+      req.params.id,
+      z.object({ response: z.string().max(5000) }).parse(req.body ?? {}).response ?? "",
+    ),
+  );
+  r.post<Id>("/api/hr/agents/:id/trainings", async (req) =>
+    hr.addTraining(req.userId, req.orgId, req.params.id, Training.parse(req.body)),
+  );
+  r.post<Id>("/api/hr/agents/:id/evaluations", async (req) =>
+    hr.addEvaluation(req.userId, req.orgId, req.params.id, Evaluation.parse(req.body)),
+  );
+  r.delete<Id>("/api/hr/trainings/:id", async (req) => hr.remove(req.userId, req.orgId, "agent_trainings", req.params.id));
+  r.delete<Id>("/api/hr/evaluations/:id", async (req) =>
+    hr.remove(req.userId, req.orgId, "agent_evaluations", req.params.id),
+  );
   r.get<Id>("/api/hr/agents/:id", async (req) => hr.get(req.userId, req.orgId, req.params.id));
   r.patch<Id>("/api/hr/agents/:id", async (req) =>
     hr.update(req.userId, req.orgId, req.params.id, Patch.parse(req.body ?? {})),

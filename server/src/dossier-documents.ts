@@ -13,12 +13,14 @@ import { HttpError, badRequest, forbidden, notFound, today, type Services } from
  * ne se supprime jamais. Les pièces jointes des tâches restent rangées dans leurs tâches.
  */
 
-export const OWNERS = ["project", "activity", "mail"] as const;
+export const OWNERS = ["project", "activity", "mail", "agent"] as const;
 export type Owner = (typeof OWNERS)[number];
-const COLUMN: Record<Owner, "project_id" | "activity_id" | "correspondence_id"> = {
+const COLUMN: Record<Owner, "project_id" | "activity_id" | "correspondence_id" | "agent_user_id"> = {
   project: "project_id",
   activity: "activity_id",
   mail: "correspondence_id",
+  // Pièces du dossier d'un agent : actes de nomination, contrats, arrêtés (thème 6, D-9)
+  agent: "agent_user_id",
 };
 const MAX_DOCUMENTS = 200;
 const COLUMNS = `d.id, d.project_id, d.activity_id, d.correspondence_id, d.nature_code, d.official, d.title, d.other_label,
@@ -65,6 +67,20 @@ export class DossierDocuments {
         throw e.status === 403 ? notFound("Dossier introuvable") : e;
       });
       return { orgId: a.org_id, write: a.can.edit, manage: a.can.remove };
+    }
+    if (kind === "agent") {
+      // Le service RH dépose et lit ; l'agent lit les siennes ; personne d'autre, pas même son chef
+      const orgs = await this.svc.db.query<{ org_id: string }>(
+        "SELECT a.org_id FROM agent_records a JOIN org_members om ON om.org_id = a.org_id AND om.user_id = $2 WHERE a.user_id = $1",
+        [id, actorId],
+      );
+      for (const { org_id } of orgs) {
+        const p = await this.svc.permissionsOf(actorId, org_id);
+        const hr = p.includes("hr.manage");
+        if (hr || p.includes("hr.view") || actorId === id)
+          return { orgId: org_id, write: hr && actorId !== id, manage: hr && actorId !== id };
+      }
+      throw notFound("Dossier introuvable");
     }
     const { m, manager } = await new Registers(this.svc).access(actorId, id).catch((e: { status?: number }) => {
       throw e.status === 403 ? notFound("Dossier introuvable") : e;

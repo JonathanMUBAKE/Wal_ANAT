@@ -467,7 +467,7 @@ const TABLE = [
   R_("GET", "/api/hr/agents"),
   R_("GET", "/api/hr/unregistered"),
   R_("POST", "/api/hr/agents", () => ({
-    body: { last_name: u("Agent"), email: `${u("rh")}@exemple.test`, status: "contractuel" },
+    body: { last_name: u("Agent"), email: `${u("rh")}@exemple.test`, status: "contractuel", contract_end_on: "2030-12-31" },
   })),
   R_("GET", "/api/hr/me"),
   R_("GET", "/api/hr/agents/:id", async (X) => ({ url: `/api/hr/agents/${await X.agent()}` })),
@@ -482,6 +482,46 @@ const TABLE = [
   })),
   R_("DELETE", "/api/hr/diplomas/:id", async (X) => ({ url: `/api/hr/diplomas/${await X.diploma()}` })),
   R_("DELETE", "/api/hr/contacts/:id", async (X) => ({ url: `/api/hr/contacts/${await X.hrContact()}` })),
+  // Dossier d'agent (thème 6) : sortie, échéances, demandes de correction, formations et évaluations
+  R_("POST", "/api/hr/agents/:id/exit", async (X) => ({
+    url: `/api/hr/agents/${await X.agent()}/exit`,
+    body: { exit_on: "2030-01-01", reason: "retraite" },
+  })),
+  R_("GET", "/api/hr/deadlines"),
+  R_("POST", "/api/hr/me/corrections", async (X) => {
+    await X.db.query(
+      "INSERT INTO agent_records (org_id, user_id, matricule, last_name) VALUES ($1, 'u_alice', 'AG-MATRICE', 'Mbuyi') ON CONFLICT DO NOTHING",
+      [X.org],
+    );
+    return { body: { message: "Grade à corriger" } };
+  }),
+  R_("GET", "/api/hr/corrections"),
+  R_("POST", "/api/hr/corrections/:id/close", async (X) => {
+    const user = await X.agent();
+    const id = u("cor_");
+    await X.db.query("INSERT INTO agent_corrections (id, org_id, user_id, message) VALUES ($1, $2, $3, 'x')", [id, X.org, user]);
+    return { url: `/api/hr/corrections/${id}/close`, body: { response: "Fait" } };
+  }),
+  R_("POST", "/api/hr/agents/:id/trainings", async (X) => ({
+    url: `/api/hr/agents/${await X.agent()}/trainings`,
+    body: { title: "Formation" },
+  })),
+  R_("POST", "/api/hr/agents/:id/evaluations", async (X) => ({
+    url: `/api/hr/agents/${await X.agent()}/evaluations`,
+    body: { year: 2025, rating: "bien" },
+  })),
+  R_("DELETE", "/api/hr/trainings/:id", async (X) => {
+    const user = await X.agent();
+    const id = u("trn_");
+    await X.db.query("INSERT INTO agent_trainings (id, org_id, user_id, title) VALUES ($1, $2, $3, 'x')", [id, X.org, user]);
+    return { url: `/api/hr/trainings/${id}` };
+  }),
+  R_("DELETE", "/api/hr/evaluations/:id", async (X) => {
+    const user = await X.agent();
+    const id = u("evl_");
+    await X.db.query("INSERT INTO agent_evaluations (id, org_id, user_id, year, rating) VALUES ($1, $2, $3, 2024, 'bien')", [id, X.org, user]);
+    return { url: `/api/hr/evaluations/${id}` };
+  }),
   ...["health", "sessions", "roles-matrix", "accounts.csv"].map((p) => R_("GET", `/api/admin/${p}`)),
   R_("DELETE", "/api/admin/sessions/:id", () => ({ url: "/api/admin/sessions/inconnue" })),
   R_("PUT", "/api/admin/banner", () => ({ body: { text: "" } })),

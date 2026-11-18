@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, GraduationCap, IdCard, Pencil, Phone, Plus, Trash2, UserPlus, Users } from "lucide-react";
 import { Button, Chip, Empty, IconButton, Spinner } from "@/components/ui";
+import { DossierDocuments } from "@/components/documents";
+import { Textarea } from "@/components/gov";
 import { Drawer, DrawerSection } from "@/components/drawer";
 import { Field, Input, PageHeader, Section, Select, Table, Tabs, Td, Tr, frDate } from "@/components/gov";
 import { Fact, Facts } from "@/components/record";
@@ -68,7 +70,31 @@ export interface AgentDetail extends AgentRow {
     reference: string;
   }[];
   can: { manage: boolean; self: boolean };
+  /** Sortie de l'agent (thème 6, RH-1). */
+  exit_on?: string | null;
+  exit_reason?: string | null;
+  exit_reference?: string;
+  trainings?: { id: string; title: string; provider: string; start_on: string | null; end_on: string | null }[];
+  evaluations?: { id: string; year: number; rating: string; comment: string; evaluator_name: string | null }[];
+  corrections?: { id: string; message: string; status: "open" | "done"; response: string; created_at: string }[];
 }
+
+const EXIT_LABEL: Record<string, string> = {
+  retraite: "Départ à la retraite",
+  fin_contrat: "Fin de contrat",
+  mutation: "Mutation",
+  demission: "Démission",
+  licenciement: "Licenciement",
+  deces: "Décès",
+  autre: "Autre motif",
+};
+const RATING_LABEL: Record<string, string> = {
+  excellent: "Excellent",
+  tres_bien: "Très bien",
+  bien: "Bien",
+  passable: "Passable",
+  insuffisant: "Insuffisant",
+};
 
 export const STATUS_LABEL: Record<string, string> = {
   fonctionnaire: "Fonctionnaire",
@@ -172,6 +198,7 @@ export function HrPage() {
           <Spinner />
         ) : tab === "agents" ? (
           <>
+            <HrInbox />
             <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_220px]">
               <Input
                 aria-label="Rechercher un agent"
@@ -526,6 +553,8 @@ export function AgentPage({ self }: { self?: boolean }) {
     queryFn: () => api.get<AgentDetail | null>(self ? "/api/hr/me" : `/api/hr/agents/${id}`),
   });
   const [editing, setEditing] = useState(false);
+  const [exiting, setExiting] = useState(false);
+  const [correcting, setCorrecting] = useState(false);
   if (error) return <Empty title="Dossier inaccessible">{(error as Error).message}</Empty>;
   if (a === undefined) return <Spinner />;
   if (a === null)
@@ -549,6 +578,8 @@ export function AgentPage({ self }: { self?: boolean }) {
                 Registre
               </Button>
             )}
+            {a.can.self && <Button onClick={() => setCorrecting(true)}>Demander une correction</Button>}
+            {a.can.manage && !a.exit_on && <Button onClick={() => setExiting(true)}>Enregistrer la sortie</Button>}
             {a.can.manage && (
               <Button variant="primary" icon={<Pencil className="size-4" />} onClick={() => setEditing(true)}>
                 Modifier
@@ -563,6 +594,13 @@ export function AgentPage({ self }: { self?: boolean }) {
             <p className="rounded-lg border border-line bg-hover px-4 py-3 text-[13px] text-muted">
               Votre dossier est tenu par le service des ressources humaines. Pour corriger une information,
               adressez-vous à lui : vous ne pouvez pas la modifier vous-même.
+            </p>
+          )}
+          {a.exit_on && (
+            <p className="rounded-lg border border-line bg-danger-soft/40 px-4 py-3 text-[13px]">
+              Sortie le {frDate(a.exit_on)} : {EXIT_LABEL[a.exit_reason ?? ""] ?? a.exit_reason}
+              {a.exit_reference ? ` · ${a.exit_reference}` : ""}. À cette date, l'affectation se clôt et le compte est
+              suspendu.
             </p>
           )}
           {a.restricted && (
@@ -632,6 +670,53 @@ export function AgentPage({ self }: { self?: boolean }) {
               sub: [d.level, d.field, d.institution, d.year].filter(Boolean).join(" · "),
             }))}
           />
+          <ListBlock
+            title="Formations"
+            icon={<GraduationCap className="size-6" />}
+            agent={a}
+            kind="trainings"
+            empty="Aucune formation enregistrée."
+            rows={(a.trainings ?? []).map((t) => ({
+              id: t.id,
+              main: t.title,
+              sub: [t.provider, t.start_on && frDate(t.start_on), t.end_on && `au ${frDate(t.end_on)}`]
+                .filter(Boolean)
+                .join(" · "),
+            }))}
+          />
+          {(a.can.self || !a.restricted) && (
+            <ListBlock
+              title="Évaluations"
+              icon={<GraduationCap className="size-6" />}
+              agent={a}
+              kind="evaluations"
+              empty="Aucune évaluation enregistrée."
+              rows={(a.evaluations ?? []).map((e) => ({
+                id: e.id,
+                main: `${e.year} · ${RATING_LABEL[e.rating] ?? e.rating}`,
+                sub: e.comment,
+              }))}
+            />
+          )}
+          {!a.restricted && <DossierDocuments owner="agent" ownerId={a.user_id} title="Pièces du dossier" />}
+          {!!a.corrections?.length && (
+            <Section title="Demandes de correction">
+              <ul className="divide-y divide-line px-5 pb-3">
+                {a.corrections.map((c) => (
+                  <li key={c.id} className="py-2.5 text-[13px]">
+                    <span className="flex items-center gap-2">
+                      <Chip tone={c.status === "open" ? "info" : "success"}>
+                        {c.status === "open" ? "En attente" : "Traitée"}
+                      </Chip>
+                      <span className="text-muted">{frDate(c.created_at.slice(0, 10))}</span>
+                    </span>
+                    <span className="mt-1 block">{c.message}</span>
+                    {c.response && <span className="mt-0.5 block text-muted">Réponse : {c.response}</span>}
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
         </div>
         <div className="min-w-0 space-y-4">
           <Section title="Coordonnées">
@@ -679,6 +764,8 @@ export function AgentPage({ self }: { self?: boolean }) {
         </div>
       </div>
       {editing && <AgentForm agent={a} onClose={() => setEditing(false)} />}
+      {exiting && <ExitDialog agent={a} onClose={() => setExiting(false)} />}
+      {correcting && <CorrectionDialog onClose={() => setCorrecting(false)} />}
     </div>
   );
 }
@@ -695,7 +782,7 @@ function ListBlock({
   title: string;
   icon: ReactNode;
   agent: AgentDetail;
-  kind: "diplomas" | "contacts";
+  kind: "diplomas" | "contacts" | "trainings" | "evaluations";
   rows: { id: string; main: string; sub: string }[];
   empty: string;
 }) {
@@ -713,15 +800,33 @@ function ListBlock({
           ["institution", "Établissement", false],
           ["year", "Année", false],
         ]
-      : [
-          ["name", "Nom", true],
-          ["relation", "Lien", false],
-          ["phone", "Téléphone", false],
-          ["email", "Courriel", false],
-        ];
+      : kind === "trainings"
+        ? [
+            ["title", "Intitulé", true],
+            ["provider", "Organisme", false],
+            ["start_on", "Du", false],
+            ["end_on", "Au", false],
+          ]
+        : kind === "evaluations"
+          ? [
+              ["year", "Année", true],
+              ["rating", "Appréciation", true],
+              ["comment", "Commentaire", false],
+            ]
+          : [
+              ["name", "Nom", true],
+              ["relation", "Lien", false],
+              ["phone", "Téléphone", false],
+              ["email", "Courriel", false],
+            ];
   const save = () => {
     const body: Record<string, unknown> = { ...f };
     if (kind === "diplomas") body.year = f.year ? Number(f.year) : null;
+    if (kind === "evaluations") body.year = Number(f.year);
+    if (kind === "trainings") {
+      body.start_on = f.start_on || null;
+      body.end_on = f.end_on || null;
+    }
     api.post(`/api/hr/agents/${agent.user_id}/${kind}`, body).then(() => {
       toast.success("Ajouté au dossier");
       setAdding(false);
@@ -780,7 +885,15 @@ function ListBlock({
           dirty={Object.values(f).some(Boolean)}
           width={520}
           subtitle={`Dossier de ${fullName(agent)}`}
-          title={kind === "diplomas" ? "Ajouter un diplôme" : "Ajouter une personne à prévenir"}
+          title={
+            kind === "diplomas"
+              ? "Ajouter un diplôme"
+              : kind === "trainings"
+                ? "Ajouter une formation"
+                : kind === "evaluations"
+                  ? "Ajouter une évaluation"
+                  : "Ajouter une personne à prévenir"
+          }
           footer={
             <>
               <Button onClick={() => setAdding(false)}>Annuler</Button>
@@ -793,19 +906,193 @@ function ListBlock({
           <div className="grid gap-3 sm:grid-cols-2">
             {fields.map(([k, label, required]) => (
               <Field key={k as string} label={label as string} required={required as boolean}>
-                {(a) => (
-                  <Input
-                    {...a}
-                    type={k === "year" ? "number" : "text"}
-                    value={f[k as string] ?? ""}
-                    onChange={(e) => setF((x) => ({ ...x, [k as string]: e.target.value }))}
-                  />
-                )}
+                {(a) =>
+                  k === "rating" ? (
+                    <Select
+                      {...a}
+                      value={f.rating ?? ""}
+                      onChange={(e) => setF((x) => ({ ...x, rating: e.target.value }))}
+                    >
+                      <option value="">Choisir…</option>
+                      {Object.entries(RATING_LABEL).map(([v, l]) => (
+                        <option key={v} value={v}>
+                          {l}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <Input
+                      {...a}
+                      type={k === "year" ? "number" : k === "start_on" || k === "end_on" ? "date" : "text"}
+                      value={f[k as string] ?? ""}
+                      onChange={(e) => setF((x) => ({ ...x, [k as string]: e.target.value }))}
+                    />
+                  )
+                }
               </Field>
             ))}
           </div>
         </Drawer>
       )}
     </Section>
+  );
+}
+
+/** Acte de sortie (thème 6, RH-1) : à sa date, l'affectation se clôt et le compte est suspendu. */
+function ExitDialog({ agent, onClose }: { agent: AgentDetail; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [f, setF] = useState({ exit_on: "", reason: "", reference: "" });
+  const [busy, setBusy] = useState(false);
+  const save = () => {
+    setBusy(true);
+    api
+      .post(`/api/hr/agents/${agent.user_id}/exit`, f)
+      .then(() => {
+        toast.success("Sortie enregistrée");
+        qc.invalidateQueries({ queryKey: ["hr-agent"] });
+        qc.invalidateQueries({ queryKey: ["hr-agents"] });
+        onClose();
+      }, fail)
+      .finally(() => setBusy(false));
+  };
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      width={520}
+      subtitle={`Dossier de ${fullName(agent)}`}
+      title="Enregistrer la sortie"
+      footer={
+        <>
+          <Button onClick={onClose}>Annuler</Button>
+          <Button variant="primary" loading={busy} disabled={!f.exit_on || !f.reason} onClick={save}>
+            Enregistrer
+          </Button>
+        </>
+      }
+    >
+      <p className="mb-3 text-[13px] text-muted">
+        À la date de sortie, l'affectation en cours se clôt, le compte est suspendu et son chef est prévenu des tâches
+        encore ouvertes. Un chef en poste est d'abord remplacé à la tête de son entité.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Date de sortie" required>
+          {(a) => <Input {...a} type="date" value={f.exit_on} onChange={(e) => setF({ ...f, exit_on: e.target.value })} />}
+        </Field>
+        <Field label="Motif" required>
+          {(a) => (
+            <Select {...a} value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })}>
+              <option value="">Choisir…</option>
+              {Object.entries(EXIT_LABEL).map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <Field label="Référence de l'acte" className="sm:col-span-2">
+          {(a) => <Input {...a} value={f.reference} onChange={(e) => setF({ ...f, reference: e.target.value })} />}
+        </Field>
+      </div>
+    </Drawer>
+  );
+}
+
+/** L'agent signale une erreur de son dossier au service RH (thème 6, D-4). */
+function CorrectionDialog({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const [message, setMessage] = useState("");
+  const send = () =>
+    api.post("/api/hr/me/corrections", { message }).then(() => {
+      toast.success("Demande envoyée au service des ressources humaines");
+      qc.invalidateQueries({ queryKey: ["hr-agent"] });
+      onClose();
+    }, fail);
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      width={520}
+      subtitle="Mon dossier"
+      title="Demander une correction"
+      footer={
+        <>
+          <Button onClick={onClose}>Annuler</Button>
+          <Button variant="primary" disabled={!message.trim()} onClick={send}>
+            Envoyer
+          </Button>
+        </>
+      }
+    >
+      <Field label="Ce qui doit être corrigé" required hint="Le service des ressources humaines vérifie et vous répond.">
+        {(a) => <Textarea {...a} rows={5} value={message} onChange={(e) => setMessage(e.target.value)} />}
+      </Field>
+    </Drawer>
+  );
+}
+
+/** Pour le service RH : échéances à 90 jours et demandes de correction en attente (thème 6, RH-3 et D-4). */
+function HrInbox() {
+  const qc = useQueryClient();
+  const nav = useNavigate();
+  const { data: due } = useQuery({
+    queryKey: ["hr-deadlines"],
+    queryFn: () =>
+      api.get<{ user_id: string; name: string; kind: "fin_contrat" | "retraite"; on: string; days: number }[]>(
+        "/api/hr/deadlines",
+      ),
+    retry: false,
+  });
+  const { data: asks } = useQuery({
+    queryKey: ["hr-corrections"],
+    queryFn: () =>
+      api.get<{ id: string; user_id: string; name: string; message: string; status: string }[]>("/api/hr/corrections"),
+    retry: false,
+  });
+  const open = (asks ?? []).filter((c) => c.status === "open");
+  if (!due?.length && !open.length) return null;
+  const close = (id: string) => {
+    const response = window.prompt("Réponse à l'agent (facultatif)") ?? "";
+    api.post(`/api/hr/corrections/${id}/close`, { response }).then(() => {
+      toast.success("Demande traitée : l'agent est prévenu");
+      qc.invalidateQueries({ queryKey: ["hr-corrections"] });
+    }, fail);
+  };
+  return (
+    <div className="grid gap-3 lg:grid-cols-2">
+      {!!due?.length && (
+        <Section title="Échéances à 90 jours">
+          <ul className="divide-y divide-line px-5 pb-3">
+            {due.map((d) => (
+              <li key={`${d.user_id}-${d.kind}`} className="flex items-center gap-3 py-2 text-[13px]">
+                <button className="min-w-0 flex-1 truncate text-left font-medium hover:underline" onClick={() => nav(`/rh/${d.user_id}`)}>
+                  {d.name}
+                </button>
+                <span className="text-muted">{d.kind === "fin_contrat" ? "Fin de contrat" : "Retraite"}</span>
+                <Chip tone={d.days <= 30 ? "danger" : "info"}>{frDate(d.on)}</Chip>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+      {!!open.length && (
+        <Section title="Demandes de correction">
+          <ul className="divide-y divide-line px-5 pb-3">
+            {open.map((c) => (
+              <li key={c.id} className="flex items-start gap-3 py-2 text-[13px]">
+                <span className="min-w-0 flex-1">
+                  <span className="block font-medium">{c.name}</span>
+                  <span className="block text-muted">{c.message}</span>
+                </span>
+                <Button size="sm" onClick={() => close(c.id)}>
+                  Traitée
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+    </div>
   );
 }

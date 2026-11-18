@@ -112,6 +112,8 @@ describe("module RH : créer un agent", () => {
       last_name: "Lukusa",
       first_names: "Didier",
       status: "contractuel",
+      // Un contractuel a une date de fin (thème 6, RH-3)
+      contract_end_on: "2030-12-31",
       unit_id: unit,
     });
     expect(opened.status).toBe(200);

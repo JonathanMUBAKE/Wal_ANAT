@@ -49,7 +49,7 @@ export const partnerDocs = (partnerId: string): DocEndpoints => ({
   item: (id) => `/api/partner-documents/${id}`,
   upload: (q) => `/api/partners/${partnerId}/documents?${q}`,
 });
-export const dossierDocs = (owner: "project" | "activity" | "mail", ownerId: string): DocEndpoints => ({
+export const dossierDocs = (owner: "project" | "activity" | "mail" | "agent", ownerId: string): DocEndpoints => ({
   item: (id) => `/api/dossier-documents/${id}`,
   upload: (q) => {
     q.set("owner", owner);
@@ -518,7 +518,7 @@ export function DossierDocuments({
   ownerId,
   title = "Documents",
 }: {
-  owner: "project" | "activity" | "mail";
+  owner: "project" | "activity" | "mail" | "agent";
   ownerId: string;
   title?: string;
 }) {

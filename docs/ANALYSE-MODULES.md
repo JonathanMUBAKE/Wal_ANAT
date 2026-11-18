@@ -1,4 +1,13 @@
-**Fait** (lot 5) : chaque circuit clos par un rejet est conservé (visas, auteurs, dates, motif) et se relit sur la fiche, sous « Circuits précédents »
+# Analyse module par module
+
+Revue d'ANAT Pilotage menée module par module, dans l'ordre du menu, en jouant la démonstration
+avec les six comptes fictifs. Aucune modification de code pendant l'analyse : chaque remarque est
+enregistrée ici, puis traitée dans un lot d'amélioration.
+
+Les personnes et les entités citées sont celles de la démonstration (données fictives).
+
+## Comptes utilisés
+
 | Personne | Profil | Fonction dans la démo |
 |---|---|---|
 | Bernadette Mbuyi | Propriétaire | Directrice générale |
@@ -81,7 +90,7 @@ Activité des coéquipiers IA.
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
 | A-1 | L'Accueil de la DG est une page de collaborateur (mes tâches, mes projets, IA). Sa page de travail, le Tableau de bord DG, est ailleurs. | Haute | À décider : rediriger la DG vers le tableau de bord, ou remonter l'essentiel sur son Accueil |
-| A-2 | Les retards de l'Accueil comptent les sous-tâches, contrairement à la règle du lot 3 (« un retard = une tâche principale échue ») appliquée par le Tableau de bord DG et la vue par direction. Les chiffres diffèrent d'une page à l'autre. | Haute | À corriger |
+| A-2 | Les retards de l'Accueil comptent les sous-tâches, contrairement à la règle du lot 3 (« un retard = une tâche principale échue ») appliquée par le Tableau de bord DG et la vue par direction. Les chiffres diffèrent d'une page à l'autre. | Haute | **Fait** (lot 6) : l'Accueil compte les retards comme le tableau de bord (tâches principales) ; les sous-tâches échues restent listées sans être comptées |
 | A-3 | Profil et responsabilité se contredisent : Gaston et Clarisse (Agent) dirigent une entité, Esther (assistante) reste cheffe des RH, Fiston dirige aussi l'Antenne Sud et la Représentation Nord. L'outil ne contrôle pas cet écart. | Haute | Décidé le 17/11/2026 : on refuse la nomination (lot 3) ; démo corrigée (lot 1) |
 | A-4 | La DG apparaît comme « Propriétaire » dans l'en-tête, pas comme « DG ». | Moyenne | À corriger |
 | A-5 | « Viser ou signer » figure deux fois (Saisir et Ce qui vous attend). Pour un agent, le bloc Saisir se réduit à ce seul bouton. | Moyenne | À corriger |
@@ -342,7 +351,7 @@ d'identité, adresse personnelle, personnes à prévenir et observations du serv
 |---|---|---|---|
 | D-1 | Le serveur renvoie le champ « Observations » (notes internes des RH) à l'agent lui-même et à son chef. L'écran le masque, mais il est lisible dans la réponse. | Haute | À corriger côté serveur : ne renvoyer les observations qu'au service RH |
 | D-2 | Un chef d'entité lit le dossier complet de ses agents, données personnelles comprises (famille, pièce d'identité, adresse, personnes à prévenir). | Haute | À décider : quelle partie du dossier le chef voit-il ? Proposition : situation administrative, affectations et diplômes seulement |
-| D-3 | La consultation d'un dossier par quelqu'un d'autre que l'agent n'est pas journalisée. | Haute | À corriger : tracer chaque consultation d'un dossier par un tiers |
+| D-3 | La consultation d'un dossier par quelqu'un d'autre que l'agent n'est pas journalisée. | Haute | **Fait** (lot 5) : chaque consultation par un tiers est journalisée (« Dossier d'agent consulté par un tiers », une fois par lecteur et par demi-heure) |
 | D-4 | L'agent ne peut rien corriger, mais aucun bouton ne lui permet de signaler une erreur ou de demander une mise à jour au service RH. | Moyenne | À corriger : « Demander une correction », qui notifie le service RH et garde la trace de la demande |
 | D-5 | Fonction et entité se contredisent dans les dossiers de démo (Fiston rangé dans Cartographie et SIG, Didier dans le service Communication). Même famille que A-3. | Moyenne (démo) | À corriger avec A-3 |
 | D-6 | L'historique des affectations de la DG est vide. | Basse (démo) | À corriger dans la démo |
@@ -504,8 +513,8 @@ assistante. Les chefs de direction et les agents reçoivent un refus.
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| P-1 | Deux définitions de « tâche en retard » sur la même page : 4 dans le compteur du haut (projets du portefeuille et suites d'activités), 5 dans le bloc par direction et sur l'Accueil (toutes les tâches des agents). Même famille que A-2. | Haute | À corriger : une seule règle de calcul des retards, partagée par toutes les pages |
-| P-2 | « Recommandations exécutées 62/90 » (indicateur saisi) et « Recommandations réalisées 0/2 » (calculé) côte à côte. | Moyenne | À décider : garder l'indicateur calculé seulement, ou distinguer clairement les deux périmètres |
+| P-1 | Deux définitions de « tâche en retard » sur la même page : 4 dans le compteur du haut (projets du portefeuille et suites d'activités), 5 dans le bloc par direction et sur l'Accueil (toutes les tâches des agents). Même famille que A-2. | Haute | **Fait** (lot 6) : une seule règle des retards, écrite dans le code et renvoyée avec les chiffres ; le compteur sépare tâches et suites d'activités, et l'institution compte les mêmes tâches que la vue par direction |
+| P-2 | « Recommandations exécutées 62/90 » (indicateur saisi) et « Recommandations réalisées 0/2 » (calculé) côte à côte. | Moyenne | **Décidé et fait** (lot 6) : l'indicateur relié aux recommandations réalisées est calculé ; la ligne en double disparaît ; chaque indicateur dit s'il est calculé ou saisi |
 | P-3 | « Retards à résorber » additionne des natures différentes (tâches, recommandations, livrables, plan, courrier, décisions) et ne mène nulle part. | Moyenne | À corriger : rendre la carte cliquable vers la liste détaillée des retards |
 | P-4 | Le bloc « Assistant IA » affiche un « Point de situation » calculé par des règles, pas par l'IA. Le titre laisse croire que l'IA a analysé la situation. | Basse | À corriger : intituler « Point de situation », et réserver « Assistant IA » aux trois demandes |
 | P-5 | Les chefs de direction n'ont pas accès au tableau de bord, même limité à leur direction. | Moyenne | À décider : leur ouvrir la ligne et le détail de leur direction (« Par direction » existe déjà) |
@@ -585,9 +594,9 @@ gestionnaire de l'agenda, et ne se supprime que par un gestionnaire. La suppress
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| F-1 | L'état d'un projet diffère selon l'onglet : déclaré (« Dans les temps ») dans Tous les dossiers et Projets, calculé (« À surveiller ») dans la revue et le Tableau de bord DG. | Haute | À corriger : afficher partout l'état calculé, avec le déclaré à côté quand ils divergent |
+| F-1 | L'état d'un projet diffère selon l'onglet : déclaré (« Dans les temps ») dans Tous les dossiers et Projets, calculé (« À surveiller ») dans la revue et le Tableau de bord DG. | Haute | **Fait** (lot 6) : l'état calculé s'affiche partout (Tous les dossiers, Projets, Accueil), avec le déclaré à côté quand ils divergent et les raisons au survol |
 | F-2 | La liste des projets ne montre que les projets dont on est membre. Le portefeuille de l'assistante de la DG est incomplet (4 sur 6), alors qu'elle a accès au tableau de bord. | Haute | À corriger : un profil qui a le droit de pilotage voit tous les projets de l'institution au portefeuille |
-| F-3 | « 3 décisions attendues » (tableau de bord) et « Arbitrages attendus : 0 » (revue) : deux notions proches, deux chiffres. | Moyenne | À décider : une seule notion de « décision attendue de la DG », ou deux libellés clairement différents |
+| F-3 | « 3 décisions attendues » (tableau de bord) et « Arbitrages attendus : 0 » (revue) : deux notions proches, deux chiffres. | Moyenne | **Décidé et fait** (lot 6) : une seule notion, « décision attendue de la DG » : dossier marqué « décision attendue » ou arbitrage en attente, compté une fois ; la revue précise son périmètre (« sur ces projets ») |
 | F-4 | Tous les agents voient toutes les activités non confidentielles de la DG (commissions, conférences, activités internes, leur état). | Moyenne | À décider : le portefeuille de la DG est-il public dans l'Agence ? |
 | F-5 | L'onglet « Contrats et paiements » est ouvert aux chefs d'entité (Fiston, Didier) mais pas à l'assistante de la DG. | Basse | À vérifier au module Administration (profils) |
 | F-6 | Un responsable d'activité modifie lui-même l'état (santé) de son activité. L'état affiché est corrigé si des suites sont en retard, mais pas pour les autres signaux. | Basse | À noter : même logique déclaré / calculé que F-1 |
@@ -772,7 +781,7 @@ Fiston est rédacteur de 15 réunions sur 16, comité de direction compris.
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| R-1 | Le titre « Réunion » s'affiche tel quel sur l'Accueil et dans Mon entité, alors que la page Réunions affiche le type (« Comité de direction »). Cause de A-8. | Moyenne | À corriger : un même libellé partout (le titre s'il est parlant, sinon le type) ; titre par défaut = type |
+| R-1 | Le titre « Réunion » s'affiche tel quel sur l'Accueil et dans Mon entité, alors que la page Réunions affiche le type (« Comité de direction »). Cause de A-8. | Moyenne | **Fait** (lot 6) : une réunion sans titre prend son type ; les anciennes « Réunion » sont renommées par la migration |
 | R-2 | Seule la présidence valide un compte rendu qu'elle a présidé. En son absence, rien ne permet une validation par intérim. | Moyenne | À décider : validation par délégation (la délégation existe déjà au parapheur) |
 | R-3 | Tout profil autorisé à valider peut rouvrir un compte rendu validé, même s'il ne l'a pas validé. Un document validé doit rester figé. | Haute | **Fait** (lot 4) : réouverture par la personne qui a validé ou par la DG, motif obligatoire inscrit au journal, valideur et rédacteur prévenus |
 | R-4 | Après réouverture, des recommandations peuvent être retirées du compte rendu, y compris celles déjà transformées en tâches. | Moyenne | À vérifier puis corriger : une recommandation issue d'un compte rendu validé ne se supprime pas, elle s'annule |
@@ -866,7 +875,7 @@ Aucun risque n'est rattaché à un projet, aucun indicateur à une activité du 
 | RI-1 | Les droits sont incohérents : les chefs d'entité peuvent créer et modifier risques et indicateurs mais ne peuvent pas voir la page ; l'assistante voit tout mais ne peut rien mettre à jour. | Haute | À corriger : qui modifie doit voir ; le responsable d'un risque le voit et met à jour ses mesures |
 | RI-2 | Un profil « gérer les risques » peut modifier les indicateurs stratégiques de la DG (cible, résultat). | Haute | À corriger : un droit distinct pour les indicateurs, ou modification réservée au pilotage |
 | RI-3 | Aucun historique : ni des scores de risque, ni des valeurs d'indicateur. Pas de date de mesure, pas de date de dernière revue. | Moyenne | À corriger : chaque mise à jour garde la valeur, la date et l'auteur ; afficher la tendance |
-| RI-4 | Les indicateurs sont saisis à la main même quand l'outil connaît la valeur (plans approuvés, recommandations exécutées). | Moyenne | À décider : indicateurs calculés automatiquement quand la source est dans l'outil |
+| RI-4 | Les indicateurs sont saisis à la main même quand l'outil connaît la valeur (plans approuvés, recommandations exécutées). | Moyenne | **Décidé et fait** (lot 6) : un indicateur peut être relié à une source de l'outil (plans approuvés, recommandations réalisées, décisions exécutées, accords en vigueur) ; son résultat se calcule seul et ne se saisit plus |
 | RI-5 | Un risque ne se rattache qu'à un projet, pas à une activité, une direction ou une convention ; il n'a pas d'échéance pour ses mesures de maîtrise. | Moyenne | À décider : rattachements et échéance de la mesure |
 | RI-6 | Le responsable d'un risque n'est prévenu de rien (attribution, changement de score). | Moyenne | À corriger avec RI-1 |
 | RI-7 | Un risque ne se supprime pas (il se clôt) ; c'est cohérent, mais un indicateur créé par erreur ne se supprime pas non plus. | Basse | À décider : archivage d'un indicateur |
@@ -946,7 +955,7 @@ préparer ; seule la DG les approuve.
 |---|---|---|---|
 | PT-1 | Le droit « gérer les plans » vaut pour toutes les entités : un chef de direction prépare, modifie ou supprime le plan d'une autre direction. | Haute | À corriger : un chef prépare le plan de son entité et des entités rattachées ; le service du plan prépare tous les plans |
 | PT-2 | L'avancement saisi à la main par le responsable n'exige ni justification ni pièce. | Moyenne | À décider : commentaire obligatoire, ou validation par le chef pour une activité sans dossier |
-| PT-3 | L'avancement d'un plan est la moyenne simple de ses activités, sans pondération (un atelier pèse autant que la révision du schéma national). | Moyenne | À décider : pondération par budget ou par poids saisi |
+| PT-3 | L'avancement d'un plan est la moyenne simple de ses activités, sans pondération (un atelier pèse autant que la révision du schéma national). | Moyenne | **Décidé et fait** (lot 6) : chaque activité a un poids (1 par défaut, de 1 à 100) ; l'avancement du plan est la moyenne pondérée, partout |
 | PT-4 | Les activités de la démo n'ont pas de date de début : l'« avancement attendu à date » du Tableau de bord DG est alors approximatif. | Moyenne | À corriger : date de début obligatoire à la soumission |
 | PT-5 | Aucune campagne de préparation : pas de rappel pour le plan de l'année suivante, pas de vue « entités sans plan ». | Moyenne | À corriger : liste des entités sans plan pour l'année, rappel aux chefs |
 | PT-6 | Tous les profils voient tous les plans, budgets prévus et dépensés compris. | Basse | À décider avec F-4 : les budgets sont-ils visibles des agents ? |
@@ -1197,7 +1206,7 @@ Aucune délégation en cours.
 | PH-2 | L'auteur compose librement le circuit : n'importe quel détenteur du parapheur peut être signataire final, y compris pour une convention. Et quand la DG est l'auteur, elle ne peut pas signer. | Haute | **Fait** (lot 4) : signature finale de la DG imposée pour les documents qui engagent l'Agence (convention, accord, avenant, contrat, protocole, acte) ; l'auteur peut signer en dernier après le visa ou l'avis d'une autre personne |
 | PH-3 | Délégation sans limite de durée, de délégataire ni de portée ; une délégation retirée disparaît de la liste. | Haute | **Fait** (lot 4) : 30 jours au plus ; portée « visa et avis » ou « visa et signature » ; la signature ne se délègue qu'à un responsable ; une délégation retirée reste dans l'historique |
 | PH-4 | Le secrétariat de la DG ne voit pas la pile de documents qui attendent la DG. | Moyenne | À corriger : vue « parapheur de la DG » pour l'assistante (lecture seule) |
-| PH-5 | Après un rejet et une relance, les visas et le motif du premier circuit disparaissent de la fiche. | Moyenne | À corriger : garder l'historique de chaque circuit sur la fiche |
+| PH-5 | Après un rejet et une relance, les visas et le motif du premier circuit disparaissent de la fiche. | Moyenne | **Fait** (lot 5) : chaque circuit clos par un rejet est conservé (visas, auteurs, dates, motif) et se relit sur la fiche, sous « Circuits précédents » |
 | PH-6 | Tous les profils ont accès au parapheur : chacun peut lancer un circuit vers la DG. | Basse | À décider : qui peut adresser un document à la signature de la DG (passage obligé par le secrétariat ?) |
 
 ### Ce qui fonctionne bien
@@ -1372,8 +1381,8 @@ La liste des profils comprend un profil **« DG »**, mais Bernadette a le profi
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| S-1 | Changer le chef d'une entité, la renommer ou la déplacer, et changer l'entité d'une personne ne sont pas journalisés (seules la création et la suppression d'une entité le sont). | Haute | À corriger : journaliser toute modification de structure et de rattachement |
-| S-2 | L'entité d'une personne se change à deux endroits (Structure et Ressources humaines) avec des effets différents : seul le passage par les RH crée une affectation datée dans le dossier. | Haute | À corriger : une seule porte (le dossier RH), ou un changement depuis Structure qui crée aussi l'affectation |
+| S-1 | Changer le chef d'une entité, la renommer ou la déplacer, et changer l'entité d'une personne ne sont pas journalisés (seules la création et la suppression d'une entité le sont). | Haute | **Fait** (lot 5) : renommer, déplacer, changer le chef ou le type d'une entité, et changer l'entité d'une personne sont journalisés avec les noms d'avant et d'après |
+| S-2 | L'entité d'une personne se change à deux endroits (Structure et Ressources humaines) avec des effets différents : seul le passage par les RH crée une affectation datée dans le dossier. | Haute | **Fait** (lot 5) : un seul effet, d'où que vienne le changement ; depuis Structure, il ferme aussi l'affectation en cours du dossier RH et en ouvre une nouvelle, datée |
 | S-3 | Désigner une personne chef d'une entité ne touche pas à son profil d'accès, et rien ne signale l'écart (un Agent chef de service, un chef de département chef d'antenne). Même famille que A-3. | Haute | Décidé le 17/11/2026 avec A-3 : le serveur refuse (lot 3) |
 | S-4 | Les listes déroulantes de profil et d'entité modifient immédiatement, sans confirmation. Un clic malheureux change les droits ou le rattachement de quelqu'un. | Moyenne | À corriger : confirmation, avec motif pour un changement de profil |
 | S-5 | Un profil « DG » existe, mais la DG de la démo a le profil « Propriétaire ». Même famille que A-4. | Moyenne (démo) | À corriger avec A-4 |
@@ -1445,7 +1454,7 @@ Les entités ont été renommées pour l'ANAT, les équipes non : leurs noms res
 |---|---|---|---|
 | EQ-1 | Le responsable d'une équipe ne peut pas la gérer si son profil n'a pas le droit « gérer les équipes » (Clarisse, Esther). | Moyenne | À corriger : être responsable de l'équipe suffit pour gérer ses membres |
 | EQ-2 | Équipes et entités se recouvrent : deux façons de regrouper les personnes et de porter des projets. | Moyenne | À décider : garder les équipes pour les groupes transversaux seulement (comités, groupes de travail interdirections), ou les masquer |
-| EQ-3 | Ajouts, retraits et changements de responsable d'une équipe ne sont pas journalisés, alors qu'ils ouvrent ou ferment l'accès à des projets. | Moyenne | À corriger avec S-1 |
+| EQ-3 | Ajouts, retraits et changements de responsable d'une équipe ne sont pas journalisés, alors qu'ils ouvrent ou ferment l'accès à des projets. | Moyenne | **Fait** (lot 5) : création, modification, ajout, retrait, changement de rôle, adhésion et réponse à une demande sont journalisés |
 | EQ-4 | Données de démo : équipes de start-up (« Marketing », « Produit & Design », « Équipe Mobile »). Même famille que A-7. | Moyenne (démo) | À corriger avec A-7 : par exemple « Comité technique du schéma national », « Groupe de travail données provinciales » |
 
 ### Ce qui fonctionne bien
@@ -1772,3 +1781,24 @@ Migration `050_tracabilite.sql`.
 Tests : `server/src/tracabilite.test.ts` (6). Aucun ancien test modifié. 608 tests au vert.
 
 **Remarques traitées** : D-3, S-1, S-2, EQ-3, PH-5.
+
+### Lot 6 — Une seule règle de calcul (18/11/2026, branche `lot-regle-calcul`)
+
+Thème 4 de la synthèse. Décisions de la direction : F-3 **une seule notion de décision attendue**, PT-3 **poids saisi**.
+Sans préférence exprimée sur P-2 et RI-4, l'option recommandée a été retenue : **l'indicateur se calcule quand la
+source est dans l'outil**.
+
+| Ce qui change | Avant | Après |
+|---|---|---|
+| Retards de tâches (A-2, P-1) | 4 au compteur du tableau de bord, 5 dans la vue par direction et sur l'Accueil | Une seule règle, écrite une fois : une tâche principale, confiée, non terminée, échue, dans un dossier non archivé. Le compteur du tableau de bord donne « 5 tâches, 1 suite d'activité » ; la vue par direction compte les mêmes 5 ; l'Accueil compte de même (les sous-tâches échues restent listées sans être comptées) |
+| État d'un projet (F-1) | Déclaré dans Tous les dossiers et Projets, calculé dans la revue et le tableau de bord | Calculé partout, avec « déclaré : … » à côté quand ils divergent et les raisons au survol |
+| Décisions attendues (F-3) | « 3 décisions attendues » face à « Arbitrages attendus : 0 » | Une seule notion : dossier marqué « décision attendue » ou arbitrage en attente, compté une fois. Tableau de bord : 3 (1 projet, 2 activités) ; revue : « Décisions attendues sur ces projets : 1 » |
+| Indicateurs (RI-4, P-2) | Saisis à la main même quand l'outil connaît la valeur ; deux chiffres pour les recommandations | Un indicateur peut être relié à une source de l'outil : plans approuvés de l'année, recommandations réalisées, décisions exécutées de l'année, accords en vigueur. Son résultat se calcule seul et ne se saisit plus (refus explicite). Chaque indicateur affiche « calculé par l'outil » ou « saisi ». Dans la démonstration, « Plans de travail approuvés » et « Recommandations de réunion réalisées » sont calculés |
+| Avancement d'un plan (PT-3) | Moyenne simple : un atelier pesait autant que la révision du schéma national | Chaque activité a un poids (1 par défaut) ; moyenne pondérée dans la liste des plans, la fiche du plan et la vue par direction |
+| Libellé d'une réunion (R-1) | « Réunion » sur l'Accueil et dans Mon entité | Sans titre, une réunion prend son type ; la migration renomme les anciennes |
+
+Les règles communes sont dans `server/src/rules.ts`. Migration `051_regle_calcul.sql`.
+
+Tests : `server/src/regle-calcul.test.ts` (8). Aucun ancien test modifié. 616 tests au vert.
+
+**Remarques traitées** : A-2, P-1, P-2, F-1, F-3, RI-4, PT-3, R-1.

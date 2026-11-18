@@ -1,6 +1,7 @@
 import { uid } from "./db.js";
 import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
 import { PlanReviews } from "./plan-reviews.js";
+import { weightedProgress } from "./rules.js";
 
 export interface Plan {
   id: string;
@@ -18,6 +19,8 @@ export interface PlanActivity {
   id: string;
   org_id: string;
   plan_id: string;
+  /** Poids dans l'avancement du plan (PT-3). */
+  weight: number;
   parent_id: string | null;
   domain_id: string | null;
   title: string;
@@ -37,6 +40,7 @@ export interface PlanActivity {
 export type ActivityInput = Partial<
   Pick<
     PlanActivity,
+    | "weight"
     | "parent_id"
     | "domain_id"
     | "title"
@@ -50,6 +54,7 @@ export type ActivityInput = Partial<
   >
 >;
 const EDITABLE = [
+  "weight",
   "parent_id",
   "domain_id",
   "title",
@@ -95,7 +100,8 @@ export class Plans {
     // L'avancement affiché tient compte des dossiers qui réalisent chaque activité (lot P3c)
     return this.svc.db.query<Plan & { unit_name: string; activity_count: number; progress: number; late: number }>(
       `SELECT p.*, ou.name AS unit_name, count(a.id)::int AS activity_count,
-        COALESCE(round(avg(COALESCE(eff.progress, a.progress))), 0)::int AS progress,
+        -- Avancement pondéré par le poids de chaque activité (thème 4, PT-3)
+        COALESCE(round(sum(COALESCE(eff.progress, a.progress) * a.weight)::numeric / NULLIF(sum(a.weight), 0)), 0)::int AS progress,
         count(a.id) FILTER (WHERE a.end_on < CURRENT_DATE AND COALESCE(eff.progress, a.progress) < 100)::int AS late
        FROM work_plans p JOIN org_units ou ON ou.id = p.unit_id LEFT JOIN plan_activities a ON a.plan_id = p.id
        LEFT JOIN LATERAL (
@@ -209,6 +215,7 @@ export class Plans {
     return {
       ...p,
       unit_name: unit?.name ?? "",
+      progress: weightedProgress(activities.map((a) => ({ progress: a.progress_effective, weight: a.weight }))) ?? 0,
       activities,
       revisions,
       reviews: await new PlanReviews(this.svc).ofPlan(id),
@@ -273,8 +280,8 @@ export class Plans {
     if (p.status !== "draft") throw frozen();
     await this.assertActivity(p, i);
     await this.svc.db.query(
-      `INSERT INTO plan_activities (id, org_id, plan_id, parent_id, domain_id, title, responsible_id, objective, target_value, unit_label, start_on, end_on, budget_planned)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+      `INSERT INTO plan_activities (id, org_id, plan_id, parent_id, domain_id, title, responsible_id, objective, target_value, unit_label, start_on, end_on, budget_planned, weight)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
       [
         uid("pac"),
         p.org_id,
@@ -289,6 +296,7 @@ export class Plans {
         i.start_on ?? null,
         i.end_on ?? null,
         i.budget_planned ?? null,
+        i.weight ?? 1,
       ],
     );
     return this.get(actorId, planId);

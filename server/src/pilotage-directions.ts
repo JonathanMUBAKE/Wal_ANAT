@@ -1,6 +1,7 @@
 import { assessProjects } from "./portfolio.js";
 import type { FastifyInstance } from "fastify";
 import { notFound, today, type Services } from "./services.js";
+import { lateTasksByAssignee, weightedProgress } from "./rules.js";
 
 /*
  * Tableau de bord DG — vue par direction.
@@ -51,6 +52,7 @@ interface PlanRow {
   start_on: string | null;
   end_on: string | null;
   responsible_name: string | null;
+  weight: number;
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
@@ -83,13 +85,8 @@ export class Directions {
         WHERE om.org_id = $1 AND NOT u.is_ai AND om.role <> 'guest' ORDER BY u.name`,
       [orgId],
     );
-    const tasks = await db.query<{ user_id: string; open: number; overdue: number }>(
-      `SELECT t.assignee_id AS user_id, count(*)::int AS open, count(*) FILTER (WHERE t.due_on < $2::date)::int AS overdue
-         FROM tasks t JOIN projects p ON p.id = t.project_id
-        WHERE t.org_id = $1 AND NOT t.completed AND t.assignee_id IS NOT NULL AND t.parent_id IS NULL AND NOT p.archived
-        GROUP BY t.assignee_id`,
-      [orgId, now],
-    );
+    // Règle unique des retards (thème 4) : la même que le compteur du tableau de bord
+    const tasks = await lateTasksByAssignee(db, orgId, now);
     const decisions = await db.query<{
       id: string;
       title: string;
@@ -123,7 +120,7 @@ export class Directions {
     );
     // Avancement effectif d'une activité du plan : celui des dossiers qui la réalisent, sinon celui déclaré
     const plan = await db.query<PlanRow>(
-      `SELECT a.id, p.unit_id, a.title, COALESCE(eff.progress, a.progress)::int AS progress,
+      `SELECT a.id, p.unit_id, a.title, COALESCE(eff.progress, a.progress)::int AS progress, a.weight,
               to_char(COALESCE(a.start_on, make_date(p.year, 1, 1)), 'YYYY-MM-DD') AS start_on, to_char(a.end_on, 'YYYY-MM-DD') AS end_on,
               r.name AS responsible_name
          FROM plan_activities a JOIN work_plans p ON p.id = a.plan_id LEFT JOIN users r ON r.id = a.responsible_id
@@ -177,9 +174,12 @@ export class Directions {
     return out;
   }
 
-  private stats(data: Awaited<ReturnType<Directions["load"]>>, scope: Set<string>): Stats {
+  private stats(data: Awaited<ReturnType<Directions["load"]>>, scope: Set<string>, everyone = false): Stats {
     const { now } = data;
-    const people = new Set(data.members.filter((m) => m.unit_id && scope.has(m.unit_id)).map((m) => m.user_id));
+    // L'institution entière compte aussi les personnes sans entité : même total que le tableau de bord
+    const people = new Set(
+      data.members.filter((m) => everyone || (m.unit_id && scope.has(m.unit_id))).map((m) => m.user_id),
+    );
     const projects = data.projects.filter((p) => p.unit_id && scope.has(p.unit_id));
     const health = { total: projects.length, on_track: 0, at_risk: 0, off_track: 0, done: 0 };
     for (const p of projects) health[p.health]++;
@@ -204,7 +204,8 @@ export class Directions {
       recommendations: { open: recs.length, late: recs.filter((r) => late(r.due_on)).length },
       plan: {
         activities: plan.length,
-        progress: plan.length ? Math.round(plan.reduce((x, a) => x + a.progress, 0) / plan.length) : null,
+        // Avancement pondéré par le poids de chaque activité (PT-3)
+        progress: weightedProgress(plan),
         expected: expected.length ? Math.round(expected.reduce((x, e) => x + e, 0) / expected.length) : null,
         behind: plan.filter((a) => {
           const e = expectedProgress(a.start_on, a.end_on, now);
@@ -258,7 +259,7 @@ export class Directions {
     const agency = root
       ? { id: root.id, name: root.name, kind: root.kind, manager_name: root.manager_name, ...this.stats(data, roots) }
       : null;
-    return { today: data.now, institution: this.stats(data, all), agency, directions };
+    return { today: data.now, institution: this.stats(data, all, true), agency, directions };
   }
 
   /** Le détail d'une direction (ou de l'un de ses services) : ses entités, ses dossiers, ses agents, ses retards. */

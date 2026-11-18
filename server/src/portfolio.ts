@@ -4,6 +4,7 @@ import { uid } from "./db.js";
 import { Decisions } from "./decisions.js";
 import { expectedProgress } from "./pilotage-directions.js";
 import { badRequest, forbidden, notFound, today, type Services } from "./services.js";
+import { awaitsDecision } from "./rules.js";
 
 /*
  * Portefeuille de projets (pilotage stratégique).
@@ -95,8 +96,9 @@ export async function assessProjects(
         budget_planned: number | null;
         budget_spent: number | null;
         created_on: string;
+        decision_needed: string;
       }>(
-        `SELECT p.id, COALESCE(l.name, o.name) AS lead_name, ou.name AS unit_name, p.budget_planned::float8 AS budget_planned,
+        `SELECT p.id, p.decision_needed, COALESCE(l.name, o.name) AS lead_name, ou.name AS unit_name, p.budget_planned::float8 AS budget_planned,
                   p.budget_spent::float8 AS budget_spent, to_char(p.created_at, 'YYYY-MM-DD') AS created_on
              FROM projects p LEFT JOIN users l ON l.id = p.lead_id LEFT JOIN users o ON o.id = p.owner_id
              LEFT JOIN org_units ou ON ou.id = p.unit_id WHERE p.id = ANY($1)`,
@@ -170,6 +172,9 @@ export async function assessProjects(
       budget: { planned, spent, consumed },
       tasks: { open: p.task_count - p.done_count, overdue: p.overdue_count },
       arbitration,
+      // Une seule notion de « décision attendue de la DG » (F-3), la même qu'au tableau de bord
+      decision_needed: g?.decision_needed ?? "",
+      decision_expected: p.status !== "done" && awaitsDecision({ decision_needed: g?.decision_needed, arbitration }),
     };
   });
 }
@@ -206,9 +211,22 @@ export class Portfolio {
         done: count("done"),
         divergent: rows.filter((r) => r.divergent).length,
         arbitrations: rows.filter((r) => r.arbitration).length,
+        decisions_expected: rows.filter((r) => r.decision_expected).length,
       },
       projects: rows,
     };
+  }
+
+  /** L'état calculé de chaque projet lisible, avec le déclaré : la même santé sur toutes les pages (F-1). */
+  async health(actorId: string, orgId: string) {
+    const rows = await assessProjects(this.svc, await this.svc.listProjects(actorId, orgId), today());
+    return rows.map((r) => ({
+      id: r.id,
+      health_computed: r.health_computed,
+      health_declared: r.health_declared,
+      divergent: r.divergent,
+      reasons: r.reasons,
+    }));
   }
 
   // ------------------------------------------------------------------ arbitrages
@@ -437,6 +455,7 @@ export class Portfolio {
 type Id = { Params: { id: string } };
 export function portfolioRoutes(r: FastifyInstance, p: Portfolio) {
   r.get("/api/portfolio/review", async (req) => p.review(req.userId, req.orgId));
+  r.get("/api/projects/health", async (req) => p.health(req.userId, req.orgId));
   r.get("/api/arbitrations", async (req) => {
     const q = z.object({ status: z.enum(["en_attente", "tranche", "retire"]).optional() }).parse(req.query ?? {});
     return p.list(req.userId, req.orgId, q.status);

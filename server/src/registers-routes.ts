@@ -37,6 +37,7 @@ const Indicator = z.object({
   result: num.optional(),
   source: z.string().max(300).optional(),
   plan_activity_id: id.nullable().optional(),
+  computed_from: z.string().max(60).nullable().optional(),
 });
 
 export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers, g: Gaps) {

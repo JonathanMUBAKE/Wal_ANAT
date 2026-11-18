@@ -49,6 +49,8 @@ interface Review {
     done: number;
     divergent: number;
     arbitrations: number;
+    /** Dossiers marqués « décision attendue » ou portant un arbitrage en attente : la notion du tableau de bord (F-3). */
+    decisions_expected: number;
   };
   projects: ReviewRow[];
 }
@@ -101,7 +103,7 @@ export function PortfolioReview() {
   const s = data.summary;
   const exportDoc = (): ExportDoc => ({
     title: "Revue de portefeuille",
-    subtitle: `${s.total} projets · ${s.divergent} en écart avec le déclaré · ${s.arbitrations} arbitrage(s) attendu(s)`,
+    subtitle: `${s.total} projets · ${s.divergent} en écart avec le déclaré · ${s.decisions_expected} décision(s) attendue(s)`,
     filename: "revue-de-portefeuille",
     landscape: true,
     sections: [
@@ -116,7 +118,7 @@ export function PortfolioReview() {
               ["À surveiller", s.at_risk],
               ["En difficulté", s.off_track],
               ["En écart avec le déclaré", s.divergent],
-              ["Arbitrages attendus", s.arbitrations],
+              ["Décisions attendues sur ces projets", s.decisions_expected],
             ],
           },
         ],
@@ -167,7 +169,7 @@ export function PortfolioReview() {
         <Tile label="À surveiller" value={s.at_risk} />
         <Tile label="En difficulté" value={s.off_track} alert={s.off_track > 0} />
         <Tile label="En écart avec le déclaré" value={s.divergent} alert={s.divergent > 0} />
-        <Tile label="Arbitrages attendus" value={s.arbitrations} />
+        <Tile label="Décisions attendues sur ces projets" value={s.decisions_expected} />
       </div>
       <Section>
         <p className="px-5 pb-1 pt-4 text-[13px] text-muted">

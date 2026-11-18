@@ -4,6 +4,7 @@ import { Decisions } from "./decisions.js";
 import { meetingReference } from "./meetings.js";
 import { Referentials } from "./referentials.js";
 import type { Services } from "./services.js";
+import { LATE_RULE, awaitsDecision, lateTasksByAssignee, withComputed } from "./rules.js";
 
 /** « projet_interne », « projet_confie », ou le code d'un type d'activité du référentiel. */
 export type Form = string;
@@ -217,10 +218,16 @@ export class Pilotage {
         (SELECT count(*)::int FROM correspondence WHERE org_id = $1 AND status NOT IN ('traite', 'classe') AND NOT confidential AND due_on < $2::date) AS courrier`,
       [orgId, today],
     );
-    const decisions = items.filter((i) => i.decision_needed.trim() && i.health !== "done");
+    // Une seule notion (F-3) : dossier marqué « décision attendue » ou arbitrage en attente, compté une fois
+    const decisions = items.filter(
+      (i) => awaitsDecision({ decision_needed: i.decision_needed, arbitration: i.arbitration_id }) && i.health !== "done",
+    );
     const registry = await new Decisions(this.svc).summary(actorId, orgId);
     const critical = items.filter((i) => i.health === "off_track");
-    const overdueTasks = items.filter((i) => i.overdue > 0).reduce((s, i) => s + i.overdue, 0);
+    // Règle unique des retards (thème 4, P-1) : la même que la vue par direction et l'Accueil
+    const lateTasks = (await lateTasksByAssignee(db, orgId, today)).reduce((s, t) => s + t.overdue, 0);
+    const lateFollowups = activities.reduce((s, a) => s + a.overdue, 0);
+    const overdueTasks = lateTasks + lateFollowups;
     const counters = {
       projets: count("projet_interne") + count("projet_confie"),
       projets_internes: count("projet_interne"),
@@ -240,13 +247,15 @@ export class Pilotage {
         registry.late,
       decisions_a_executer: registry.open,
       retards_detail: {
-        taches_et_suites: overdueTasks,
+        taches: lateTasks,
+        suites: lateFollowups,
         recommandations: recs?.late ?? 0,
         livrables: lateCounts?.livrables ?? 0,
         activites_plan: lateCounts?.activites_plan ?? 0,
         courrier: lateCounts?.courrier ?? 0,
         decisions: registry.late,
       },
+      late_rule: LATE_RULE,
     };
     const delegators = (
       await db.query<{ from_user: string }>(
@@ -299,9 +308,9 @@ export class Pilotage {
       result: number;
       source: string;
     }>(
-      "SELECT id, name, unit_label, source, baseline::float8 AS baseline, target::float8 AS target, result::float8 AS result FROM indicators WHERE org_id = $1 ORDER BY name LIMIT 8",
+      "SELECT id, name, unit_label, source, computed_from, baseline::float8 AS baseline, target::float8 AS target, result::float8 AS result FROM indicators WHERE org_id = $1 ORDER BY name LIMIT 8",
       [orgId],
-    );
+    ).then((rows) => withComputed(db, orgId, today, rows as (typeof rows[number] & { computed_from: string | null })[]));
     const plans = await db.one<{ n: number; approved: number }>(
       "SELECT count(*)::int AS n, count(*) FILTER (WHERE status = 'approved')::int AS approved FROM work_plans WHERE org_id = $1 AND year = $2",
       [orgId, Number(today.slice(0, 4))],

@@ -32,7 +32,7 @@ import {
   isLate,
 } from "@/components/gov";
 import { api } from "@/lib/api";
-import { useCan, useMe, useProjects, useUnits, useUserMap, useUsers } from "@/lib/hooks";
+import { useCan, useMe, useProjectHealth, useProjects, useUnits, useUserMap, useUsers } from "@/lib/hooks";
 import { ExportMenu, tableDoc } from "@/components/export-menu";
 import { type RefValue, useForms, useReferentials } from "@/lib/referentials";
 import { HEALTH } from "./Pilotage";
@@ -114,6 +114,7 @@ export function ActivitiesPage() {
   const firstActive = refs?.activity_type.find((t) => !t.archived)?.code ?? "";
   const rows = data?.filter((a) => tab === "all" || a.kind === tab) ?? [];
   const users = useUserMap();
+  const health = useProjectHealth();
   const dossierProjects = tab === "all" ? (projects ?? []) : [];
   // Le portefeuille de la DG : projets et activités au même endroit (docs/ARCHITECTURE-INFORMATION.md)
   return (
@@ -218,7 +219,7 @@ export function ActivitiesPage() {
                     <Td>{(p.owner_id && users.get(p.owner_id)?.name) || "—"}</Td>
                     <Td className="tabular">{frDate(p.due_on)}</Td>
                     <Td>
-                      <Status label={HEALTH[p.status].label} tone={HEALTH[p.status].tone} />
+                      <ComputedHealth p={p} health={health} />
                     </Td>
                     <Td>—</Td>
                     <Td />
@@ -288,6 +289,7 @@ export function ActivitiesPage() {
 /** Projets du portefeuille : un clic ouvre le tableau de bord du projet. */
 function ProjectsList({ projects }: { projects: ProjectSummary[] | undefined }) {
   const nav = useNavigate();
+  const health = useProjectHealth();
   if (!projects) return <LoadingRows />;
   if (!projects.length)
     return (
@@ -325,7 +327,7 @@ function ProjectsList({ projects }: { projects: ProjectSummary[] | undefined }) 
                 {p.overdue_count || "—"}
               </Td>
               <Td>
-                <Status label={HEALTH[p.status].label} tone={HEALTH[p.status].tone} />
+                <ComputedHealth p={p} health={health} />
               </Td>
             </Tr>
           );
@@ -915,5 +917,17 @@ export function ActivityPage() {
         onConfirm={() => remove.mutate()}
       />
     </div>
+  );
+}
+
+/** État calculé d'un projet, avec le déclaré à côté quand ils divergent (F-1). */
+function ComputedHealth({ p, health }: { p: ProjectSummary; health: Map<string, import("@/lib/hooks").ProjectHealth> }) {
+  const h = health.get(p.id);
+  const state = h?.health_computed ?? p.status;
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5" title={h?.reasons.join(" · ") || undefined}>
+      <Status label={HEALTH[state].label} tone={HEALTH[state].tone} />
+      {h?.divergent && <span className="text-[11.5px] text-faint">déclaré : {HEALTH[h.health_declared].label}</span>}
+    </span>
   );
 }

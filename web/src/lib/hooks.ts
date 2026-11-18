@@ -129,6 +129,24 @@ export const useProjectUpdates = (id?: string) =>
   });
 export const useMyTasks = () =>
   useQuery({ queryKey: ["tasks", "mine"], queryFn: () => api.get<Task[]>("/api/tasks?assignee=me&subtasks=true") });
+/**
+ * L'état calculé de chaque projet lisible, avec le déclaré (thème 4, F-1) : la même santé que la revue de portefeuille
+ * et le tableau de bord, sur toutes les listes.
+ */
+export type ProjectHealth = {
+  id: string;
+  health_computed: ProjectSummary["status"];
+  health_declared: ProjectSummary["status"];
+  divergent: boolean;
+  reasons: string[];
+};
+export function useProjectHealth() {
+  const { data } = useQuery({
+    queryKey: ["projects", "health"],
+    queryFn: () => api.get<ProjectHealth[]>("/api/projects/health"),
+  });
+  return useMemo(() => new Map((data ?? []).map((h) => [h.id, h])), [data]);
+}
 export const useTask = (id?: string | null) =>
   useQuery({ queryKey: ["task", id], queryFn: () => api.get<TaskDetail>(`/api/tasks/${id}`), enabled: !!id });
 export const useNotifications = () =>

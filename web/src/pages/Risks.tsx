@@ -50,6 +50,9 @@ interface Indicator {
   name: string;
   unit_label: string;
   source: string;
+  /** Relié à une source de l'outil : le résultat est calculé, jamais saisi (thème 4, RI-4). */
+  computed_from?: string | null;
+  computed?: boolean;
   baseline: number;
   target: number;
   result: number;
@@ -198,6 +201,9 @@ export function RisksPage() {
                   </Td>
                   <Td className="tabular-nums font-medium">
                     {i.result} {i.unit_label}
+                    <span className="block text-[11px] font-normal text-faint">
+                      {i.computed ? "calculé par l'outil" : "saisi"}
+                    </span>
                   </Td>
                   <Td className="min-w-[140px]">
                     <ProgressBar value={pct(i)} tone={pct(i) >= 100 ? "success" : "info"} />
@@ -428,6 +434,7 @@ function IndicatorDrawer({ indicator, onClose }: { indicator: Indicator | null; 
     result: indicator ? String(indicator.result) : "0",
     source: indicator?.source ?? "",
     plan_activity_id: indicator?.plan_activity_id ?? "",
+    computed_from: indicator?.computed_from ?? "",
   });
   const [busy, setBusy] = useState(false);
   const save = async () => {
@@ -439,7 +446,9 @@ function IndicatorDrawer({ indicator, onClose }: { indicator: Indicator | null; 
         source: f.source,
         baseline: num(f.baseline) ?? 0,
         target: num(f.target),
-        result: num(f.result) ?? 0,
+        // Un résultat calculé par l'outil ne se saisit pas
+        ...(f.computed_from ? {} : { result: num(f.result) ?? 0 }),
+        computed_from: f.computed_from || null,
         plan_activity_id: f.plan_activity_id || null,
       };
       if (indicator) await api.patch(`/api/indicators/${indicator.id}`, body);
@@ -494,14 +503,26 @@ function IndicatorDrawer({ indicator, onClose }: { indicator: Indicator | null; 
               />
             )}
           </Field>
-          <Field label="Résultat">
+          <Field label="Résultat" hint={f.computed_from ? "Calculé par l'outil" : undefined}>
             {(a) => (
               <Input
                 {...a}
                 inputMode="decimal"
+                disabled={!!f.computed_from}
                 value={f.result}
                 onChange={(e) => setF({ ...f, result: e.target.value })}
               />
+            )}
+          </Field>
+          <Field label="Calcul" className="sm:col-span-3" hint="Quand l'outil connaît la valeur, l'indicateur se calcule seul">
+            {(a) => (
+              <Select {...a} value={f.computed_from} onChange={(e) => setF({ ...f, computed_from: e.target.value })}>
+                <option value="">Résultat saisi à la main</option>
+                <option value="plans_approved">Calculé : plans de travail approuvés de l'année</option>
+                <option value="recommendations_done">Calculé : recommandations de réunion réalisées</option>
+                <option value="decisions_executed">Calculé : décisions de la DG exécutées dans l'année</option>
+                <option value="agreements_in_force">Calculé : accords de partenariat en vigueur</option>
+              </Select>
             )}
           </Field>
           <Field label="Unité" hint="communes, %, rapports…">

@@ -14,6 +14,7 @@ import {
   useCan,
   useMe,
   useMyTasks,
+  useProjectHealth,
   useProjects,
   useRuns,
   useUpdateTask,
@@ -41,8 +42,13 @@ export function HomePage() {
   const qc = useQueryClient();
   const projectMap = useMemo(() => new Map(projects?.map((p) => [p.id, p])), [projects]);
 
+  const health = useProjectHealth();
   const open = tasks?.filter((t) => !t.completed) ?? [];
-  const overdue = open.filter((t) => t.due_on && t.due_on < todayIso());
+  // Règle unique des retards (thème 4, A-2) : seules les tâches principales comptent, comme au tableau de bord.
+  // Les sous-tâches échues restent listées, à la fin, sans être comptées.
+  const late = (t: { due_on: string | null }) => !!t.due_on && t.due_on < todayIso();
+  const overdueMain = open.filter((t) => late(t) && !t.parent_id);
+  const overdue = [...overdueMain, ...open.filter((t) => late(t) && t.parent_id)];
   const upcoming = open
     .filter((t) => !t.due_on || t.due_on >= todayIso())
     .sort((a, b) => ((a.due_on ?? "9") < (b.due_on ?? "9") ? -1 : 1));
@@ -62,8 +68,11 @@ export function HomePage() {
             <b className="font-semibold text-fg tabular">{open.length}</b>{" "}
             {open.length > 1 ? "tâches ouvertes" : "tâche ouverte"}
           </span>
-          <span className={overdue.length ? "text-danger" : ""}>
-            <b className="font-semibold tabular">{overdue.length}</b> en retard
+          <span
+            className={overdueMain.length ? "text-danger" : ""}
+            title="Une tâche principale non terminée dont l'échéance est passée ; les sous-tâches ne sont pas comptées, comme au tableau de bord"
+          >
+            <b className="font-semibold tabular">{overdueMain.length}</b> en retard
           </span>
           <span>
             <b className="font-semibold text-fg tabular">{doneWeek.length}</b>{" "}
@@ -87,7 +96,7 @@ export function HomePage() {
               {(
                 [
                   ["upcoming", "À venir", upcoming.length],
-                  ["overdue", "En retard", overdue.length],
+                  ["overdue", "En retard", overdueMain.length],
                   ["done", "Terminées", doneWeek.length],
                 ] as const
               ).map(([k, label, n]) => (
@@ -201,9 +210,14 @@ export function HomePage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[14px] font-medium">{p.name}</p>
                       <p className="mt-0.5 flex items-center gap-2 text-[12px] text-muted">
-                        <span className="flex items-center gap-1" style={{ color: STATUS[p.status].color }}>
+                        {/* État calculé, comme au tableau de bord et dans la revue (F-1) */}
+                        <span
+                          className="flex items-center gap-1"
+                          style={{ color: STATUS[health.get(p.id)?.health_computed ?? p.status].color }}
+                          title={health.get(p.id)?.reasons.join(" · ") || undefined}
+                        >
                           <span className="size-1.5 rounded-full bg-current" />
-                          {STATUS[p.status].label}
+                          {STATUS[health.get(p.id)?.health_computed ?? p.status].label}
                         </span>
                         <span className="tabular">{Math.round(pct * 100)} %</span>
                         {p.overdue_count > 0 && (

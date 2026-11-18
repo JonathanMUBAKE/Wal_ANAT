@@ -48,6 +48,8 @@ interface PlanActivity {
   domain_name: string | null;
   objective: string;
   target_value: number | null;
+  /** Poids dans l'avancement du plan (thème 4, PT-3). */
+  weight?: number;
   actual_value: number | null;
   unit_label: string;
   start_on: string | null;
@@ -494,6 +496,7 @@ function ActivityDialog({
     start_on: activity?.start_on ?? "",
     end_on: activity?.end_on ?? "",
     budget_planned: activity?.budget_planned?.toString() ?? "",
+    weight: String(activity?.weight ?? 1),
   });
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   const save = useMutation({
@@ -506,6 +509,7 @@ function ActivityDialog({
         start_on: f.start_on || null,
         end_on: f.end_on || null,
         budget_planned: num(f.budget_planned),
+        weight: Math.max(1, Math.min(100, Math.round(num(f.weight) ?? 1))),
       };
       return activity
         ? api.patch<Plan>(`/api/plan-activities/${activity.id}`, body)
@@ -559,8 +563,11 @@ function ActivityDialog({
         </Field>
         <Field label="Début">{(a) => <Input {...a} type="date" value={f.start_on} onChange={set("start_on")} />}</Field>
         <Field label="Fin">{(a) => <Input {...a} type="date" value={f.end_on} onChange={set("end_on")} />}</Field>
-        <Field label="Budget prévu" className="sm:col-span-2">
+        <Field label="Budget prévu">
           {(a) => <Input {...a} inputMode="decimal" value={f.budget_planned} onChange={set("budget_planned")} />}
+        </Field>
+        <Field label="Poids dans le plan" hint="De 1 à 100 ; l'avancement du plan est la moyenne pondérée">
+          {(a) => <Input {...a} inputMode="numeric" value={f.weight} onChange={set("weight")} />}
         </Field>
       </div>
     </Dialog>

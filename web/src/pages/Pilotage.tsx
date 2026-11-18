@@ -85,6 +85,9 @@ interface Overview {
     target: number;
     result: number;
     source: string;
+    /** Relié à une source de l'outil : calculé, jamais saisi (thème 4, RI-4). */
+    computed_from?: string | null;
+    computed?: boolean;
   }[];
   plans: { total: number; approved: number };
 }
@@ -546,7 +549,7 @@ export function PilotagePage() {
               ...o.indicators.map((i) => ({
                 id: i.id,
                 name: i.name,
-                value: `${i.result} / ${i.target} ${i.unit_label}`,
+                value: `${i.result} / ${i.target} ${i.unit_label} · ${i.computed ? "calculé par l'outil" : "saisi"}`,
                 pct:
                   // Vaut aussi pour un indicateur qui doit baisser (délai, coût) : cible sous la situation de départ
                   i.target !== i.baseline
@@ -555,12 +558,17 @@ export function PilotagePage() {
                       ? 100
                       : 0,
               })),
-              {
-                id: "recos",
-                name: "Recommandations réalisées",
-                value: `${o.recommendations.done} / ${o.recommendations.open + o.recommendations.done}`,
-                pct: rate(o.recommendations),
-              },
+              // P-2 : pas de second chiffre pour la même notion quand un indicateur la calcule déjà
+              ...(o.indicators.some((i) => i.computed_from === "recommendations_done")
+                ? []
+                : [
+                    {
+                      id: "recos",
+                      name: "Recommandations réalisées",
+                      value: `${o.recommendations.done} / ${o.recommendations.open + o.recommendations.done} · calculé par l'outil`,
+                      pct: rate(o.recommendations),
+                    },
+                  ]),
             ].map((i) => (
               <li key={i.id}>
                 <p className="flex items-baseline justify-between gap-3 text-[13px]">
@@ -622,7 +630,8 @@ const rank = (i: Item) =>
   ({ off_track: 0, at_risk: 1, on_track: 2, done: 3 })[i.health] - (i.decision_needed ? 0.5 : 0);
 /** Détail des retards en une ligne : « 2 tâches, 1 livrable, 1 courrier ». */
 const LATE_LABEL: Record<string, [string, string]> = {
-  taches_et_suites: ["tâche ou suite", "tâches ou suites"],
+  taches: ["tâche", "tâches"],
+  suites: ["suite d'activité", "suites d'activité"],
   recommandations: ["recommandation", "recommandations"],
   livrables: ["livrable", "livrables"],
   activites_plan: ["activité de plan", "activités de plan"],

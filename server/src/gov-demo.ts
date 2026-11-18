@@ -444,21 +444,20 @@ export async function seedGovDemo(svc: Services) {
     unit_label: "provinces",
     source: "Direction technique",
   });
+  // Indicateurs dont l'outil connaît la valeur : calculés, jamais saisis (thème 4, RI-4 et P-2)
   await reg.createIndicator(me, org, {
     name: "Plans de travail approuvés",
     target: 8,
     baseline: 0,
-    result: 5,
     unit_label: "plans",
-    source: "Secrétariat",
+    computed_from: "plans_approved",
   });
   await reg.createIndicator(me, org, {
-    name: "Recommandations exécutées",
-    target: 90,
-    baseline: 40,
-    result: 62,
-    unit_label: "%",
-    source: "Comptes rendus",
+    name: "Recommandations de réunion réalisées",
+    target: 20,
+    baseline: 0,
+    unit_label: "recommandations",
+    computed_from: "recommendations_done",
   });
 
   await new Gaps(svc).detect(me, org);

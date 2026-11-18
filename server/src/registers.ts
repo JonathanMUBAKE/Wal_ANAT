@@ -1,4 +1,5 @@
 import { uid } from "./db.js";
+import { INDICATOR_SOURCES, withComputed } from "./rules.js";
 import { linkContact, linkPartner } from "./partner-links.js";
 import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services, localDate } from "./services.js";
 
@@ -61,6 +62,8 @@ export interface IndicatorInput {
   result?: number;
   source?: string;
   plan_activity_id?: string | null;
+  /** Source de l'outil qui calcule le résultat (RI-4) ; vide : résultat saisi. */
+  computed_from?: string | null;
 }
 const mailRef = (m: Pick<Mail, "direction" | "year" | "seq">) =>
   `${m.direction === "entrant" ? "ENT" : "SOR"}/${m.year}/${String(m.seq).padStart(4, "0")}`;
@@ -622,7 +625,7 @@ export class Registers {
   }
 
   private static INDICATOR =
-    `SELECT i.id, i.name, i.unit_label, i.source, i.baseline::float8 AS baseline, i.target::float8 AS target,
+    `SELECT i.id, i.name, i.unit_label, i.source, i.computed_from, i.baseline::float8 AS baseline, i.target::float8 AS target,
       i.result::float8 AS result, i.plan_activity_id, pa.title AS plan_activity_title, wp.year AS plan_year, ou.name AS plan_unit_name
     FROM indicators i LEFT JOIN plan_activities pa ON pa.id = i.plan_activity_id LEFT JOIN work_plans wp ON wp.id = pa.plan_id
     LEFT JOIN org_units ou ON ou.id = wp.unit_id`;
@@ -630,7 +633,18 @@ export class Registers {
     const perms = await this.svc.permissionsOf(actorId, orgId);
     if (!["pilotage.view", "indicators.manage", "risks.manage"].some((p) => perms.includes(p as never)))
       await this.svc.requirePerm(actorId, orgId, "pilotage.view");
-    return this.svc.db.query(`${Registers.INDICATOR} WHERE i.org_id = $1 ORDER BY i.name`, [orgId]);
+    return this.computed(orgId, await this.svc.db.query(`${Registers.INDICATOR} WHERE i.org_id = $1 ORDER BY i.name`, [orgId]));
+  }
+  /** Un indicateur relié à une source de l'outil se calcule seul (thème 4, RI-4). */
+  private computed(orgId: string, rows: unknown[]) {
+    return withComputed(this.svc.db, orgId, localDate(), rows as { computed_from: string | null; result: number }[]);
+  }
+  private async oneIndicator(orgId: string, id: string) {
+    return (await this.computed(orgId, [await this.svc.db.one(`${Registers.INDICATOR} WHERE i.id = $1`, [id])]))[0];
+  }
+  private assertSource(src: string | null | undefined) {
+    if (src && !(src in INDICATOR_SOURCES))
+      throw badRequest(`Source de calcul inconnue : ${src}. Possibles : ${Object.keys(INDICATOR_SOURCES).join(", ")}`);
   }
   private async assertPlanActivity(orgId: string, id: string | null | undefined) {
     if (id && !(await this.svc.db.one("SELECT 1 FROM plan_activities WHERE org_id = $1 AND id = $2", [orgId, id])))
@@ -639,9 +653,10 @@ export class Registers {
   async createIndicator(actorId: string, orgId: string, i: IndicatorInput & { name: string; target: number }) {
     await this.svc.requirePerm(actorId, orgId, "indicators.manage");
     await this.assertPlanActivity(orgId, i.plan_activity_id);
+    this.assertSource(i.computed_from);
     const id = uid("ind");
     await this.svc.db.query(
-      "INSERT INTO indicators (id, org_id, name, unit_label, baseline, target, result, source, plan_activity_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+      "INSERT INTO indicators (id, org_id, name, unit_label, baseline, target, result, source, plan_activity_id, computed_from) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
       [
         id,
         orgId,
@@ -650,18 +665,30 @@ export class Registers {
         i.baseline ?? 0,
         i.target,
         i.result ?? 0,
-        i.source ?? "",
+        i.computed_from ? INDICATOR_SOURCES[i.computed_from as keyof typeof INDICATOR_SOURCES] : (i.source ?? ""),
         i.plan_activity_id ?? null,
+        i.computed_from ?? null,
       ],
     );
     await this.svc.log(actorId, "indicator.created", { orgId, data: { id, name: i.name } });
-    return this.svc.db.one(`${Registers.INDICATOR} WHERE i.id = $1`, [id]);
+    return this.oneIndicator(orgId, id);
   }
   async updateIndicator(actorId: string, id: string, i: IndicatorInput) {
-    const r = await this.svc.db.one<{ org_id: string }>("SELECT org_id FROM indicators WHERE id = $1", [id]);
+    const r = await this.svc.db.one<{ org_id: string; computed_from: string | null }>(
+      "SELECT org_id, computed_from FROM indicators WHERE id = $1",
+      [id],
+    );
     if (!r) throw notFound("Indicateur introuvable");
     await this.svc.requirePerm(actorId, r.org_id, "indicators.manage");
     await this.assertPlanActivity(r.org_id, i.plan_activity_id);
+    this.assertSource(i.computed_from);
+    const source = i.computed_from !== undefined ? i.computed_from : r.computed_from;
+    if (source && i.result !== undefined)
+      throw badRequest(
+        `Ce résultat est calculé par l'outil (${INDICATOR_SOURCES[source as keyof typeof INDICATOR_SOURCES]}) : il ne se saisit pas`,
+      );
+    if (i.computed_from !== undefined)
+      await this.svc.db.query("UPDATE indicators SET computed_from = $1 WHERE id = $2", [i.computed_from || null, id]);
     await this.svc.db.query(
       `UPDATE indicators SET name = COALESCE($1, name), unit_label = COALESCE($2, unit_label), baseline = COALESCE($3, baseline),
          target = COALESCE($4, target), result = COALESCE($5, result), source = COALESCE($6, source),
@@ -679,6 +706,6 @@ export class Registers {
       ],
     );
     await this.svc.log(actorId, "indicator.updated", { orgId: r.org_id, data: { id, ...i } });
-    return this.svc.db.one(`${Registers.INDICATOR} WHERE i.id = $1`, [id]);
+    return this.oneIndicator(r.org_id, id);
   }
 }

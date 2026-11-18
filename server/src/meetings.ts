@@ -724,7 +724,8 @@ export class Meetings {
             year,
             input.service_code ?? "DIR",
             input.writer_initials?.trim().toUpperCase() || initialsOf(writer.name),
-            input.title ?? "Réunion",
+            // Sans titre, la réunion prend son type : le même libellé partout (R-1)
+            input.title?.trim() || input.meeting_type,
             input.meeting_type,
             input.meeting_date,
             input.start_time ?? null,

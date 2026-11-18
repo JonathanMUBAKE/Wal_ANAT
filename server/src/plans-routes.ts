@@ -9,6 +9,8 @@ const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const money = z.number().min(0).max(1e14);
 const title = z.string().trim().min(1).max(300);
 const Activity = z.object({
+  // Poids de l'activité dans l'avancement du plan (PT-3) : 1 par défaut
+  weight: z.number().int().min(1, "Le poids d'une activité va de 1 à 100").max(100).optional(),
   parent_id: id.nullable().optional(),
   domain_id: id.nullable().optional(),
   title: title.optional(),

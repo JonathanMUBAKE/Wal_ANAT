@@ -982,6 +982,21 @@ const TABLE = [
     body: { title: "Document renommé" },
   })),
   R_("DELETE", "/api/dossier-documents/:id", async (X) => ({ url: `/api/dossier-documents/${(await X.ddoc()).id}` })),
+  // Parapheur : fichier à signer et bordereau (thème 6, PH-1)
+  R_("POST", "/api/signature/:id/file", async (X) => ({
+    url: `/api/signature/${(await X.doc()).id}/file?name=note.pdf`,
+    bin: "%PDF-1.4\n%%EOF\n",
+  })),
+  R_("GET", "/api/signature/:id/file", async (X) => {
+    const d = await X.doc();
+    await X.db.query("UPDATE sign_documents SET file_name = 'note.pdf', file_mime = 'application/pdf', file_size = 4, file_data = $1 WHERE id = $2", [Buffer.from("%PDF"), d.id]);
+    return { url: `/api/signature/${d.id}/file` };
+  }),
+  R_("GET", "/api/signature/:id/bordereau", async (X) => {
+    const d = await X.doc();
+    await X.db.query("UPDATE sign_documents SET status = 'signed', signed_at = now() WHERE id = $1", [d.id]);
+    return { url: `/api/signature/${d.id}/bordereau?format=pdf` };
+  }),
   R_("GET", "/api/org/admin-review"),
   R_("POST", "/api/org/admin-review", () => ({ body: { comment: "Vu" } })),
   R_("GET", "/api/decisions"),

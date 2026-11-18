@@ -1,4 +1,7 @@
 import type { FastifyInstance } from "fastify";
+import { ATTACHMENT_MAX_BYTES } from "./attachments.js";
+import { formatOf, sendExport } from "./export-doc.js";
+import { sendFile } from "./file-reply.js";
 import { z } from "zod";
 import type { Gaps } from "./gaps.js";
 import type { Registers } from "./registers.js";
@@ -56,6 +59,21 @@ export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers,
     return { ok: true };
   });
   r.post<Id>("/api/signature/:id/start", async (req) => s.start(req.userId, req.params.id));
+  // Le fichier à signer et le bordereau des visas et signatures (thème 6, PH-1)
+  r.post<Id>("/api/signature/:id/file", { bodyLimit: ATTACHMENT_MAX_BYTES }, async (req) =>
+    s.attach(
+      req.userId,
+      req.params.id,
+      z.object({ name: z.string().min(1).max(500) }).parse(req.query).name,
+      req.body instanceof Buffer ? req.body : Buffer.alloc(0),
+    ),
+  );
+  r.get<Id>("/api/signature/:id/file", async (req, reply) =>
+    sendFile(reply, await s.file(req.userId, req.params.id), (req.query as { inline?: string }).inline === "1"),
+  );
+  r.get<Id>("/api/signature/:id/bordereau", async (req, reply) =>
+    sendExport(reply, await s.bordereau(req.userId, req.params.id), formatOf(req.query, ["pdf", "docx"])),
+  );
   r.post<Id>("/api/signature/:id/decide", async (req) =>
     s.decide(
       req.userId,

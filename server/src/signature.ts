@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
 import { uid } from "./db.js";
 import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services, localDate } from "./services.js";
+import { ATTACHMENT_MAX_BYTES, cleanName } from "./attachments.js";
+import { ALLOWED_FORMATS, detectType } from "./documents/filetypes.js";
+import type { ExportDoc } from "./export-doc.js";
 
 export interface SignDoc {
   id: string;
@@ -19,6 +22,11 @@ export interface SignDoc {
   content_hash: string | null;
   due_on: string | null;
   created_by: string | null;
+  /** Fichier à signer (PH-1) : son empreinte SHA-256 entre dans le sceau du document. */
+  file_name?: string | null;
+  file_mime?: string | null;
+  file_size?: number | null;
+  file_digest?: string | null;
 }
 interface Step {
   id: string;
@@ -61,10 +69,13 @@ export type SignatureHook = (
   comment: string,
 ) => Promise<void>;
 export const signatureHooks: SignatureHook[] = [];
-const hashOf = (d: Pick<SignDoc, "title" | "body">) =>
+/** Le sceau : intitulé, texte, et empreinte du fichier joint quand il y en a un (PH-1). */
+const hashOf = (d: Pick<SignDoc, "title" | "body" | "file_digest">) =>
   createHash("sha256")
-    .update(JSON.stringify([d.title, d.body]))
+    .update(JSON.stringify(d.file_digest ? [d.title, d.body, d.file_digest] : [d.title, d.body]))
     .digest("hex");
+const ACTION_LABEL = { avis: "Avis", visa: "Visa", signature: "Signature" } as const;
+const STATUS_LABEL = { waiting: "Non atteint", pending: "En attente", approved: "Accordé", rejected: "Rejeté" } as const;
 const notDraft = () => new HttpError(409, "Ce document est déjà dans le circuit : il ne peut plus être modifié");
 
 /** Délégations en cours au profit d'une personne : qui l'a chargée d'agir à sa place aujourd'hui. */
@@ -75,13 +86,23 @@ export class Signature {
   constructor(private svc: Services) {}
 
   private async row(id: string) {
-    const d = await this.svc.db.one<SignDoc>("SELECT * FROM sign_documents WHERE id = $1", [id]);
+    const d = await this.svc.db.one<SignDoc & { file_data?: unknown }>(
+      "SELECT *, encode(sha256(file_data), 'hex') AS file_digest FROM sign_documents WHERE id = $1",
+      [id],
+    );
     if (!d) throw notFound("Document introuvable");
-    return d;
+    delete d.file_data;
+    return d as SignDoc;
   }
   private steps(id: string) {
     return this.svc.db.query<
-      Step & { actor_name: string | null; acted_by_name: string | null; acted_at: string | null; comment: string }
+      Step & {
+        actor_name: string | null;
+        acted_by: string | null;
+        acted_by_name: string | null;
+        acted_at: string | null;
+        comment: string;
+      }
     >(
       `SELECT s.*, a.name AS actor_name, b.name AS acted_by_name FROM sign_steps s LEFT JOIN users a ON a.id = s.actor_id LEFT JOIN users b ON b.id = s.acted_by WHERE s.document_id = $1 ORDER BY s.position`,
       [id],
@@ -185,8 +206,10 @@ export class Signature {
       round,
       steps: past.filter((p) => p.round === round),
     }));
+    const { file_name, file_mime, file_size, file_digest, ...doc } = d;
     return {
-      ...d,
+      ...doc,
+      file: file_name ? { name: file_name, mime: file_mime, size: file_size, hash: file_digest } : null,
       reference: reference(d),
       steps,
       history,
@@ -384,6 +407,87 @@ export class Signature {
     if (d.created_by === actorId && !this.authorMaySign(d, steps, s)) return false;
     if (s.actor_id === actorId) return true;
     return (await this.delegators(d.org_id, actorId, s.action)).includes(s.actor_id);
+  }
+
+  // ---------------------------------------------------------------- fichier à signer (PH-1)
+  /** L'auteur joint le fichier tant que le document est en préparation ; il est scellé au départ du circuit. */
+  async attach(actorId: string, id: string, filename: string, data: Buffer) {
+    const d = await this.row(id);
+    await this.svc.requirePerm(actorId, d.org_id, "signature.use");
+    if (d.created_by !== actorId) throw forbidden("Seul l'auteur joint le fichier à signer");
+    if (d.status !== "draft" && d.status !== "rejected") throw notDraft();
+    if (!data.length) throw badRequest("Le fichier est vide");
+    if (data.length > ATTACHMENT_MAX_BYTES) throw new HttpError(413, "Fichier trop volumineux : 25 Mo au maximum");
+    const name = cleanName(filename);
+    const type = detectType(name, data);
+    if (!type) throw badRequest(`Format non accepté. Formats acceptés : ${ALLOWED_FORMATS}`);
+    await this.svc.db.query(
+      "UPDATE sign_documents SET file_name = $1, file_mime = $2, file_size = $3, file_data = $4, status = 'draft', content_hash = NULL WHERE id = $5",
+      [name, type.mime, data.length, data, id],
+    );
+    await this.svc.log(actorId, "signature.file", { orgId: d.org_id, data: { id, file: name, size: data.length } });
+    return this.get(actorId, id);
+  }
+  /** Le fichier, pour ses intervenants et la direction (mêmes droits que la fiche). */
+  async file(actorId: string, id: string) {
+    const { d } = await this.readable(actorId, id);
+    const f = await this.svc.db.one<{ file_name: string | null; file_mime: string; file_data: Buffer }>(
+      "SELECT file_name, file_mime, file_data FROM sign_documents WHERE id = $1",
+      [d.id],
+    );
+    if (!f?.file_name) throw notFound("Aucun fichier joint à ce document");
+    return { filename: f.file_name, mime: f.file_mime, data: Buffer.from(f.file_data) };
+  }
+  /** Le bordereau des visas et signatures d'un document signé : il cite l'empreinte du texte et du fichier. */
+  async bordereau(actorId: string, id: string): Promise<ExportDoc> {
+    const g = await this.get(actorId, id);
+    if (g.status !== "signed") throw new HttpError(409, "Le bordereau se produit une fois le document signé");
+    const at = (v: string | null) => (v ? new Date(v).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "");
+    return {
+      title: `Bordereau de signature — ${g.title}`,
+      reference: reference(g),
+      subtitle: "Visas et signatures recueillis au parapheur. Le document signé est celui dont l'empreinte figure ci-dessous.",
+      filename: `bordereau-${reference(g).replace(/\//g, "-")}`,
+      sections: [
+        {
+          heading: "Document",
+          blocks: [
+            {
+              kind: "facts",
+              rows: [
+                ["Référence", reference(g)],
+                ["Objet", g.title],
+                ["Nature", g.kind],
+                ["Fichier signé", g.file ? `${g.file.name} (${g.file.size} octets)` : "Aucun : texte saisi au parapheur"],
+                ["Empreinte du fichier (SHA-256)", g.file?.hash ?? "—"],
+                ["Sceau du document (SHA-256)", g.content_hash ?? "—"],
+                ["Intégrité vérifiée", g.intact ? "Oui : le contenu n'a pas changé depuis l'entrée dans le circuit" : "Non"],
+                ["Signé le", at((g as unknown as { signed_at: string | null }).signed_at)],
+              ],
+            },
+          ],
+        },
+        {
+          heading: "Visas et signatures",
+          blocks: [
+            {
+              kind: "table",
+              head: ["Étape", "Intervenant", "Action", "Décision", "Par", "Le", "Observation"],
+              rows: g.steps.map((s) => [
+                s.position + 1,
+                s.actor_name ?? "",
+                ACTION_LABEL[s.action],
+                STATUS_LABEL[s.status],
+                s.acted_by && s.acted_by !== s.actor_id ? `${s.acted_by_name} (par délégation)` : (s.acted_by_name ?? ""),
+                at(s.acted_at),
+                s.comment,
+              ]),
+              widths: [0.6, 2.2, 1, 1, 2.2, 1.6, 3],
+            },
+          ],
+        },
+      ],
+    };
   }
 
   // ---------------------------------------------------------------- délégations

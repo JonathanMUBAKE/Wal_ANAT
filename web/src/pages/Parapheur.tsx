@@ -78,6 +78,8 @@ interface Detail extends Row {
   steps: Step[];
   /** Circuits précédents, clos par un rejet (thème 3, PH-5). */
   history?: { round: number; steps: Omit<Step, "id">[] }[];
+  /** Fichier à signer (thème 6, PH-1), scellé par son empreinte. */
+  file?: { name: string; mime: string; size: number; hash: string } | null;
   can: { edit: boolean; start: boolean; decide: boolean };
 }
 const STATE: Record<DocStatus, { label: string; tone: Tone }> = {
@@ -244,6 +246,56 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
             {d.body}
           </p>
         )}
+        {/* Le document réel à signer, scellé à l'entrée dans le circuit (PH-1) */}
+        <div className="rounded-lg border border-line px-3 py-2.5 text-[13px]">
+          {d.file ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium">{d.file.name}</span>
+              <span className="text-muted">{Math.max(1, Math.round(d.file.size / 1024))} Ko</span>
+              <a className="text-primary hover:underline" href={`/api/signature/${d.id}/file?inline=1`} target="_blank" rel="noreferrer">
+                Ouvrir
+              </a>
+              <a className="text-primary hover:underline" href={`/api/signature/${d.id}/file`}>
+                Télécharger
+              </a>
+              <span className="w-full truncate font-mono text-[11px] text-faint" title="Empreinte SHA-256 du fichier">
+                Empreinte : {d.file.hash}
+              </span>
+            </div>
+          ) : (
+            <p className="text-muted">Aucun fichier joint : la signature porte sur le texte saisi.</p>
+          )}
+          {d.can.edit || d.can.start ? (
+            <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-[12.5px] text-primary hover:underline">
+              <input
+                type="file"
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file)
+                    api
+                      .upload<Detail>(`/api/signature/${d.id}/file?name=${encodeURIComponent(file.name)}`, file)
+                      .then((r) => {
+                        qc.setQueryData(["signature-doc", id], r);
+                        toast.success("Fichier joint : il sera scellé au lancement du circuit");
+                      }, fail);
+                }}
+              />
+              {d.file ? "Remplacer le fichier" : "Joindre le fichier à signer (PDF, Word…)"}
+            </label>
+          ) : null}
+          {d.status === "signed" && (
+            <p className="mt-2 flex flex-wrap gap-3 text-[12.5px]">
+              Bordereau des visas et signatures :
+              <a className="text-primary hover:underline" href={`/api/signature/${d.id}/bordereau?format=pdf`}>
+                PDF
+              </a>
+              <a className="text-primary hover:underline" href={`/api/signature/${d.id}/bordereau?format=docx`}>
+                Word
+              </a>
+            </p>
+          )}
+        </div>
         <ol className="stagger">
           {d.steps.map((s, i) => (
             <li key={s.id} className="flex gap-3">

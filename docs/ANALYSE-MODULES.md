@@ -352,12 +352,12 @@ d'identité, adresse personnelle, personnes à prévenir et observations du serv
 | D-1 | Le serveur renvoie le champ « Observations » (notes internes des RH) à l'agent lui-même et à son chef. L'écran le masque, mais il est lisible dans la réponse. | Haute | **Fait** (lot 7) : les observations du service RH ne quittent plus le serveur que pour le service RH |
 | D-2 | Un chef d'entité lit le dossier complet de ses agents, données personnelles comprises (famille, pièce d'identité, adresse, personnes à prévenir). | Haute | **Décidé et fait** (lot 7) : le chef lit la partie administrative (situation, affectations, diplômes) ; famille, pièce d'identité, coordonnées personnelles et personnes à prévenir restent à l'agent et aux RH |
 | D-3 | La consultation d'un dossier par quelqu'un d'autre que l'agent n'est pas journalisée. | Haute | **Fait** (lot 5) : chaque consultation par un tiers est journalisée (« Dossier d'agent consulté par un tiers », une fois par lecteur et par demi-heure) |
-| D-4 | L'agent ne peut rien corriger, mais aucun bouton ne lui permet de signaler une erreur ou de demander une mise à jour au service RH. | Moyenne | À corriger : « Demander une correction », qui notifie le service RH et garde la trace de la demande |
+| D-4 | L'agent ne peut rien corriger, mais aucun bouton ne lui permet de signaler une erreur ou de demander une mise à jour au service RH. | Moyenne | **Fait** (lot 8) : « Demander une correction » ; le service RH traite, l'agent est prévenu, la demande reste au dossier |
 | D-5 | Fonction et entité se contredisent dans les dossiers de démo (Fiston rangé dans Cartographie et SIG, Didier dans le service Communication). Même famille que A-3. | Moyenne (démo) | À corriger avec A-3 |
 | D-6 | L'historique des affectations de la DG est vide. | Basse (démo) | À corriger dans la démo |
 | D-7 | Les adresses professionnelles sont en « @cadence.app » et la nationalité vaut « Fictivienne ». | Basse (démo) | À corriger : un domaine fictif propre à l'ANAT et une nationalité plausible |
 | D-8 | Dans la démo, personne d'autre que la DG ne gère les dossiers RH : la cheffe des RH (Esther) n'en lit aucun. La DG ne pouvant pas modifier son propre dossier, il ne peut être tenu par personne. | Moyenne (démo) | À corriger : donner le profil RH à un agent du service RH dans la démo |
-| D-9 | Le dossier ne contient ni congés, ni pièces (actes de nomination, contrats, arrêtés), ni formations, ni évaluations. | Moyenne | À décider : périmètre du dossier (congés déjà prévus dans le lot `lot-conges`, reporté) |
+| D-9 | Le dossier ne contient ni congés, ni pièces (actes de nomination, contrats, arrêtés), ni formations, ni évaluations. | Moyenne | **Décidé et fait** (lot 8) : pièces du dossier (RH et agent), formations, évaluations (RH et agent), congés et absences |
 
 ### Ce qui fonctionne bien
 
@@ -370,7 +370,7 @@ d'identité, adresse personnelle, personnes à prévenir et observations du serv
 
 - D-2 : quelle partie du dossier d'un agent son chef peut-il lire ? **Décidé le 18/11/2026 : la partie administrative seulement.**
 - D-4 : faut-il un bouton « Demander une correction » ?
-- D-9 : que doit contenir le dossier au-delà de l'existant (congés, pièces, formations, évaluations) ?
+- D-9 : que doit contenir le dossier au-delà de l'existant (congés, pièces, formations, évaluations) ? **Décidé le 18/11/2026 : pièces, formations, évaluations et congés.**
 
 ---
 
@@ -782,12 +782,12 @@ Fiston est rédacteur de 15 réunions sur 16, comité de direction compris.
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
 | R-1 | Le titre « Réunion » s'affiche tel quel sur l'Accueil et dans Mon entité, alors que la page Réunions affiche le type (« Comité de direction »). Cause de A-8. | Moyenne | **Fait** (lot 6) : une réunion sans titre prend son type ; les anciennes « Réunion » sont renommées par la migration |
-| R-2 | Seule la présidence valide un compte rendu qu'elle a présidé. En son absence, rien ne permet une validation par intérim. | Moyenne | À décider : validation par délégation (la délégation existe déjà au parapheur) |
+| R-2 | Seule la présidence valide un compte rendu qu'elle a présidé. En son absence, rien ne permet une validation par intérim. | Moyenne | **Décidé et fait** (lot 8) : le délégataire de la présidence (délégation de signature) valide, « par délégation » |
 | R-3 | Tout profil autorisé à valider peut rouvrir un compte rendu validé, même s'il ne l'a pas validé. Un document validé doit rester figé. | Haute | **Fait** (lot 4) : réouverture par la personne qui a validé ou par la DG, motif obligatoire inscrit au journal, valideur et rédacteur prévenus |
 | R-4 | Après réouverture, des recommandations peuvent être retirées du compte rendu, y compris celles déjà transformées en tâches. | Moyenne | À vérifier puis corriger : une recommandation issue d'un compte rendu validé ne se supprime pas, elle s'annule |
 | R-5 | Les numéros de compte rendu sont attribués à la programmation : ordre non chronologique dans une série, trous en cas d'annulation. | Moyenne | À décider : numéroter à la validation, ou accepter et documenter |
-| R-6 | Une réunion passée non tenue (13/11) reste « Compte rendu à établir » indéfiniment ; rien ne propose de la déclarer non tenue ou annulée. | Basse | À corriger : proposer « Annuler » ou « Reporter » une séance passée sans compte rendu |
-| R-7 | Des réunions proches ne sont pas convoquées (revue avec le bailleur du 22/11, réunion avec les provinces du 24/11) et aucun rappel ne prévient le rédacteur. | Moyenne | À corriger : rappel au rédacteur 7 jours avant une séance non convoquée |
+| R-6 | Une réunion passée non tenue (13/11) reste « Compte rendu à établir » indéfiniment ; rien ne propose de la déclarer non tenue ou annulée. | Basse | **Fait** (lot 8) : une séance passée sans compte rendu se déclare non tenue, avec un motif ; rappel au rédacteur |
+| R-7 | Des réunions proches ne sont pas convoquées (revue avec le bailleur du 22/11, réunion avec les provinces du 24/11) et aucun rappel ne prévient le rédacteur. | Moyenne | **Fait** (lot 8) : rappel au rédacteur d'une séance non convoquée à 7 jours |
 | R-8 | Toutes les réunions non confidentielles sont visibles de tous, y compris le comité de direction et ses comptes rendus. | Moyenne | **Décidé et fait** (lot 7) : une réunion se voit de ses participants, de son entité, de son projet et de la direction ; le comité de direction reste à ses participants et à la direction |
 | R-9 | Données de démo : Fiston rédige 15 réunions sur 16, comité de direction compris ; le comité du 09/11 n'a que deux présents ; l'assistante n'est convoquée à rien. | Moyenne (démo) | À corriger : le secrétariat de la DG rédige les comités, les membres du comité sont convoqués |
 
@@ -804,7 +804,7 @@ Fiston est rédacteur de 15 réunions sur 16, comité de direction compris.
 
 ### Décisions ouvertes
 
-- R-2 : validation d'un compte rendu par intérim en l'absence de la présidence ?
+- R-2 : validation d'un compte rendu par intérim en l'absence de la présidence ? **Décidé le 18/11/2026 : par le délégataire de la présidence.**
 - R-5 : numéro attribué à la programmation ou à la validation ?
 - R-8 : qui peut lire les comptes rendus du comité de direction ? **Décidé le 18/11/2026 : participants et direction.**
 
@@ -957,7 +957,7 @@ préparer ; seule la DG les approuve.
 | PT-2 | L'avancement saisi à la main par le responsable n'exige ni justification ni pièce. | Moyenne | À décider : commentaire obligatoire, ou validation par le chef pour une activité sans dossier |
 | PT-3 | L'avancement d'un plan est la moyenne simple de ses activités, sans pondération (un atelier pèse autant que la révision du schéma national). | Moyenne | **Décidé et fait** (lot 6) : chaque activité a un poids (1 par défaut, de 1 à 100) ; l'avancement du plan est la moyenne pondérée, partout |
 | PT-4 | Les activités de la démo n'ont pas de date de début : l'« avancement attendu à date » du Tableau de bord DG est alors approximatif. | Moyenne | À corriger : date de début obligatoire à la soumission |
-| PT-5 | Aucune campagne de préparation : pas de rappel pour le plan de l'année suivante, pas de vue « entités sans plan ». | Moyenne | À corriger : liste des entités sans plan pour l'année, rappel aux chefs |
+| PT-5 | Aucune campagne de préparation : pas de rappel pour le plan de l'année suivante, pas de vue « entités sans plan ». | Moyenne | **Fait** (lot 8) : campagne des plans (entités sans plan pour l'année) et relance de leurs chefs |
 | PT-6 | Tous les profils voient tous les plans, budgets prévus et dépensés compris. | Basse | **Décidé et fait** (lot 7) : budgets des plans réservés à la direction, aux chefs de l'entité et à qui prépare ou approuve les plans |
 | PT-7 | Les retards de la liste des plans sont calculés sur la date UTC du serveur (`CURRENT_DATE`), pas sur la date de Kinshasa : entre minuit et 1 h, un jour d'écart. | Basse | À corriger (déjà noté dans le plan de travail) |
 | PT-8 | Données de démo : 3 plans pour 12 entités, aucun pour la Direction générale ni l'Ingénierie territoriale ; toutes les activités de l'Agence confiées à Fiston. | Moyenne (démo) | À compléter |
@@ -1123,7 +1123,7 @@ Les six comptes voient les quatre accords.
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
 | CV-1 | Le circuit de signature d'un accord est composé librement par qui l'envoie : n'importe quelle personne ayant accès au parapheur peut être signataire final, et sa signature fait entrer l'accord en vigueur. | Haute | **Fait** (lot 4) : un accord engage l'Agence : la signature finale revient à la DG (droit « Signer au nom de l'Agence ») ou à son délégataire |
-| CV-2 | Aucun volet financier : montant, contributions, échéancier de décaissement. (Décision « finance des partenariats » déjà reportée dans le plan de travail.) | Moyenne | À décider : reprendre le lot reporté, au moins un montant et une devise |
+| CV-2 | Aucun volet financier : montant, contributions, échéancier de décaissement. (Décision « finance des partenariats » déjà reportée dans le plan de travail.) | Moyenne | **Décidé et fait** (lot 8) : montant, devise, contribution de l'Agence et de chaque partie, fixés pendant la préparation ; l'échéancier reste pour plus tard |
 | CV-3 | Tous les profils voient tous les accords non confidentiels, texte compris. | Basse | **Décidé et fait** (lot 7) : un agent voit les accords de son entité ou qu'il suit ; la direction voit tout le non-confidentiel |
 | CV-4 | Un accord peut être préparé et envoyé au parapheur sans point focal. | Moyenne | À corriger : point focal obligatoire avant le parapheur |
 | CV-5 | Les risques ne se rattachent pas à un accord (voir RI-5). | Basse | À décider avec RI-5 |
@@ -1143,7 +1143,7 @@ Les six comptes voient les quatre accords.
 ### Décisions ouvertes
 
 - CV-1 : qui signe un accord au nom de l'Agence (DG seule, ou délégataires désignés par type) ?
-- CV-2 : ajoute-t-on maintenant le volet financier des accords ?
+- CV-2 : ajoute-t-on maintenant le volet financier des accords ? **Décidé le 18/11/2026 : oui, montant et devise.**
 - CV-4 : le point focal est-il obligatoire avant la signature ?
 
 ---
@@ -1202,7 +1202,7 @@ Aucune délégation en cours.
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| PH-1 | Le parapheur ne signe que du texte saisi : pas de fichier joint (lettre, note, convention en PDF ou Word), pas de document signé produit en sortie. | Haute | À corriger : joindre le document à signer, sceller le fichier, produire le document final avec le bordereau des visas et signatures |
+| PH-1 | Le parapheur ne signe que du texte saisi : pas de fichier joint (lettre, note, convention en PDF ou Word), pas de document signé produit en sortie. | Haute | **Fait** (lot 8) : le fichier à signer est joint et scellé par son empreinte ; une fois signé, le bordereau des visas et signatures (PDF ou Word) cite l'empreinte du fichier signé |
 | PH-2 | L'auteur compose librement le circuit : n'importe quel détenteur du parapheur peut être signataire final, y compris pour une convention. Et quand la DG est l'auteur, elle ne peut pas signer. | Haute | **Fait** (lot 4) : signature finale de la DG imposée pour les documents qui engagent l'Agence (convention, accord, avenant, contrat, protocole, acte) ; l'auteur peut signer en dernier après le visa ou l'avis d'une autre personne |
 | PH-3 | Délégation sans limite de durée, de délégataire ni de portée ; une délégation retirée disparaît de la liste. | Haute | **Fait** (lot 4) : 30 jours au plus ; portée « visa et avis » ou « visa et signature » ; la signature ne se délègue qu'à un responsable ; une délégation retirée reste dans l'historique |
 | PH-4 | Le secrétariat de la DG ne voit pas la pile de documents qui attendent la DG. | Moyenne | À corriger : vue « parapheur de la DG » pour l'assistante (lecture seule) |
@@ -1525,9 +1525,9 @@ Personne n'est « à identifier ». Seule la DG accède au registre : les cinq a
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| RH-1 | Pas de sortie d'un agent : ni date, ni motif, ni clôture de l'affectation, ni suspension du compte. Le compte reste actif après le départ. | Haute | À corriger : acte de sortie (date, motif, référence) qui clôt l'affectation et suspend le compte |
+| RH-1 | Pas de sortie d'un agent : ni date, ni motif, ni clôture de l'affectation, ni suspension du compte. Le compte reste actif après le départ. | Haute | **Décidé et fait** (lot 8) : les RH saisissent l'acte de sortie ; à sa date, affectation close, compte suspendu, chef prévenu des tâches ouvertes ; un chef en poste est d'abord remplacé |
 | RH-2 | Créer un dossier ouvre un compte d'accès automatiquement : le service RH ouvre les accès informatiques. | Moyenne | À décider : le compte part-il en attente de validation par l'administrateur, ou le service RH en a-t-il la responsabilité ? |
-| RH-3 | Aucune alerte sur les échéances : fin de contrat, fin de stage, départ à la retraite. Un contractuel peut n'avoir aucune date de fin. | Moyenne | À corriger : date de fin obligatoire pour les contractuels, stagiaires et consultants ; alertes à 90 et 30 jours |
+| RH-3 | Aucune alerte sur les échéances : fin de contrat, fin de stage, départ à la retraite. Un contractuel peut n'avoir aucune date de fin. | Moyenne | **Fait** (lot 8) : date de fin obligatoire pour contractuels, stagiaires et consultants ; alertes à 90 et 30 jours (fin de contrat, retraite à 65 ans) au service RH et au chef |
 | RH-4 | La liste n'a ni filtre (entité, statut, grade), ni indicateurs (effectifs par entité, pyramide des âges, départs prévus). | Moyenne | À corriger |
 | RH-5 | Le matricule automatique suit l'année de saisie (AG-2026-…) et non l'année d'entrée ; le format diffère pour la DG (AG-DEMO-0001). | Basse | À décider : format du matricule de l'ANAT, saisi ou généré |
 | RH-6 | Dans la démo, seule la DG accède au registre ; la cheffe des RH n'a pas le droit « gérer les RH ». Même famille que D-8. | Moyenne (démo) | À corriger avec D-8 |
@@ -1544,7 +1544,7 @@ Personne n'est « à identifier ». Seule la DG accède au registre : les cinq a
 
 ### Décisions ouvertes
 
-- RH-1 : quelle procédure de sortie (et qui suspend le compte) ?
+- RH-1 : quelle procédure de sortie (et qui suspend le compte) ? **Décidé le 18/11/2026 : les RH saisissent, le compte est suspendu à la date de sortie.**
 - RH-2 : le service RH ouvre-t-il seul les comptes d'accès ?
 - RH-5 : quel matricule pour l'ANAT ?
 
@@ -1824,3 +1824,29 @@ ce qui ne le concerne plus ; la personne y lit désormais au titre de la directi
 test dit en commentaire. 627 tests au vert.
 
 **Remarques traitées** : D-1, D-2, I-9, AD-4, PA-3, F-4, DEC-6, R-8, CV-3, PT-6, C-3.
+
+### Lot 8 — Fonctions manquantes (18/11/2026, branche `lot-fonctions-manquantes`)
+
+Thème 6 de la synthèse, livré en quatre étapes. Décisions de la direction : RH-1 **les RH saisissent, le compte est
+suspendu** ; CV-2 **montant et devise** ; R-2 **le délégataire de la présidence** ; D-9 **pièces, formations,
+évaluations et congés**.
+
+| Ce qui change | Avant | Après |
+|---|---|---|
+| Sortie d'un agent (RH-1) | Le compte restait actif après le départ | Acte de sortie (date, motif, référence) saisi par les RH. À sa date, l'affectation se clôt, le compte est suspendu et ses sessions fermées ; le chef reçoit la liste des tâches encore ouvertes. Un chef en poste est d'abord remplacé |
+| Échéances (RH-3) | Aucune alerte ; un contractuel pouvait n'avoir aucune date de fin | Date de fin obligatoire pour contractuels, stagiaires et consultants. Alertes à 90 puis 30 jours (fin de contrat, retraite à 65 ans) au service RH et au chef ; liste « Échéances à 90 jours » sur la page RH |
+| Demande de correction (D-4) | L'agent ne pouvait rien signaler | « Demander une correction » depuis Mon dossier ; le service RH la traite depuis sa page, l'agent est prévenu, la demande reste au dossier |
+| Contenu du dossier (D-9) | Ni pièces, ni formations, ni évaluations, ni congés | Pièces du dossier (actes, contrats ; RH et agent, pas le chef), formations, évaluations annuelles (RH et agent), congés et absences |
+| Signature de fichiers (PH-1) | Le parapheur ne signait que du texte saisi | Le fichier (PDF, Word…) est joint, ouvert et téléchargé par les intervenants, scellé par son empreinte SHA-256 au lancement du circuit. Une fois signé, le bordereau des visas et signatures se produit en PDF ou en Word et cite l'empreinte du fichier signé. Fusionner fichier et bordereau en un seul PDF demanderait une bibliothèque de plus, non ajoutée |
+| Intérim de la présidence (R-2) | Seule la présidence validait | Son délégataire (délégation de signature du parapheur) valide, avec la mention « par délégation » |
+| Séance non tenue (R-6) | « Compte rendu à établir » indéfiniment | « Déclarer non tenue », avec un motif ; les convoqués sont prévenus ; rappel au rédacteur après deux jours |
+| Rappel de convocation (R-7) | Aucun | Rappel au rédacteur d'une séance non convoquée à 7 jours |
+| Campagne des plans (PT-5) | Aucune vue des entités sans plan | Bloc « Campagne » sur la page des plans : entités sans plan pour l'année, relance de leurs chefs par le service du plan |
+| Volet financier des accords (CV-2) | Aucun | Montant, devise, contribution de l'Agence et de chaque partie, fixés pendant la préparation ; les contributions ne dépassent pas le montant |
+| Congés et absences | Module prêt sur la branche `lot-conges`, jamais fusionné | Rapatrié : demande par l'agent, validation par son chef (ou les RH), absences constatées saisies par les RH, intérim. Son alerte de fin de contrat à 60 jours est retirée au profit de celle du dossier (90 et 30 jours) ; sa migration devient la 055 |
+
+Migrations `052` à `055`. Tests : `rh-suite.test.ts` (7), `parapheur-fichier.test.ts` (3),
+`fonctions-suite.test.ts` (5), `conges.test.ts` (rapatrié) ; 3 anciens tests ajustés (un contractuel a désormais
+une date de fin) et le test d'alerte de fin de contrat du lot congés aligné sur l'alerte unique. 650 tests au vert.
+
+**Remarques traitées** : PH-1, RH-1, RH-3, CV-2, D-4, D-9, PT-5, R-2, R-6, R-7.

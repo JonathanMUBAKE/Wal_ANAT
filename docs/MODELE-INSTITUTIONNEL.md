@@ -196,7 +196,7 @@ manques identifiés) · **Partiel** (une partie du cycle manque) · **À constru
 | --- | --- | --- | --- |
 | 1 | **Accueil par profil** : l'écran d'accueil propre à l'Agent, au Chef d'entité, au DG | Chacun ouvre l'outil sur ce qu'il doit faire, sans chercher | Moyen |
 | 2 | **Grilles homogènes** : décisions, parapheur, plans, équipes, structure en lecture puis « Modifier », actions en ligne | Cohérence d'usage dans tout l'outil (règle § 4 du design) | Moyen |
-| 3 | **RH, deuxième étape** : carrière, congés et absences, pièces du dossier, alertes de fin de contrat | Le dossier d'agent devient l'outil du service RH | Moyen |
+| 3 | **RH, deuxième étape** : congés et absences et alertes de fin de contrat (faits) ; carrière et pièces du dossier à venir | Le dossier d'agent devient l'outil du service RH | Moyen |
 | 4 | **Évaluation des agents** : objectifs, entretien annuel, appuyé sur les tâches tenues et les délais (appréciation humaine) | Demandé ; s'appuie sur des données déjà présentes | Moyen |
 | 5 | **Finance des partenariats** (PA4) : engagements, échéancier des décaissements, tableau des bailleurs | Reporté à la demande | Élevé |
 | 6 | **Politique de sécurité** par institution : mot de passe, durée de session, 2FA obligatoire pour les droits élevés | Robustesse | Faible |

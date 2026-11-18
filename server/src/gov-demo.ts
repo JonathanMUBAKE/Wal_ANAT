@@ -13,6 +13,7 @@ import { Signature } from "./signature.js";
 import { UnitTasks } from "./unit-tasks.js";
 import { Hr } from "./hr.js";
 import { anatContent } from "./gov-demo-anat.js";
+import { Leaves } from "./leaves.js";
 import type { Provisioning } from "./auth/provisioning.js";
 import type { Services } from "./services.js";
 
@@ -466,6 +467,7 @@ export async function seedGovDemo(svc: Services) {
   await seedPartnerLinks(svc, org, me);
   await seedUnitTasks(svc, org);
   await seedHr(svc, org);
+  await seedLeaves(svc, org);
   await seedProfiles(svc, org);
   await renameForAnat(svc, org);
   await anatContent(svc, org, UNITS);
@@ -663,6 +665,32 @@ async function seedHr(svc: Services, org: string) {
   await hr
     .addContact("u_alice", org, "u_karim", { name: "Contact fictif", relation: "Conjoint", phone: "+000 00 00 00" })
     .catch(() => undefined);
+}
+
+/** Congés et absences fictifs : une demande en attente, un congé accordé passé, une absence en cours. */
+async function seedLeaves(svc: Services, org: string) {
+  const lv = new Leaves(svc);
+  const quiet = <T>(p: Promise<T>) => p.catch(() => undefined);
+  await quiet(
+    lv.ask("u_theo", org, {
+      kind: "conge_annuel",
+      start_on: day(14),
+      end_on: day(18),
+      reason: "Congé annuel (exemple fictif)",
+      interim_id: "u_hugo",
+    }),
+  );
+  const past = await quiet(lv.ask("u_hugo", org, { kind: "formation", start_on: day(-40), end_on: day(-38) }));
+  if (past) await quiet(lv.decide((await lv.headOf(org, "u_hugo")) ?? "u_alice", org, past.id, { approve: true }));
+  await quiet(
+    lv.ask("u_alice", org, {
+      kind: "maladie",
+      start_on: day(-1),
+      end_on: day(1),
+      user_id: "u_chloe",
+      reason: "Certificat médical reçu (exemple fictif)",
+    }),
+  );
 }
 
 /**

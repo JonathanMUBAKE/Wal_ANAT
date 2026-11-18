@@ -206,6 +206,15 @@ export const nextOccurrence = (iso: string, r: Recurrence) =>
         ? addDays(iso, 14)
         : addMonths(iso, r === "monthly" ? 1 : r === "quarterly" ? 3 : 12);
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+/** Jours ouvrés (du lundi au vendredi) entre deux dates incluses ; les jours fériés ne sont pas déduits. */
+export const workingDays = (from: string, to: string) => {
+  let n = 0;
+  for (let d = from; d <= to; d = addDays(d, 1)) {
+    const w = new Date(`${d}T12:00:00Z`).getUTCDay();
+    if (w !== 0 && w !== 6) n++;
+  }
+  return n;
+};
 export const systemProfileId = (orgId: string, role: BaseRole) => `prf_${role}_${orgId}`;
 export const isRealDate = (v: string) => {
   const t = Date.parse(`${v}T00:00:00Z`);

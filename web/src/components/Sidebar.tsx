@@ -5,6 +5,7 @@ import {
   Bell,
   Scale,
   CalendarDays,
+  CalendarOff,
   Briefcase,
   CheckCircle2,
   ChevronDown,
@@ -200,6 +201,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           {link("/org", Network, "Structure")}
           {link("/teams", Users, "Équipes")}
           {(can("hr.view") || can("hr.manage")) && link("/rh", IdCard, "Ressources humaines")}
+          {currentOrg?.role !== "guest" && link("/conges", CalendarOff, "Congés et absences")}
           {me?.platform_role && link("/admin", ShieldCheck, "Administration système")}
           {/* Contrôle croisé (AD-1) : une autre personne que l'administrateur relit le journal de ses actions */}
           {can("audit.review") &&

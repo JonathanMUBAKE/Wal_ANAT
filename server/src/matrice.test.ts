@@ -20,7 +20,7 @@ const PNG = "data:image/png;base64,iVBORw0KGgo=",
 const PUBLIC = /^\/api\/auth\/(login|logout|config|users$|mfa$|token|activate|reset|forgot|request-access)/;
 /** Écritures qui ne concernent que son propre compte : un lecteur y a droit. */
 const PERSONAL =
-  /^(POST \/api\/auth\/(password|mfa\/setup|mfa\/confirm|mfa\/disable)|DELETE \/api\/auth\/sessions|POST \/api\/notifications\/read|PUT \/api\/me\/notification-prefs|POST \/api\/export$|POST \/api\/orgs\/:id\/switch|POST \/api\/invitations\/)/;
+  /^(POST \/api\/auth\/(password|mfa\/setup|mfa\/confirm|mfa\/disable)|DELETE \/api\/auth\/sessions|POST \/api\/notifications\/read|PUT \/api\/me\/notification-prefs|POST \/api\/export$|POST \/api\/leaves$|POST \/api\/orgs\/:id\/switch|POST \/api\/invitations\/)/;
 const DEMO_ONLY = "POST /api/orgs"; // Hors mode démo, réservé à l'administrateur système (voir auth.test.ts)
 /** Réponses normales du propriétaire : l'essai vise volontairement un refus métier. */
 const OWNER_EXPECTED =
@@ -409,6 +409,20 @@ async function boot(kind: Kind) {
       (await inj(a, "POST", `/api/hr/agents/${await X.agent()}/diplomas`, { title: "Master" })).body.id as string,
     hrContact: async () =>
       (await inj(a, "POST", `/api/hr/agents/${await X.agent()}/contacts`, { name: "Proche" })).body.id as string,
+    /** Une demande de congé de Karim, en attente : le propriétaire (service RH) peut en décider. */
+    leave: async () => {
+      const id = u("lv_matrice");
+      await ctx.db.query(
+        `INSERT INTO agent_leaves (id, org_id, user_id, kind, start_on, end_on, days, created_by)
+         VALUES ($1, $2, 'u_karim', 'permission', '2031-03-03', '2031-03-03', 1, 'u_karim')`,
+        [id, org],
+      );
+      return id;
+    },
+    selfAgent: async () => {
+      const me = (await inj(a, "GET", "/api/hr/me")).body;
+      if (!me) await inj(a, "POST", "/api/hr/agents", { user_id: a, last_name: "Titulaire" });
+    },
     mdoc: async () => {
       const m = await X.meeting();
       return JSON.parse(
@@ -522,6 +536,16 @@ const TABLE = [
     await X.db.query("INSERT INTO agent_evaluations (id, org_id, user_id, year, rating) VALUES ($1, $2, $3, 2024, 'bien')", [id, X.org, user]);
     return { url: `/api/hr/evaluations/${id}` };
   }),
+  // Congés et absences
+  R_("GET", "/api/leaves"),
+  R_("GET", "/api/leaves/summary"),
+  R_("POST", "/api/leaves", () => ({ body: { kind: "permission", start_on: "2031-05-05", end_on: "2031-05-05" } })),
+  R_("GET", "/api/leaves/:id", async (X) => ({ url: `/api/leaves/${await X.leave()}` })),
+  R_("POST", "/api/leaves/:id/decide", async (X) => ({
+    url: `/api/leaves/${await X.leave()}/decide`,
+    body: { approve: true },
+  })),
+  R_("POST", "/api/leaves/:id/cancel", async (X) => ({ url: `/api/leaves/${await X.leave()}/cancel`, body: {} })),
   ...["health", "sessions", "roles-matrix", "accounts.csv"].map((p) => R_("GET", `/api/admin/${p}`)),
   R_("DELETE", "/api/admin/sessions/:id", () => ({ url: "/api/admin/sessions/inconnue" })),
   R_("PUT", "/api/admin/banner", () => ({ body: { text: "" } })),

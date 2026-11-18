@@ -367,7 +367,7 @@ Partenaires ──► Conventions, projets, courrier, réunions
   Consultant selon le statut), matricule automatique, fiche (consulter puis Modifier), historique des affectations,
   diplômes, personnes à prévenir, onglet « À identifier ».
 - **Export** : registre des agents (Excel, PDF, Word, CSV).
-- **En attente** : congés et absences, fins de contrat — branche `lot-conges`, non fusionnée (I-35).
+- **Congés et absences** : rapatriés au lot 8 (18/11/2026) ; fins de contrat et retraites alertées à 90 et 30 jours (I-35).
 
 ## 19. Administration système
 
@@ -431,7 +431,7 @@ Gravité : **A** = fausse l'information ou la décision · **B** = parcours inco
 | I-32 | Tableau de bord DG | La fiche de direction affiche la charge nominative de chaque agent : niveau chef d'entité. | B | Synthèse seulement pour la DG ; détail par agent pour le chef. |
 | I-33 | Portefeuille / Pilotage | La DG voit tout ce qui lui est ouvert, pas seulement ce qui lui est adressé ; elle voit aussi des tâches internes. | A | Notion de « dossier suivi par la DG » (transmis ou stratégique) ; tâches internes hors de sa vue. |
 | I-34 | Profils | DGA : inscrit-il des décisions par délégation ? Responsable informatique administrateur de droit ? Stagiaires et portefeuille ? | — | Décisions à prendre. |
-| I-35 | RH | Congés et absences, fins de contrat : prêts sur `lot-conges`, non fusionnés (migration 039 réservée). | — | À fusionner quand vous le déciderez. |
+| I-35 | RH | Congés et absences, fins de contrat. | — | **Fait** au lot 8 (migration 055). |
 | I-36 | Démonstration | Personnes fictives aux profils génériques ; Fiston est administrateur et voit tout, ce qui fausse l'essai des vues par rôle. | C | Donner à chaque personne fictive un profil institutionnel. |
 
 ### Ordre de correction proposé

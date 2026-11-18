@@ -49,6 +49,7 @@ import { Plans } from "./plans.js";
 import { planRoutes } from "./plans-routes.js";
 import { UnitTasks, unitTaskRoutes } from "./unit-tasks.js";
 import { Hr, hrRoutes } from "./hr.js";
+import { Leaves, leaveRoutes } from "./leaves.js";
 import { AdminPlus, adminPlusRoutes } from "./admin-plus.js";
 import { AdminReview, adminReviewRoutes } from "./admin-review.js";
 import { NOTIFICATION_CATEGORIES } from "./notification-categories.js";
@@ -332,6 +333,7 @@ export async function buildApp(opts: AppOptions = {}) {
     planRoutes(r, new Plans(svc), new Deliverables(svc));
     unitTaskRoutes(r, new UnitTasks(svc));
     hrRoutes(r, new Hr(svc, provisioning));
+    leaveRoutes(r, new Leaves(svc));
     adminPlusRoutes(r, new AdminPlus(svc, provisioning, authService));
     adminReviewRoutes(r, new AdminReview(svc, authDeps.audit));
     registerRoutes(r, new Signature(svc), new Registers(svc), new Gaps(svc));

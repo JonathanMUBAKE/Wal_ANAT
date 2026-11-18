@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { ArrowRight, FileSignature, Mail, Scale, Users } from "lucide-react";
+import { ArrowRight, CalendarOff, FileSignature, Mail, Scale, Users } from "lucide-react";
 import { cn } from "@/components/ui";
 import { useCan, useMe, useMyUnits } from "@/lib/hooks";
 import { todayIso } from "@/lib/format";
@@ -46,6 +46,10 @@ export function RoleFocus() {
     queryFn: () => api.get<{ owner_id: string | null; status: string; due_on: string | null }[]>("/api/decisions"),
     enabled: can("decisions.view") || can("decisions.record"),
   });
+  const { data: leaves } = useQuery({
+    queryKey: ["leaves", "summary"],
+    queryFn: () => api.get<{ to_decide: number; absent_today: unknown[] }>("/api/leaves/summary"),
+  });
   const items: Item[] = [];
   if (mail && (mail.mine.open || can("correspondence.manage")))
     items.push({
@@ -76,6 +80,14 @@ export function RoleFocus() {
       value: unit.kpis.overdue,
       hint: `tâche(s) en retard · ${unit.kpis.open} ouverte(s)`,
       alert: unit.kpis.overdue > 0,
+    });
+  if (leaves?.to_decide)
+    items.push({
+      to: "/conges?onglet=valider",
+      icon: CalendarOff,
+      label: "Congés à valider",
+      value: leaves.to_decide,
+      hint: `${leaves.absent_today.length} absent(s) aujourd'hui`,
     });
   const mineDecisions = (decisions ?? []).filter(
     (d) => d.owner_id === me?.id && ["a_executer", "en_cours"].includes(d.status),

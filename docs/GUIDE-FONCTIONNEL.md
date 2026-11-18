@@ -371,6 +371,28 @@ Réservée à l'administrateur système. Onglets :
   sans pouvoir le modifier (une correction se demande au service RH) ; le **chef d'entité** consulte les dossiers de
   ses agents. Personne ne modifie son propre dossier, pas même un gestionnaire RH : un autre gestionnaire s'en charge. Onglet **À identifier** : les personnes sans dossier.
 
+### 5.13 bis Congés et absences
+
+**Organisation › Congés et absences**, ouvert à tous les membres (pas aux invités).
+- **Demander un congé** : nature (congé annuel, maladie, maternité, paternité, permission d'absence, formation,
+  mission, autre), dates (fin incluse), intérimaire, motif. Les **jours ouvrés** (du lundi au vendredi, jours fériés
+  non déduits) sont calculés. Des dates qui chevauchent une autre demande en cours ou accordée sont refusées.
+- **Qui décide** : le **chef de l'entité** de l'agent (ou de l'entité au-dessus quand l'agent dirige la sienne) ; à
+  défaut de chef, le **service RH**. Il **accorde** ou **refuse** — un refus exige un motif, transmis à l'agent.
+  **Personne ne décide de sa propre demande, ni de celle qu'il a saisie** (préparer n'est pas valider). Une décision
+  prise ne se reprend pas.
+- **Enregistrer une absence** (service RH) : au nom d'un agent, pour une absence constatée (certificat médical, ordre
+  de mission) ; elle est acquise d'emblée et l'agent est prévenu.
+- **Annuler** : l'agent annule sa demande en attente, ou un congé accordé qui n'a pas commencé ; ensuite, seul le
+  service RH annule. Le valideur et l'intérimaire sont prévenus.
+- **Onglets** : Mes demandes ; **À valider** ; Mon équipe (les agents de vos entités et sous-entités) ; Toute
+  l'institution (service RH). En tête : congé annuel pris dans l'année, demandes en attente, à valider, et les
+  **absents aujourd'hui** avec leur intérim.
+- L'accueil du chef affiche « **Congés à valider** ». Chaque étape prévient l'intéressé (domaine « Ressources
+  humaines » de la boîte de réception).
+- **Fins de contrat** : 60 jours avant la fin d'un contrat inscrite au dossier, le service RH et le chef de l'agent
+  sont prévenus, une fois, pour renouveler ou préparer le départ.
+
 ### 5.14 L'accueil selon le profil
 
 L'accueil met en avant **ce qui vous attend** selon votre profil : courrier à imputer (direction) ou Mon courrier

@@ -31,6 +31,12 @@ export const NOTIFICATION_CATEGORIES = [
   },
   { id: "partenariats", label: "Partenariats", hint: "Accords, échéances, points focaux", route: "/conventions" },
   { id: "equipe", label: "Équipe et entité", hint: "Retards de vos agents, demandes d'équipe", route: "/entite" },
+  {
+    id: "rh",
+    label: "Ressources humaines",
+    hint: "Congés et absences, intérims, fins de contrat",
+    route: "/conges",
+  },
   { id: "ia", label: "Coéquipiers IA", hint: "Validations demandées par l'IA", route: "/inbox" },
   { id: "autres", label: "Autres", hint: "Le reste", route: "/inbox" },
 ] as const;
@@ -38,6 +44,7 @@ export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number]["id"
 
 export function categoryOfKind(kind: string): NotificationCategory {
   if (kind.endsWith(".late.manager") || kind.startsWith("team.")) return "equipe";
+  if (kind.startsWith("leave.") || kind.startsWith("contract.ending") || kind.startsWith("hr.")) return "rh";
   if (/^(assigned|mention|comment|task\.|task$)/.test(kind)) return "taches";
   if (kind.startsWith("meeting") || kind === "recommendation") return "reunions";
   if (kind.startsWith("correspondence") || kind === "mail") return "courrier";

@@ -22,6 +22,7 @@ import { HomePage } from "./pages/Home";
 import { MyTasksPage } from "./pages/MyTasks";
 import { UnitPage } from "./pages/Unit";
 import { AgentPage, HrPage } from "./pages/Hr";
+import { LeavesPage } from "./pages/Leaves";
 import { InboxPage } from "./pages/Inbox";
 import { AgentsPage } from "./pages/Agents";
 import { ProjectPage } from "./pages/Project";
@@ -62,6 +63,7 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="rh" element={<HrPage />} />
                   <Route path="rh/:id" element={<AgentPage />} />
                   <Route path="mon-dossier" element={<AgentPage self />} />
+                  <Route path="conges" element={<LeavesPage />} />
                   <Route path="inbox" element={<InboxPage />} />
                   <Route path="ai" element={<AgentsPage />} />
                   <Route path="org" element={<OrganizationPage />} />

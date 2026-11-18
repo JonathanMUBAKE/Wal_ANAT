@@ -50,6 +50,10 @@ export interface RiskInput {
   probability?: number;
   impact?: number;
   owner_id?: string | null;
+  /** Rattachements possibles d'un risque (RI-5, CV-5) et échéance de la mesure de maîtrise. */
+  activity_id?: string | null;
+  agreement_id?: string | null;
+  mitigation_due_on?: string | null;
   mitigation?: string;
   status?: "open" | "mitigated" | "closed";
   project_id?: string | null;
@@ -66,6 +70,8 @@ export interface IndicatorInput {
   computed_from?: string | null;
   /** Date de la mesure saisie (RI-3) ; à défaut, aujourd'hui. */
   measured_on?: string;
+  /** Un indicateur créé par erreur s'archive (RI-7). */
+  archived?: boolean;
 }
 const mailRef = (m: Pick<Mail, "direction" | "year" | "seq">) =>
   `${m.direction === "entrant" ? "ENT" : "SOR"}/${m.year}/${String(m.seq).padStart(4, "0")}`;
@@ -308,11 +314,16 @@ export class Registers {
       }
     }
     if (m.status === "traite" || m.status === "classe") throw new HttpError(409, "Ce courrier est clôturé");
-    if (
-      i.unit_id &&
-      !(await this.svc.db.one("SELECT 1 FROM org_units WHERE org_id = $1 AND id = $2", [m.org_id, i.unit_id]))
-    )
-      throw badRequest("Entité inconnue");
+    const target = i.unit_id
+      ? await this.svc.db.one<{ parent_id: string | null }>("SELECT parent_id FROM org_units WHERE org_id = $1 AND id = $2", [
+          m.org_id,
+          i.unit_id,
+        ])
+      : null;
+    if (i.unit_id && !target) throw badRequest("Entité inconnue");
+    // Imputer à l'entité racine fait remonter le courrier et ses retards à la DG : elle seule le décide (C-5)
+    if (target && target.parent_id === null && !(await this.svc.permissionsOf(actorId, m.org_id)).includes("signature.institution"))
+      throw badRequest("Imputez le courrier à une direction ou un service : l'imputation à l'Agence entière revient à la DG");
     if (i.assignee_id && !(await this.svc.orgRole(i.assignee_id, m.org_id)))
       throw badRequest("La personne doit être membre de l'organisation");
     if (i.due_on && !isRealDate(i.due_on)) throw badRequest(`Date invalide : ${i.due_on}`);
@@ -552,7 +563,10 @@ export class Registers {
       `SELECT r.*, r.probability * r.impact AS score, u.name AS owner_name, p.name AS project_name,
               -- Tendance : le score de la révision précédente (RI-3)
               (SELECT h.probability * h.impact FROM risk_history h WHERE h.risk_id = r.id
-                ORDER BY h.recorded_at DESC OFFSET 1 LIMIT 1) AS previous_score
+                ORDER BY h.recorded_at DESC OFFSET 1 LIMIT 1) AS previous_score,
+              to_char(r.mitigation_due_on, 'YYYY-MM-DD') AS mitigation_due_on,
+              (SELECT aa.title FROM agency_activities aa WHERE aa.id = r.activity_id) AS activity_title,
+              (SELECT ag.title FROM agreements ag WHERE ag.id = r.agreement_id) AS agreement_title
          FROM risks r LEFT JOIN users u ON u.id = r.owner_id LEFT JOIN projects p ON p.id = r.project_id
         WHERE r.org_id = $1 AND ($2::text IS NULL OR r.project_id = $2) AND (NOT $3 OR r.owner_id = $4)
         ORDER BY r.status, score DESC, r.created_at DESC`,
@@ -564,12 +578,20 @@ export class Registers {
       `SELECT r.*, r.probability * r.impact AS score, u.name AS owner_name, p.name AS project_name,
               -- Tendance : le score de la révision précédente (RI-3)
               (SELECT h.probability * h.impact FROM risk_history h WHERE h.risk_id = r.id
-                ORDER BY h.recorded_at DESC OFFSET 1 LIMIT 1) AS previous_score
+                ORDER BY h.recorded_at DESC OFFSET 1 LIMIT 1) AS previous_score,
+              to_char(r.mitigation_due_on, 'YYYY-MM-DD') AS mitigation_due_on,
+              (SELECT aa.title FROM agency_activities aa WHERE aa.id = r.activity_id) AS activity_title,
+              (SELECT ag.title FROM agreements ag WHERE ag.id = r.agreement_id) AS agreement_title
          FROM risks r LEFT JOIN users u ON u.id = r.owner_id LEFT JOIN projects p ON p.id = r.project_id WHERE r.id = $1`,
       [id],
     );
   }
   private async assertRiskRefs(orgId: string, i: RiskInput) {
+    if (i.mitigation_due_on && !isRealDate(i.mitigation_due_on)) throw badRequest(`Date invalide : ${i.mitigation_due_on}`);
+    if (i.activity_id && !(await this.svc.db.one("SELECT 1 FROM agency_activities WHERE org_id = $1 AND id = $2", [orgId, i.activity_id])))
+      throw badRequest("Activité inconnue");
+    if (i.agreement_id && !(await this.svc.db.one("SELECT 1 FROM agreements WHERE org_id = $1 AND id = $2", [orgId, i.agreement_id])))
+      throw badRequest("Accord inconnu");
     if (i.owner_id && !(await this.svc.orgRole(i.owner_id, orgId)))
       throw badRequest("Le responsable doit être membre de l'organisation");
     if (
@@ -590,7 +612,7 @@ export class Registers {
     await this.assertRiskRefs(orgId, i);
     const id = uid("rsk");
     await this.svc.db.query(
-      "INSERT INTO risks (id, org_id, title, probability, impact, owner_id, mitigation, project_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+      "INSERT INTO risks (id, org_id, title, probability, impact, owner_id, mitigation, project_id, activity_id, agreement_id, mitigation_due_on) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
       [
         id,
         orgId,
@@ -600,6 +622,9 @@ export class Registers {
         i.owner_id ?? null,
         i.mitigation ?? "",
         i.project_id ?? null,
+        i.activity_id ?? null,
+        i.agreement_id ?? null,
+        i.mitigation_due_on ?? null,
       ],
     );
     await this.svc.log(actorId, "risk.created", {
@@ -630,6 +655,10 @@ export class Registers {
         throw forbidden("Le responsable d'un risque met à jour sa parade et l'état ; le reste revient au gestionnaire des risques");
     }
     await this.assertRiskRefs(r.org_id, i);
+    // Rattachements et échéance de la mesure (RI-5, CV-5) : comme le reste de la fiche, au gestionnaire des risques
+    for (const k of ["activity_id", "agreement_id", "mitigation_due_on"] as const)
+      if (i[k] !== undefined)
+        await this.svc.db.query(`UPDATE risks SET ${k} = $1 WHERE id = $2`, [i[k] || null, id]);
     await this.svc.db.query(
       `UPDATE risks SET title = COALESCE($1, title), probability = COALESCE($2, probability), impact = COALESCE($3, impact),
          owner_id = CASE WHEN $8 THEN $4 ELSE owner_id END, mitigation = COALESCE($5, mitigation), status = COALESCE($6, status),
@@ -722,7 +751,11 @@ export class Registers {
     const perms = await this.svc.permissionsOf(actorId, orgId);
     if (!["pilotage.view", "indicators.manage", "risks.manage"].some((p) => perms.includes(p as never)))
       await this.svc.requirePerm(actorId, orgId, "pilotage.view");
-    return this.computed(orgId, await this.svc.db.query(`${Registers.INDICATOR} WHERE i.org_id = $1 ORDER BY i.name`, [orgId]));
+    // Les indicateurs archivés sortent des listes (RI-7)
+    return this.computed(
+      orgId,
+      await this.svc.db.query(`${Registers.INDICATOR} WHERE i.org_id = $1 AND NOT i.archived ORDER BY i.name`, [orgId]),
+    );
   }
   /** Un indicateur relié à une source de l'outil se calcule seul (thème 4, RI-4). */
   private computed(orgId: string, rows: unknown[]) {
@@ -783,6 +816,10 @@ export class Registers {
       );
     if (i.computed_from !== undefined)
       await this.svc.db.query("UPDATE indicators SET computed_from = $1 WHERE id = $2", [i.computed_from || null, id]);
+    if (i.archived !== undefined) {
+      await this.svc.db.query("UPDATE indicators SET archived = $1 WHERE id = $2", [i.archived, id]);
+      await this.svc.log(actorId, i.archived ? "indicator.archived" : "indicator.restored", { orgId: r.org_id, data: { id } });
+    }
     await this.svc.db.query(
       `UPDATE indicators SET name = COALESCE($1, name), unit_label = COALESCE($2, unit_label), baseline = COALESCE($3, baseline),
          target = COALESCE($4, target), result = COALESCE($5, result), source = COALESCE($6, source),

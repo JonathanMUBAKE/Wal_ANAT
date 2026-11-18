@@ -158,6 +158,21 @@ export class Signature {
       throw badRequest(
         "Ce document engage l'Agence (convention, accord, avenant…) : la signature finale revient à la DG, qui peut la déléguer",
       );
+    // Ce qui va à la DG passe par son secrétariat ou son cabinet : ils le lancent, ou le visent avant elle (PH-6)
+    const perms = async (u: string) => await this.svc.permissionsOf(u, orgId);
+    const filter = (p: string[]) => p.includes("pilotage.view") || p.includes("correspondence.manage");
+    const dgAt = [];
+    for (const [n, s] of i.steps.entries())
+      if (s.actor_id !== actorId && (await perms(s.actor_id)).includes("signature.institution")) dgAt.push(n);
+    if (dgAt.length && !filter(await perms(actorId))) {
+      let screened = false;
+      for (const s of i.steps.slice(0, dgAt[0]))
+        if (!(await perms(s.actor_id)).includes("signature.institution") && filter(await perms(s.actor_id))) screened = true;
+      if (!screened)
+        throw badRequest(
+          "Un document adressé à la DG passe par son secrétariat ou son cabinet : ajoutez leur visa avant l'étape de la DG",
+        );
+    }
     if (i.due_on && !isRealDate(i.due_on)) throw badRequest(`Date invalide : ${i.due_on}`);
     if (
       i.domain_id &&

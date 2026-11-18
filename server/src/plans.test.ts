@@ -99,6 +99,7 @@ describe("plans de travail", () => {
       progress: 40,
       actual_value: 1,
       budget_spent: 200,
+      comment: "Rapport d'étape remis",
     });
     expect(r.body.activities[0]).toMatchObject({ progress: 40, actual_value: 1, budget_spent: 200 });
   });

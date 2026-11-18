@@ -186,6 +186,8 @@ describe("grand tableau de bord", () => {
     expect((await g.api("u_alice", "GET", "/api/pilotage")).body.recommendations.late).toBe(0);
   });
   it("rassemble signatures, risques, indicateurs et fins de mission", async () => {
+    // Fiston envoie pour le cabinet : ce qui va à la DG passe par lui (PH-6)
+    await g.direction("u_karim");
     const doc = (
       await g.api("u_karim", "POST", "/api/signature", {
         title: "Note",

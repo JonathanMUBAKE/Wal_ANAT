@@ -94,6 +94,7 @@ export function planRoutes(r: FastifyInstance, p: Plans, d: Deliverables) {
           actual_value: money.nullable().optional(),
           budget_committed: money.nullable().optional(),
           budget_spent: money.nullable().optional(),
+          comment: z.string().max(1000).optional(),
         })
         .parse(req.body),
     ),

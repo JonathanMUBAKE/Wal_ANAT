@@ -71,8 +71,10 @@ export class Directions {
   constructor(private svc: Services) {}
 
   /** Tout ce qu'il faut pour composer les photos de l'institution, en quelques requêtes. */
-  private async load(actorId: string, orgId: string) {
-    await this.svc.requirePerm(actorId, orgId, "pilotage.view");
+  private async load(actorId: string, orgId: string, headOf?: string) {
+    // Sans le droit de pilotage, seul le chef lit la page de l'entité qu'il dirige (P-5)
+    if (!headOf || !(await this.heads(actorId, orgId, headOf)))
+      await this.svc.requirePerm(actorId, orgId, "pilotage.view");
     const db = this.svc.db;
     const now = today();
     const units = await db.query<Unit>(
@@ -263,8 +265,19 @@ export class Directions {
   }
 
   /** Le détail d'une direction (ou de l'un de ses services) : ses entités, ses dossiers, ses agents, ses retards. */
+  /** La personne dirige cette entité, ou une entité au-dessus d'elle. */
+  private async heads(actorId: string, orgId: string, unitId: string) {
+    return !!(await this.svc.db.one(
+      `WITH RECURSIVE up(id, parent_id, manager_id) AS (
+         SELECT id, parent_id, manager_id FROM org_units WHERE org_id = $1 AND id = $2
+         UNION SELECT u.id, u.parent_id, u.manager_id FROM org_units u JOIN up ON u.id = up.parent_id
+       ) SELECT 1 FROM up WHERE manager_id = $3 LIMIT 1`,
+      [orgId, unitId, actorId],
+    ));
+  }
+
   async detail(actorId: string, orgId: string, unitId: string) {
-    const data = await this.load(actorId, orgId);
+    const data = await this.load(actorId, orgId, unitId);
     const unit = data.units.find((u) => u.id === unitId);
     if (!unit) throw notFound("Entité introuvable");
     const scope = this.subtree(data.units, unitId);

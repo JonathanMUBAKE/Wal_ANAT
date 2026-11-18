@@ -296,8 +296,9 @@ export class Hr {
     return this.get(actorId, orgId, actorId);
   }
 
-  private async nextMatricule(orgId: string) {
-    const year = new Date().getFullYear();
+  /** Matricule provisoire si les RH n'en saisissent pas : il suit l'année d'entrée, à défaut l'année en cours (RH-5). */
+  private async nextMatricule(orgId: string, hiredOn?: string | null) {
+    const year = hiredOn ? Number(hiredOn.slice(0, 4)) : new Date().getFullYear();
     const n = await this.svc.db.one<{ n: number }>(
       "SELECT count(*)::int AS n FROM agent_records WHERE org_id = $1 AND matricule LIKE $2",
       [orgId, `AG-${year}-%`],
@@ -355,6 +356,19 @@ export class Hr {
       link = { sent: r.sent, ...(r.link ? { link: r.link } : {}) };
       userId = (await this.svc.db.one<{ id: string }>("SELECT id FROM users WHERE lower(email) = $1", [input.email]))!
         .id;
+      // Les administrateurs contrôlent après coup chaque compte ouvert par les RH (RH-2)
+      for (const u of await this.svc.usersOf(orgId)) {
+        if (u.is_ai || u.id === actorId) continue;
+        if (!(await this.svc.permissionsOf(u.id, orgId)).includes("org.members")) continue;
+        await this.svc.notify(u.id, orgId, {
+          kind: "hr.account_opened",
+          title: `Compte ouvert par les RH : ${name || input.email}`,
+          body: "Profil « Agent » ou équivalent selon le statut. Vérifiez le profil et le rattachement dans Structure.",
+          actor_id: actorId,
+          link: "/org",
+        });
+      }
+      await this.svc.log(actorId, "hr.account_opened", { orgId, data: { email: input.email, profile: profile.id } });
       // L'invitation range la personne à l'activation ; le dossier, lui, existe dès maintenant
       await this.svc.db.query(
         "INSERT INTO org_members (org_id, user_id, role, profile_id, unit_id) SELECT $1, $2, p.base_role, p.id, $4 FROM access_profiles p WHERE p.id = $3 ON CONFLICT (org_id, user_id) DO NOTHING",
@@ -365,7 +379,7 @@ export class Hr {
       throw badRequest("Cette personne a déjà un dossier d'agent");
     if (LIMITED.has(input.status ?? "") && !input.contract_end_on)
       throw badRequest("Un contractuel, un stagiaire ou un consultant a une date de fin : indiquez-la");
-    const matricule = input.matricule || (await this.nextMatricule(orgId));
+    const matricule = input.matricule || (await this.nextMatricule(orgId, input.hired_on));
     const cols = FIELDS.filter((k) => (input as Record<string, unknown>)[k] !== undefined);
     await this.svc.db.tx(async (q) => {
       await q.query(

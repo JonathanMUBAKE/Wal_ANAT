@@ -465,6 +465,7 @@ export class Plans {
       actual_value?: number | null;
       budget_committed?: number | null;
       budget_spent?: number | null;
+      comment?: string;
     },
   ) {
     const a = await this.activity(id);
@@ -477,10 +478,25 @@ export class Plans {
       throw badRequest(
         "L'avancement de cette activité remonte de ses dossiers (projets, activités) : il ne se saisit plus à la main",
       );
+    // Un avancement saisi à la main se justifie : ce qui a été fait, la pièce qui l'atteste (PT-2)
+    const comment = i.comment?.trim() ?? "";
+    const moved = i.progress !== undefined && i.progress !== Number(a.progress);
+    if (moved && !comment)
+      throw badRequest("Justifiez l'avancement saisi : ce qui a été réalisé, ou la pièce qui l'atteste");
     await this.svc.db.query(
       "UPDATE plan_activities SET progress = COALESCE($1, progress), actual_value = COALESCE($2, actual_value), budget_committed = COALESCE($3, budget_committed), budget_spent = COALESCE($4, budget_spent) WHERE id = $5",
       [i.progress ?? null, i.actual_value ?? null, i.budget_committed ?? null, i.budget_spent ?? null, id],
     );
+    if (moved) {
+      await this.svc.db.query(
+        "UPDATE plan_activities SET progress_note = $1, progress_noted_at = now(), progress_noted_by = $2 WHERE id = $3",
+        [comment, actorId, id],
+      );
+      await this.svc.log(actorId, "plan.progress", {
+        orgId: a.org_id,
+        data: { id, title: a.title, before: Number(a.progress), after: i.progress, comment },
+      });
+    }
     return this.get(actorId, a.plan_id);
   }
 

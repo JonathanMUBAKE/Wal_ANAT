@@ -78,7 +78,9 @@ export function TeamsPage() {
         <div className="flex-1">
           <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Équipes</h1>
           <p className="mt-1 text-[13px] text-muted">
-            Chaque projet appartient à une équipe. Ses membres y ont accès en édition, ses responsables l'administrent.
+            Les équipes servent aux groupes transversaux (comités, groupes de travail entre directions) ; l'organisation
+            hiérarchique se tient dans les entités. Les membres d'une équipe éditent ses projets, ses responsables
+            l'administrent.
           </p>
         </div>
         {!guest && (

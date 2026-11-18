@@ -89,7 +89,7 @@ Activité des coéquipiers IA.
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| A-1 | L'Accueil de la DG est une page de collaborateur (mes tâches, mes projets, IA). Sa page de travail, le Tableau de bord DG, est ailleurs. | Haute | À décider : rediriger la DG vers le tableau de bord, ou remonter l'essentiel sur son Accueil |
+| A-1 | L'Accueil de la DG est une page de collaborateur (mes tâches, mes projets, IA). Sa page de travail, le Tableau de bord DG, est ailleurs. | Haute | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : pas de redirection automatique ; l'Accueil de qui a le droit de pilotage mène d'abord au tableau de bord DG |
 | A-2 | Les retards de l'Accueil comptent les sous-tâches, contrairement à la règle du lot 3 (« un retard = une tâche principale échue ») appliquée par le Tableau de bord DG et la vue par direction. Les chiffres diffèrent d'une page à l'autre. | Haute | **Fait** (lot 6) : l'Accueil compte les retards comme le tableau de bord (tâches principales) ; les sous-tâches échues restent listées sans être comptées |
 | A-3 | Profil et responsabilité se contredisent : Gaston et Clarisse (Agent) dirigent une entité, Esther (assistante) reste cheffe des RH, Fiston dirige aussi l'Antenne Sud et la Représentation Nord. L'outil ne contrôle pas cet écart. | Haute | Décidé le 17/11/2026 : on refuse la nomination (lot 3) ; démo corrigée (lot 1) |
 | A-4 | La DG apparaît comme « Propriétaire » dans l'en-tête, pas comme « DG ». | Moyenne | **Fait** (lot 1) : la DG a le profil « DG » et s'affiche comme telle |
@@ -180,8 +180,8 @@ Une tâche du registre d'entité s'affiche avec l'étiquette « Tâche d'entité
 | T-8 | « Tâche hors projet » ouvre « Confier une tâche » avec « Non attribuée » par défaut. Depuis Mes tâches, on veut une tâche pour soi : elle n'apparaît pas dans la liste après création. | Moyenne | **Fait** (lot 11) : depuis Mes tâches, « Tâche hors projet » est attribuée par défaut à la personne |
 | T-9 | Pour la DG, « Tâche hors projet » vise l'entité racine « ANAT », pas la Direction générale. | Moyenne | **Fait** (lot 11) : la tâche hors projet vise l'entité de rattachement de la personne (la Direction générale pour la DG) |
 | T-10 | Données de démo : Fiston est rattaché à Cartographie et SIG alors qu'il dirige l'Ingénierie territoriale. Même famille que A-3. | Moyenne (démo) | **Fait** (lot 1) : Fiston est rattaché à l'Ingénierie territoriale, qu'il dirige |
-| T-11 | Pas de recherche, de filtre par projet ou entité, ni de tri autre que par échéance. Pas d'export. | Basse | À décider |
-| T-12 | Un responsable ne voit pas ici les tâches qu'il a confiées aux autres (« confiées par moi »). Vérifié au module 3 : « Suivi des agents » montre les tâches des agents de l'entité et des entités rattachées, mais pas une tâche confiée à une personne hors de cet arbre. | Moyenne | À décider avec E-8 |
+| T-11 | Pas de recherche, de filtre par projet ou entité, ni de tri autre que par échéance. Pas d'export. | Basse | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : recherche et filtre par projet ou entité dans Mes tâches ; l'export reste à faire |
+| T-12 | Un responsable ne voit pas ici les tâches qu'il a confiées aux autres (« confiées par moi »). Vérifié au module 3 : « Suivi des agents » montre les tâches des agents de l'entité et des entités rattachées, mais pas une tâche confiée à une personne hors de cet arbre. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : « Tâches que j'ai confiées » dans Mes tâches : chargé, lieu, échéance, retard, report demandé, déclaration à valider |
 | T-13 | Tâches de démo de start-up (paiement, Apple Pay, tunnel de conversion, stores). Même famille que A-7. | Moyenne (démo) | **Fait** (lot 1) : tâches de l'Agence (couches foncières, relevés de terrain, formation des agents provinciaux) |
 
 ### Ce qui fonctionne bien
@@ -267,7 +267,7 @@ propriétaire ou administrateur de l'organisation est responsable de toutes les 
 | E-5 | Une réunion de l'entité que l'on préside apparaît deux fois dans la vue d'ensemble. | Basse | **Fait** (lot 12) : une réunion déjà listée pour l'entité ne se répète plus dans « Où vous êtes attendu·e » |
 | E-6 | La réunion hebdomadaire présidée par Fiston, dans 7 jours, est « Pas encore convoquée », sans rappel visible. | Basse | **Fait** (lot 12) : le rappel « réunion à convoquer » prévient aussi la présidence, même sans rédacteur désigné |
 | E-7 | Le bouton « Projet » s'affiche pour tout le monde ; le serveur refuse ensuite si le profil n'a pas le droit de créer un projet. Même famille que A-6. | Moyenne | **Fait** (lot 3) : le bouton n'apparaît qu'avec le droit de créer un projet |
-| E-8 | Pas de vue « tâches que j'ai confiées » (voir T-12) : une tâche confiée hors de l'arbre de l'entité n'est suivie nulle part par celui qui l'a confiée. | Moyenne | À décider |
+| E-8 | Pas de vue « tâches que j'ai confiées » (voir T-12) : une tâche confiée hors de l'arbre de l'entité n'est suivie nulle part par celui qui l'a confiée. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : voir T-12 : une tâche confiée hors de l'arbre de l'entité est suivie par qui l'a confiée |
 | E-9 | Données de démo : départements vides ou presque (Fiston n'a qu'un agent, Didier et Clarisse aucun), Esther cheffe des RH, projets de start-up. Même famille que A-3 et A-7. | Haute (démo) | **Fait en partie** (lots 1 et 9) : un chef distinct par entité, des agents dans les services, projets de l'Agence ; certaines entités restent peu peuplées |
 | E-10 | Vers 800 px de large, les onglets débordent (« Suivi des agents » coupé) et défilent horizontalement. | Basse | **Fait** (lot 12) : les onglets passent à la ligne dès la tablette ; ils ne défilent que sur téléphone |
 
@@ -517,10 +517,10 @@ assistante. Les chefs de direction et les agents reçoivent un refus.
 | P-2 | « Recommandations exécutées 62/90 » (indicateur saisi) et « Recommandations réalisées 0/2 » (calculé) côte à côte. | Moyenne | **Décidé et fait** (lot 6) : l'indicateur relié aux recommandations réalisées est calculé ; la ligne en double disparaît ; chaque indicateur dit s'il est calculé ou saisi |
 | P-3 | « Retards à résorber » additionne des natures différentes (tâches, recommandations, livrables, plan, courrier, décisions) et ne mène nulle part. | Moyenne | **Fait** (lot 11) : la carte « Retards à résorber » ouvre le détail par nature, chaque ligne menant à la page où le traiter |
 | P-4 | Le bloc « Assistant IA » affiche un « Point de situation » calculé par des règles, pas par l'IA. Le titre laisse croire que l'IA a analysé la situation. | Basse | **Fait** (lot 12) : le bloc s'intitule « Point de situation », calculé à partir des données de l'outil ; « Assistant IA » est réservé aux demandes |
-| P-5 | Les chefs de direction n'ont pas accès au tableau de bord, même limité à leur direction. | Moyenne | À décider : leur ouvrir la ligne et le détail de leur direction (« Par direction » existe déjà) |
+| P-5 | Les chefs de direction n'ont pas accès au tableau de bord, même limité à leur direction. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : un chef lit la page de la direction qu'il dirige (lien depuis Mon entité) ; la liste de toutes les directions reste au pilotage |
 | P-6 | Données de démo : la DG est aussi responsable de la Direction technique ; l'Antenne Sud et la Représentation Nord sont vides ; les projets du portefeuille sont ceux d'une start-up (« Campagne de lancement », « Application mobile v2 »). Même famille que A-3 et A-7. | Moyenne (démo) | **Fait** (lot 1) : un chef distinct par direction, antenne et représentation peuplées, portefeuille de l'Agence |
 | P-7 | « 5 directions · 1 en alerte » alors que deux lignes sont en alerte (l'Agence et la Direction technique). | Basse | **Fait** (lot 12) : l'en-tête « Par direction » signale à part l'alerte de la ligne Agence |
-| P-8 | La page reprend le bloc « Saisir » de l'Accueil : la DG le voit deux fois si elle passe d'une page à l'autre. | Basse | À décider avec A-1 |
+| P-8 | La page reprend le bloc « Saisir » de l'Accueil : la DG le voit deux fois si elle passe d'une page à l'autre. | Basse | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : le bloc « Saisir » n'est plus répété sur l'Accueil de la direction ; il reste sur le tableau de bord |
 
 ### Ce qui fonctionne bien
 
@@ -599,7 +599,7 @@ gestionnaire de l'agenda, et ne se supprime que par un gestionnaire. La suppress
 | F-3 | « 3 décisions attendues » (tableau de bord) et « Arbitrages attendus : 0 » (revue) : deux notions proches, deux chiffres. | Moyenne | **Décidé et fait** (lot 6) : une seule notion, « décision attendue de la DG » : dossier marqué « décision attendue » ou arbitrage en attente, compté une fois ; la revue précise son périmètre (« sur ces projets ») |
 | F-4 | Tous les agents voient toutes les activités non confidentielles de la DG (commissions, conférences, activités internes, leur état). | Moyenne | **Décidé et fait** (lot 7) : un agent voit les activités dont il est responsable, dont il suit une suite, ou de son entité ; la direction voit tout le non-confidentiel |
 | F-5 | L'onglet « Contrats et paiements » est ouvert aux chefs d'entité (Fiston, Didier) mais pas à l'assistante de la DG. | Basse | **Fait** (lot 12) : le pilotage lit tous les contrats ; un gestionnaire ne lit que ceux de ses entités, de ses dossiers et de ses missions |
-| F-6 | Un responsable d'activité modifie lui-même l'état (santé) de son activité. L'état affiché est corrigé si des suites sont en retard, mais pas pour les autres signaux. | Basse | À noter : même logique déclaré / calculé que F-1 |
+| F-6 | Un responsable d'activité modifie lui-même l'état (santé) de son activité. L'état affiché est corrigé si des suites sont en retard, mais pas pour les autres signaux. | Basse | **Décidé (option prudente, en l'absence de l'utilisateur)** (lot 13) : même règle que F-1 : l'état déclaré reste, l'état calculé s'affiche à côté ; aucun changement de code |
 | F-7 | « Nouveau projet » apparaît dans l'onglet Projets sans vérifier le droit. Même famille que A-6 et E-7. | Basse | **Fait** (lot 3) : « Nouveau projet » ne s'affiche qu'avec le droit |
 | F-8 | Données de démo : « Campagne de lancement » a pour responsable Fiston, chef de l'Ingénierie territoriale ; projets de start-up. Même famille que A-7. | Moyenne (démo) | **Fait** (lot 1) : projets de l'Agence, confiés aux chefs concernés |
 
@@ -684,7 +684,7 @@ Aucune n'est rattachée à un dossier.
 | DEC-1 | Une décision inscrite par l'assistante entre au registre sans confirmation de la DG. Rien ne la distingue d'une décision que la DG a vue. (Décision déjà ouverte dans le plan de travail.) | Haute | **Décidé et fait** (lot 4) : confirmation après coup. La décision est numérotée dès son inscription, marquée « à confirmer par la DG », et la DG la confirme (droit « Confirmer les décisions inscrites au nom de la DG ») |
 | DEC-2 | Le chargé d'exécution et l'échéance sont facultatifs : une décision peut rester sans suivi ni retard possible. | Haute | **Fait** (lot 10) : chargé et échéance obligatoires, sauf décision marquée « sans exécution » ; une décision de séance sans chargé est inscrite sans exécution ; un arbitrage se tranche avec une échéance |
 | DEC-3 | Le chargé déclare seul la décision exécutée, sans vérification. Même logique que T-3. | Moyenne | **Décidé et fait** (lot 4) : le secrétariat de la DG ou la DG confirme l'exécution déclarée par le chargé, ou la renvoie avec un motif |
-| DEC-4 | Aucune correction possible, même d'une faute de frappe : il faut remplacer, ce qui crée un nouveau numéro. | Basse | À décider : autoriser une correction de forme tracée pendant un court délai, ou garder le remplacement |
+| DEC-4 | Aucune correction possible, même d'une faute de frappe : il faut remplacer, ce qui crée un nouveau numéro. | Basse | **Décidé (option prudente, en l'absence de l'utilisateur)** (lot 13) : pas de correction d'une décision inscrite : on la remplace, ce qui garde la trace de la version première |
 | DEC-5 | Le formulaire « Inscrire une décision » de cette page ne propose pas de rattacher la décision à un dossier ; seule l'action « Arbitrer » depuis un dossier le fait. | Moyenne | **Fait** (lot 11) : le formulaire « Inscrire une décision » propose le dossier : projet, activité ou réunion |
 | DEC-6 | Tous les profils, agents compris, voient toutes les décisions non confidentielles. | Basse | **Décidé et fait** (lot 7) : un agent voit les décisions dont il est chargé ou dont le dossier le concerne (projet, activité, réunion) |
 | DEC-7 | Données de démo : deux décisions seulement, toutes deux pour Fiston, sans dossier d'origine. | Moyenne (démo) | **Fait** (lot 9) : onze décisions, issues de comités, de projets et d'activités, confiées à neuf personnes ; deux à confirmer par la DG, deux exécutées et confirmées |
@@ -785,7 +785,7 @@ Fiston est rédacteur de 15 réunions sur 16, comité de direction compris.
 | R-2 | Seule la présidence valide un compte rendu qu'elle a présidé. En son absence, rien ne permet une validation par intérim. | Moyenne | **Décidé et fait** (lot 8) : le délégataire de la présidence (délégation de signature) valide, « par délégation » |
 | R-3 | Tout profil autorisé à valider peut rouvrir un compte rendu validé, même s'il ne l'a pas validé. Un document validé doit rester figé. | Haute | **Fait** (lot 4) : réouverture par la personne qui a validé ou par la DG, motif obligatoire inscrit au journal, valideur et rédacteur prévenus |
 | R-4 | Après réouverture, des recommandations peuvent être retirées du compte rendu, y compris celles déjà transformées en tâches. | Moyenne | **Fait** (lot 11) : une recommandation d'un compte rendu validé ne se supprime plus après réouverture : elle s'annule (migration 057) |
-| R-5 | Les numéros de compte rendu sont attribués à la programmation : ordre non chronologique dans une série, trous en cas d'annulation. | Moyenne | À décider : numéroter à la validation, ou accepter et documenter |
+| R-5 | Les numéros de compte rendu sont attribués à la programmation : ordre non chronologique dans une série, trous en cas d'annulation. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur)** (lot 13) : numérotation à la programmation conservée (les références circulent dès la convocation) ; les trous et l'ordre sont documentés |
 | R-6 | Une réunion passée non tenue (13/11) reste « Compte rendu à établir » indéfiniment ; rien ne propose de la déclarer non tenue ou annulée. | Basse | **Fait** (lot 8) : une séance passée sans compte rendu se déclare non tenue, avec un motif ; rappel au rédacteur |
 | R-7 | Des réunions proches ne sont pas convoquées (revue avec le bailleur du 22/11, réunion avec les provinces du 24/11) et aucun rappel ne prévient le rédacteur. | Moyenne | **Fait** (lot 8) : rappel au rédacteur d'une séance non convoquée à 7 jours |
 | R-8 | Toutes les réunions non confidentielles sont visibles de tous, y compris le comité de direction et ses comptes rendus. | Moyenne | **Décidé et fait** (lot 7) : une réunion se voit de ses participants, de son entité, de son projet et de la direction ; le comité de direction reste à ses participants et à la direction |
@@ -876,9 +876,9 @@ Aucun risque n'est rattaché à un projet, aucun indicateur à une activité du 
 | RI-2 | Un profil « gérer les risques » peut modifier les indicateurs stratégiques de la DG (cible, résultat). | Haute | **Fait** (lot 3) : droit distinct « Gérer les indicateurs stratégiques » (DG, DGA) ; les chefs les lisent sans les modifier |
 | RI-3 | Aucun historique : ni des scores de risque, ni des valeurs d'indicateur. Pas de date de mesure, pas de date de dernière revue. | Moyenne | **Fait** (lot 11) : chaque révision d'un risque et chaque mesure d'indicateur gardent valeur, date et auteur ; tendance et date de revue affichées (migration 058) |
 | RI-4 | Les indicateurs sont saisis à la main même quand l'outil connaît la valeur (plans approuvés, recommandations exécutées). | Moyenne | **Décidé et fait** (lot 6) : un indicateur peut être relié à une source de l'outil (plans approuvés, recommandations réalisées, décisions exécutées, accords en vigueur) ; son résultat se calcule seul et ne se saisit plus |
-| RI-5 | Un risque ne se rattache qu'à un projet, pas à une activité, une direction ou une convention ; il n'a pas d'échéance pour ses mesures de maîtrise. | Moyenne | À décider : rattachements et échéance de la mesure |
+| RI-5 | Un risque ne se rattache qu'à un projet, pas à une activité, une direction ou une convention ; il n'a pas d'échéance pour ses mesures de maîtrise. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : un risque se rattache à un projet, une activité ou un accord ; sa mesure de maîtrise a une échéance |
 | RI-6 | Le responsable d'un risque n'est prévenu de rien (attribution, changement de score). | Moyenne | **Fait** (lot 11) : le responsable d'un risque est prévenu de son attribution et de tout changement de score |
-| RI-7 | Un risque ne se supprime pas (il se clôt) ; c'est cohérent, mais un indicateur créé par erreur ne se supprime pas non plus. | Basse | À décider : archivage d'un indicateur |
+| RI-7 | Un risque ne se supprime pas (il se clôt) ; c'est cohérent, mais un indicateur créé par erreur ne se supprime pas non plus. | Basse | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : un indicateur s'archive (il sort des listes, ses mesures restent) ; il ne se supprime pas |
 | RI-8 | Données de démo : deux risques et trois indicateurs, sans lien avec les projets ni le plan de travail. | Basse (démo) | **Fait** (lot 9) : trois risques rattachés à des projets, avec leur responsable et leur parade ; un indicateur relié au plan de travail |
 
 ### Ce qui fonctionne bien
@@ -954,7 +954,7 @@ préparer ; seule la DG les approuve.
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
 | PT-1 | Le droit « gérer les plans » vaut pour toutes les entités : un chef de direction prépare, modifie ou supprime le plan d'une autre direction. | Haute | **Fait** (lot 3) : un chef prépare le plan de son entité et des entités rattachées ; droit « Préparer les plans de toutes les entités » pour la DG, le DGA et le service du plan |
-| PT-2 | L'avancement saisi à la main par le responsable n'exige ni justification ni pièce. | Moyenne | À décider : commentaire obligatoire, ou validation par le chef pour une activité sans dossier |
+| PT-2 | L'avancement saisi à la main par le responsable n'exige ni justification ni pièce. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : un avancement saisi à la main exige une justification, gardée sur l'activité et journalisée |
 | PT-3 | L'avancement d'un plan est la moyenne simple de ses activités, sans pondération (un atelier pèse autant que la révision du schéma national). | Moyenne | **Décidé et fait** (lot 6) : chaque activité a un poids (1 par défaut, de 1 à 100) ; l'avancement du plan est la moyenne pondérée, partout |
 | PT-4 | Les activités de la démo n'ont pas de date de début : l'« avancement attendu à date » du Tableau de bord DG est alors approximatif. | Moyenne | **Fait** (lot 11) : date de début obligatoire à la soumission du plan ; démonstration complétée |
 | PT-5 | Aucune campagne de préparation : pas de rappel pour le plan de l'année suivante, pas de vue « entités sans plan ». | Moyenne | **Fait** (lot 8) : campagne des plans (entités sans plan pour l'année) et relance de leurs chefs |
@@ -1046,7 +1046,7 @@ présenté comme le bailleur du programme.
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
 | PA-1 | Le Directeur de la Communication et des Partenariats n'a pas le droit de gérer les partenaires ; seule la DG l'a. | Haute (profils) | **Fait** (lot 3) : dans la démonstration, le directeur de la Communication et des Partenariats gère l'annuaire ; ailleurs, le droit se coche dans Profils et droits |
-| PA-2 | Un point focal ne peut pas suspendre une relation, même en urgence ; il n'a aucun moyen de le demander dans l'outil. | Moyenne | À décider : « Demander la suspension » qui notifie les gestionnaires, ou droit de suspendre avec motif |
+| PA-2 | Un point focal ne peut pas suspendre une relation, même en urgence ; il n'a aucun moyen de le demander dans l'outil. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : le point focal demande la suspension, motif à l'appui ; les gestionnaires sont prévenus et décident |
 | PA-3 | Les notes d'échange sont lisibles par tous les profils qui voient l'annuaire. | Moyenne | **Fait** (lot 7) : notes d'échange réservées aux gestionnaires, aux points focaux et à la direction |
 | PA-4 | Rien ne signale un partenaire actif ou en discussion sans point focal (4 sur 6 dans la démo). | Moyenne | **Fait** (lot 11) : point focal obligatoire pour passer « En discussion » ou « Actif », et le dernier ne se retire pas ; une fiche ancienne sans point focal est signalée |
 | PA-5 | Rien ne signale une relation sans échange depuis longtemps (date de dernière note connue mais non exploitée). | Basse | **Fait** (lot 12) : une relation vivante sans échange noté depuis six mois est signalée (« sans contact ») |
@@ -1126,7 +1126,7 @@ Les six comptes voient les quatre accords.
 | CV-2 | Aucun volet financier : montant, contributions, échéancier de décaissement. (Décision « finance des partenariats » déjà reportée dans le plan de travail.) | Moyenne | **Décidé et fait** (lot 8) : montant, devise, contribution de l'Agence et de chaque partie, fixés pendant la préparation ; l'échéancier reste pour plus tard |
 | CV-3 | Tous les profils voient tous les accords non confidentiels, texte compris. | Basse | **Décidé et fait** (lot 7) : un agent voit les accords de son entité ou qu'il suit ; la direction voit tout le non-confidentiel |
 | CV-4 | Un accord peut être préparé et envoyé au parapheur sans point focal. | Moyenne | **Fait** (lot 11) : un accord ne part pas au parapheur sans point focal |
-| CV-5 | Les risques ne se rattachent pas à un accord (voir RI-5). | Basse | À décider avec RI-5 |
+| CV-5 | Les risques ne se rattachent pas à un accord (voir RI-5). | Basse | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : voir RI-5 : un risque se rattache à un accord |
 | CV-6 | Un avenant en préparation n'empêche pas l'échéance de l'accord principal : aucune alerte croisée « échéance proche, avenant non signé ». | Basse | **Fait** (lot 12) : le rappel d'échéance signale l'avenant pas encore signé |
 
 ### Ce qui fonctionne bien
@@ -1207,7 +1207,7 @@ Aucune délégation en cours.
 | PH-3 | Délégation sans limite de durée, de délégataire ni de portée ; une délégation retirée disparaît de la liste. | Haute | **Fait** (lot 4) : 30 jours au plus ; portée « visa et avis » ou « visa et signature » ; la signature ne se délègue qu'à un responsable ; une délégation retirée reste dans l'historique |
 | PH-4 | Le secrétariat de la DG ne voit pas la pile de documents qui attendent la DG. | Moyenne | **Fait** (lot 11) : onglet « Parapheur de la DG » pour le cabinet (droit de pilotage), en lecture ; texte non transmis, intitulé confidentiel masqué |
 | PH-5 | Après un rejet et une relance, les visas et le motif du premier circuit disparaissent de la fiche. | Moyenne | **Fait** (lot 5) : chaque circuit clos par un rejet est conservé (visas, auteurs, dates, motif) et se relit sur la fiche, sous « Circuits précédents » |
-| PH-6 | Tous les profils ont accès au parapheur : chacun peut lancer un circuit vers la DG. | Basse | À décider : qui peut adresser un document à la signature de la DG (passage obligé par le secrétariat ?) |
+| PH-6 | Tous les profils ont accès au parapheur : chacun peut lancer un circuit vers la DG. | Basse | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : un document adressé à la DG passe par son secrétariat ou son cabinet : ils le lancent, ou le visent avant elle |
 
 ### Ce qui fonctionne bien
 
@@ -1298,7 +1298,7 @@ Historique de ENT/2026/0001 : « Enregistré au bureau d'ordre », « **Imputé 
 | C-2 | La clôture d'un courrier demande une référence de réponse en texte libre ; elle n'est pas reliée au courrier sortant enregistré. | Moyenne | **Fait** (lot 11) : la clôture d'un courrier entrant propose les courriers sortants enregistrés ; le choix relie les deux et reprend la référence |
 | C-3 | Les chefs d'entité qui consultent le registre voient tout le courrier non confidentiel, pas seulement celui de leur entité. | Moyenne | **Décidé et fait** (lot 7) : un chef lit le courrier de son entité (et des entités rattachées) ; le secrétariat et la direction gardent le registre complet |
 | C-4 | Un correspondant saisi en texte libre (« Partenaire technique ») ne se rattache à aucune fiche partenaire. | Basse | **Fait** (lot 12) : un correspondant tapé à la main qui ressemble à une fiche de l'annuaire propose son rattachement |
-| C-5 | Imputer à l'entité racine « ANAT » fait remonter les retards à la DG elle-même. | Basse | À décider : interdire l'imputation à la racine, ou la réserver à la DG |
+| C-5 | Imputer à l'entité racine « ANAT » fait remonter les retards à la DG elle-même. | Basse | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : l'imputation à l'entité racine est réservée à la DG |
 | C-6 | Données de démo : la DG fait office de bureau d'ordre (enregistre et impute) ; trois courriers seulement, aucun sortant. | Moyenne (démo) | **Fait** (lot 9) : l'assistante tient le bureau d'ordre (enregistre et impute) ; deux courriers sortants répondent à des entrants |
 
 ### Ce qui fonctionne bien
@@ -1453,7 +1453,7 @@ Les entités ont été renommées pour l'ANAT, les équipes non : leurs noms res
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
 | EQ-1 | Le responsable d'une équipe ne peut pas la gérer si son profil n'a pas le droit « gérer les équipes » (Clarisse, Esther). | Moyenne | **Fait** (lot 3) : être responsable d'une équipe suffit pour la gérer |
-| EQ-2 | Équipes et entités se recouvrent : deux façons de regrouper les personnes et de porter des projets. | Moyenne | À décider : garder les équipes pour les groupes transversaux seulement (comités, groupes de travail interdirections), ou les masquer |
+| EQ-2 | Équipes et entités se recouvrent : deux façons de regrouper les personnes et de porter des projets. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : les équipes restent pour les groupes transversaux (comités, groupes de travail) ; la page le dit ; rien n'est supprimé |
 | EQ-3 | Ajouts, retraits et changements de responsable d'une équipe ne sont pas journalisés, alors qu'ils ouvrent ou ferment l'accès à des projets. | Moyenne | **Fait** (lot 5) : création, modification, ajout, retrait, changement de rôle, adhésion et réponse à une demande sont journalisés |
 | EQ-4 | Données de démo : équipes de start-up (« Marketing », « Produit & Design », « Équipe Mobile »). Même famille que A-7. | Moyenne (démo) | **Fait** (lot 1) : Comité éditorial, Groupe de travail du site institutionnel, Comité de recrutement, Groupe projet SIG national |
 
@@ -1526,13 +1526,13 @@ Personne n'est « à identifier ». Seule la DG accède au registre : les cinq a
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
 | RH-1 | Pas de sortie d'un agent : ni date, ni motif, ni clôture de l'affectation, ni suspension du compte. Le compte reste actif après le départ. | Haute | **Décidé et fait** (lot 8) : les RH saisissent l'acte de sortie ; à sa date, affectation close, compte suspendu, chef prévenu des tâches ouvertes ; un chef en poste est d'abord remplacé |
-| RH-2 | Créer un dossier ouvre un compte d'accès automatiquement : le service RH ouvre les accès informatiques. | Moyenne | À décider : le compte part-il en attente de validation par l'administrateur, ou le service RH en a-t-il la responsabilité ? |
+| RH-2 | Créer un dossier ouvre un compte d'accès automatiquement : le service RH ouvre les accès informatiques. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : les RH ouvrent le compte avec le profil le plus restreint du statut ; chaque ouverture est signalée aux administrateurs et journalisée |
 | RH-3 | Aucune alerte sur les échéances : fin de contrat, fin de stage, départ à la retraite. Un contractuel peut n'avoir aucune date de fin. | Moyenne | **Fait** (lot 8) : date de fin obligatoire pour contractuels, stagiaires et consultants ; alertes à 90 et 30 jours (fin de contrat, retraite à 65 ans) au service RH et au chef |
 | RH-4 | La liste n'a ni filtre (entité, statut, grade), ni indicateurs (effectifs par entité, pyramide des âges, départs prévus). | Moyenne | **Fait** (lot 11) : filtres par entité et par grade ; effectifs par entité, pyramide des âges, départs des douze prochains mois |
-| RH-5 | Le matricule automatique suit l'année de saisie (AG-2026-…) et non l'année d'entrée ; le format diffère pour la DG (AG-DEMO-0001). | Basse | À décider : format du matricule de l'ANAT, saisi ou généré |
+| RH-5 | Le matricule automatique suit l'année de saisie (AG-2026-…) et non l'année d'entrée ; le format diffère pour la DG (AG-DEMO-0001). | Basse | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : le matricule saisi par les RH fait foi ; le matricule provisoire suit l'année d'entrée |
 | RH-6 | Dans la démo, seule la DG accède au registre ; la cheffe des RH n'a pas le droit « gérer les RH ». Même famille que D-8. | Moyenne (démo) | **Fait** (lot 1) : la cheffe du service RH accède au registre et tient les dossiers |
 | RH-7 | Entité du dossier en contradiction avec la fonction (Fiston, Didier). Même famille que D-5 et S-2. | Moyenne (démo) | **Fait** (lot 1) : l'entité du dossier suit le rattachement ; depuis le lot 5, un changement d'entité ouvre une affectation datée (S-2) |
-| RH-8 | Le module ne couvre ni congés (lot reporté), ni carrière (avancements, promotions), ni formation, ni évaluation, ni pièces (actes, contrats). Même famille que D-9. | Moyenne | À décider avec D-9 : l'ordre des prochains volets |
+| RH-8 | Le module ne couvre ni congés (lot reporté), ni carrière (avancements, promotions), ni formation, ni évaluation, ni pièces (actes, contrats). Même famille que D-9. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur)** (lot 13) : pièces, formations, évaluations et congés sont faits (lot 8) ; le prochain volet est la carrière (avancements, promotions) |
 
 ### Ce qui fonctionne bien
 
@@ -1932,3 +1932,28 @@ le cabinet de la DG (droit de pilotage) les lit tous. Tests : `server/src/remarq
 démonstration (D-6).
 
 **Remarques traitées** : A-9, A-10, T-7, E-5, E-6, E-10, D-6, I-5, I-8, I-10, P-4, P-7, F-5, PT-7, PA-5, CV-6, C-4, AD-6.
+
+### Lot 13 — Décisions prudentes (18/11/2026, branche `lot-decisions-prudentes`)
+
+L'utilisateur, absent, a demandé de trancher seul les remarques « À décider » en retenant l'option la plus prudente.
+Chaque choix ci-dessous est réversible ; il est à relire à son retour.
+
+| Remarque | Option retenue | Pourquoi c'est la plus prudente |
+|---|---|---|
+| A-1, P-8 | Lien vers le tableau de bord sur l'Accueil de la direction, sans redirection ; « Saisir » non répété | Rien ne change de place sans prévenir |
+| T-11, T-12, E-8 | Recherche et filtre ; vue « Tâches que j'ai confiées » limitée au suivi (pas au dossier) | Le suivi ne donne pas accès au reste du dossier |
+| P-5 | Un chef lit la page de sa seule direction | Ni la liste ni les autres directions |
+| F-6, DEC-4, R-5 | Aucune modification : règle actuelle confirmée et documentée | Ne pas affaiblir la trace (versions, numéros) |
+| RI-5, CV-5, RI-7 | Rattachements et échéance de la mesure ; archivage d'un indicateur | Rien ne se supprime |
+| PT-2 | Justification obligatoire de l'avancement saisi | Ce qui est déclaré est étayé |
+| PA-2 | Demande de suspension, décision aux gestionnaires | Le point focal ne coupe pas seul une relation |
+| PH-6 | Passage obligé par le secrétariat ou le cabinet pour ce qui va à la DG | Filtrage avant la signature de la DG |
+| C-5 | Imputation à la racine réservée à la DG | La DG décide de ce qui lui revient |
+| EQ-2 | Équipes gardées pour les groupes transversaux | Rien n'est supprimé |
+| RH-2 | Profil le plus restreint et signalement aux administrateurs | Contrôle croisé RH / administration |
+| RH-5, RH-8 | Matricule saisi qui fait foi ; carrière en prochain volet | Pas de numéro inventé quand l'officiel existe |
+
+Migrations `059_avancement_justifie.sql` et `060_risques_rattaches_indicateur_archive.sql`. Tests :
+`server/src/remarques-decisions.test.ts` ; quatre tests du parapheur ajustés (PH-6 : l'envoi passe par le cabinet).
+
+**Remarques traitées** : A-1, P-8, T-11, T-12, E-8, P-5, F-6, DEC-4, R-5, RI-5, RI-7, PT-2, PA-2, CV-5, PH-6, C-5, EQ-2, RH-2, RH-5, RH-8.

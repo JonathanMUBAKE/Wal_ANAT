@@ -39,7 +39,7 @@ const notes = (user: string) => g.ctx.db.query<Any>("SELECT kind FROM notificati
 describe("revue trimestrielle", () => {
   it("relève, pour chaque activité, l'avancement constaté et l'attendu à la fin du trimestre", async () => {
     const p = await approvedPlan();
-    await g.api("u_karim", "PATCH", `/api/plan-activities/${p.activities[0].id}/progress`, { progress: 40 });
+    await g.api("u_karim", "PATCH", `/api/plan-activities/${p.activities[0].id}/progress`, { progress: 40, comment: "Atelier tenu" });
     const r = await g.api("u_alice", "POST", `/api/plans/${p.id}/reviews`, { quarter: 1 });
     expect(r.status).toBe(200);
     expect(r.body).toMatchObject({ quarter: 1, status: "brouillon", period_end: "2027-03-31" });

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Empty, cn } from "@/components/ui";
@@ -14,6 +15,71 @@ import { MyDeliverables, useLateDeliverables } from "./ProjectDossier";
 
 /** Une tâche hors projet vit dans le registre de son entité, qui n'est pas un projet du portefeuille. */
 const UNIT_TASK = { name: "Tâche d'entité", icon: "users", color: "#64748B" } as unknown as ProjectSummary;
+/** Une tâche confiée par la personne, suivie où qu'elle soit (T-12, E-8). */
+interface Confided {
+  id: string;
+  key: string;
+  title: string;
+  assignee_name: string | null;
+  due_on: string | null;
+  completed: boolean;
+  done_declared_at: string | null;
+  place: string | null;
+  overdue: boolean;
+  postpone_pending: boolean;
+}
+function ConfidedTasks({ onOpen }: { onOpen: (id: string) => void }) {
+  const { data } = useQuery({
+    queryKey: ["tasks", "confided"],
+    queryFn: () => api.get<Confided[]>("/api/tasks/confided"),
+  });
+  const [open, setOpen] = useState(true);
+  if (!data?.length) return null;
+  const pending = data.filter((t) => !t.completed);
+  return (
+    <section className="border-t border-line">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex h-10 w-full items-center gap-2 border-b border-line px-4 text-left sm:px-8"
+      >
+        <ChevronDown className={cn("size-4 text-faint transition-transform", !open && "-rotate-90")} />
+        <span className="text-[13px] font-semibold">Tâches que j'ai confiées</span>
+        <span className="text-[12px] tabular text-faint">{pending.length}</span>
+        {pending.some((t) => t.overdue) && (
+          <span className="text-[12px] text-danger">{pending.filter((t) => t.overdue).length} en retard</span>
+        )}
+      </button>
+      {open && (
+        <ul className="divide-y divide-line sm:px-4">
+          {data.map((t) => (
+            <li key={t.id}>
+              <button
+                onClick={() => onOpen(t.id)}
+                className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-hover sm:px-4"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className={cn("block truncate text-[13.5px]", t.completed && "text-faint line-through")}>
+                    {t.title}
+                  </span>
+                  <span className="block truncate text-[12px] text-muted">
+                    {t.assignee_name ?? "—"}
+                    {t.place ? ` · ${t.place}` : ""}
+                  </span>
+                </span>
+                {t.postpone_pending && <span className="text-[12px] text-warning">report demandé</span>}
+                {!t.completed && t.done_declared_at && <span className="text-[12px] text-primary">à valider</span>}
+                <span className={cn("text-[12px] tabular", t.overdue ? "font-medium text-danger" : "text-muted")}>
+                  {t.completed ? "terminée" : t.due_on ? t.due_on.split("-").reverse().join("/") : "sans échéance"}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 /** Le nom de l'entité distingue les tâches d'un chef qui en dirige plusieurs (T-4). */
 const unitTask = (t: Task) => (t.unit_name ? { ...UNIT_TASK, name: t.unit_name } : UNIT_TASK);
 
@@ -43,10 +109,20 @@ export function MyTasksPage() {
     home && api.get<UnitBoard>(`/api/units/${home.id}/board`).then(setBoard, (e: Error) => toast.error(e.message));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const pm = useMemo(() => new Map(projects?.map((p) => [p.id, p])), [projects]);
+  // Recherche et filtre par projet ou entité (T-11)
+  const [q, setQ] = useState("");
+  const [where, setWhere] = useState("");
+  const placeOf = (t: Task) => pm.get(t.project_id)?.name ?? t.unit_name ?? "Tâche d'entité";
+  const places = [...new Set((tasks ?? []).map(placeOf))].sort();
+  const match = (t: Task) =>
+    (!where || placeOf(t) === where) &&
+    (!q || `${t.title} ${t.parent_title ?? ""} ${t.key}`.toLowerCase().includes(q.trim().toLowerCase()));
   const open = (tasks ?? [])
+    .filter(match)
     .filter((t) => !t.completed)
     .sort((a, b) => ((a.due_on ?? "9") < (b.due_on ?? "9") ? -1 : 1));
   const done = (tasks ?? [])
+    .filter(match)
     .filter((t) => t.completed)
     .sort((a, b) => ((b.completed_at ?? "") < (a.completed_at ?? "") ? -1 : 1));
 
@@ -65,7 +141,29 @@ export function MyTasksPage() {
             Tâche hors projet
           </Button>
         )}
-        <label className="ml-auto flex items-center gap-2 text-[13px] text-muted">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <input
+            aria-label="Rechercher une tâche"
+            placeholder="Rechercher…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="h-9 w-44 rounded-lg border border-line bg-panel px-2.5 text-[13px]"
+          />
+          <select
+            aria-label="Projet ou entité"
+            value={where}
+            onChange={(e) => setWhere(e.target.value)}
+            className="h-9 max-w-[220px] rounded-lg border border-line bg-panel px-2 text-[13px]"
+          >
+            <option value="">Tous les projets et entités</option>
+            {places.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </div>
+        <label className="flex items-center gap-2 text-[13px] text-muted">
           <input
             type="checkbox"
             checked={showDone}
@@ -127,6 +225,7 @@ export function MyTasksPage() {
             </section>
           );
         })}
+        <ConfidedTasks onOpen={(id) => shell.openTask(id)} />
         {showDone && done.length > 0 && (
           <section>
             <div className="flex h-10 items-center gap-2 border-b border-line px-4 sm:px-8">

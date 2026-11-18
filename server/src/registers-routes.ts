@@ -31,6 +31,9 @@ const Risk = z.object({
   mitigation: z.string().max(2000).optional(),
   status: z.enum(["open", "mitigated", "closed"]).optional(),
   project_id: id.nullable().optional(),
+  activity_id: id.nullable().optional(),
+  agreement_id: id.nullable().optional(),
+  mitigation_due_on: z.string().max(10).nullable().optional(),
 });
 const Indicator = z.object({
   name: title.optional(),
@@ -42,6 +45,7 @@ const Indicator = z.object({
   plan_activity_id: id.nullable().optional(),
   computed_from: z.string().max(60).nullable().optional(),
   measured_on: z.string().max(10).optional(),
+  archived: z.boolean().optional(),
 });
 
 export function registerRoutes(r: FastifyInstance, s: Signature, reg: Registers, g: Gaps) {

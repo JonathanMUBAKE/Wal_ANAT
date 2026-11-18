@@ -68,6 +68,9 @@ export function partnerRoutes(r: FastifyInstance, p: Partners) {
   r.get<Id>("/api/partners/:id", async (req) => p.get(req.userId, req.params.id));
   r.patch<Id>("/api/partners/:id", async (req) => p.update(req.userId, req.params.id, Fields.parse(req.body)));
   r.delete<Id>("/api/partners/:id", async (req) => p.remove(req.userId, req.params.id));
+  r.post<Id>("/api/partners/:id/suspension-request", async (req) =>
+    p.requestSuspension(req.userId, req.params.id, z.object({ reason: text(2000) }).parse(req.body).reason),
+  );
   r.post<Id>("/api/partners/:id/state", async (req) =>
     p.setState(
       req.userId,

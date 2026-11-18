@@ -441,6 +441,36 @@ export class Partners {
     for (const u of i.focal_ids ?? []) await this.checkPerson(orgId, u, "Chaque point focal");
   }
 
+  /**
+   * Le point focal ne suspend pas une relation : il le demande, motif à l'appui ; les gestionnaires des partenariats
+   * sont prévenus et décident (PA-2). La demande entre au fil de la fiche.
+   */
+  async requestSuspension(actorId: string, id: string, reason: string) {
+    await this.human(actorId);
+    const { p } = await this.readable(actorId, id);
+    if (!this.focal(p, actorId)) throw forbidden("Seuls les points focaux demandent la suspension d'une relation");
+    if (p.state !== "actif" && p.state !== "en_discussion")
+      throw new HttpError(409, `Une relation « ${LABEL[p.state]} » ne se suspend pas`);
+    const motif = reason.trim();
+    if (!motif) throw badRequest("Un motif est obligatoire pour demander la suspension");
+    await this.history(this.svc.db, p.org_id, id, actorId, "note", `Demande de suspension : ${motif}`, {
+      suspension_request: true,
+    });
+    for (const u of await this.svc.usersOf(p.org_id)) {
+      if (u.is_ai || u.id === actorId) continue;
+      if (!(await this.svc.permissionsOf(u.id, p.org_id)).includes("partners.manage")) continue;
+      await this.svc.notify(u.id, p.org_id, {
+        kind: "partner.suspension_request",
+        title: `Suspension demandée : ${p.name}`,
+        body: motif,
+        actor_id: actorId,
+        link: `/partenaires/${id}`,
+      });
+    }
+    await this.svc.log(actorId, "partner.suspension_requested", { orgId: p.org_id, data: { id, reason: motif } });
+    return { ok: true };
+  }
+
   private history(
     q: Queryable,
     orgId: string,

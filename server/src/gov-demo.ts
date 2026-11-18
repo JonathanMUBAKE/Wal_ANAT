@@ -274,8 +274,8 @@ export async function seedGovDemo(svc: Services) {
     });
   await plans.submit(me, plan.id);
   const approved = await plans.approve("u_karim", plan.id);
-  await plans.updateProgress("u_karim", approved.activities[0].id, { progress: 55, budget_spent: 21000 });
-  await plans.updateProgress("u_karim", approved.activities[1].id, { progress: 80, actual_value: 5 });
+  await plans.updateProgress("u_karim", approved.activities[0].id, { progress: 55, budget_spent: 21000, comment: "Avant-projet remis (exemple fictif)" });
+  await plans.updateProgress("u_karim", approved.activities[1].id, { progress: 80, actual_value: 5, comment: "Cinq ateliers tenus (exemple fictif)" });
   // Plans des directions (fictifs) : de quoi lire, sur le tableau de bord DG, le réalisé face à l'attendu à date
   for (const [unitName, owner, rows] of [
     [
@@ -317,7 +317,7 @@ export async function seedGovDemo(svc: Services) {
     // L'approbation range les activités par échéance : chacune retrouve son avancement par son intitulé
     for (const [title, , , progress] of rows) {
       const a = ok.activities.find((x: { title: string }) => x.title === title);
-      if (a) await plans.updateProgress(me, a.id, { progress });
+      if (a) await plans.updateProgress(me, a.id, { progress, comment: "Point d'avancement (exemple fictif)" });
     }
   }
 

@@ -1579,6 +1579,28 @@ export class Services {
     return rows[0].id;
   }
 
+  /**
+   * Tâches confiées par la personne (T-12, E-8) : intitulé, chargé, échéance, état, report demandé. Elle les suit
+   * même hors de son entité ; le reste du dossier reste réservé à qui peut le lire.
+   */
+  async confidedBy(actorId: string, orgId: string | null) {
+    if (!orgId) return [];
+    await this.requireOrg(actorId, orgId, "member");
+    const today = localDate();
+    return this.db.query(
+      `SELECT t.id, p.key || '-' || t.number AS key, t.title, t.assignee_id, u.name AS assignee_name,
+              to_char(t.due_on, 'YYYY-MM-DD') AS due_on, t.completed, t.completed_at, t.done_declared_at,
+              CASE WHEN p.kind = 'unit' THEN (SELECT ou.name FROM org_units ou WHERE ou.id = p.unit_id) ELSE p.name END AS place,
+              (NOT t.completed AND t.due_on IS NOT NULL AND t.due_on < $3::date) AS overdue,
+              EXISTS (SELECT 1 FROM task_postponements tp WHERE tp.task_id = t.id AND tp.status = 'pending') AS postpone_pending
+         FROM tasks t JOIN projects p ON p.id = t.project_id LEFT JOIN users u ON u.id = t.assignee_id
+        WHERE p.org_id = $1 AND t.assigned_by = $2 AND t.assignee_id IS NOT NULL AND t.assignee_id <> $2 AND NOT p.archived
+          AND (NOT t.completed OR t.completed_at > now() - interval '30 days')
+        ORDER BY t.completed, t.due_on NULLS LAST, t.created_at DESC LIMIT 300`,
+      [orgId, actorId, today],
+    );
+  }
+
   async listTasks(actorId: string, f: TaskFilters & { org_id?: string | null } = {}): Promise<Task[]> {
     let projectIds = await this.readableProjectIds(actorId, f.org_id ?? null);
     if (f.project_id) {

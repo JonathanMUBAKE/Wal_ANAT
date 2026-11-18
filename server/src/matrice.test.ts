@@ -308,10 +308,18 @@ async function boot(kind: Kind) {
       (await inj(a, "POST", "/api/signature", { title: u("D"), steps: [{ actor_id: "u_karim", action: "signature" }] }))
         .body,
     docForAlice: async () => {
+      // Ce qui va à la DG passe par son cabinet (PH-6) : Bernadette prépare, Fiston vise, puis le document l'attend
       const d = (
-        await inj("u_karim", "POST", "/api/signature", { title: u("D"), steps: [{ actor_id: a, action: "signature" }] })
+        await inj(a, "POST", "/api/signature", {
+          title: u("D"),
+          steps: [
+            { actor_id: "u_karim", action: "visa" },
+            { actor_id: a, action: "signature" },
+          ],
+        })
       ).body;
-      await inj("u_karim", "POST", `/api/signature/${d.id}/start`);
+      await inj(a, "POST", `/api/signature/${d.id}/start`);
+      await inj("u_karim", "POST", `/api/signature/${d.id}/decide`, { decision: "approve" });
       return d.id;
     },
     delegation: async () =>
@@ -458,6 +466,7 @@ const taskUrl =
   async (X: Any) => ({ url: `/api/tasks/${(await X.task()).id}${s}` });
 const TABLE = [
   R_("GET", "/api/me"),
+  R_("GET", "/api/tasks/confided"),
   R_("GET", "/api/users"),
   R_("PUT", "/api/users/:id/avatar", () => ({ url: "/api/users/u_karim/avatar", body: { data_url: PNG } })),
   R_("DELETE", "/api/users/:id/avatar", () => ({ url: "/api/users/u_karim/avatar" })),
@@ -863,7 +872,7 @@ const TABLE = [
   })),
   R_("PATCH", "/api/plan-activities/:id/progress", async (X) => ({
     url: `/api/plan-activities/${(await X.approvedPlan()).activities[0].id}/progress`,
-    body: { progress: 10 },
+    body: { progress: 10, comment: "Démarrage" },
   })),
   R_("POST", "/api/plan-activities/:id/revise", async (X) => ({
     url: `/api/plan-activities/${(await X.approvedPlan()).activities[0].id}/revise`,
@@ -932,6 +941,12 @@ const TABLE = [
     body: { description: "Présentation" },
   })),
   R_("DELETE", "/api/partners/:id", async (X) => ({ url: `/api/partners/${(await X.partner()).id}` })),
+  R_("POST", "/api/partners/:id/suspension-request", async (X) => {
+    // Une relation active, dont la propriétaire légitime est point focal (PA-2)
+    const p = await X.partner();
+    await X.db.query("UPDATE partners SET state = 'actif' WHERE id = $1", [p.id]);
+    return { url: `/api/partners/${p.id}/suspension-request`, body: { reason: "Différend sur les livrables" } };
+  }),
   R_("POST", "/api/partners/:id/state", async (X) => ({
     url: `/api/partners/${(await X.partner()).id}/state`,
     body: { state: "en_discussion" },

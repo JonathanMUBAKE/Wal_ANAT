@@ -94,6 +94,15 @@ export function HomePage() {
         <h1 className="mt-1 font-serif text-[40px] leading-[1.05] tracking-[-0.02em] sm:text-[52px]">
           {greeting()}, {me ? firstName(me.name) : ""}
         </h1>
+        {/* La page de travail de la direction est le tableau de bord DG : l'Accueil y mène d'abord (A-1) */}
+        {can("pilotage.view") && (
+          <Link
+            to="/pilotage"
+            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-line bg-panel px-4 py-2.5 text-[13.5px] font-medium shadow-sm hover:border-line-strong hover:bg-hover"
+          >
+            Ouvrir le tableau de bord DG : décisions, retards, parapheur, directions
+          </Link>
+        )}
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-muted">
           <span>
             <b className="font-semibold text-fg tabular">{open.length}</b>{" "}
@@ -121,7 +130,8 @@ export function HomePage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-6">
-          <QuickEntry noSign />
+          {/* La direction saisit depuis son tableau de bord : le bloc n'est pas répété ici (P-8) */}
+          {!can("pilotage.view") && <QuickEntry noSign />}
           <RoleFocus />
           <section className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
             <div className="flex items-center gap-1 overflow-x-auto border-b border-line px-4 pt-3">

@@ -1,6 +1,6 @@
 import { RECURRENCE_LABELS } from "@/components/TaskDrawer";
 import { useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -92,6 +92,15 @@ export function UnitPage() {
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            {/* Le responsable lit le tableau de sa direction, comme la DG (P-5) */}
+            {responsable && unitId && (
+              <Link
+                to={`/pilotage/directions/${unitId}`}
+                className="inline-flex h-9 items-center rounded-lg border border-line px-3 text-[13px] hover:bg-hover"
+              >
+                Tableau de la direction
+              </Link>
+            )}
             {units.length > 1 && (
               <Select
                 aria-label="Entité"

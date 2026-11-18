@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useCan } from "@/lib/hooks";
 import { Building2, ChevronRight } from "lucide-react";
 import { Empty, Spinner, cn } from "@/components/ui";
 import { PageHeader, Section, Status, Table, Td, Tr, frDate, type Tone } from "@/components/gov";
@@ -49,6 +50,7 @@ const KIND: Record<string, string> = { decision: "Décision", courrier: "Courrie
 
 export function DirectionPage() {
   const { id } = useParams();
+  const canPilot = useCan()("pilotage.view");
   const { data: d, error } = useQuery({
     queryKey: ["pilotage-direction", id],
     queryFn: () => api.get<Detail>(`/api/pilotage/directions/${id}`),
@@ -69,9 +71,16 @@ export function DirectionPage() {
         subtitle={`${d.unit.manager_name ? `Dirigée par ${d.unit.manager_name}` : "Sans chef désigné"} · ${d.stats.agents} agent${d.stats.agents > 1 ? "s" : ""} · photo au ${frDate(d.today)}`}
         actions={
           <nav aria-label="Remonter" className="flex flex-wrap items-center gap-1 text-[12.5px]">
-            <Link to="/pilotage" className="text-muted hover:text-fg">
-              Tableau de bord DG
-            </Link>
+            {/* Un chef qui lit sa direction n'a pas le tableau de bord DG (P-5) */}
+            {canPilot ? (
+              <Link to="/pilotage" className="text-muted hover:text-fg">
+                Tableau de bord DG
+              </Link>
+            ) : (
+              <Link to="/entite" className="text-muted hover:text-fg">
+                Mon entité
+              </Link>
+            )}
             {d.breadcrumb.slice(0, -1).map((b) => (
               <span key={b.id} className="flex items-center gap-1">
                 <ChevronRight className="size-3 text-faint" />

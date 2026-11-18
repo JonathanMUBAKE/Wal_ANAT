@@ -654,6 +654,8 @@ export async function buildApp(opts: AppOptions = {}) {
       tags: z.array(z.string().max(40)).max(12).optional(),
       recurrence: z.enum(RECURRENCES).nullable().optional(),
     });
+    // Les tâches que la personne a confiées, où qu'elles soient : leur suivi, sans le reste du dossier (T-12, E-8)
+    r.get("/api/tasks/confided", async (req) => svc.confidedBy(me(req), org(req)));
     r.get("/api/tasks", async (req) => {
       const q = z
         .object({

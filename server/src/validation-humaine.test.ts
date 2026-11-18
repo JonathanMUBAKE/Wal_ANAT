@@ -280,6 +280,8 @@ describe("parapheur : signataire imposé selon la nature du document (CV-1, PH-2
     g.api(who, "POST", "/api/signature", { title: "Convention avec l'université de Kinshasa", kind, body: "Texte", steps });
 
   it("une convention engage l'Agence : la signature finale revient à la DG", async () => {
+    // Didier vise pour le cabinet : ce qui va à la DG passe par lui (PH-6)
+    await g.direction("u_hugo");
     const bad = await draft("u_karim", "Convention de partenariat", [
       { actor_id: "u_alice", action: "visa" },
       { actor_id: "u_hugo", action: "signature" },
@@ -340,7 +342,8 @@ describe("parapheur : délégations bornées (PH-3)", () => {
     });
     expect(long.status).toBe(400);
     expect(long.body.error).toMatch(/30 jours/);
-    // Délégation de visa seulement : Fiston vise à la place de la DG, mais ne signe pas
+    // Délégation de visa seulement : Fiston vise à la place de la DG, mais ne signe pas ; Didier envoie pour le cabinet (PH-6)
+    await g.direction("u_hugo");
     await g.api("u_alice", "POST", "/api/delegations", { to_user: "u_karim", start_on: day(), end_on: day(5), scope: "visa" });
     const steps = [
       { actor_id: "u_alice", action: "visa" },

@@ -355,7 +355,7 @@ d'identité, adresse personnelle, personnes à prévenir et observations du serv
 | D-4 | L'agent ne peut rien corriger, mais aucun bouton ne lui permet de signaler une erreur ou de demander une mise à jour au service RH. | Moyenne | **Fait** (lot 8) : « Demander une correction » ; le service RH traite, l'agent est prévenu, la demande reste au dossier |
 | D-5 | Fonction et entité se contredisent dans les dossiers de démo (Fiston rangé dans Cartographie et SIG, Didier dans le service Communication). Même famille que A-3. | Moyenne (démo) | À corriger avec A-3 |
 | D-6 | L'historique des affectations de la DG est vide. | Basse (démo) | À corriger dans la démo |
-| D-7 | Les adresses professionnelles sont en « @cadence.app » et la nationalité vaut « Fictivienne ». | Basse (démo) | À corriger : un domaine fictif propre à l'ANAT et une nationalité plausible |
+| D-7 | Les adresses professionnelles sont en « @cadence.app » et la nationalité vaut « Fictivienne ». | Basse (démo) | **Fait** (lot 9) : adresses en « @anat.example » (domaine fictif réservé), domaine de l'institution assorti, nationalité « Congolaise » |
 | D-8 | Dans la démo, personne d'autre que la DG ne gère les dossiers RH : la cheffe des RH (Esther) n'en lit aucun. La DG ne pouvant pas modifier son propre dossier, il ne peut être tenu par personne. | Moyenne (démo) | À corriger : donner le profil RH à un agent du service RH dans la démo |
 | D-9 | Le dossier ne contient ni congés, ni pièces (actes de nomination, contrats, arrêtés), ni formations, ni évaluations. | Moyenne | **Décidé et fait** (lot 8) : pièces du dossier (RH et agent), formations, évaluations (RH et agent), congés et absences |
 
@@ -687,7 +687,7 @@ Aucune n'est rattachée à un dossier.
 | DEC-4 | Aucune correction possible, même d'une faute de frappe : il faut remplacer, ce qui crée un nouveau numéro. | Basse | À décider : autoriser une correction de forme tracée pendant un court délai, ou garder le remplacement |
 | DEC-5 | Le formulaire « Inscrire une décision » de cette page ne propose pas de rattacher la décision à un dossier ; seule l'action « Arbitrer » depuis un dossier le fait. | Moyenne | À corriger : champ « Dossier » (projet, activité, réunion) dans le formulaire |
 | DEC-6 | Tous les profils, agents compris, voient toutes les décisions non confidentielles. | Basse | **Décidé et fait** (lot 7) : un agent voit les décisions dont il est chargé ou dont le dossier le concerne (projet, activité, réunion) |
-| DEC-7 | Données de démo : deux décisions seulement, toutes deux pour Fiston, sans dossier d'origine. | Moyenne (démo) | À corriger : une dizaine de décisions réparties, issues de comités et de dossiers |
+| DEC-7 | Données de démo : deux décisions seulement, toutes deux pour Fiston, sans dossier d'origine. | Moyenne (démo) | **Fait** (lot 9) : onze décisions, issues de comités, de projets et d'activités, confiées à neuf personnes ; deux à confirmer par la DG, deux exécutées et confirmées |
 
 ### Ce qui fonctionne bien
 
@@ -789,7 +789,7 @@ Fiston est rédacteur de 15 réunions sur 16, comité de direction compris.
 | R-6 | Une réunion passée non tenue (13/11) reste « Compte rendu à établir » indéfiniment ; rien ne propose de la déclarer non tenue ou annulée. | Basse | **Fait** (lot 8) : une séance passée sans compte rendu se déclare non tenue, avec un motif ; rappel au rédacteur |
 | R-7 | Des réunions proches ne sont pas convoquées (revue avec le bailleur du 22/11, réunion avec les provinces du 24/11) et aucun rappel ne prévient le rédacteur. | Moyenne | **Fait** (lot 8) : rappel au rédacteur d'une séance non convoquée à 7 jours |
 | R-8 | Toutes les réunions non confidentielles sont visibles de tous, y compris le comité de direction et ses comptes rendus. | Moyenne | **Décidé et fait** (lot 7) : une réunion se voit de ses participants, de son entité, de son projet et de la direction ; le comité de direction reste à ses participants et à la direction |
-| R-9 | Données de démo : Fiston rédige 15 réunions sur 16, comité de direction compris ; le comité du 09/11 n'a que deux présents ; l'assistante n'est convoquée à rien. | Moyenne (démo) | À corriger : le secrétariat de la DG rédige les comités, les membres du comité sont convoqués |
+| R-9 | Données de démo : Fiston rédige 15 réunions sur 16, comité de direction compris ; le comité du 09/11 n'a que deux présents ; l'assistante n'est convoquée à rien. | Moyenne (démo) | **Fait** (lot 9) : l'assistante de la DG rédige les comités de direction et le point d'étape ; les sept membres du comité sont convoqués ; d'autres réunions ont leur propre rédacteur |
 
 ### Ce qui fonctionne bien
 
@@ -879,7 +879,7 @@ Aucun risque n'est rattaché à un projet, aucun indicateur à une activité du 
 | RI-5 | Un risque ne se rattache qu'à un projet, pas à une activité, une direction ou une convention ; il n'a pas d'échéance pour ses mesures de maîtrise. | Moyenne | À décider : rattachements et échéance de la mesure |
 | RI-6 | Le responsable d'un risque n'est prévenu de rien (attribution, changement de score). | Moyenne | À corriger avec RI-1 |
 | RI-7 | Un risque ne se supprime pas (il se clôt) ; c'est cohérent, mais un indicateur créé par erreur ne se supprime pas non plus. | Basse | À décider : archivage d'un indicateur |
-| RI-8 | Données de démo : deux risques et trois indicateurs, sans lien avec les projets ni le plan de travail. | Basse (démo) | À compléter |
+| RI-8 | Données de démo : deux risques et trois indicateurs, sans lien avec les projets ni le plan de travail. | Basse (démo) | **Fait** (lot 9) : trois risques rattachés à des projets, avec leur responsable et leur parade ; un indicateur relié au plan de travail |
 
 ### Ce qui fonctionne bien
 
@@ -960,7 +960,7 @@ préparer ; seule la DG les approuve.
 | PT-5 | Aucune campagne de préparation : pas de rappel pour le plan de l'année suivante, pas de vue « entités sans plan ». | Moyenne | **Fait** (lot 8) : campagne des plans (entités sans plan pour l'année) et relance de leurs chefs |
 | PT-6 | Tous les profils voient tous les plans, budgets prévus et dépensés compris. | Basse | **Décidé et fait** (lot 7) : budgets des plans réservés à la direction, aux chefs de l'entité et à qui prépare ou approuve les plans |
 | PT-7 | Les retards de la liste des plans sont calculés sur la date UTC du serveur (`CURRENT_DATE`), pas sur la date de Kinshasa : entre minuit et 1 h, un jour d'écart. | Basse | À corriger (déjà noté dans le plan de travail) |
-| PT-8 | Données de démo : 3 plans pour 12 entités, aucun pour la Direction générale ni l'Ingénierie territoriale ; toutes les activités de l'Agence confiées à Fiston. | Moyenne (démo) | À compléter |
+| PT-8 | Données de démo : 3 plans pour 12 entités, aucun pour la Direction générale ni l'Ingénierie territoriale ; toutes les activités de l'Agence confiées à Fiston. | Moyenne (démo) | **Fait** (lot 9) : plans de la Direction générale et de l'Ingénierie territoriale (en préparation) ; activités du plan de l'Agence réparties entre les directions |
 
 ### Ce qui fonctionne bien
 
@@ -1050,7 +1050,7 @@ présenté comme le bailleur du programme.
 | PA-3 | Les notes d'échange sont lisibles par tous les profils qui voient l'annuaire. | Moyenne | **Fait** (lot 7) : notes d'échange réservées aux gestionnaires, aux points focaux et à la direction |
 | PA-4 | Rien ne signale un partenaire actif ou en discussion sans point focal (4 sur 6 dans la démo). | Moyenne | À corriger : alerte « sans point focal », point focal obligatoire pour passer « en discussion » ou « actif » |
 | PA-5 | Rien ne signale une relation sans échange depuis longtemps (date de dernière note connue mais non exploitée). | Basse | À corriger : « sans contact depuis 6 mois » dans la liste |
-| PA-6 | Données de démo : aucun partenaire rattaché à un projet ou une activité du portefeuille, contacts presque vides. | Moyenne (démo) | À compléter : le FFDT rattaché au programme qu'il finance |
+| PA-6 | Données de démo : aucun partenaire rattaché à un projet ou une activité du portefeuille, contacts presque vides. | Moyenne (démo) | **Fait** (lot 9) : le FFDT commanditaire du schéma national et interlocuteur de l'audience ; le ministère à la commission interministérielle ; un contact principal pour cinq partenaires |
 
 ### Ce qui fonctionne bien
 
@@ -1299,7 +1299,7 @@ Historique de ENT/2026/0001 : « Enregistré au bureau d'ordre », « **Imputé 
 | C-3 | Les chefs d'entité qui consultent le registre voient tout le courrier non confidentiel, pas seulement celui de leur entité. | Moyenne | **Décidé et fait** (lot 7) : un chef lit le courrier de son entité (et des entités rattachées) ; le secrétariat et la direction gardent le registre complet |
 | C-4 | Un correspondant saisi en texte libre (« Partenaire technique ») ne se rattache à aucune fiche partenaire. | Basse | À corriger : proposer de rattacher à une fiche existante ou d'en créer une |
 | C-5 | Imputer à l'entité racine « ANAT » fait remonter les retards à la DG elle-même. | Basse | À décider : interdire l'imputation à la racine, ou la réserver à la DG |
-| C-6 | Données de démo : la DG fait office de bureau d'ordre (enregistre et impute) ; trois courriers seulement, aucun sortant. | Moyenne (démo) | À compléter : l'assistante ou un agent du secrétariat comme bureau d'ordre, des sortants en réponse |
+| C-6 | Données de démo : la DG fait office de bureau d'ordre (enregistre et impute) ; trois courriers seulement, aucun sortant. | Moyenne (démo) | **Fait** (lot 9) : l'assistante tient le bureau d'ordre (enregistre et impute) ; deux courriers sortants répondent à des entrants |
 
 ### Ce qui fonctionne bien
 
@@ -1387,7 +1387,7 @@ La liste des profils comprend un profil **« DG »**, mais Bernadette a le profi
 | S-4 | Les listes déroulantes de profil et d'entité modifient immédiatement, sans confirmation. Un clic malheureux change les droits ou le rattachement de quelqu'un. | Moyenne | À corriger : confirmation, avec motif pour un changement de profil |
 | S-5 | Un profil « DG » existe, mais la DG de la démo a le profil « Propriétaire ». Même famille que A-4. | Moyenne (démo) | À corriger avec A-4 |
 | S-6 | Les écarts de participation gardent un texte figé avec les anciens noms (« Direction Produit & Technologie », « Nova Mobile »). Même famille que C-1. | Basse (démo) | À corriger dans la démo (régénérer les écarts après renommage) |
-| S-7 | Seules 2 entités sur 12 ont une fiche d'attributions : l'analyse des écarts ne couvre presque rien. | Moyenne (démo) | À compléter |
+| S-7 | Seules 2 entités sur 12 ont une fiche d'attributions : l'analyse des écarts ne couvre presque rien. | Moyenne (démo) | **Fait** (lot 9) : fiches d'attributions approuvées pour les entités (rédigées par leur chef, approuvées par la DG) |
 | S-8 | Structure de démo peu crédible : la DG dirige aussi la Direction technique ; un chef de département dirige aussi une antenne et une représentation provinciale ; les RH sont un service sans personne. | Moyenne (démo) | À corriger avec A-3 |
 
 ### Ce qui fonctionne bien
@@ -1850,3 +1850,25 @@ Migrations `052` à `055`. Tests : `rh-suite.test.ts` (7), `parapheur-fichier.te
 une date de fin) et le test d'alerte de fin de contrat du lot congés aligné sur l'alerte unique. 650 tests au vert.
 
 **Remarques traitées** : PH-1, RH-1, RH-3, CV-2, D-4, D-9, PT-5, R-2, R-6, R-7.
+
+### Lot 9 — Une démonstration vivante (18/11/2026, branche `lot-demo-complete`)
+
+Dernières remarques du thème 7 (données de démonstration). Toutes les données restent fictives ; la démonstration se
+recharge sans rien dupliquer.
+
+| Remarque | Ce que la démonstration contient désormais |
+|---|---|
+| D-7 | Adresses en « @anat.example » (domaine fictif réservé à l'exemple), domaine de l'institution assorti, nationalité « Congolaise » |
+| R-9 | L'assistante de la DG rédige les comités de direction et le point d'étape ; les sept membres du comité sont convoqués (un excusé au comité passé) ; le Suivi-évaluation rédige le comité de pilotage, la Représentation Nord la réunion avec les provinces |
+| DEC-7 | Onze décisions : issues du comité de direction, de projets (SIG national, recrutements, site, archives) et d'activités (commission foncière, forum, manuel) ; neuf chargés différents ; deux inscrites par l'assistante et à confirmer par la DG  ; deux exécutées, déclarées par leur chargé puis confirmées par le secrétariat |
+| C-6 | L'assistante enregistre et impute trois nouveaux courriers (bailleur, ministère, province) ; deux courriers sortants répondent à des entrants |
+| RI-8 | Trois risques rattachés à des projets (images satellites, recrutement, contestation du schéma), chacun avec son responsable et sa parade ; l'indicateur « Provinces couvertes par un schéma » est relié au plan |
+| PT-8 | Plans de la Direction générale et de l'Ingénierie territoriale, en préparation ; les activités du plan de l'Agence, toutes confiées à Fiston, sont réparties entre les directions |
+| PA-6 | Le FFDT commanditaire du schéma national et interlocuteur de l'audience avec le bailleur ; le ministère à la commission interministérielle ; un contact principal pour cinq partenaires |
+| S-7 | Une fiche d'attributions approuvée pour chaque entité qui n'en avait pas, rédigée par son chef et approuvée par la DG |
+
+Code : `server/src/gov-demo-anat-life.ts`, appelé à la fin du contenu ANAT. Tests : 8 tests de démonstration ajoutés ;
+le test de rechargement compte aussi les décisions et le courrier. 658 tests au vert.
+
+**Remarques traitées** : D-7, R-9, DEC-7, C-6, RI-8, PT-8, PA-6, S-7. Toutes les remarques de l'analyse sont désormais
+traitées ou décidées, sauf celles marquées « À décider » sans suite donnée à ce jour.

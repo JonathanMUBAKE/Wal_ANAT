@@ -188,10 +188,94 @@ describe("démonstration ANAT", () => {
     for (const r of rows) expect(r.assigned, `affectation de ${r.user_id}`).toBe(r.member);
   });
 
+  // Remarques de démonstration restantes (D-7, R-9, DEC-7, C-6, RI-8, PT-8, PA-6, S-7) : une agence vivante
+  it("D-7 : adresses à un domaine propre à l'Agence, nationalité plausible", async () => {
+    const mails = await q<{ email: string }>(
+      "SELECT u.email FROM users u JOIN org_members om ON om.user_id = u.id WHERE om.org_id = $1 AND u.email IS NOT NULL",
+      [org],
+    );
+    expect(mails.filter((m) => m.email.endsWith("@cadence.app"))).toEqual([]);
+    expect(mails.every((m) => m.email.endsWith("@anat.example"))).toBe(true);
+    const o = await ctx.db.one<{ domains: string[] }>("SELECT domains FROM organizations WHERE id = $1", [org]);
+    expect(o!.domains).toContain("anat.example");
+    expect((await q("SELECT 1 FROM agent_records WHERE nationality = 'Fictivienne'")).length).toBe(0);
+  });
+
+  it("R-9 : le secrétariat de la DG rédige les comités de direction, dont les membres sont convoqués", async () => {
+    const codir = await q<{ id: string; writer_id: string; n: number }>(
+      `SELECT m.id, m.writer_id, (SELECT count(*)::int FROM meeting_attendees x WHERE x.meeting_id = m.id AND x.invited) AS n
+         FROM meetings m WHERE m.org_id = $1 AND m.meeting_type ILIKE 'Comité de direction%'`,
+      [org],
+    );
+    expect(codir.length).toBeGreaterThan(0);
+    for (const m of codir) {
+      expect(m.writer_id).toBe("u_ines");
+      expect(m.n).toBeGreaterThanOrEqual(5);
+    }
+    const writers = await q<{ w: string }>("SELECT DISTINCT writer_id AS w FROM meetings WHERE org_id = $1", [org]);
+    expect(writers.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("DEC-7 : une dizaine de décisions réparties, issues de comités et de dossiers", async () => {
+    const d = await q<{ owner_id: string | null; src: boolean; confirmed_at: string | null; status: string }>(
+      `SELECT owner_id, (project_id IS NOT NULL OR activity_id IS NOT NULL OR meeting_id IS NOT NULL) AS src, confirmed_at, status
+         FROM dg_decisions WHERE org_id = $1`,
+      [org],
+    );
+    expect(d.length).toBeGreaterThanOrEqual(10);
+    expect(new Set(d.map((x) => x.owner_id).filter(Boolean)).size).toBeGreaterThanOrEqual(4);
+    expect(d.filter((x) => x.src).length).toBeGreaterThanOrEqual(5);
+    expect(d.some((x) => !x.confirmed_at)).toBe(true);
+    expect(d.some((x) => x.status === "executee")).toBe(true);
+  });
+
+  it("C-6 : le secrétariat tient le bureau d'ordre ; des courriers sortants répondent aux entrants", async () => {
+    const mail = await q<{ direction: string; reply_to_id: string | null; created_by: string }>(
+      "SELECT direction, reply_to_id, created_by FROM correspondence WHERE org_id = $1",
+      [org],
+    );
+    expect(mail.filter((m) => m.direction === "sortant" && m.reply_to_id).length).toBeGreaterThanOrEqual(2);
+    expect(mail.filter((m) => m.created_by === "u_ines").length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("RI-8 : des risques rattachés aux projets, des indicateurs reliés au plan", async () => {
+    expect((await q("SELECT 1 FROM risks WHERE org_id = $1 AND project_id IS NOT NULL", [org])).length).toBeGreaterThanOrEqual(3);
+    expect((await q("SELECT 1 FROM indicators WHERE org_id = $1 AND plan_activity_id IS NOT NULL", [org])).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("PT-8 : des plans pour la Direction générale et l'Ingénierie territoriale, des activités réparties", async () => {
+    const plans = await q<{ name: string }>(
+      "SELECT u.name FROM work_plans w JOIN org_units u ON u.id = w.unit_id WHERE w.org_id = $1",
+      [org],
+    );
+    const names = plans.map((p) => p.name);
+    expect(names).toEqual(expect.arrayContaining(["Direction générale", "Ingénierie territoriale"]));
+    const owners = await q<{ r: string }>(
+      "SELECT DISTINCT responsible_id AS r FROM plan_activities WHERE org_id = $1 AND responsible_id IS NOT NULL",
+      [org],
+    );
+    expect(owners.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("PA-6 : des partenaires reliés au portefeuille, des contacts renseignés", async () => {
+    expect((await q("SELECT 1 FROM projects WHERE org_id = $1 AND sponsor_partner_id IS NOT NULL", [org])).length).toBeGreaterThanOrEqual(1);
+    expect((await q("SELECT 1 FROM agency_activities WHERE org_id = $1 AND counterpart_partner_id IS NOT NULL", [org])).length).toBeGreaterThanOrEqual(1);
+    expect((await q("SELECT 1 FROM partner_contacts WHERE org_id = $1", [org])).length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("S-7 : la plupart des entités ont une fiche d'attributions", async () => {
+    const units = (await q("SELECT 1 FROM org_units WHERE org_id = $1 AND parent_id IS NOT NULL", [org])).length;
+    const sheets = (await q("SELECT DISTINCT unit_id FROM attribution_sheets WHERE org_id = $1 AND unit_id IS NOT NULL", [org])).length;
+    expect(sheets).toBeGreaterThanOrEqual(Math.min(8, units));
+  });
+
   it("se recharge sans rien dupliquer", async () => {
     const count = async () =>
       (await ctx.db.one<{ n: number }>("SELECT count(*)::int AS n FROM users"))!.n +
-      (await ctx.db.one<{ n: number }>("SELECT count(*)::int AS n FROM projects"))!.n * 1000;
+      (await ctx.db.one<{ n: number }>("SELECT count(*)::int AS n FROM projects"))!.n * 1000 +
+      // La démonstration complétée ne se duplique pas non plus
+      (await ctx.db.one<{ n: number }>("SELECT count(*)::int AS n FROM dg_decisions"))!.n * 100_000 +
+      (await ctx.db.one<{ n: number }>("SELECT count(*)::int AS n FROM correspondence"))!.n * 10_000_000;
     const before = await count();
     await seedGovDemo(ctx.svc);
     expect(await count()).toBe(before);

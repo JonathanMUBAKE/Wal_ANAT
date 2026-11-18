@@ -1,4 +1,5 @@
 import { Gaps } from "./gaps.js";
+import { anatLife } from "./gov-demo-anat-life.js";
 import { Hr } from "./hr.js";
 import type { Provisioning } from "./auth/provisioning.js";
 import type { Services } from "./services.js";
@@ -452,6 +453,8 @@ export async function anatContent(svc: Services, org: string, units: [string, st
       [org, from, to],
     );
   await new Gaps(svc).detect("u_alice", org);
+  // Une agence vivante : décisions, courrier, risques, plans, partenaires, attributions (thème 7, suite)
+  await anatLife(svc, org);
 }
 
 /** Le jeu générique crée un second espace (Studio Lumen) : il n'a pas sa place dans la démonstration de l'Agence. */

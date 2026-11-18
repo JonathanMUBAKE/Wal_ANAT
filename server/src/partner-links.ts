@@ -20,14 +20,25 @@ export async function linkPartner(
   svc: Services,
   orgId: string,
   partnerId: string | null | undefined,
-  opts: { current?: string | null; supplier?: boolean; allowClosed?: boolean } = {},
+  opts: { current?: string | null; supplier?: boolean; allowClosed?: boolean; actorId?: string } = {},
 ): Promise<LinkedPartner | null> {
   if (!partnerId) return null;
-  const p = await svc.db.one<LinkedPartner & { merged_into: string | null }>(
-    "SELECT id, name, acronym, state, merged_into FROM partners WHERE org_id = $1 AND id = $2",
+  const p = await svc.db.one<LinkedPartner & { merged_into: string | null; confidential: boolean }>(
+    "SELECT id, name, acronym, state, merged_into, confidential FROM partners WHERE org_id = $1 AND id = $2",
     [orgId, partnerId],
   );
   if (!p || p.merged_into) throw badRequest("Partenaire inconnu dans l'annuaire, ou fiche fusionnée");
+  // Une fiche confidentielle qu'on ne lit pas reste inconnue : on ne la lie pas, on ne lit pas son nom (testeurs)
+  if (p.confidential && opts.actorId && partnerId !== opts.current) {
+    const sees =
+      (await svc.permissionsOf(opts.actorId, orgId)).includes("partners.manage") ||
+      !!(await svc.db.one(
+        `SELECT 1 FROM partners x WHERE x.id = $1 AND (x.focal_id = $2 OR x.created_by = $2
+           OR EXISTS (SELECT 1 FROM partner_focals pf WHERE pf.partner_id = x.id AND pf.user_id = $2))`,
+        [partnerId, opts.actorId],
+      ));
+    if (!sees) throw badRequest("Partenaire inconnu dans l'annuaire, ou fiche fusionnée");
+  }
   if (p.state === "clos" && partnerId !== opts.current && !opts.allowClosed)
     throw new HttpError(409, `« ${p.name} » est clos : il n'est plus proposé pour un nouveau lien`);
   if (

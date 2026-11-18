@@ -372,11 +372,20 @@ export class Agreements {
     ids: string[],
     actorId: string,
     to: "en_discussion" | "actif",
+    focalId: string | null = null,
   ) {
     const from = to === "actif" ? ["identifie", "en_discussion"] : ["identifie"];
+    // Une relation qui avance a un point focal (PA-4) : celui de l'accord, à défaut elle reste « Identifiée » (testeurs)
+    if (focalId)
+      await q.query(
+        `UPDATE partners p SET focal_id = $1 WHERE p.org_id = $2 AND p.id = ANY($3::text[]) AND p.focal_id IS NULL
+           AND NOT EXISTS (SELECT 1 FROM partner_focals pf WHERE pf.partner_id = p.id)`,
+        [focalId, orgId, ids],
+      );
     const moved = await q.query<{ id: string; old: string }>(
       `UPDATE partners p SET state = $1, engaged = TRUE, state_reason = '', updated_at = now()
-       FROM (SELECT id, state AS old FROM partners WHERE org_id = $2 AND id = ANY($3::text[]) AND state = ANY($4::text[])) o
+       FROM (SELECT id, state AS old FROM partners WHERE org_id = $2 AND id = ANY($3::text[]) AND state = ANY($4::text[])
+               AND (focal_id IS NOT NULL OR EXISTS (SELECT 1 FROM partner_focals pf WHERE pf.partner_id = partners.id))) o
        WHERE p.id = o.id RETURNING p.id, o.old`,
       [to, orgId, ids, from],
     );
@@ -450,7 +459,7 @@ export class Agreements {
           pid,
           pid === p.lead,
         ]);
-      await this.advancePartners(q, orgId, p.ids, actorId, "en_discussion");
+      await this.advancePartners(q, orgId, p.ids, actorId, "en_discussion", i.focal_id ?? null);
       await this.history(q, orgId, p.ids, actorId, `Accord en préparation : ${i.title.trim()}`, { agreement: id });
     });
     await this.svc.log(actorId, "agreement.created", { orgId, data: { id, title: i.title.trim(), type: type.code } });
@@ -525,7 +534,7 @@ export class Agreements {
             pid,
             pid === p.lead,
           ]);
-        await this.advancePartners(q, a.org_id, p.ids, actorId, "en_discussion");
+        await this.advancePartners(q, a.org_id, p.ids, actorId, "en_discussion", a.focal_id);
       }
     });
     await this.svc.log(actorId, "agreement.updated", { orgId: a.org_id, data: { id, fields: Object.keys(i) } });
@@ -689,7 +698,7 @@ export class Agreements {
               a.parent_id,
             ]);
           const ids = a.parties.map((p) => p.id);
-          await this.advancePartners(q, a.org_id, ids, actorId, "actif");
+          await this.advancePartners(q, a.org_id, ids, actorId, "actif", a.focal_id);
           await this.history(q, a.org_id, ids, actorId, `Accord entré en vigueur : ${a.title}`, { agreement: a.id });
         });
         break;

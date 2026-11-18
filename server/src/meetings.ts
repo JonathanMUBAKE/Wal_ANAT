@@ -213,6 +213,12 @@ const initialsOf = (name: string) =>
     .join("")
     .toUpperCase() || "XX";
 
+/** La fin d'une séance suit son début, et la prochaine séance suit celle-ci (testeurs). */
+const assertSchedule = (i: { meeting_date?: string | null; start_time?: string | null; end_time?: string | null; next_date?: string | null }) => {
+  if (i.start_time && i.end_time && i.end_time <= i.start_time) throw badRequest("L'heure de fin précède l'heure de début");
+  if (i.next_date && i.meeting_date && i.next_date <= i.meeting_date)
+    throw badRequest("La prochaine séance doit suivre celle-ci");
+};
 const assertDate = (v: string | null | undefined) => {
   if (v && !isRealDate(v)) throw badRequest(`Date invalide : ${v}`);
 };
@@ -412,9 +418,15 @@ export class Meetings {
   }
 
   /** Partenaires d'une réunion (lot PA3) : de l'institution, vivants ; un partenaire déjà lié reste valable s'il est clos. */
-  private async partnersOf(orgId: string, ids: string[], invitees: { partner_id?: string }[], current: string[]) {
+  private async partnersOf(
+    orgId: string,
+    ids: string[],
+    invitees: { partner_id?: string }[],
+    current: string[],
+    actorId?: string,
+  ) {
     const all = [...new Set([...ids, ...invitees.flatMap((i) => (i.partner_id ? [i.partner_id] : []))])];
-    for (const p of all) await linkPartner(this.svc, orgId, p, { current: current.includes(p) ? p : null });
+    for (const p of all) await linkPartner(this.svc, orgId, p, { actorId, current: current.includes(p) ? p : null });
     return all;
   }
   private async currentPartners(meetingId: string) {
@@ -698,6 +710,7 @@ export class Meetings {
       await this.svc.requirePerm(actorId, orgId, "meetings.manage");
     assertDate(input.meeting_date);
     assertDate(input.next_date);
+    assertSchedule(input);
     if (input.timing === "upcoming" && input.meeting_date < today())
       throw badRequest(
         "Une réunion à venir se programme à partir d'aujourd'hui : pour une séance passée, enregistrez une réunion déjà tenue",
@@ -718,7 +731,7 @@ export class Meetings {
       throw badRequest(`Une série compte de 1 à ${MAX_SERIES} séances`);
     const invitees = await this.resolveInvitees(orgId, input.invitees ?? []);
     // Partenaires concernés : ceux choisis, et ceux dont un contact est convoqué
-    const partners = await this.partnersOf(orgId, input.partner_ids ?? [], invitees, []);
+    const partners = await this.partnersOf(orgId, input.partner_ids ?? [], invitees, [], actorId);
     const seriesId = count > 1 ? uid("ser") : null;
     let first = "";
     for (let n = 0; n < count; n++) {
@@ -821,6 +834,14 @@ export class Meetings {
     const m = await this.editable(actorId, id);
     assertDate(patch.meeting_date);
     assertDate(patch.next_date);
+    assertSchedule({
+      meeting_date:
+        patch.meeting_date ??
+        (typeof m.meeting_date === "string" ? m.meeting_date.slice(0, 10) : localDate(new Date(m.meeting_date as never))),
+      start_time: patch.start_time !== undefined ? patch.start_time : m.start_time,
+      end_time: patch.end_time !== undefined ? patch.end_time : m.end_time,
+      next_date: patch.next_date,
+    });
     if (patch.meeting_date && Number(patch.meeting_date.slice(0, 4)) !== m.year)
       throw badRequest("Le numéro du compte rendu est annuel : créez une nouvelle réunion pour une autre année");
     const fields = { ...patch } as Record<string, unknown>;
@@ -837,7 +858,7 @@ export class Meetings {
       });
     if (patch.video_link !== undefined) fields.video_link = patch.video_link.trim();
     if (patch.partner_ids !== undefined) {
-      const partners = await this.partnersOf(m.org_id, patch.partner_ids, [], await this.currentPartners(id));
+      const partners = await this.partnersOf(m.org_id, patch.partner_ids, [], await this.currentPartners(id), actorId);
       await this.svc.db.tx((q) => this.writePartners(q, m, partners, true));
     }
     const allowed = [
@@ -1692,6 +1713,13 @@ export class Meetings {
     assertDate(patch.due_on);
     if (patch.status === "reporte" && (!patch.due_on || !patch.postponed_reason?.trim()))
       throw badRequest("Un report exige une nouvelle échéance et un motif");
+    // Un report recule l'échéance ; une annulation se motive ; une recommandation close ne se rouvre pas ici (testeurs)
+    if (patch.status === "reporte" && patch.due_on && a.due_on && patch.due_on <= String(a.due_on).slice(0, 10))
+      throw badRequest("Un report fixe une échéance plus tardive que l'actuelle");
+    if (patch.status === "annule" && !patch.postponed_reason?.trim())
+      throw badRequest("Une annulation se motive");
+    if (CLOSED.includes(a.status) && patch.status && !CLOSED.includes(patch.status))
+      throw new HttpError(409, "Cette recommandation est close : elle ne se rouvre pas");
     const status = patch.status ?? a.status;
     const closing = CLOSED.includes(status);
     const row = await this.svc.db.one<MeetingAction>(

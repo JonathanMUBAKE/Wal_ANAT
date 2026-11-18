@@ -212,6 +212,9 @@ export class Registers {
     for (const d of [i.doc_date, i.received_on, i.due_on])
       if (d && !isRealDate(d)) throw badRequest(`Date invalide : ${d}`);
     if (i.due_on && i.due_on < i.received_on) throw badRequest("Le délai de réponse précède la date de réception");
+    // Un courrier s'enregistre à sa réception : ni date future, ni document daté après sa réception (testeurs)
+    if (i.received_on > localDate()) throw badRequest("La date de réception ne peut pas être dans le futur");
+    if (i.doc_date && i.doc_date > i.received_on) throw badRequest("La date du document est postérieure à sa réception");
     await this.assertDossier(orgId, i);
     // Une réponse est un courrier sortant lié à un courrier entrant de l'institution (lot P3b)
     let replied: Mail | undefined;
@@ -228,6 +231,7 @@ export class Registers {
     const contact = await linkContact(this.svc, orgId, i.contact_id, i.partner_id);
     const partnerId = i.partner_id ?? contact?.partner_id ?? (i.contact_id ? null : replied?.partner_id) ?? null;
     const partner = await linkPartner(this.svc, orgId, partnerId, {
+      actorId,
       current: replied?.partner_id ?? null,
     });
     const correspondent = i.correspondent?.trim() || partner?.name || replied?.correspondent || "";
@@ -408,8 +412,11 @@ export class Registers {
     if (!manager && !rel.assignee && !rel.head)
       throw forbidden("Seuls l'agent imputé, son chef et la direction clôturent ce courrier");
     if (m.status === "classe") throw new HttpError(409, "Ce courrier est classé sans suite");
+    if (m.status === "traite") throw new HttpError(409, "Ce courrier est déjà traité");
     // La réponse se choisit parmi les courriers sortants enregistrés : la clôture les relie (C-2)
     if (i.reply_id) {
+      if (i.reply_id === id || m.direction !== "entrant")
+        throw badRequest("Seul un courrier entrant se clôt par une réponse, qui est un autre courrier");
       const out = await this.svc.db.one<Mail>("SELECT * FROM correspondence WHERE id = $1 AND org_id = $2", [
         i.reply_id,
         m.org_id,
@@ -788,6 +795,7 @@ export class Registers {
   }
   async createIndicator(actorId: string, orgId: string, i: IndicatorInput & { name: string; target: number }) {
     await this.svc.requirePerm(actorId, orgId, "indicators.manage");
+    this.assertMeasured(i.measured_on);
     await this.assertPlanActivity(orgId, i.plan_activity_id);
     this.assertSource(i.computed_from);
     const id = uid("ind");
@@ -853,13 +861,19 @@ export class Registers {
     await this.svc.log(actorId, "indicator.updated", { orgId: r.org_id, data: { id, ...i } });
     // Chaque mesure garde sa valeur, sa date et son auteur (RI-3)
     if (i.result !== undefined && (i.result !== Number(r.result) || i.measured_on)) {
-      if (i.measured_on && !isRealDate(i.measured_on)) throw badRequest(`Date invalide : ${i.measured_on}`);
+      this.assertMeasured(i.measured_on);
       await this.svc.db.query(
         "INSERT INTO indicator_values (id, org_id, indicator_id, result, measured_on, author_id) VALUES ($1,$2,$3,$4,$5,$6)",
         [uid("inv"), r.org_id, id, i.result, i.measured_on ?? localDate(), actorId],
       );
     }
     return this.oneIndicator(r.org_id, id);
+  }
+  /** Une mesure a une vraie date, qui n'est pas dans le futur (testeurs). */
+  private assertMeasured(d: string | undefined) {
+    if (d === undefined) return;
+    if (!isRealDate(d)) throw badRequest(`Date invalide : ${d}`);
+    if (d > localDate()) throw badRequest("Une mesure ne se date pas dans le futur");
   }
   async indicatorHistory(actorId: string, id: string) {
     const r = await this.svc.db.one<{ org_id: string }>("SELECT org_id FROM indicators WHERE id = $1", [id]);

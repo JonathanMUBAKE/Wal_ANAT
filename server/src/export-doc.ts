@@ -419,7 +419,9 @@ function renderXlsx(doc: ExportDoc) {
 
 function renderCsv(doc: ExportDoc) {
   const cell = (v: CellValue) => {
-    const s = text(v).replace(/\r?\n/g, " ");
+    let s = text(v).replace(/\r?\n/g, " ");
+    // Neutraliser les formules (injection dans le tableur) : préfixe apostrophe, sauf pour un nombre (testeurs)
+    if (/^[=+\-@\t\r]/.test(s) && typeof v !== "number") s = `'${s}`;
     return /[;"]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const out: string[] = [];

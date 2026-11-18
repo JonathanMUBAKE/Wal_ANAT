@@ -58,6 +58,9 @@ import { attributionRoutes } from "./attributions-routes.js";
 import { Meetings } from "./meetings.js";
 import { meetingRoutes } from "./meetings-routes.js";
 
+// Les messages de validation sont en français, comme le reste de l'interface (testeurs)
+z.config(z.locales.fr());
+
 export interface AppOptions {
   databaseUrl?: string;
   dataDir?: string;
@@ -142,13 +145,34 @@ export async function buildApp(opts: AppOptions = {}) {
 
   app.setErrorHandler((err, req, reply) => {
     if (err instanceof HttpError) return reply.status(err.status).send({ ...err.extra, error: err.message });
-    if (err instanceof z.ZodError) return reply.status(400).send({ error: "Requête invalide", details: err.issues });
+    if (err instanceof z.ZodError)
+      return reply.status(400).send({
+        error: `Requête invalide : ${err.issues
+          .slice(0, 3)
+          .map((i) => `${i.path.join(".") || "corps"} (${i.message})`)
+          .join(" ; ")}`,
+        details: err.issues,
+      });
     const e = err as { statusCode?: number; message: string; code?: string };
     if (e.code === "FST_ERR_CTP_BODY_TOO_LARGE")
       return reply
         .status(413)
         .send({ error: `Fichier trop volumineux : ${req.url.startsWith("/api/import") ? 10 : 25} Mo au maximum` });
     if (e.code === "23505") return reply.status(409).send({ error: "Cet élément existe déjà" });
+    // Erreurs du serveur HTTP lui-même : un message français, sans écho de la requête (testeurs)
+    const FRAMEWORK: Record<string, string> = {
+      FST_ERR_CTP_INVALID_MEDIA_TYPE: "Format de requête non pris en charge : envoyez du JSON",
+      FST_ERR_CTP_EMPTY_JSON_BODY: "La requête est vide",
+      FST_ERR_CTP_INVALID_JSON_BODY: "La requête n'est pas un JSON valide",
+      FST_ERR_BAD_URL: "Adresse invalide",
+      FST_ERR_MAX_PARAM_LENGTH: "Adresse trop longue",
+    };
+    if (e.code && FRAMEWORK[e.code]) return reply.status(e.statusCode ?? 400).send({ error: FRAMEWORK[e.code] });
+    if (err instanceof SyntaxError && (e.statusCode ?? 0) === 400)
+      return reply.status(400).send({ error: "La requête n'est pas un JSON valide" });
+    // Une valeur hors des bornes de la base (montant, date) est une erreur de saisie, pas une panne
+    if (e.code === "22003" || e.code === "22008" || e.code === "22007")
+      return reply.status(400).send({ error: "Valeur hors des limites admises" });
     if (e.statusCode && e.statusCode < 500) return reply.status(e.statusCode).send({ error: e.message });
     app.log.error(err);
     return reply.status(500).send({ error: "Erreur interne" });
@@ -199,7 +223,9 @@ export async function buildApp(opts: AppOptions = {}) {
     "form-action 'self'",
     "frame-ancestors 'self'",
   ].join("; ");
-  app.addHook("onSend", async (_req, reply, payload) => {
+  app.addHook("onSend", async (req, reply, payload) => {
+    // Les données de l'API ne restent pas dans les caches du navigateur ou d'un intermédiaire (testeurs)
+    if (req.url.startsWith("/api/") && !reply.hasHeader("Cache-Control")) reply.header("Cache-Control", "no-store");
     reply
       .header("X-Content-Type-Options", "nosniff")
       .header("Referrer-Policy", "strict-origin-when-cross-origin")

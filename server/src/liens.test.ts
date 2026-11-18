@@ -260,7 +260,7 @@ describe("recommandations → tâches du projet", () => {
     expect(closed).toMatchObject({ status: "traite", response_ref: out.reference, response_reference: out.reference });
     // Une seconde réponse garde le lien sans écraser la première clôture
     const again = (
-      await register({ direction: "sortant", subject: "Complément", reply_to_id: inMail.id, received_on: day(1) })
+      await register({ direction: "sortant", subject: "Complément", reply_to_id: inMail.id, received_on: day(0) })
     ).body;
     expect(again.reply_to_reference).toBe(inMail.reference);
     const after = (await g.api("u_alice", "GET", "/api/correspondence?direction=entrant")).body.find(

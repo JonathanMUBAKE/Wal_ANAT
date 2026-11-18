@@ -217,6 +217,10 @@ export const workingDays = (from: string, to: string) => {
 };
 export const systemProfileId = (orgId: string, role: BaseRole) => `prf_${role}_${orgId}`;
 export const isRealDate = (v: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const y = Number(v.slice(0, 4));
+  // Bornes de vraisemblance : l'année 0 ferait échouer la base, une année 0999 figerait une référence absurde (testeurs)
+  if (y < 1900 || y > 2200) return false;
   const t = Date.parse(`${v}T00:00:00Z`);
   return !Number.isNaN(t) && new Date(t).toISOString().slice(0, 10) === v;
 };

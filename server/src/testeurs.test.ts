@@ -256,3 +256,63 @@ describe("risques dans le périmètre de chacun", () => {
     expect(((await g.api("u_alice", "GET", "/api/risks")).body as Any[]).some((x) => x.id === r.id)).toBe(true);
   });
 });
+
+describe("robustesse des entrées", () => {
+  it("une date d'année 0000 ou 0999 est refusée proprement, jamais en erreur interne", async () => {
+    const p = (await g.api("u_alice", "POST", "/api/partners", { name: "Partenaire fictif", type_code: "autre", focal_id: "u_alice" })).body;
+    for (const d of ["0000-01-01", "0999-06-01"]) {
+      const r = await g.api("u_alice", "POST", `/api/partners/${p.id}/notes`, { body: "Note", happened_on: d });
+      expect(r.status).toBe(400);
+    }
+  });
+
+  it("les erreurs de validation sont en français ; l'API n'est pas mise en cache", async () => {
+    const r = await g.api("u_alice", "POST", "/api/risks", { title: "R", probability: 6, impact: 1 });
+    expect(r.status).toBe(400);
+    expect(r.body.error).toMatch(/Requête invalide : probability/);
+    expect(JSON.stringify(r.body.details)).not.toMatch(/Too big|expected number/);
+    const me = await g.ctx.app.inject({ method: "GET", url: "/api/auth/config" });
+    expect(me.headers["cache-control"]).toBe("no-store");
+  });
+
+  it("un export CSV neutralise les formules", async () => {
+    const r = await g.api("u_alice", "POST", "/api/export", {
+      format: "csv",
+      doc: { title: "Export", sections: [{ blocks: [{ kind: "table", head: ["Nom"], rows: [["=HYPERLINK(1)"], ["@SUM(1)"]] }] }] },
+    });
+    expect(r.status).toBe(200);
+    const text = typeof r.body === "string" ? r.body : JSON.stringify(r.body);
+    expect(text).toContain("'=HYPERLINK");
+    expect(text).toContain("'@SUM");
+  });
+});
+
+describe("courrier, réunions, indicateurs : saisies cohérentes", () => {
+  it("le courrier ne se reçoit pas dans le futur ; il ne se répond pas à lui-même ; un courrier traité ne se relie plus", async () => {
+    const reg = (body: Record<string, unknown>) =>
+      g.api("u_alice", "POST", "/api/correspondence", { subject: "Objet", correspondent: "X", ...body });
+    expect((await reg({ direction: "entrant", received_on: day(30) })).status).toBe(400);
+    expect((await reg({ direction: "entrant", received_on: day(), doc_date: day(1) })).status).toBe(400);
+    const out = (await reg({ direction: "sortant", received_on: day() })).body;
+    expect((await g.api("u_alice", "POST", `/api/correspondence/${out.id}/close`, { reply_id: out.id })).status).toBe(400);
+    const inc = (await reg({ direction: "entrant", received_on: day() })).body;
+    await g.api("u_alice", "POST", `/api/correspondence/${inc.id}/close`, {});
+    const late = await g.api("u_alice", "POST", `/api/correspondence/${inc.id}/close`, { reply_id: out.id });
+    expect(late.status).toBe(409);
+    const list = (await g.api("u_alice", "GET", "/api/correspondence")).body as Any[];
+    expect(list.find((x) => x.id === out.id).reply_to_id).toBeNull();
+  });
+
+  it("une réunion ne finit pas avant de commencer ; une mesure ne se date pas dans le futur", async () => {
+    const r = await g.api("u_alice", "POST", "/api/meetings", {
+      meeting_type: "Réunion",
+      meeting_date: day(3),
+      start_time: "15:00",
+      end_time: "10:00",
+    });
+    expect(r.status).toBe(400);
+    const i = await g.api("u_alice", "POST", "/api/indicators", { name: "Taux", target: 10, result: 3, measured_on: "abcdefghij" });
+    expect(i.status).toBe(400);
+    expect(((await g.api("u_alice", "GET", "/api/indicators")).body as Any[]).some((x) => x.name === "Taux")).toBe(false);
+  });
+});

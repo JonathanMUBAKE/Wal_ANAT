@@ -193,7 +193,10 @@ export function ActivitiesPage() {
             badge: data?.filter((a) => a.kind === t.code).length,
           })),
           // Vue transverse du service administratif et financier : les contrats restent rangés dans leurs projets
-          ...(can("consultants.manage") ? [{ id: "contracts" as const, label: "Contrats et paiements" }] : []),
+          // Le cabinet lit les contrats ; le gestionnaire, ceux de son périmètre (F-5)
+          ...(can("consultants.manage") || can("pilotage.view")
+            ? [{ id: "contracts" as const, label: "Contrats et paiements" }]
+            : []),
         ]}
       />
       <div className="mx-auto max-w-[1480px] p-4 sm:px-8 sm:py-6">

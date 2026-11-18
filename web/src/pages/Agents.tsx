@@ -2,8 +2,20 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { ShieldCheck, Sparkles, Eye, Hand, ScrollText } from "lucide-react";
 import { Avatar, Chip, Empty, ProjectIcon, cn } from "@/components/ui";
-import { ApprovalCard, RUN_STATUS, RunTimeline, isActive } from "@/components/ai";
-import { useAgents, useAiStatus, useApprovals, useProjects, useRuns, useUserMap } from "@/lib/hooks";
+import {
+  ApprovalCard,
+  RUN_STATUS,
+  RunTimeline,
+  isActive,
+} from "@/components/ai";
+import {
+  useAgents,
+  useAiStatus,
+  useApprovals,
+  useProjects,
+  useRuns,
+  useUserMap,
+} from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { ago } from "@/lib/format";
 
@@ -26,15 +38,15 @@ export function AgentsPage() {
           Coéquipiers IA
         </p>
         <h1 className="mt-2 font-serif text-[38px] leading-[1.05] tracking-[-0.02em] sm:text-[46px]">
-          Des collègues qui ne dorment jamais,
-          <br className="hidden sm:block" /> et qui demandent la permission.
+          L'IA prépare le travail,
+          <br className="hidden sm:block" /> une personne habilitée décide.
         </h1>
         <p className="mt-3 max-w-2xl text-[13.5px] text-muted">
           {ai?.provider === "anthropic"
             ? `Propulsés par Claude (${ai.model}).`
             : "Mode démo : les décisions sont simulées par un moteur de règles tant qu'aucune clé ANTHROPIC_API_KEY n'est configurée sur le serveur."}{" "}
-          Assignez-leur une tâche, mentionnez-les dans un commentaire, ou créez une règle d'automatisation dans un
-          projet.
+          Assignez-leur une tâche, mentionnez-les dans un commentaire, ou créez
+          une règle d'automatisation dans un projet.
         </p>
         {/* Ce qui part hors de l'Agence, dit clairement (thème 5, I-9) */}
         {ai?.read_rule && (
@@ -68,10 +80,15 @@ export function AgentsPage() {
             text: "Ils n'accèdent qu'aux projets dont ils sont membres, avec leur propre rôle. Tout est journalisé.",
           },
         ].map((c) => (
-          <div key={c.title} className="rounded-2xl border border-line bg-panel p-4 shadow-sm">
+          <div
+            key={c.title}
+            className="rounded-2xl border border-line bg-panel p-4 shadow-sm"
+          >
             <c.icon className="size-4 text-ai-fg" />
             <p className="mt-2 text-[14px] font-semibold">{c.title}</p>
-            <p className="mt-1 text-[13px] leading-relaxed text-muted">{c.text}</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-muted">
+              {c.text}
+            </p>
           </div>
         ))}
       </div>
@@ -104,7 +121,9 @@ export function AgentsPage() {
                       </Chip>
                     )}
                   </div>
-                  <p className="mt-0.5 text-[13px] text-muted first-letter:uppercase">{a.ai_role}</p>
+                  <p className="mt-0.5 text-[13px] text-muted first-letter:uppercase">
+                    {a.ai_role}
+                  </p>
                 </div>
               </div>
               {a.ai_instructions && (
@@ -113,7 +132,9 @@ export function AgentsPage() {
                     <ScrollText className="size-3" />
                     Consignes permanentes
                   </p>
-                  <p className="text-[13px] leading-relaxed">{a.ai_instructions}</p>
+                  <p className="text-[13px] leading-relaxed">
+                    {a.ai_instructions}
+                  </p>
                 </div>
               )}
               <div className="mt-4 flex flex-wrap gap-1.5">
@@ -129,10 +150,13 @@ export function AgentsPage() {
               </div>
               <div className="mt-4 flex gap-6 border-t border-line pt-3 text-[12.5px] text-muted">
                 <span>
-                  <b className="font-semibold text-fg tabular">{mine.length}</b> interventions
+                  <b className="font-semibold text-fg tabular">{mine.length}</b>{" "}
+                  interventions
                 </span>
                 <span>
-                  <b className="font-semibold text-fg tabular">{mine.filter((r) => r.status === "done").length}</b>{" "}
+                  <b className="font-semibold text-fg tabular">
+                    {mine.filter((r) => r.status === "done").length}
+                  </b>{" "}
                   terminées
                 </span>
                 <span>
@@ -149,7 +173,9 @@ export function AgentsPage() {
 
       {!!approvals?.length && (
         <section className="mt-10">
-          <h2 className="mb-3 text-[15px] font-semibold">En attente de votre accord</h2>
+          <h2 className="mb-3 text-[15px] font-semibold">
+            En attente de votre accord
+          </h2>
           <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
             {approvals.map((a) => (
               <ApprovalCard key={a.id} a={a} />
@@ -159,10 +185,15 @@ export function AgentsPage() {
       )}
 
       <section className="mt-10">
-        <h2 className="mb-3 text-[15px] font-semibold">Journal des interventions</h2>
+        <h2 className="mb-3 text-[15px] font-semibold">
+          Journal des interventions
+        </h2>
         {!runs?.length ? (
           <div className="rounded-2xl border border-line bg-panel">
-            <Empty title="Aucune intervention">Assignez une tâche à Atlas ou Nova pour commencer.</Empty>
+            <Empty title="Aucune intervention">
+              Confiez une tâche à un coéquipier IA depuis la tâche, ou
+              mentionnez-le dans un commentaire.
+            </Empty>
           </div>
         ) : (
           <div className="grid overflow-hidden rounded-2xl border border-line bg-panel shadow-sm md:grid-cols-[minmax(0,380px)_1fr]">
@@ -180,10 +211,16 @@ export function AgentsPage() {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] font-medium">
                         {users.get(r.agent_id)?.name} ·{" "}
-                        {r.kind === "mention" ? "mention" : r.kind === "rule" ? "règle" : "tâche assignée"}
+                        {r.kind === "mention"
+                          ? "mention"
+                          : r.kind === "rule"
+                            ? "règle"
+                            : "tâche assignée"}
                       </span>
                       <span className="block text-[11.5px]">
-                        <span className={RUN_STATUS[r.status].tone}>{RUN_STATUS[r.status].label}</span>
+                        <span className={RUN_STATUS[r.status].tone}>
+                          {RUN_STATUS[r.status].label}
+                        </span>
                         <span className="text-faint">
                           {" "}
                           · {r.step_count} étape(s) · {ago(r.created_at)}
@@ -198,7 +235,9 @@ export function AgentsPage() {
               {run && <RunTimeline runId={run} />}
               {run && runs.find((r) => r.id === run)?.task_id && (
                 <button
-                  onClick={() => shell.openTask(runs.find((r) => r.id === run)!.task_id!)}
+                  onClick={() =>
+                    shell.openTask(runs.find((r) => r.id === run)!.task_id!)
+                  }
                   className="mt-4 text-[12.5px] text-muted hover:text-fg"
                 >
                   Ouvrir la tâche →

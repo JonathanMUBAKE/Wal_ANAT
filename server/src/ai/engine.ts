@@ -567,7 +567,7 @@ export class AiEngine {
     if (o.requestedBy && !(await this.isAi(o.requestedBy))) ids.add(o.requestedBy);
     if (o.projectId)
       for (const m of await this.svc.members(o.projectId))
-        if (m.role === "admin" && !(await this.isAi(m.user_id))) ids.add(m.user_id);
+        if (["admin", "editor"].includes(m.role) && !(await this.isAi(m.user_id))) ids.add(m.user_id);
     if (o.taskId) {
       const t = await this.svc.db.one<{ creator_id: string | null }>("SELECT creator_id FROM tasks WHERE id = $1", [
         o.taskId,
@@ -575,7 +575,16 @@ export class AiEngine {
       if (t?.creator_id && !(await this.isAi(t.creator_id))) ids.add(t.creator_id);
     }
     ids.delete(agentId);
-    return [...ids];
+    // Seules les personnes qui peuvent décider sont prévenues : droit de valider l'IA et rôle d'éditeur (I-5)
+    const orgId = o.projectId ? await this.svc.orgOfProject(o.projectId) : null;
+    const out: string[] = [];
+    for (const u of ids) if (!o.projectId || (orgId && (await this.canDecide(u, orgId, o.projectId)))) out.push(u);
+    return out;
+  }
+  /** Peut valider ou refuser une proposition sur ce projet : droit « ai.approve » et rôle d'éditeur au moins (I-5). */
+  private async canDecide(userId: string, orgId: string, projectId: string) {
+    if (!(await this.svc.permissionsOf(userId, orgId)).includes("ai.approve")) return false;
+    return ["editor", "admin"].includes((await this.svc.projectRole(userId, projectId)) ?? "");
   }
 
   private async checkpoint(
@@ -988,9 +997,10 @@ export class AiEngine {
       if (
         a.kind === "assistant"
           ? a.requested_by === userId
-          : a.project_id &&
+          : // On ne voit que les propositions que l'on peut décider (I-5)
+            a.project_id &&
             !(a.target_ids ?? []).includes(userId) &&
-            ["editor", "admin"].includes((await this.svc.projectRole(userId, a.project_id)) ?? "")
+            (await this.canDecide(userId, orgId, a.project_id))
       ) {
         const { kind: _k, requested_by: _r, ...rest } = a;
         void _k;

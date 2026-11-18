@@ -1,7 +1,7 @@
 import { uid } from "./db.js";
 import { linkPartner } from "./partner-links.js";
 import { Referentials } from "./referentials.js";
-import { badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
+import { badRequest, forbidden, isRealDate, localDate, notFound, type Services } from "./services.js";
 
 export const HEALTHS = ["on_track", "at_risk", "off_track", "done"] as const;
 /** Code d'une valeur du référentiel « types d'activités » de l'institution (docs/PARAMETRAGE.md). */
@@ -353,14 +353,14 @@ export class Activities {
     }>(
       `SELECT u.id AS user_id, u.name, u.title, r.function_label,
         (SELECT count(*)::int FROM tasks t WHERE t.project_id = $1 AND t.assignee_id = u.id AND NOT t.completed) AS open,
-        (SELECT count(*)::int FROM tasks t WHERE t.project_id = $1 AND t.assignee_id = u.id AND NOT t.completed AND t.due_on < CURRENT_DATE) AS late
+        (SELECT count(*)::int FROM tasks t WHERE t.project_id = $1 AND t.assignee_id = u.id AND NOT t.completed AND t.due_on < $3::date) AS late
        FROM users u LEFT JOIN project_team_roles r ON r.project_id = $1 AND r.user_id = u.id WHERE u.id = ANY($2) AND NOT u.is_ai ORDER BY u.name`,
-      [projectId, ids],
+      [projectId, ids, localDate()],
     );
     const late = await this.svc.db.query<{ id: string; title: string; due_on: string; assignee_name: string | null }>(
       `SELECT t.id, t.title, t.due_on, u.name AS assignee_name FROM tasks t LEFT JOIN users u ON u.id = t.assignee_id
-       WHERE t.project_id = $1 AND NOT t.completed AND t.due_on < CURRENT_DATE AND t.parent_id IS NULL ORDER BY t.due_on LIMIT 6`,
-      [projectId],
+       WHERE t.project_id = $1 AND NOT t.completed AND t.due_on < $2::date AND t.parent_id IS NULL ORDER BY t.due_on LIMIT 6`,
+      [projectId, localDate()],
     );
     const upcoming = await this.svc.db.query<{
       id: string;
@@ -369,8 +369,8 @@ export class Activities {
       assignee_name: string | null;
     }>(
       `SELECT t.id, t.title, t.due_on, u.name AS assignee_name FROM tasks t LEFT JOIN users u ON u.id = t.assignee_id
-       WHERE t.project_id = $1 AND NOT t.completed AND t.due_on >= CURRENT_DATE AND t.parent_id IS NULL ORDER BY t.due_on LIMIT 6`,
-      [projectId],
+       WHERE t.project_id = $1 AND NOT t.completed AND t.due_on >= $2::date AND t.parent_id IS NULL ORDER BY t.due_on LIMIT 6`,
+      [projectId, localDate()],
     );
     return { ...g, team, late, upcoming };
   }

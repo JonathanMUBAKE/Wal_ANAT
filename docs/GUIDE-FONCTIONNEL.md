@@ -417,6 +417,14 @@ y descend d'un clic), ce qui a dépassé son échéance, la charge et les retard
 plan de travail activité par activité (achevée, dans le calendrier, en décalage, échue). Les éléments confidentiels
 ne sont ni comptés ni montrés ; un projet n'est listé qu'à ceux qui y ont accès. Réservé aux profils de pilotage.
 
+### 5.15 bis Coéquipiers IA en mode démonstration
+
+Sans clé de service d'IA configurée sur le serveur, l'outil fonctionne en **mode démonstration** : les propositions
+des coéquipiers IA sont produites par un moteur de règles simple (par exemple des sous-tâches génériques « Produire une
+première version »). Elles montrent le circuit (proposition, validation par une personne habilitée, trace au journal),
+pas la qualité de ce que proposerait le vrai modèle. Le circuit de validation reste le même dans les deux modes : l'IA
+propose, une personne habilitée décide (I-10).
+
 ### 5.16 Exporter
 
 Partout, le bouton **Exporter** ouvre le choix du **format du fichier** :

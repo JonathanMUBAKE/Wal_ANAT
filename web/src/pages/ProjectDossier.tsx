@@ -876,7 +876,11 @@ export function MyDeliverables() {
   const late = mine.filter((d) => isLate(d.due_on));
   const produce = mine.filter((d) => !isLate(d.due_on));
   const check = data.filter((d) => d.validator_id === me.id && ["soumis", "en_revue"].includes(d.status));
-  if (!produce.length && !check.length && !late.length) return null;
+  // Le valideur voit ce qu'on lui remettra, avant la remise, retards en tête (T-7)
+  const expected = data
+    .filter((d) => d.validator_id === me.id && d.responsible_id !== me.id && TO_PRODUCE.includes(d.status))
+    .sort((a, b) => Number(isLate(b.due_on)) - Number(isLate(a.due_on)));
+  if (!produce.length && !check.length && !late.length && !expected.length) return null;
   const block = (title: string, rows: DeliverableRow[], Icon: typeof Send, danger = false) =>
     rows.length ? (
       <div>
@@ -919,6 +923,7 @@ export function MyDeliverables() {
       {block("En retard", late, Send, true)}
       {block("À valider", check, ShieldCheck)}
       {block("À produire", produce, Send)}
+      {block("Attendus de vos équipes", expected, ShieldCheck)}
       {open && <DeliverableDialog id={open} onClose={() => setOpen(null)} />}
     </section>
   );

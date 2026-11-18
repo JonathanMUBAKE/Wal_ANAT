@@ -21,7 +21,13 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button, Dialog, Empty, cn } from "@/components/ui";
-import { CountUp, LoadingRows, frDate, isLate, type Tone } from "@/components/gov";
+import {
+  CountUp,
+  LoadingRows,
+  frDate,
+  isLate,
+  type Tone,
+} from "@/components/gov";
 import { HealthRing } from "@/components/territory";
 import { CollectionHeader } from "@/components/collection";
 import { ByDirection } from "@/components/directions";
@@ -57,7 +63,13 @@ interface Overview {
   health: Record<Health, number>;
   items: Item[];
   decisions: Item[];
-  agenda: { id: string; form: string; title: string; date: string; href: string }[];
+  agenda: {
+    id: string;
+    form: string;
+    title: string;
+    date: string;
+    href: string;
+  }[];
   recommendations: {
     open: number;
     late: number;
@@ -75,8 +87,19 @@ interface Overview {
   to_sign: number;
   late_deliverables: number;
   open_gaps: number;
-  ending_contracts: { id: string; consultant_name: string; title: string; end_on: string }[];
-  risks: { id: string; title: string; score: number; owner_name: string | null; mitigation: string }[];
+  ending_contracts: {
+    id: string;
+    consultant_name: string;
+    title: string;
+    end_on: string;
+  }[];
+  risks: {
+    id: string;
+    title: string;
+    score: number;
+    owner_name: string | null;
+    mitigation: string;
+  }[];
   indicators: {
     id: string;
     name: string;
@@ -92,8 +115,15 @@ interface Overview {
   plans: { total: number; approved: number };
 }
 
-export const HEALTH: Record<Health, { label: string; tone: Tone; color: string }> = {
-  on_track: { label: "Dans les temps", tone: "success", color: "var(--success)" },
+export const HEALTH: Record<
+  Health,
+  { label: string; tone: Tone; color: string }
+> = {
+  on_track: {
+    label: "Dans les temps",
+    tone: "success",
+    color: "var(--success)",
+  },
   at_risk: { label: "À surveiller", tone: "warning", color: "var(--warning)" },
   off_track: { label: "En difficulté", tone: "danger", color: "var(--danger)" },
   done: { label: "Terminé", tone: "info", color: "var(--primary)" },
@@ -118,12 +148,18 @@ export function PilotagePage() {
   if (isLoading) return <LoadingRows rows={8} />;
   if (error || !o)
     return (
-      <Empty title="Tableau de bord inaccessible">{(error as Error)?.message ?? "Réessayez dans un instant."}</Empty>
+      <Empty title="Tableau de bord inaccessible">
+        {(error as Error)?.message ?? "Réessayez dans un instant."}
+      </Empty>
     );
   // Ce qui demande attention d'abord : en difficulté, à surveiller, décision attendue, puis l'échéance la plus proche
   const priorities = o.items
     .filter((i) => i.health !== "done")
-    .sort((a, b) => rank(a) - rank(b) || (a.next_due ?? "9").localeCompare(b.next_due ?? "9"))
+    .sort(
+      (a, b) =>
+        rank(a) - rank(b) ||
+        (a.next_due ?? "9").localeCompare(b.next_due ?? "9"),
+    )
     .slice(0, 5);
   const total = Object.values(o.health).reduce((s, n) => s + n, 0);
   const healthy = (o.health.on_track ?? 0) + (o.health.done ?? 0);
@@ -137,7 +173,9 @@ export function PilotagePage() {
   });
   const peak = Math.max(3, ...week.map((w) => w.n));
   const busiest = week.reduce((a, b) => (b.n > a.n ? b : a), week[0]);
-  const dayList = (day ? o.agenda.filter((a) => a.date === day) : o.agenda).slice(0, 3);
+  const dayList = (
+    day ? o.agenda.filter((a) => a.date === day) : o.agenda
+  ).slice(0, 3);
 
   return (
     <div className="mx-auto max-w-[1480px] space-y-5 p-4 sm:px-8 sm:py-6">
@@ -149,7 +187,12 @@ export function PilotagePage() {
         actions={
           <>
             <RoundLink to="/reunions" label="Réunions" Icon={Users} />
-            <RoundLink to="/parapheur" label="Parapheur" Icon={FileSignature} dot={o.to_sign > 0} />
+            <RoundLink
+              to="/parapheur"
+              label="Parapheur"
+              Icon={FileSignature}
+              dot={o.to_sign > 0}
+            />
             <Link
               to="/activites"
               className="btn-brand inline-flex h-9 items-center gap-1.5 rounded-[10px] px-3.5 text-[13px] font-medium text-on-primary"
@@ -197,7 +240,11 @@ export function PilotagePage() {
           label="Retards à résorber"
           value={o.counters.retards}
           foot={lateFoot(
-            (o.counters as unknown as { retards_detail?: Record<string, number> }).retards_detail,
+            (
+              o.counters as unknown as {
+                retards_detail?: Record<string, number>;
+              }
+            ).retards_detail,
             lateItems,
           )}
           tone={o.counters.retards ? "bad" : "good"}
@@ -205,7 +252,13 @@ export function PilotagePage() {
         />
         {lateOpen && (
           <LateDetail
-            detail={(o.counters as unknown as { retards_detail?: Record<string, number> }).retards_detail ?? {}}
+            detail={
+              (
+                o.counters as unknown as {
+                  retards_detail?: Record<string, number>;
+                }
+              ).retards_detail ?? {}
+            }
             onClose={() => setLateOpen(false)}
           />
         )}
@@ -235,8 +288,18 @@ export function PilotagePage() {
               track="var(--hover)"
               caption={`${score} % des activités dans les temps ou terminées`}
               parts={[
-                { key: "ok", value: healthy, color: "var(--primary)", label: "Dans les temps ou terminées" },
-                { key: "ko", value: total - healthy, color: "var(--hover)", label: "À surveiller ou en difficulté" },
+                {
+                  key: "ok",
+                  value: healthy,
+                  color: "var(--primary)",
+                  label: "Dans les temps ou terminées",
+                },
+                {
+                  key: "ko",
+                  value: total - healthy,
+                  color: "var(--hover)",
+                  label: "À surveiller ou en difficulté",
+                },
               ]}
               center={
                 <span className="text-[22px] font-semibold leading-none tracking-[-0.03em]">
@@ -247,7 +310,8 @@ export function PilotagePage() {
             <div className="min-w-0">
               <p className="text-[13px] font-medium">En bonne voie</p>
               <p className="mt-0.5 text-[12px] leading-snug text-muted">
-                {healthy} activité{healthy > 1 ? "s" : ""} sur {total} sont dans les temps ou terminées.
+                {healthy} activité{healthy > 1 ? "s" : ""} sur {total} sont dans
+                les temps ou terminées.
               </p>
             </div>
           </div>
@@ -264,11 +328,20 @@ export function PilotagePage() {
                   to="/activites"
                   className="flex items-center gap-3 rounded-[10px] px-2 py-2 transition-colors hover:bg-hover"
                 >
-                  <span className={cn("flex size-8 items-center justify-center rounded-[10px]", tile)}>
+                  <span
+                    className={cn(
+                      "flex size-8 items-center justify-center rounded-[10px]",
+                      tile,
+                    )}
+                  >
                     <I className="size-4" />
                   </span>
-                  <span className="flex-1 text-[13px] text-muted">{HEALTH[h].label}</span>
-                  <span className="text-[15px] font-semibold tabular">{o.health[h] ?? 0}</span>
+                  <span className="flex-1 text-[13px] text-muted">
+                    {HEALTH[h].label}
+                  </span>
+                  <span className="text-[15px] font-semibold tabular">
+                    {o.health[h] ?? 0}
+                  </span>
                   <ChevronRight className="size-4 text-faint" />
                 </Link>
               </li>
@@ -285,7 +358,10 @@ export function PilotagePage() {
               <span className="rounded-md bg-hover px-2 py-0.5 text-[12px] font-medium tabular text-muted">
                 {o.decisions.length}
               </span>
-              <CircleAction to="/decisions" label="Ouvrir le registre des décisions" />
+              <CircleAction
+                to="/decisions"
+                label="Ouvrir le registre des décisions"
+              />
             </span>
           }
         >
@@ -299,7 +375,10 @@ export function PilotagePage() {
                     key={d.id}
                     className="group flex items-center gap-3 rounded-xl border border-line p-3 transition-colors hover:border-line-strong hover:bg-hover/50"
                   >
-                    <Link to={d.href} className="flex min-w-0 flex-1 items-center gap-3">
+                    <Link
+                      to={d.href}
+                      className="flex min-w-0 flex-1 items-center gap-3"
+                    >
                       <span
                         className="flex size-9 shrink-0 items-center justify-center rounded-[10px]"
                         style={{
@@ -310,8 +389,12 @@ export function PilotagePage() {
                         <I className="size-4" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13.5px] font-medium">{d.title}</span>
-                        <span className="block truncate text-[12px] text-muted">{d.decision_needed}</span>
+                        <span className="block truncate text-[13.5px] font-medium">
+                          {d.title}
+                        </span>
+                        <span className="block truncate text-[12px] text-muted">
+                          {d.decision_needed}
+                        </span>
                       </span>
                     </Link>
                     {can("decisions.record") && d.arbitration_id ? (
@@ -327,7 +410,9 @@ export function PilotagePage() {
                           type="button"
                           onClick={() =>
                             setArbitrating({
-                              kind: d.form.startsWith("projet") ? "project" : "activity",
+                              kind: d.form.startsWith("projet")
+                                ? "project"
+                                : "activity",
                               id: d.id,
                               label: d.title,
                               question: d.decision_needed,
@@ -344,36 +429,45 @@ export function PilotagePage() {
               })}
             </ul>
           ) : (
-            <p className="px-5 pb-5 text-[13px] text-muted">Aucun arbitrage en attente.</p>
+            <p className="px-5 pb-5 text-[13px] text-muted">
+              Aucun arbitrage en attente.
+            </p>
           )}
         </Bento>
 
-        {/* 4. L'assistant : il lit, résume et propose ; la DG décide */}
+        {/* 4. Le point de situation (calculé par l'outil), puis l'assistant : il propose, la DG décide (P-4) */}
         <Bento
           className="md:col-span-6 xl:col-span-3 xl:row-span-2"
-          title="Assistant IA"
-          action={<Sparkles className="size-4 text-ai-fg" />}
+          title="Point de situation"
         >
           <div className="flex h-full flex-col px-5 pb-5">
-            <div className="rounded-xl bg-ai-soft p-4">
-              <p className="text-[12px] font-medium text-ai-fg">Point de situation</p>
+            <div className="rounded-xl bg-hover p-4">
+              <p className="text-[12px] font-medium text-muted">
+                Calculé à partir des données de l'outil
+              </p>
               <ul className="mt-2 space-y-2 text-[12.5px] leading-snug text-fg/85">
                 {o.brief.map((b) => (
                   <li key={b} className="flex gap-2">
-                    <span className="mt-[6px] size-1.5 shrink-0 rounded-full bg-ai" />
+                    <span className="mt-[6px] size-1.5 shrink-0 rounded-full bg-fg/40" />
                     {b}
                   </li>
                 ))}
               </ul>
             </div>
-            <p className="mt-4 text-[12px] font-medium text-muted">Demander</p>
+            <p className="mt-4 flex items-center gap-1.5 text-[12px] font-medium text-ai-fg">
+              <Sparkles className="size-3.5" />
+              Assistant IA
+            </p>
             <div className="mt-2 flex flex-col gap-2">
               {[
                 [
                   "Résumer la semaine",
                   "Résume la semaine de la Direction générale : faits marquants, retards et décisions attendues.",
                 ],
-                ["Proposer les priorités", "Quelles sont les trois priorités de la DG cette semaine, et pourquoi ?"],
+                [
+                  "Proposer les priorités",
+                  "Quelles sont les trois priorités de la DG cette semaine, et pourquoi ?",
+                ],
                 [
                   "Préparer le comité",
                   "Prépare l'ordre du jour du prochain comité de direction à partir des dossiers en cours.",
@@ -397,7 +491,9 @@ export function PilotagePage() {
               <Sparkles className="size-3.5 text-ai-fg" />
               Poser une question…
             </button>
-            <p className="mt-2 text-[11px] text-faint">L'assistant propose ; vous décidez.</p>
+            <p className="mt-2 text-[11px] text-faint">
+              L'assistant propose ; vous décidez.
+            </p>
           </div>
         </Bento>
 
@@ -413,7 +509,9 @@ export function PilotagePage() {
                 <span className="text-[28px] font-semibold leading-none tracking-[-0.03em]">
                   <CountUp value={o.agenda.length} />
                 </span>
-                <span className="text-[12.5px] text-muted">rendez-vous sur 7 jours</span>
+                <span className="text-[12.5px] text-muted">
+                  rendez-vous sur 7 jours
+                </span>
               </p>
               <div className="relative mt-4 h-[124px]">
                 <div aria-hidden className="absolute inset-x-0 bottom-6 top-0">
@@ -453,7 +551,9 @@ export function PilotagePage() {
                       <span
                         className={cn(
                           "mt-1.5 h-4 text-[11px] capitalize",
-                          w.key === o.today ? "font-semibold text-fg" : "text-muted",
+                          w.key === o.today
+                            ? "font-semibold text-fg"
+                            : "text-muted",
                         )}
                       >
                         {format(w.d, "EEEEE", { locale: fr })}
@@ -472,22 +572,30 @@ export function PilotagePage() {
                       className="flex items-center gap-3 rounded-[10px] bg-bg/70 px-3 py-2 transition-colors hover:bg-hover"
                     >
                       <span className="w-8 shrink-0 text-center leading-none">
-                        <span className="block text-[15px] font-semibold">{format(parseISO(a.date), "d")}</span>
+                        <span className="block text-[15px] font-semibold">
+                          {format(parseISO(a.date), "d")}
+                        </span>
                         <span className="text-[10px] uppercase text-faint">
                           {format(parseISO(a.date), "MMM", { locale: fr })}
                         </span>
                       </span>
                       <span className="min-w-0">
-                        <span className="block truncate text-[12.5px] font-medium">{a.title}</span>
+                        <span className="block truncate text-[12.5px] font-medium">
+                          {a.title}
+                        </span>
                         <span className="text-[11.5px] text-muted">
-                          {a.form === "reunion" ? "Réunion" : form(a.form).label}
+                          {a.form === "reunion"
+                            ? "Réunion"
+                            : form(a.form).label}
                         </span>
                       </span>
                     </Link>
                   </li>
                 ))
               ) : (
-                <li className="px-1 py-2 text-[12.5px] text-muted">Rien de prévu ce jour-là.</li>
+                <li className="px-1 py-2 text-[12.5px] text-muted">
+                  Rien de prévu ce jour-là.
+                </li>
               )}
               {day && (
                 <li>
@@ -531,12 +639,19 @@ export function PilotagePage() {
                       title={HEALTH[i.health].label}
                     />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-medium">{i.title}</span>
+                      <span className="block truncate text-[13px] font-medium">
+                        {i.title}
+                      </span>
                       <span className="block truncate text-[11.5px] text-muted">
                         {HEALTH[i.health].label} · {form(i.form).label}
                       </span>
                     </span>
-                    <span className={cn("text-[12px] tabular", late ? "font-medium text-danger" : "text-muted")}>
+                    <span
+                      className={cn(
+                        "text-[12px] tabular",
+                        late ? "font-medium text-danger" : "text-muted",
+                      )}
+                    >
                       {frDate(i.next_due).slice(0, 5)}
                     </span>
                   </Link>
@@ -550,7 +665,12 @@ export function PilotagePage() {
         <Bento
           className="md:col-span-3 xl:col-span-7"
           title="Indicateurs stratégiques"
-          action={<CircleAction to="/risques?onglet=indicateurs" label="Gérer les indicateurs" />}
+          action={
+            <CircleAction
+              to="/risques?onglet=indicateurs"
+              label="Gérer les indicateurs"
+            />
+          }
         >
           <ul className="grid gap-x-8 gap-y-4 px-5 pb-5 pt-1 sm:grid-cols-2">
             {[
@@ -561,13 +681,22 @@ export function PilotagePage() {
                 pct:
                   // Vaut aussi pour un indicateur qui doit baisser (délai, coût) : cible sous la situation de départ
                   i.target !== i.baseline
-                    ? Math.max(0, Math.min(100, ((i.result - i.baseline) / (i.target - i.baseline)) * 100))
+                    ? Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          ((i.result - i.baseline) / (i.target - i.baseline)) *
+                            100,
+                        ),
+                      )
                     : i.result === i.target
                       ? 100
                       : 0,
               })),
               // P-2 : pas de second chiffre pour la même notion quand un indicateur la calcule déjà
-              ...(o.indicators.some((i) => i.computed_from === "recommendations_done")
+              ...(o.indicators.some(
+                (i) => i.computed_from === "recommendations_done",
+              )
                 ? []
                 : [
                     {
@@ -581,12 +710,19 @@ export function PilotagePage() {
               <li key={i.id}>
                 <p className="flex items-baseline justify-between gap-3 text-[13px]">
                   <span className="truncate">{i.name}</span>
-                  <span className="text-[13px] font-semibold tabular">{Math.round(i.pct)}%</span>
+                  <span className="text-[13px] font-semibold tabular">
+                    {Math.round(i.pct)}%
+                  </span>
                 </p>
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-hover">
-                  <div className="bar-fill h-full rounded-full bg-primary" style={{ width: `${i.pct}%` }} />
+                  <div
+                    className="bar-fill h-full rounded-full bg-primary"
+                    style={{ width: `${i.pct}%` }}
+                  />
                 </div>
-                <p className="mt-1 truncate text-[11.5px] tabular text-faint">{i.value}</p>
+                <p className="mt-1 truncate text-[11.5px] tabular text-faint">
+                  {i.value}
+                </p>
               </li>
             ))}
           </ul>
@@ -601,7 +737,10 @@ export function PilotagePage() {
           {o.risks.length ? (
             <ul className="px-2 pb-3">
               {o.risks.map((r) => (
-                <li key={r.id} className="flex items-center gap-3 rounded-[10px] px-3 py-2">
+                <li
+                  key={r.id}
+                  className="flex items-center gap-3 rounded-[10px] px-3 py-2"
+                >
                   <span
                     className={cn(
                       "flex size-8 shrink-0 items-center justify-center rounded-[10px] text-[12px] font-semibold tabular",
@@ -616,7 +755,9 @@ export function PilotagePage() {
                     {r.score}
                   </span>
                   <span className="min-w-0">
-                    <span className="block truncate text-[13px] font-medium">{r.title}</span>
+                    <span className="block truncate text-[13px] font-medium">
+                      {r.title}
+                    </span>
                     <span className="block truncate text-[11.5px] text-muted">
                       {r.owner_name ?? "Sans responsable"}
                     </span>
@@ -625,17 +766,25 @@ export function PilotagePage() {
               ))}
             </ul>
           ) : (
-            <p className="px-5 pb-5 text-[13px] text-muted">Aucun risque majeur ouvert.</p>
+            <p className="px-5 pb-5 text-[13px] text-muted">
+              Aucun risque majeur ouvert.
+            </p>
           )}
         </Bento>
       </div>
-      {arbitrating && <DecisionDialog source={arbitrating} onClose={() => setArbitrating(null)} />}
+      {arbitrating && (
+        <DecisionDialog
+          source={arbitrating}
+          onClose={() => setArbitrating(null)}
+        />
+      )}
     </div>
   );
 }
 
 const rank = (i: Item) =>
-  ({ off_track: 0, at_risk: 1, on_track: 2, done: 3 })[i.health] - (i.decision_needed ? 0.5 : 0);
+  ({ off_track: 0, at_risk: 1, on_track: 2, done: 3 })[i.health] -
+  (i.decision_needed ? 0.5 : 0);
 /** Détail des retards en une ligne : « 2 tâches, 1 livrable, 1 courrier ». */
 const LATE_LABEL: Record<string, [string, string]> = {
   taches: ["tâche", "tâches"],
@@ -657,7 +806,13 @@ const LATE_PAGE: Record<string, string> = {
   decisions: "/decisions",
 };
 /** Le détail de « Retards à résorber » : chaque nature, son nombre, la page où la traiter (P-3). */
-function LateDetail({ detail, onClose }: { detail: Record<string, number>; onClose: () => void }) {
+function LateDetail({
+  detail,
+  onClose,
+}: {
+  detail: Record<string, number>;
+  onClose: () => void;
+}) {
   const rows = Object.entries(detail).filter(([, n]) => n > 0);
   return (
     <Dialog
@@ -677,12 +832,16 @@ function LateDetail({ detail, onClose }: { detail: Record<string, number>; onClo
                 // Les tâches en retard se lisent par direction, sur cette page
                 if (k === "taches") {
                   e.preventDefault();
-                  document.getElementById("par-direction")?.scrollIntoView({ behavior: "smooth" });
+                  document
+                    .getElementById("par-direction")
+                    ?.scrollIntoView({ behavior: "smooth" });
                 }
               }}
               className="flex items-center gap-3 px-3 py-2.5 text-[13.5px] hover:bg-hover"
             >
-              <span className="flex-1">{LATE_LABEL[k]?.[n > 1 ? 1 : 0] ?? k}</span>
+              <span className="flex-1">
+                {LATE_LABEL[k]?.[n > 1 ? 1 : 0] ?? k}
+              </span>
               <span className="font-semibold tabular text-danger">{n}</span>
               <ArrowUpRight className="size-4 text-faint" />
             </Link>
@@ -692,11 +851,16 @@ function LateDetail({ detail, onClose }: { detail: Record<string, number>; onClo
     </Dialog>
   );
 }
-const lateFoot = (detail: Record<string, number> | undefined, items: number) => {
+const lateFoot = (
+  detail: Record<string, number> | undefined,
+  items: number,
+) => {
   const parts = Object.entries(detail ?? {})
     .filter(([, n]) => n > 0)
     .map(([k, n]) => `${n} ${LATE_LABEL[k]?.[n > 1 ? 1 : 0] ?? k}`);
-  return parts.length ? parts.slice(0, 2).join(", ") + (parts.length > 2 ? "…" : "") : `${items} activité concernée`;
+  return parts.length
+    ? parts.slice(0, 2).join(", ") + (parts.length > 2 ? "…" : "")
+    : `${items} activité concernée`;
 };
 const rate = (r: { open: number; done: number }) =>
   r.open + r.done ? Math.round((r.done / (r.open + r.done)) * 100) : 0;
@@ -714,7 +878,17 @@ function CircleAction({ to, label }: { to: string; label: string }) {
   );
 }
 
-function RoundLink({ to, label, Icon, dot }: { to: string; label: string; Icon: LucideIcon; dot?: boolean }) {
+function RoundLink({
+  to,
+  label,
+  Icon,
+  dot,
+}: {
+  to: string;
+  label: string;
+  Icon: LucideIcon;
+  dot?: boolean;
+}) {
   return (
     <Link
       to={to}
@@ -723,7 +897,9 @@ function RoundLink({ to, label, Icon, dot }: { to: string; label: string; Icon: 
       className="relative flex size-9 items-center justify-center rounded-[10px] border border-line-strong bg-panel text-fg transition-colors hover:bg-hover"
     >
       <Icon className="size-4.5" />
-      {dot && <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-danger ring-2 ring-panel" />}
+      {dot && (
+        <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-danger ring-2 ring-panel" />
+      )}
     </Link>
   );
 }
@@ -741,9 +917,16 @@ function Bento({
   children: React.ReactNode;
 }) {
   return (
-    <section className={cn("flex min-w-0 flex-col rounded-2xl border border-line bg-panel", className)}>
+    <section
+      className={cn(
+        "flex min-w-0 flex-col rounded-2xl border border-line bg-panel",
+        className,
+      )}
+    >
       <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
-        <h2 className="text-[14.5px] font-semibold tracking-[-0.01em]">{title}</h2>
+        <h2 className="text-[14.5px] font-semibold tracking-[-0.01em]">
+          {title}
+        </h2>
         {action}
       </div>
       <div className="min-h-0 flex-1">{children}</div>
@@ -775,7 +958,12 @@ function Stat({
 }) {
   const body = (
     <>
-      <span className={cn("flex size-12 shrink-0 items-center justify-center rounded-xl", tile)}>
+      <span
+        className={cn(
+          "flex size-12 shrink-0 items-center justify-center rounded-xl",
+          tile,
+        )}
+      >
         <Icon className="size-5" />
       </span>
       <span className="min-w-0 flex-1">
@@ -794,7 +982,9 @@ function Stat({
             !tone && "bg-hover text-muted",
           )}
         >
-          {tone === "bad" && <span className="pulse-dot size-1.5 rounded-full bg-current" />}
+          {tone === "bad" && (
+            <span className="pulse-dot size-1.5 rounded-full bg-current" />
+          )}
           {foot}
         </span>
       </span>
@@ -803,13 +993,25 @@ function Stat({
       )}
     </>
   );
-  const cls = cn("group flex min-w-0 items-center gap-4 rounded-2xl border border-line bg-panel p-4", className);
+  const cls = cn(
+    "group flex min-w-0 items-center gap-4 rounded-2xl border border-line bg-panel p-4",
+    className,
+  );
   return to ? (
-    <Link to={to} className={cn(cls, "transition-colors hover:border-line-strong")}>
+    <Link
+      to={to}
+      className={cn(cls, "transition-colors hover:border-line-strong")}
+    >
       {body}
     </Link>
   ) : onClick ? (
-    <button onClick={onClick} className={cn(cls, "text-left transition-colors hover:border-line-strong")}>
+    <button
+      onClick={onClick}
+      className={cn(
+        cls,
+        "text-left transition-colors hover:border-line-strong",
+      )}
+    >
       {body}
     </button>
   ) : (

@@ -166,6 +166,10 @@ const SELECT = `SELECT p.id, p.org_id, p.name, p.acronym, p.official_id, p.type_
   COALESCE((SELECT json_agg(pc.code ORDER BY pc.code) FROM partner_categories pc WHERE pc.partner_id = p.id), '[]'::json) AS categories,
   COALESCE((SELECT json_agg(pf.user_id ORDER BY pf.user_id) FROM partner_focals pf WHERE pf.partner_id = p.id), '[]'::json) AS focal_ids,
   (SELECT count(*)::int FROM partner_contacts c WHERE c.partner_id = p.id AND NOT c.archived) AS contacts_count,
+  -- Une relation vivante sans échange noté depuis six mois se signale (PA-5)
+  (p.state IN ('en_discussion', 'actif') AND p.merged_into IS NULL
+    AND COALESCE((SELECT max(h.happened_on) FROM partner_history h WHERE h.partner_id = p.id AND h.kind = 'note'),
+                 p.created_at::date) < (now() - interval '6 months')::date) AS no_contact,
   -- Une relation en discussion ou active sans point focal n'est suivie par personne (PA-4)
   (p.state IN ('en_discussion', 'actif') AND p.merged_into IS NULL AND p.focal_id IS NULL
     AND NOT EXISTS (SELECT 1 FROM partner_focals pf WHERE pf.partner_id = p.id)) AS no_focal,

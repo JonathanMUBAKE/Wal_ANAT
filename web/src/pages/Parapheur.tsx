@@ -40,12 +40,23 @@ import {
   type Tone,
 } from "@/components/gov";
 import { api } from "@/lib/api";
-import { PartnerSelect, usePartnerContacts } from "@/components/partners";
+import {
+  PartnerSelect,
+  usePartnerContacts,
+  usePartnerOptions,
+} from "@/components/partners";
 import { RoundBtn } from "@/components/collection";
 import { Drawer } from "@/components/drawer";
 import { DossierDocuments } from "@/components/documents";
 import { Fact, Facts, RowActions } from "@/components/record";
-import { useCan, useMe, useMyUnits, useProjects, useUnits, useUsers } from "@/lib/hooks";
+import {
+  useCan,
+  useMe,
+  useMyUnits,
+  useProjects,
+  useUnits,
+  useUsers,
+} from "@/lib/hooks";
 
 type DocStatus = "draft" | "in_circuit" | "signed" | "rejected";
 interface Row {
@@ -92,7 +103,9 @@ const ACTION = { avis: "Avis", visa: "Visa", signature: "Signature" };
 const fail = (e: unknown) => toast.error((e as Error).message);
 
 export function ParapheurPage() {
-  const [tab, setTab] = useState<"to_sign" | "mine" | "all" | "dg" | "delegations">("to_sign");
+  const [tab, setTab] = useState<
+    "to_sign" | "mine" | "all" | "dg" | "delegations"
+  >("to_sign");
   const [creating, setCreating] = useState(false);
   const can = useCan();
   // Le cabinet suit la pile de la DG, en lecture (PH-4) ; la DG la voit déjà dans « À traiter »
@@ -109,7 +122,11 @@ export function ParapheurPage() {
         title="Parapheur"
         subtitle="Chaque document suit son circuit dans l'ordre. Son contenu est scellé dès l'entrée dans le circuit."
         actions={
-          <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
+          <Button
+            variant="primary"
+            icon={<Plus className="size-4" />}
+            onClick={() => setCreating(true)}
+          >
             Nouveau document
           </Button>
         }
@@ -121,7 +138,9 @@ export function ParapheurPage() {
           { id: "to_sign", label: "À traiter", badge: pending?.length },
           { id: "mine", label: "Mes documents" },
           { id: "all", label: "Tous mes circuits" },
-          ...(cabinet ? [{ id: "dg" as const, label: "Parapheur de la DG" }] : []),
+          ...(cabinet
+            ? [{ id: "dg" as const, label: "Parapheur de la DG" }]
+            : []),
           { id: "delegations", label: "Délégations" },
         ]}
       />
@@ -143,24 +162,42 @@ function Box({ box }: { box: "to_sign" | "mine" | "all" | "dg" }) {
   return (
     <Section>
       {data?.length ? (
-        <Table head={["Référence", "Document", "Auteur", "Échéance", "Étape en cours", "Statut"]}>
+        <Table
+          head={[
+            "Référence",
+            "Document",
+            "Auteur",
+            "Échéance",
+            "Étape en cours",
+            "Statut",
+          ]}
+        >
           {data.map((d) => (
-            <Tr key={d.id} onClick={box === "dg" ? undefined : () => setOpen(d.id)}>
+            <Tr
+              key={d.id}
+              onClick={box === "dg" ? undefined : () => setOpen(d.id)}
+            >
               <Td className="font-mono text-[12px]">{d.reference}</Td>
               <Td className="font-medium">
                 {d.title}
-                <span className="ml-2 text-[12px] font-normal text-muted">{d.kind}</span>
+                <span className="ml-2 text-[12px] font-normal text-muted">
+                  {d.kind}
+                </span>
               </Td>
               <Td>{d.author_name ?? "—"}</Td>
               <Td
                 className={
-                  d.status === "in_circuit" && isLate(d.due_on) ? "font-medium text-danger tabular" : "tabular"
+                  d.status === "in_circuit" && isLate(d.due_on)
+                    ? "font-medium text-danger tabular"
+                    : "tabular"
                 }
               >
                 {frDate(d.due_on)}
               </Td>
               <Td>
-                {d.pending_action ? `${ACTION[d.pending_action as keyof typeof ACTION]} · ${d.pending_actor}` : "—"}
+                {d.pending_action
+                  ? `${ACTION[d.pending_action as keyof typeof ACTION]} · ${d.pending_actor}`
+                  : "—"}
               </Td>
               <Td>
                 <Status {...STATE[d.status]} />
@@ -171,7 +208,11 @@ function Box({ box }: { box: "to_sign" | "mine" | "all" | "dg" }) {
       ) : (
         <Empty
           icon={<Inbox className="size-6" />}
-          title={box === "to_sign" || box === "dg" ? "Rien à traiter" : "Aucun document"}
+          title={
+            box === "to_sign" || box === "dg"
+              ? "Rien à traiter"
+              : "Aucun document"
+          }
         >
           {box === "dg"
             ? "Aucun document n'attend la signature de la DG."
@@ -206,7 +247,8 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
     onError: fail,
   });
   const decide = useMutation({
-    mutationFn: (decision: string) => api.post<Detail>(`/api/signature/${id}/decide`, { decision, comment }),
+    mutationFn: (decision: string) =>
+      api.post<Detail>(`/api/signature/${id}/decide`, { decision, comment }),
     onSuccess: refresh,
     onError: fail,
   });
@@ -235,7 +277,11 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
           )}
           <Button onClick={onClose}>Fermer</Button>
           {d.can.start && (
-            <Button variant="primary" loading={start.isPending} onClick={() => start.mutate()}>
+            <Button
+              variant="primary"
+              loading={start.isPending}
+              onClick={() => start.mutate()}
+            >
               Lancer le circuit
             </Button>
           )}
@@ -246,9 +292,13 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
         <div className="flex flex-wrap items-center gap-2">
           {stamp ? <Stamp>Signé</Stamp> : <Status {...STATE[d.status]} />}
           {d.intact === true && (
-            <span className="text-[12px] text-muted">Contenu intact depuis l'entrée dans le circuit</span>
+            <span className="text-[12px] text-muted">
+              Contenu intact depuis l'entrée dans le circuit
+            </span>
           )}
-          {d.intact === false && <Status label="Contenu altéré depuis le scellement" tone="danger" />}
+          {d.intact === false && (
+            <Status label="Contenu altéré depuis le scellement" tone="danger" />
+          )}
         </div>
         {d.body && (
           <p className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg border border-line bg-bg px-3 py-2 text-[13.5px] leading-relaxed">
@@ -260,19 +310,34 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
           {d.file ? (
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{d.file.name}</span>
-              <span className="text-muted">{Math.max(1, Math.round(d.file.size / 1024))} Ko</span>
-              <a className="text-primary hover:underline" href={`/api/signature/${d.id}/file?inline=1`} target="_blank" rel="noreferrer">
+              <span className="text-muted">
+                {Math.max(1, Math.round(d.file.size / 1024))} Ko
+              </span>
+              <a
+                className="text-primary hover:underline"
+                href={`/api/signature/${d.id}/file?inline=1`}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Ouvrir
               </a>
-              <a className="text-primary hover:underline" href={`/api/signature/${d.id}/file`}>
+              <a
+                className="text-primary hover:underline"
+                href={`/api/signature/${d.id}/file`}
+              >
                 Télécharger
               </a>
-              <span className="w-full truncate font-mono text-[11px] text-faint" title="Empreinte SHA-256 du fichier">
+              <span
+                className="w-full truncate font-mono text-[11px] text-faint"
+                title="Empreinte SHA-256 du fichier"
+              >
                 Empreinte : {d.file.hash}
               </span>
             </div>
           ) : (
-            <p className="text-muted">Aucun fichier joint : la signature porte sur le texte saisi.</p>
+            <p className="text-muted">
+              Aucun fichier joint : la signature porte sur le texte saisi.
+            </p>
           )}
           {d.can.edit || d.can.start ? (
             <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-[12.5px] text-primary hover:underline">
@@ -283,23 +348,36 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
                   const file = e.target.files?.[0];
                   if (file)
                     api
-                      .upload<Detail>(`/api/signature/${d.id}/file?name=${encodeURIComponent(file.name)}`, file)
+                      .upload<Detail>(
+                        `/api/signature/${d.id}/file?name=${encodeURIComponent(file.name)}`,
+                        file,
+                      )
                       .then((r) => {
                         qc.setQueryData(["signature-doc", id], r);
-                        toast.success("Fichier joint : il sera scellé au lancement du circuit");
+                        toast.success(
+                          "Fichier joint : il sera scellé au lancement du circuit",
+                        );
                       }, fail);
                 }}
               />
-              {d.file ? "Remplacer le fichier" : "Joindre le fichier à signer (PDF, Word…)"}
+              {d.file
+                ? "Remplacer le fichier"
+                : "Joindre le fichier à signer (PDF, Word…)"}
             </label>
           ) : null}
           {d.status === "signed" && (
             <p className="mt-2 flex flex-wrap gap-3 text-[12.5px]">
               Bordereau des visas et signatures :
-              <a className="text-primary hover:underline" href={`/api/signature/${d.id}/bordereau?format=pdf`}>
+              <a
+                className="text-primary hover:underline"
+                href={`/api/signature/${d.id}/bordereau?format=pdf`}
+              >
                 PDF
               </a>
-              <a className="text-primary hover:underline" href={`/api/signature/${d.id}/bordereau?format=docx`}>
+              <a
+                className="text-primary hover:underline"
+                href={`/api/signature/${d.id}/bordereau?format=docx`}
+              >
                 Word
               </a>
             </p>
@@ -312,9 +390,12 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
                 <span
                   className={cn(
                     "flex size-7 items-center justify-center rounded-full border",
-                    s.status === "approved" && "border-success bg-success text-white",
-                    s.status === "rejected" && "border-danger bg-danger text-white",
-                    s.status === "pending" && "border-primary bg-brand-soft text-primary",
+                    s.status === "approved" &&
+                      "border-success bg-success text-white",
+                    s.status === "rejected" &&
+                      "border-danger bg-danger text-white",
+                    s.status === "pending" &&
+                      "border-primary bg-brand-soft text-primary",
                     s.status === "waiting" && "border-line-strong text-faint",
                   )}
                 >
@@ -328,7 +409,9 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
                     i + 1
                   )}
                 </span>
-                {i < d.steps.length - 1 && <span className="my-0.5 w-px flex-1 bg-line-strong" />}
+                {i < d.steps.length - 1 && (
+                  <span className="my-0.5 w-px flex-1 bg-line-strong" />
+                )}
               </div>
               <div className="min-w-0 flex-1 pb-3 text-[13.5px]">
                 <p className="font-medium">
@@ -337,10 +420,13 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
                 {s.acted_at && (
                   <p className="text-[12px] text-muted">
                     {frDate(s.acted_at.slice(0, 10))}
-                    {s.acted_by !== s.actor_id && ` · par délégation : ${s.acted_by_name}`}
+                    {s.acted_by !== s.actor_id &&
+                      ` · par délégation : ${s.acted_by_name}`}
                   </p>
                 )}
-                {s.comment && <p className="mt-0.5 text-[13px] text-muted">{s.comment}</p>}
+                {s.comment && (
+                  <p className="mt-0.5 text-[13px] text-muted">{s.comment}</p>
+                )}
               </div>
             </li>
           ))}
@@ -352,14 +438,20 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
             </summary>
             {d.history.map((h) => (
               <div key={h.round} className="mt-2">
-                <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-faint">Circuit {h.round}</p>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-faint">
+                  Circuit {h.round}
+                </p>
                 <ul className="mt-1 space-y-1">
                   {h.steps.map((s) => (
                     <li key={s.position}>
                       <span className="font-medium">
                         {ACTION[s.action]} · {s.actor_name}
                       </span>
-                      <span className={s.status === "rejected" ? "text-danger" : "text-muted"}>
+                      <span
+                        className={
+                          s.status === "rejected" ? "text-danger" : "text-muted"
+                        }
+                      >
                         {" "}
                         ·{" "}
                         {s.status === "approved"
@@ -370,9 +462,15 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
                               ? "en attente au moment du rejet"
                               : "non atteint"}
                         {s.acted_at && ` le ${frDate(s.acted_at.slice(0, 10))}`}
-                        {s.acted_by && s.acted_by !== s.actor_id && ` par délégation : ${s.acted_by_name}`}
+                        {s.acted_by &&
+                          s.acted_by !== s.actor_id &&
+                          ` par délégation : ${s.acted_by_name}`}
                       </span>
-                      {s.comment && <span className="block text-muted">« {s.comment} »</span>}
+                      {s.comment && (
+                        <span className="block text-muted">
+                          « {s.comment} »
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -383,13 +481,27 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
         {d.can.decide && (
           <div className="space-y-2 border-t border-line pt-3">
             <Field label="Observation" hint="Obligatoire en cas de rejet.">
-              {(a) => <Textarea {...a} value={comment} onChange={(e) => setComment(e.target.value)} />}
+              {(a) => (
+                <Textarea
+                  {...a}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                />
+              )}
             </Field>
             <div className="flex gap-2">
-              <Button variant="primary" loading={decide.isPending} onClick={() => decide.mutate("approve")}>
+              <Button
+                variant="primary"
+                loading={decide.isPending}
+                onClick={() => decide.mutate("approve")}
+              >
                 Approuver
               </Button>
-              <Button variant="danger" disabled={!comment.trim()} onClick={() => decide.mutate("reject")}>
+              <Button
+                variant="danger"
+                disabled={!comment.trim()}
+                onClick={() => decide.mutate("reject")}
+              >
                 Rejeter
               </Button>
             </div>
@@ -414,9 +526,9 @@ function NewDoc({ onClose }: { onClose: () => void }) {
     domain_id: "",
     confidential: false,
   });
-  const [steps, setSteps] = useState<{ actor_id: string; action: "avis" | "visa" | "signature" }[]>([
-    { actor_id: "", action: "signature" },
-  ]);
+  const [steps, setSteps] = useState<
+    { actor_id: string; action: "avis" | "visa" | "signature" }[]
+  >([{ actor_id: "", action: "signature" }]);
   const others = users?.filter((u) => u.id !== me?.id);
   const create = useMutation({
     mutationFn: () =>
@@ -433,7 +545,10 @@ function NewDoc({ onClose }: { onClose: () => void }) {
     },
     onError: fail,
   });
-  const valid = f.title.trim() && steps.every((s) => s.actor_id) && steps.at(-1)?.action === "signature";
+  const valid =
+    f.title.trim() &&
+    steps.every((s) => s.actor_id) &&
+    steps.at(-1)?.action === "signature";
   return (
     <Dialog
       open
@@ -443,7 +558,12 @@ function NewDoc({ onClose }: { onClose: () => void }) {
       footer={
         <>
           <Button onClick={onClose}>Annuler</Button>
-          <Button variant="primary" disabled={!valid} loading={create.isPending} onClick={() => create.mutate()}>
+          <Button
+            variant="primary"
+            disabled={!valid}
+            loading={create.isPending}
+            onClick={() => create.mutate()}
+          >
             Enregistrer le brouillon
           </Button>
         </>
@@ -452,39 +572,83 @@ function NewDoc({ onClose }: { onClose: () => void }) {
       <div className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-[1fr_150px]">
           <Field label="Objet" required>
-            {(a) => <Input {...a} autoFocus value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />}
+            {(a) => (
+              <Input
+                {...a}
+                autoFocus
+                value={f.title}
+                onChange={(e) => setF({ ...f, title: e.target.value })}
+              />
+            )}
           </Field>
           <Field label="Nature">
             {(a) => (
-              <Select {...a} value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}>
-                {["Note", "Lettre", "Rapport", "Décision", "Contrat", "Convention", "Avenant", "Protocole d'accord"].map((k) => (
+              <Select
+                {...a}
+                value={f.kind}
+                onChange={(e) => setF({ ...f, kind: e.target.value })}
+              >
+                {[
+                  "Note",
+                  "Lettre",
+                  "Rapport",
+                  "Décision",
+                  "Contrat",
+                  "Convention",
+                  "Avenant",
+                  "Protocole d'accord",
+                ].map((k) => (
                   <option key={k}>{k}</option>
                 ))}
               </Select>
             )}
           </Field>
         </div>
-        {/(convention|accord|avenant|contrat|protocole|m[ée]morandum|arr[êe]t[ée]|engagement)/i.test(f.kind) && (
+        {/(convention|accord|avenant|contrat|protocole|m[ée]morandum|arr[êe]t[ée]|engagement)/i.test(
+          f.kind,
+        ) && (
           <p className="rounded-lg border border-line bg-warning-soft/40 px-3 py-2 text-[12.5px]">
-            Ce document engage l'Agence : la signature finale revient à la DG, ou à la personne qui a reçu sa délégation
-            de signature.
+            Ce document engage l'Agence : la signature finale revient à la DG,
+            ou à la personne qui a reçu sa délégation de signature.
           </p>
         )}
         <Field label="Contenu">
-          {(a) => <Textarea {...a} rows={6} value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} />}
+          {(a) => (
+            <Textarea
+              {...a}
+              rows={6}
+              value={f.body}
+              onChange={(e) => setF({ ...f, body: e.target.value })}
+            />
+          )}
         </Field>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Domaine d'activité" className="sm:col-span-2">
-            {(a) => <DomainSelect {...a} value={f.domain_id} onChange={(v) => setF({ ...f, domain_id: v })} />}
+            {(a) => (
+              <DomainSelect
+                {...a}
+                value={f.domain_id}
+                onChange={(v) => setF({ ...f, domain_id: v })}
+              />
+            )}
           </Field>
           <Field label="Échéance">
             {(a) => (
-              <Input {...a} type="date" value={f.due_on} onChange={(e) => setF({ ...f, due_on: e.target.value })} />
+              <Input
+                {...a}
+                type="date"
+                value={f.due_on}
+                onChange={(e) => setF({ ...f, due_on: e.target.value })}
+              />
             )}
           </Field>
           <Field label="Entité émettrice">
             {(a) => (
-              <Select {...a} value={f.unit_id} onChange={(e) => setF({ ...f, unit_id: e.target.value })}>
+              <Select
+                {...a}
+                value={f.unit_id}
+                onChange={(e) => setF({ ...f, unit_id: e.target.value })}
+              >
                 <option value="">—</option>
                 {units?.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -502,7 +666,9 @@ function NewDoc({ onClose }: { onClose: () => void }) {
               size="sm"
               variant="ghost"
               icon={<Plus className="size-3.5" />}
-              onClick={() => setSteps([{ actor_id: "", action: "visa" }, ...steps])}
+              onClick={() =>
+                setSteps([{ actor_id: "", action: "visa" }, ...steps])
+              }
             >
               Ajouter une étape avant
             </Button>
@@ -516,29 +682,51 @@ function NewDoc({ onClose }: { onClose: () => void }) {
                     // L'auteur peut signer en dernier, après le visa ou l'avis d'une autre personne
                     people={i === steps.length - 1 ? users : others}
                     value={s.actor_id}
-                    onChange={(v) => setSteps(steps.map((x, n) => (n === i ? { ...x, actor_id: v } : x)))}
+                    onChange={(v) =>
+                      setSteps(
+                        steps.map((x, n) =>
+                          n === i ? { ...x, actor_id: v } : x,
+                        ),
+                      )
+                    }
                   />
                   <Select
                     aria-label="Action"
                     value={s.action}
                     disabled={i === steps.length - 1}
                     onChange={(e) =>
-                      setSteps(steps.map((x, n) => (n === i ? { ...x, action: e.target.value as "avis" | "visa" } : x)))
+                      setSteps(
+                        steps.map((x, n) =>
+                          n === i
+                            ? {
+                                ...x,
+                                action: e.target.value as "avis" | "visa",
+                              }
+                            : x,
+                        ),
+                      )
                     }
                   >
                     <option value="avis">Avis</option>
                     <option value="visa">Visa</option>
-                    {i === steps.length - 1 && <option value="signature">Signature</option>}
+                    {i === steps.length - 1 && (
+                      <option value="signature">Signature</option>
+                    )}
                   </Select>
                   {steps.length > 1 && i < steps.length - 1 ? (
-                    <IconButton label="Retirer" onClick={() => setSteps(steps.filter((_, n) => n !== i))}>
+                    <IconButton
+                      label="Retirer"
+                      onClick={() => setSteps(steps.filter((_, n) => n !== i))}
+                    >
                       <Trash2 className="size-4" />
                     </IconButton>
                   ) : (
                     <span />
                   )}
                 </div>
-                {i < steps.length - 1 && <ArrowDown className="mx-auto my-0.5 size-3 text-faint" />}
+                {i < steps.length - 1 && (
+                  <ArrowDown className="mx-auto my-0.5 size-3 text-faint" />
+                )}
               </div>
             ))}
           </div>
@@ -576,7 +764,12 @@ function Delegations() {
         }[]
       >("/api/delegations"),
   });
-  const [f, setF] = useState({ to_user: "", start_on: "", end_on: "", scope: "signature" });
+  const [f, setF] = useState({
+    to_user: "",
+    start_on: "",
+    end_on: "",
+    scope: "signature",
+  });
   const refresh = () => qc.invalidateQueries({ queryKey: ["delegations"] });
   const add = useMutation({
     mutationFn: () => api.post("/api/delegations", f),
@@ -607,17 +800,31 @@ function Delegations() {
           </Field>
           <Field label="Du">
             {(a) => (
-              <Input {...a} type="date" value={f.start_on} onChange={(e) => setF({ ...f, start_on: e.target.value })} />
+              <Input
+                {...a}
+                type="date"
+                value={f.start_on}
+                onChange={(e) => setF({ ...f, start_on: e.target.value })}
+              />
             )}
           </Field>
           <Field label="Au">
             {(a) => (
-              <Input {...a} type="date" value={f.end_on} onChange={(e) => setF({ ...f, end_on: e.target.value })} />
+              <Input
+                {...a}
+                type="date"
+                value={f.end_on}
+                onChange={(e) => setF({ ...f, end_on: e.target.value })}
+              />
             )}
           </Field>
           <Field label="Portée">
             {(a) => (
-              <Select {...a} value={f.scope} onChange={(e) => setF({ ...f, scope: e.target.value })}>
+              <Select
+                {...a}
+                value={f.scope}
+                onChange={(e) => setF({ ...f, scope: e.target.value })}
+              >
                 <option value="signature">Visa et signature</option>
                 <option value="visa">Visa et avis seulement</option>
               </Select>
@@ -642,13 +849,21 @@ function Delegations() {
                 <Td>{d.to_name}</Td>
                 <Td className="tabular">{frDate(d.start_on)}</Td>
                 <Td className="tabular">{frDate(d.end_on)}</Td>
-                <Td>{d.scope === "visa" ? "Visa et avis" : "Visa et signature"}</Td>
+                <Td>
+                  {d.scope === "visa" ? "Visa et avis" : "Visa et signature"}
+                </Td>
                 <Td className="text-right">
                   {d.revoked_at && (
-                    <span className="text-[12px] text-faint">Retirée le {frDate(d.revoked_at.slice(0, 10))}</span>
+                    <span className="text-[12px] text-faint">
+                      Retirée le {frDate(d.revoked_at.slice(0, 10))}
+                    </span>
                   )}
                   {d.from_user === me?.id && !d.revoked_at && (
-                    <Button size="sm" variant="ghost" onClick={() => del.mutate(d.id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => del.mutate(d.id)}
+                    >
                       Retirer
                     </Button>
                   )}
@@ -657,7 +872,9 @@ function Delegations() {
             ))}
           </Table>
         ) : (
-          <Empty title="Aucune délégation">Une délégation vaut seulement pour la période indiquée.</Empty>
+          <Empty title="Aucune délégation">
+            Une délégation vaut seulement pour la période indiquée.
+          </Empty>
         )}
       </Section>
     </div>
@@ -701,7 +918,8 @@ const MAIL: Record<MailRow["status"], { label: string; tone: Tone }> = {
   traite: { label: "Traité", tone: "success" },
   classe: { label: "Classé sans suite", tone: "neutral" },
 };
-const closedMail = (m: Pick<MailRow, "status">) => m.status === "traite" || m.status === "classe";
+const closedMail = (m: Pick<MailRow, "status">) =>
+  m.status === "traite" || m.status === "classe";
 interface MailSummary {
   to_assign: number;
   in_progress: number;
@@ -713,9 +931,13 @@ export function CourrierPage() {
   const can = useCan();
   const { data: me } = useMe();
   const { data: myUnits } = useMyUnits();
-  const heads = new Set((myUnits ?? []).filter((u) => u.role === "responsable").map((u) => u.id));
+  const heads = new Set(
+    (myUnits ?? []).filter((u) => u.role === "responsable").map((u) => u.id),
+  );
   const registry = can("correspondence.view") || can("correspondence.manage");
-  const [tab, setTab] = useState<"mine" | "entrant" | "sortant">(registry ? "entrant" : "mine");
+  const [tab, setTab] = useState<"mine" | "entrant" | "sortant">(
+    registry ? "entrant" : "mine",
+  );
   const { data: summary } = useQuery({
     queryKey: ["correspondence", "summary"],
     queryFn: () => api.get<MailSummary>("/api/correspondence/summary"),
@@ -729,15 +951,24 @@ export function CourrierPage() {
     queryKey: ["correspondence", tab],
     queryFn: () =>
       api
-        .get<MailRow[]>(tab === "mine" ? "/api/correspondence" : `/api/correspondence?direction=${tab}`)
+        .get<MailRow[]>(
+          tab === "mine"
+            ? "/api/correspondence"
+            : `/api/correspondence?direction=${tab}`,
+        )
         .then((rows) =>
           // « Mon courrier » : ce qui m'est imputé, en copie, ou imputé à une entité que je dirige
           tab === "mine" && registry
-            ? rows.filter((m) => m.assignee_id === me?.id || (m.unit_id && heads.has(m.unit_id)))
+            ? rows.filter(
+                (m) =>
+                  m.assignee_id === me?.id ||
+                  (m.unit_id && heads.has(m.unit_id)),
+              )
             : rows,
         ),
   });
-  const canAssign = (m: MailRow) => can("correspondence.manage") || (!!m.unit_id && heads.has(m.unit_id));
+  const canAssign = (m: MailRow) =>
+    can("correspondence.manage") || (!!m.unit_id && heads.has(m.unit_id));
   const canClose = (m: MailRow) => canAssign(m) || m.assignee_id === me?.id;
   const close = useMutation({
     mutationFn: (id: string) => api.post(`/api/correspondence/${id}/close`),
@@ -762,7 +993,15 @@ export function CourrierPage() {
                     : tab === "entrant"
                       ? "Registre du courrier entrant"
                       : "Registre du courrier sortant",
-                  ["Numéro", "Objet", "Correspondant", "Reçu le", "Imputé à", "Délai", "État"],
+                  [
+                    "Numéro",
+                    "Objet",
+                    "Correspondant",
+                    "Reçu le",
+                    "Imputé à",
+                    "Délai",
+                    "État",
+                  ],
                   (data ?? []).map((m) => [
                     m.reference,
                     m.subject,
@@ -772,12 +1011,19 @@ export function CourrierPage() {
                     frDate(m.due_on),
                     MAIL[m.status].label,
                   ]),
-                  { filename: `courrier-${tab}`, widths: [2, 5, 3, 1.5, 3, 1.5, 1.8] },
+                  {
+                    filename: `courrier-${tab}`,
+                    widths: [2, 5, 3, 1.5, 3, 1.5, 1.8],
+                  },
                 )
               }
             />
             {can("correspondence.manage") && (
-              <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
+              <Button
+                variant="primary"
+                icon={<Plus className="size-4" />}
+                onClick={() => setCreating(true)}
+              >
                 Enregistrer un courrier
               </Button>
             )}
@@ -788,7 +1034,11 @@ export function CourrierPage() {
         value={tab}
         onChange={setTab}
         items={[
-          { id: "mine" as const, label: "Mon courrier", badge: summary?.mine.open },
+          {
+            id: "mine" as const,
+            label: "Mon courrier",
+            badge: summary?.mine.open,
+          },
           ...(registry
             ? [
                 { id: "entrant" as const, label: "Courrier entrant" },
@@ -806,12 +1056,26 @@ export function CourrierPage() {
                 ["En cours", summary.in_progress, false],
                 ["En retard", summary.late, summary.late > 0],
                 ["Traités ce mois", summary.done_month, false],
-                ["À moi · en retard", `${summary.mine.open} · ${summary.mine.late}`, summary.mine.late > 0],
+                [
+                  "À moi · en retard",
+                  `${summary.mine.open} · ${summary.mine.late}`,
+                  summary.mine.late > 0,
+                ],
               ] as const
             ).map(([label, v, alert]) => (
-              <div key={label} className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm">
+              <div
+                key={label}
+                className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm"
+              >
                 <p className="text-[12.5px] text-muted">{label}</p>
-                <p className={cn("mt-0.5 text-[24px] font-semibold tabular-nums", alert && "text-danger")}>{v}</p>
+                <p
+                  className={cn(
+                    "mt-0.5 text-[24px] font-semibold tabular-nums",
+                    alert && "text-danger",
+                  )}
+                >
+                  {v}
+                </p>
               </div>
             ))}
           </div>
@@ -834,15 +1098,26 @@ export function CourrierPage() {
             >
               {data.map((m) => (
                 <Tr key={m.id} onClick={() => setOpen(m)}>
-                  <Td className="whitespace-nowrap font-mono text-[12px]">{m.reference}</Td>
+                  <Td className="whitespace-nowrap font-mono text-[12px]">
+                    {m.reference}
+                  </Td>
                   <Td className="font-medium">
                     {m.subject}
-                    {(m.reply_to_reference || m.response_reference || m.project_name || m.activity_title) && (
+                    {(m.reply_to_reference ||
+                      m.response_reference ||
+                      m.project_name ||
+                      m.activity_title) && (
                       <span className="mt-0.5 block space-x-2 text-[12px] font-normal text-muted">
-                        {m.reply_to_reference && <span>Répond à {m.reply_to_reference}</span>}
-                        {m.response_reference && <span>Réponse : {m.response_reference}</span>}
+                        {m.reply_to_reference && (
+                          <span>Répond à {m.reply_to_reference}</span>
+                        )}
+                        {m.response_reference && (
+                          <span>Réponse : {m.response_reference}</span>
+                        )}
                         {(m.project_name || m.activity_title) && (
-                          <span>Dossier : {m.project_name ?? m.activity_title}</span>
+                          <span>
+                            Dossier : {m.project_name ?? m.activity_title}
+                          </span>
                         )}
                       </span>
                     )}
@@ -851,9 +1126,19 @@ export function CourrierPage() {
                   <Td className="tabular">{frDate(m.received_on)}</Td>
                   <Td>
                     {m.assignee_name ?? m.unit_name ?? "—"}
-                    {m.instruction && <span className="block text-[12px] text-muted">{m.instruction}</span>}
+                    {m.instruction && (
+                      <span className="block text-[12px] text-muted">
+                        {m.instruction}
+                      </span>
+                    )}
                   </Td>
-                  <Td className={!closedMail(m) && isLate(m.due_on) ? "font-medium text-danger tabular" : "tabular"}>
+                  <Td
+                    className={
+                      !closedMail(m) && isLate(m.due_on)
+                        ? "font-medium text-danger tabular"
+                        : "tabular"
+                    }
+                  >
                     {frDate(m.due_on)}
                   </Td>
                   <Td>
@@ -862,12 +1147,18 @@ export function CourrierPage() {
                   <Td>
                     <RowActions label={m.reference} onView={() => setOpen(m)}>
                       {!closedMail(m) && canAssign(m) && (
-                        <RoundBtn label={`Imputer ${m.reference}`} onClick={() => setAssign(m)}>
+                        <RoundBtn
+                          label={`Imputer ${m.reference}`}
+                          onClick={() => setAssign(m)}
+                        >
                           <UserRoundPlus className="size-4" />
                         </RoundBtn>
                       )}
                       {!closedMail(m) && canClose(m) && (
-                        <RoundBtn label={`Clôturer ${m.reference}`} onClick={() => close.mutate(m.id)}>
+                        <RoundBtn
+                          label={`Clôturer ${m.reference}`}
+                          onClick={() => close.mutate(m.id)}
+                        >
                           <CheckCircle2 className="size-4" />
                         </RoundBtn>
                       )}
@@ -879,7 +1170,9 @@ export function CourrierPage() {
           ) : (
             <Empty
               icon={<Mail className="size-6" />}
-              title={tab === "mine" ? "Aucun courrier pour vous" : "Registre vide"}
+              title={
+                tab === "mine" ? "Aucun courrier pour vous" : "Registre vide"
+              }
             >
               {tab === "mine"
                 ? "Le courrier qui vous est imputé, ou en copie, apparaît ici."
@@ -888,7 +1181,12 @@ export function CourrierPage() {
           )}
         </Section>
       </div>
-      {creating && <NewMail direction={tab === "sortant" ? "sortant" : "entrant"} onClose={() => setCreating(false)} />}
+      {creating && (
+        <NewMail
+          direction={tab === "sortant" ? "sortant" : "entrant"}
+          onClose={() => setCreating(false)}
+        />
+      )}
       {assign && <Assign m={assign} onClose={() => setAssign(null)} />}
       {open && (
         <MailDialog
@@ -907,7 +1205,13 @@ export function CourrierPage() {
     </div>
   );
 }
-function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onClose: () => void }) {
+function NewMail({
+  direction,
+  onClose,
+}: {
+  direction: "entrant" | "sortant";
+  onClose: () => void;
+}) {
   const qc = useQueryClient();
   const { data: projects } = useProjects();
   // Un courrier sortant peut répondre à un courrier entrant : l'entrant sera clos par la réponse (lot P3b)
@@ -934,6 +1238,28 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
     contact_id: "",
   });
   const contacts = usePartnerContacts(f.partner_id ? [f.partner_id] : []);
+  // Un correspondant tapé à la main qui ressemble à une fiche de l'annuaire : proposer de l'y rattacher (C-4)
+  const { data: partnerOptions } = usePartnerOptions();
+  const norm = (x: string) =>
+    x
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  const typed = norm(f.correspondent);
+  const lookalike =
+    !f.partner_id && typed.length >= 3
+      ? (partnerOptions ?? []).find((p) => {
+          const n = norm(p.name);
+          const acr = norm(p.acronym ?? "");
+          return (
+            n.includes(typed) ||
+            typed.includes(n) ||
+            (!!acr && (acr === typed || typed.split(" ").includes(acr)))
+          );
+        })
+      : undefined;
   const save = useMutation({
     mutationFn: () =>
       api.post("/api/correspondence", {
@@ -966,7 +1292,10 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
           <Button onClick={onClose}>Annuler</Button>
           <Button
             variant="primary"
-            disabled={!f.subject.trim() || (!f.correspondent.trim() && !f.partner_id && !f.reply_to_id)}
+            disabled={
+              !f.subject.trim() ||
+              (!f.correspondent.trim() && !f.partner_id && !f.reply_to_id)
+            }
             loading={save.isPending}
             onClick={() => save.mutate()}
           >
@@ -978,16 +1307,32 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Objet" required className="sm:col-span-2">
           {(a) => (
-            <Input {...a} autoFocus value={f.subject} onChange={(e) => setF({ ...f, subject: e.target.value })} />
+            <Input
+              {...a}
+              autoFocus
+              value={f.subject}
+              onChange={(e) => setF({ ...f, subject: e.target.value })}
+            />
           )}
         </Field>
-        <Field label={direction === "entrant" ? "Expéditeur (annuaire)" : "Destinataire (annuaire)"}>
+        <Field
+          label={
+            direction === "entrant"
+              ? "Expéditeur (annuaire)"
+              : "Destinataire (annuaire)"
+          }
+        >
           {(a) => (
             <PartnerSelect
               {...a}
               value={f.partner_id}
               onChange={(id, p) =>
-                setF({ ...f, partner_id: id, contact_id: "", correspondent: p ? p.name : f.correspondent })
+                setF({
+                  ...f,
+                  partner_id: id,
+                  contact_id: "",
+                  correspondent: p ? p.name : f.correspondent,
+                })
               }
             />
           )}
@@ -1017,7 +1362,38 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
           hint="Tel qu'il figure sur le courrier ; rempli d'après le partenaire s'il est choisi."
         >
           {(a) => (
-            <Input {...a} value={f.correspondent} onChange={(e) => setF({ ...f, correspondent: e.target.value })} />
+            <>
+              <Input
+                {...a}
+                value={f.correspondent}
+                onChange={(e) => setF({ ...f, correspondent: e.target.value })}
+              />
+              {lookalike && (
+                <button
+                  type="button"
+                  className="mt-1.5 text-left text-[12.5px] text-primary hover:underline"
+                  onClick={() =>
+                    setF({
+                      ...f,
+                      partner_id: lookalike.id,
+                      contact_id: "",
+                      correspondent: lookalike.name,
+                    })
+                  }
+                >
+                  Rattacher à la fiche partenaire « {lookalike.name} »
+                </button>
+              )}
+              {!lookalike && !f.partner_id && typed.length >= 3 && (
+                <Link
+                  to="/partenaires"
+                  className="mt-1.5 block text-[12.5px] text-muted hover:underline"
+                >
+                  Correspondant absent de l'annuaire : ouvrir l'annuaire pour
+                  créer sa fiche
+                </Link>
+              )}
+            </>
           )}
         </Field>
         <Field label="Date" required>
@@ -1032,7 +1408,12 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
         </Field>
         <Field label="Délai de réponse">
           {(a) => (
-            <Input {...a} type="date" value={f.due_on} onChange={(e) => setF({ ...f, due_on: e.target.value })} />
+            <Input
+              {...a}
+              type="date"
+              value={f.due_on}
+              onChange={(e) => setF({ ...f, due_on: e.target.value })}
+            />
           )}
         </Field>
         {direction === "sortant" && (
@@ -1042,7 +1423,11 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
             hint="L'entrant encore ouvert sera clôturé par cette réponse."
           >
             {(a) => (
-              <Select {...a} value={f.reply_to_id} onChange={(e) => setF({ ...f, reply_to_id: e.target.value })}>
+              <Select
+                {...a}
+                value={f.reply_to_id}
+                onChange={(e) => setF({ ...f, reply_to_id: e.target.value })}
+              >
                 <option value="">Aucun</option>
                 {incoming?.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -1060,7 +1445,11 @@ function NewMail({ direction, onClose }: { direction: "entrant" | "sortant"; onC
           hint="Le courrier se retrouvera dans ce projet ou cette activité."
         >
           {(a) => (
-            <Select {...a} value={f.dossier} onChange={(e) => setF({ ...f, dossier: e.target.value })}>
+            <Select
+              {...a}
+              value={f.dossier}
+              onChange={(e) => setF({ ...f, dossier: e.target.value })}
+            >
               <option value="">Aucun</option>
               {!!projects?.length && (
                 <optgroup label="Projets">
@@ -1106,8 +1495,13 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
     instruction: m.instruction ?? "",
     annotation: "",
   });
-  const [copies, setCopies] = useState<{ user_id: string; purpose: "information" | "avis" }[]>([]);
-  const [copy, setCopy] = useState({ user_id: "", purpose: "information" as "information" | "avis" });
+  const [copies, setCopies] = useState<
+    { user_id: string; purpose: "information" | "avis" }[]
+  >([]);
+  const [copy, setCopy] = useState({
+    user_id: "",
+    purpose: "information" as "information" | "avis",
+  });
   const save = useMutation({
     mutationFn: () =>
       api.post(`/api/correspondence/${m.id}/assign`, {
@@ -1137,7 +1531,12 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
           <Button onClick={onClose}>Annuler</Button>
           <Button
             variant="primary"
-            disabled={!f.unit_id && !f.assignee_id && !copies.length && !f.annotation.trim()}
+            disabled={
+              !f.unit_id &&
+              !f.assignee_id &&
+              !copies.length &&
+              !f.annotation.trim()
+            }
             loading={save.isPending}
             onClick={() => save.mutate()}
           >
@@ -1149,7 +1548,11 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
       <div className="space-y-3">
         <Field label="Entité">
           {(a) => (
-            <Select {...a} value={f.unit_id} onChange={(e) => setF({ ...f, unit_id: e.target.value })}>
+            <Select
+              {...a}
+              value={f.unit_id}
+              onChange={(e) => setF({ ...f, unit_id: e.target.value })}
+            >
               <option value="">—</option>
               {units?.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -1171,12 +1574,24 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
         </Field>
         <Field label="Délai de réponse">
           {(a) => (
-            <Input {...a} type="date" value={f.due_on} onChange={(e) => setF({ ...f, due_on: e.target.value })} />
+            <Input
+              {...a}
+              type="date"
+              value={f.due_on}
+              onChange={(e) => setF({ ...f, due_on: e.target.value })}
+            />
           )}
         </Field>
-        <Field label="Instruction" hint="L'annotation du bureau d'ordre, transmise à l'agent imputé.">
+        <Field
+          label="Instruction"
+          hint="L'annotation du bureau d'ordre, transmise à l'agent imputé."
+        >
           {(a) => (
-            <Select {...a} value={f.instruction} onChange={(e) => setF({ ...f, instruction: e.target.value })}>
+            <Select
+              {...a}
+              value={f.instruction}
+              onChange={(e) => setF({ ...f, instruction: e.target.value })}
+            >
               <option value="">Aucune</option>
               {INSTRUCTIONS.map((x) => (
                 <option key={x}>{x}</option>
@@ -1184,7 +1599,10 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
             </Select>
           )}
         </Field>
-        <Field label="Annotation" hint="Consigne de la direction ou du chef d'entité, inscrite au fil du courrier.">
+        <Field
+          label="Annotation"
+          hint="Consigne de la direction ou du chef d'entité, inscrite au fil du courrier."
+        >
           {(a) => (
             <textarea
               {...a}
@@ -1200,14 +1618,19 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
           {copies.length > 0 && (
             <ul className="mb-2 flex flex-wrap gap-1.5">
               {copies.map((c) => (
-                <li key={c.user_id} className="flex items-center gap-1 rounded-full bg-hover px-2.5 py-0.5 text-[12px]">
+                <li
+                  key={c.user_id}
+                  className="flex items-center gap-1 rounded-full bg-hover px-2.5 py-0.5 text-[12px]"
+                >
                   {users?.find((u) => u.id === c.user_id)?.name} ·{" "}
                   {c.purpose === "avis" ? "pour avis" : "pour information"}
                   <button
                     type="button"
                     aria-label="Retirer la copie"
                     className="text-muted hover:text-fg"
-                    onClick={() => setCopies((x) => x.filter((y) => y.user_id !== c.user_id))}
+                    onClick={() =>
+                      setCopies((x) => x.filter((y) => y.user_id !== c.user_id))
+                    }
                   >
                     ×
                   </button>
@@ -1217,14 +1640,21 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
           )}
           <div className="flex gap-2">
             <PeopleSelect
-              people={users?.filter((u) => !copies.some((c) => c.user_id === u.id))}
+              people={users?.filter(
+                (u) => !copies.some((c) => c.user_id === u.id),
+              )}
               value={copy.user_id}
               onChange={(v) => setCopy({ ...copy, user_id: v })}
             />
             <Select
               aria-label="Objet de la copie"
               value={copy.purpose}
-              onChange={(e) => setCopy({ ...copy, purpose: e.target.value as "information" | "avis" })}
+              onChange={(e) =>
+                setCopy({
+                  ...copy,
+                  purpose: e.target.value as "information" | "avis",
+                })
+              }
               className="w-[150px]"
             >
               <option value="information">Pour information</option>
@@ -1291,14 +1721,22 @@ function MailDialog({
       subtitle={`${m.reference} · courrier ${m.direction}${m.confidential ? " · confidentiel" : ""}`}
       footer={
         <>
-          {open && canManage && <Button onClick={() => setFiling(true)}>Classer sans suite</Button>}
+          {open && canManage && (
+            <Button onClick={() => setFiling(true)}>Classer sans suite</Button>
+          )}
           {open && canAssign && (
-            <Button icon={<UserRoundPlus className="size-4" />} onClick={onAssign}>
+            <Button
+              icon={<UserRoundPlus className="size-4" />}
+              onClick={onAssign}
+            >
               Imputer
             </Button>
           )}
           {m.status === "impute" && m.assignee_id === meId && (
-            <Button variant="primary" onClick={() => act("start", {}, "Courrier pris en charge")}>
+            <Button
+              variant="primary"
+              onClick={() => act("start", {}, "Courrier pris en charge")}
+            >
               Prendre en charge
             </Button>
           )}
@@ -1306,7 +1744,11 @@ function MailDialog({
             <Button
               variant={m.assignee_id === meId ? "primary" : undefined}
               icon={<CheckCircle2 className="size-4" />}
-              onClick={() => (m.direction === "entrant" ? setClosing(true) : act("close", {}, "Courrier traité"))}
+              onClick={() =>
+                m.direction === "entrant"
+                  ? setClosing(true)
+                  : act("close", {}, "Courrier traité")
+              }
             >
               Clôturer
             </Button>
@@ -1317,28 +1759,51 @@ function MailDialog({
     >
       <div className="space-y-4">
         <Facts className="p-0 pt-0">
-          <Fact label={m.direction === "entrant" ? "Expéditeur" : "Destinataire"}>
+          <Fact
+            label={m.direction === "entrant" ? "Expéditeur" : "Destinataire"}
+          >
             {m.partner_id ? (
-              <Link to={`/partenaires/${m.partner_id}`} className="text-primary hover:underline">
+              <Link
+                to={`/partenaires/${m.partner_id}`}
+                className="text-primary hover:underline"
+              >
                 {m.correspondent}
               </Link>
             ) : (
               m.correspondent
             )}
-            {m.contact_name && <span className="block text-[12px] font-normal text-muted">{m.contact_name}</span>}
+            {m.contact_name && (
+              <span className="block text-[12px] font-normal text-muted">
+                {m.contact_name}
+              </span>
+            )}
           </Fact>
           <Fact label="État">
             <Status {...MAIL[m.status]} />
           </Fact>
-          <Fact label="Date du courrier">{m.doc_date && frDate(m.doc_date)}</Fact>
-          <Fact label={m.direction === "entrant" ? "Reçu le" : "Envoyé le"}>{frDate(m.received_on)}</Fact>
+          <Fact label="Date du courrier">
+            {m.doc_date && frDate(m.doc_date)}
+          </Fact>
+          <Fact label={m.direction === "entrant" ? "Reçu le" : "Envoyé le"}>
+            {frDate(m.received_on)}
+          </Fact>
           <Fact label="Imputation">
             {m.assignee_name ?? m.unit_name}
-            {m.instruction && <span className="block text-[12px] font-normal text-muted">{m.instruction}</span>}
+            {m.instruction && (
+              <span className="block text-[12px] font-normal text-muted">
+                {m.instruction}
+              </span>
+            )}
           </Fact>
           <Fact label="Délai de réponse">
             {m.due_on && (
-              <span className={m.status !== "traite" && isLate(m.due_on) ? "text-danger" : ""}>{frDate(m.due_on)}</span>
+              <span
+                className={
+                  m.status !== "traite" && isLate(m.due_on) ? "text-danger" : ""
+                }
+              >
+                {frDate(m.due_on)}
+              </span>
             )}
           </Fact>
           <Fact label="Dossier">{m.project_name ?? m.activity_title}</Fact>
@@ -1351,9 +1816,15 @@ function MailDialog({
           </Fact>
         </Facts>
         {m.status === "classe" && m.filed_reason && (
-          <p className="rounded-[10px] bg-hover px-3 py-2 text-[13px]">Classé sans suite : {m.filed_reason}</p>
+          <p className="rounded-[10px] bg-hover px-3 py-2 text-[13px]">
+            Classé sans suite : {m.filed_reason}
+          </p>
         )}
-        <DossierDocuments owner="mail" ownerId={m.id} title="Pièce numérisée et documents" />
+        <DossierDocuments
+          owner="mail"
+          ownerId={m.id}
+          title="Pièce numérisée et documents"
+        />
         <MailThread id={m.id} />
       </div>
       {closing && (
@@ -1367,7 +1838,13 @@ function MailDialog({
               <Button onClick={() => setClosing(false)}>Annuler</Button>
               <Button
                 variant="primary"
-                onClick={() => act("close", replyId ? { reply_id: replyId } : {}, "Courrier traité")}
+                onClick={() =>
+                  act(
+                    "close",
+                    replyId ? { reply_id: replyId } : {},
+                    "Courrier traité",
+                  )
+                }
               >
                 Clôturer
               </Button>
@@ -1384,7 +1861,11 @@ function MailDialog({
               >
                 <option value="">Sans réponse écrite</option>
                 {(outgoing ?? [])
-                  .filter((o) => !o.reply_to_reference || o.reply_to_reference === m.reference)
+                  .filter(
+                    (o) =>
+                      !o.reply_to_reference ||
+                      o.reply_to_reference === m.reference,
+                  )
                   .map((o) => (
                     <option key={o.id} value={o.id}>
                       {o.reference} · {o.subject}
@@ -1407,7 +1888,9 @@ function MailDialog({
               <Button
                 variant="primary"
                 disabled={!reason.trim()}
-                onClick={() => act("file", { reason }, "Courrier classé sans suite")}
+                onClick={() =>
+                  act("file", { reason }, "Courrier classé sans suite")
+                }
               >
                 Classer
               </Button>
@@ -1415,7 +1898,14 @@ function MailDialog({
           }
         >
           <Field label="Motif" required>
-            {(a) => <Input {...a} value={reason} onChange={(e) => setReason(e.target.value)} autoFocus />}
+            {(a) => (
+              <Input
+                {...a}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                autoFocus
+              />
+            )}
           </Field>
         </Dialog>
       )}
@@ -1440,9 +1930,15 @@ function MailThread({ id }: { id: string }) {
   const { data } = useQuery({
     queryKey: ["mail-annotations", id],
     queryFn: () =>
-      api.get<{ id: string; kind: string; text: string; created_at: string; author_name: string | null }[]>(
-        `/api/correspondence/${id}/annotations`,
-      ),
+      api.get<
+        {
+          id: string;
+          kind: string;
+          text: string;
+          created_at: string;
+          author_name: string | null;
+        }[]
+      >(`/api/correspondence/${id}/annotations`),
   });
   const add = () =>
     api.post(`/api/correspondence/${id}/annotations`, { text }).then(() => {
@@ -1452,21 +1948,37 @@ function MailThread({ id }: { id: string }) {
     }, fail);
   return (
     <section>
-      <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted">Circuit et annotations</h3>
+      <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted">
+        Circuit et annotations
+      </h3>
       <ol className="relative space-y-3 border-l border-line pl-4">
         {(data ?? []).map((a) => (
           <li key={a.id} className="relative">
             <span
               className={cn(
                 "absolute -left-[21px] top-1.5 size-2.5 rounded-full border-2 border-panel",
-                a.kind === "annotation" ? "bg-primary" : a.kind === "note" ? "bg-ai" : "bg-line-strong",
+                a.kind === "annotation"
+                  ? "bg-primary"
+                  : a.kind === "note"
+                    ? "bg-ai"
+                    : "bg-line-strong",
               )}
             />
             <p className="text-[12px] text-muted">
-              <span className="font-medium text-fg">{THREAD_LABEL[a.kind] ?? a.kind}</span> · {a.author_name ?? "—"} ·{" "}
-              {new Date(a.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
+              <span className="font-medium text-fg">
+                {THREAD_LABEL[a.kind] ?? a.kind}
+              </span>{" "}
+              · {a.author_name ?? "—"} ·{" "}
+              {new Date(a.created_at).toLocaleString("fr-FR", {
+                dateStyle: "short",
+                timeStyle: "short",
+              })}
             </p>
-            {a.text && <p className="mt-0.5 whitespace-pre-wrap text-[13.5px]">{a.text}</p>}
+            {a.text && (
+              <p className="mt-0.5 whitespace-pre-wrap text-[13.5px]">
+                {a.text}
+              </p>
+            )}
           </li>
         ))}
       </ol>

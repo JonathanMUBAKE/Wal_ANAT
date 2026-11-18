@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { Provisioning } from "./auth/provisioning.js";
 import type { Auth } from "./auth/service.js";
 import { PERMISSION_GROUPS } from "./permissions.js";
-import { notFound, type Services } from "./services.js";
+import { localDate, notFound, type Services } from "./services.js";
 
 /*
  * Administration système, suite. Surveiller (état du système, sessions ouvertes), informer (bandeau affiché à
@@ -45,9 +45,12 @@ export class AdminPlus {
       ),
     };
     const sessions = {
-      active: await one("SELECT count(*) AS n FROM sessions WHERE revoked_at IS NULL AND expires_at > now()"),
+      // Une session inactive depuis plus de 7 jours ne sert plus : elle n'est pas comptée (AD-6)
+      active: await one(
+        "SELECT count(*) AS n FROM sessions WHERE revoked_at IS NULL AND NOT mfa_pending AND expires_at > now() AND last_seen_at > now() - interval '7 days'",
+      ),
       users: await one(
-        "SELECT count(DISTINCT user_id) AS n FROM sessions WHERE revoked_at IS NULL AND expires_at > now()",
+        "SELECT count(DISTINCT user_id) AS n FROM sessions WHERE revoked_at IS NULL AND NOT mfa_pending AND expires_at > now() AND last_seen_at > now() - interval '7 days'",
       ),
     };
     const orgsMail = await this.svc.db.query<{ name: string; host: string | null; on: boolean | null }>(
@@ -77,12 +80,13 @@ export class AdminPlus {
       units: await one("SELECT count(*) AS n FROM org_units"),
       projects: await one("SELECT count(*) AS n FROM projects WHERE kind = 'project'"),
       tasks: await one("SELECT count(*) AS n FROM tasks"),
-      tasks_late: await one("SELECT count(*) AS n FROM tasks WHERE NOT completed AND due_on < CURRENT_DATE"),
+      tasks_late: await one("SELECT count(*) AS n FROM tasks WHERE NOT completed AND due_on < $1::date", [localDate()]),
       meetings: await one("SELECT count(*) AS n FROM meetings"),
       decisions: await one("SELECT count(*) AS n FROM dg_decisions"),
       mail: await one("SELECT count(*) AS n FROM correspondence"),
       mail_late: await one(
-        "SELECT count(*) AS n FROM correspondence WHERE status NOT IN ('traite', 'classe') AND due_on < CURRENT_DATE",
+        "SELECT count(*) AS n FROM correspondence WHERE status NOT IN ('traite', 'classe') AND due_on < $1::date",
+        [localDate()],
       ),
       partners: await one("SELECT count(*) AS n FROM partners"),
       agents: await one("SELECT count(*) AS n FROM agent_records"),

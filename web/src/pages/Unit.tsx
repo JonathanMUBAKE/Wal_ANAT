@@ -126,7 +126,7 @@ export function UnitPage() {
       />
       <nav
         aria-label="Vues de l'entité"
-        className="mx-auto -mb-px flex w-full max-w-[1480px] gap-1 overflow-x-auto border-b border-line px-4 sm:px-8"
+        className="mx-auto -mb-px flex w-full max-w-[1480px] gap-1 overflow-x-auto border-b border-line px-4 sm:flex-wrap sm:overflow-visible sm:px-8"
       >
         {views.map((v) => (
           <button

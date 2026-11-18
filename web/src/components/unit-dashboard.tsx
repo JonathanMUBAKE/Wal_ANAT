@@ -464,7 +464,15 @@ export function UnitDashboardView({
           />
         </Card>
         <Card title="Où vous êtes attendu·e" aside={<CalendarDays className="size-4 text-faint" />}>
-          <UpcomingMeetingList rows={data.meetings.mine} empty="Aucune réunion prévue où vous êtes convoqué·e." />
+          {/* Une réunion déjà listée pour l'entité ne se répète pas ici (E-5) */}
+          <UpcomingMeetingList
+            rows={data.meetings.mine.filter((m) => !data.meetings.unit.some((u) => u.id === m.id))}
+            empty={
+              data.meetings.mine.length
+                ? "Vos autres réunions sont celles de l'entité, ci-contre."
+                : "Aucune réunion prévue où vous êtes convoqué·e."
+            }
+          />
         </Card>
       </div>
 

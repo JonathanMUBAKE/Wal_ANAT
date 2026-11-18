@@ -789,8 +789,12 @@ export class Agreements {
       focal_id: string | null;
       created_by: string | null;
       reminded_days: number | null;
+      pending_amendments: number;
     }>(
-      `SELECT id, org_id, title, year, seq, end_on::text AS end_on, tacit_renewal, focal_id, created_by, reminded_days
+      `SELECT id, org_id, title, year, seq, end_on::text AS end_on, tacit_renewal, focal_id, created_by, reminded_days,
+              -- Un avenant pas encore signé ne prolonge rien : le rappel le signale (CV-6)
+              (SELECT count(*)::int FROM agreements av WHERE av.parent_id = agreements.id
+                AND av.state IN ('preparation', 'signature')) AS pending_amendments
        FROM agreements WHERE state = 'vigueur' AND end_on IS NOT NULL AND end_on >= $1::date AND end_on <= $1::date + $2::int`,
       [now, REMINDERS[0]],
     );
@@ -807,6 +811,10 @@ export class Agreements {
             a.tacit_renewal
               ? "reconduction tacite : dénoncer avant l'échéance si nécessaire"
               : "prolonger par avenant ou laisser échoir"
+          }${
+            a.pending_amendments
+              ? ` · ${a.pending_amendments > 1 ? `${a.pending_amendments} avenants ne sont` : "un avenant n'est"} pas encore signé${a.pending_amendments > 1 ? "s" : ""} : l'échéance tient tant qu'il n'est pas en vigueur`
+              : ""
           }`,
         });
       await this.svc.db.query("UPDATE agreements SET reminded_days = $1 WHERE id = $2", [threshold, a.id]);

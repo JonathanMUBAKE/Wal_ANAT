@@ -61,8 +61,8 @@ export class Gaps {
     const holders = await db.query<Holder>(
       `SELECT s.unit_id, ou.name AS unit_name, sd.domain_id, d.name AS domain_name, sd.role FROM attribution_sheets s
        JOIN sheet_domains sd ON sd.sheet_id = s.id JOIN activity_domains d ON d.id = sd.domain_id JOIN org_units ou ON ou.id = s.unit_id
-       WHERE s.org_id = $1 AND s.status = 'approved' AND s.unit_id IS NOT NULL AND (s.valid_to IS NULL OR s.valid_to >= CURRENT_DATE) AND NOT d.archived`,
-      [orgId],
+       WHERE s.org_id = $1 AND s.status = 'approved' AND s.unit_id IS NOT NULL AND (s.valid_to IS NULL OR s.valid_to >= $2::date) AND NOT d.archived`,
+      [orgId, localDate()],
     );
     const found: Found[] = [];
     const responsibles = holders.filter((h) => h.role === "responsable");

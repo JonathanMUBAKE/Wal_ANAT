@@ -263,7 +263,8 @@ export function Tabs<T extends string>({
 }) {
   return (
     <div className="mx-auto w-full max-w-[1480px] px-4 sm:px-8">
-      <div role="tablist" className="flex overflow-x-auto border-b border-line">
+      {/* Les onglets passent à la ligne dès la tablette ; ils ne défilent que sur téléphone (E-10) */}
+      <div role="tablist" className="flex overflow-x-auto border-b border-line sm:flex-wrap sm:overflow-visible">
         {items.map((t) => {
           const on = value === t.id;
           return (

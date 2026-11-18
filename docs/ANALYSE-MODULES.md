@@ -97,8 +97,8 @@ Activité des coéquipiers IA.
 | A-6 | « Nouveau projet » s'affiche pour tout le monde sans vérifier le droit de créer un projet ; un stagiaire ou un consultant reçoit un refus en cliquant. | Moyenne | **Fait** (lot 3) : « Nouveau projet » ne s'affiche qu'à qui a le droit de créer un projet |
 | A-7 | Projets et tâches de démo issus d'une start-up (« Campagne de lancement », « Application mobile v2 », « Refonte du site web », « Tests de non-régression iOS »). | Moyenne (démo) | **Fait** (lot 1) : projets et tâches d'une agence d'aménagement (SIG national, schéma national, site institutionnel, archives cartographiques) |
 | A-8 | Trois réunions s'appellent seulement « Réunion » dans « Mes prochaines réunions ». | Moyenne (démo) | **Fait** (lot 1) : chaque réunion porte le nom de son type (Comité de direction, Comité de pilotage, Réunion avec les provinces) |
-| A-9 | Le bloc IA prend beaucoup de place (Assistant IA, Activité des coéquipiers IA vide, « Assignez une tâche à Atlas »). | Basse | À corriger |
-| A-10 | Vers 800 px de large, libellés coupés (« Inscrire une dé… ») et cartes de projets écrasées. Correct à 1440 px. | Basse | À corriger |
+| A-9 | Le bloc IA prend beaucoup de place (Assistant IA, Activité des coéquipiers IA vide, « Assignez une tâche à Atlas »). | Basse | **Fait** (lot 12) : l'activité des coéquipiers IA n'apparaît sur l'Accueil que s'il y en a une ; le bloc Assistant est resserré |
+| A-10 | Vers 800 px de large, libellés coupés (« Inscrire une dé… ») et cartes de projets écrasées. Correct à 1440 px. | Basse | **Fait** (lot 12) : les libellés de « Saisir » passent à la ligne au lieu d'être coupés vers 800 px |
 | A-11 | Constat initial : le résumé du courrier renverrait les chiffres de toute l'organisation à tout le monde. **Infirmé à l'analyse du module Courrier** : les chiffres suivent les droits de chacun (un agent sans droit sur le courrier reçoit 0 ; un chef qui consulte le registre reçoit les chiffres du registre, qu'il a le droit de voir). | Sans objet | Aucune suite |
 
 ### Ce qui fonctionne bien
@@ -176,7 +176,7 @@ Une tâche du registre d'entité s'affiche avec l'étiquette « Tâche d'entité
 | T-4 | « Tâche d'entité » ne dit pas de quelle entité. Pour un chef qui en dirige plusieurs, les tâches ne se distinguent pas. | Moyenne | **Fait** (lot 11) : une tâche hors projet porte le nom de son entité |
 | T-5 | Les sous-tâches apparaissent seules (« Apple Pay ») sans le nom de la tâche parente. | Moyenne | **Fait** (lot 11) : une sous-tâche s'affiche « Tâche parente › sous-tâche » |
 | T-6 | Un livrable en retard (Didier, « Rapport intermédiaire ») reste dans « Livrables » avec une date rouge. Il n'est ni dans « En retard » ni dans le compteur de retards. | Moyenne | **Fait** (lot 11) : les livrables en retard se rangent en tête, en rouge, et comptent avec les retards de Mes tâches |
-| T-7 | Le valideur ne voit pas un livrable en retard qu'il devra valider (Fiston ne voit pas le rapport de Didier tant qu'il n'est pas remis). | Basse | **Décidé** : le valideur voit les livrables attendus avant leur remise (« Attendus de vos équipes ») |
+| T-7 | Le valideur ne voit pas un livrable en retard qu'il devra valider (Fiston ne voit pas le rapport de Didier tant qu'il n'est pas remis). | Basse | **Fait** (lot 12) : « Attendus de vos équipes » : le valideur voit les livrables à venir avant leur remise, retards en tête |
 | T-8 | « Tâche hors projet » ouvre « Confier une tâche » avec « Non attribuée » par défaut. Depuis Mes tâches, on veut une tâche pour soi : elle n'apparaît pas dans la liste après création. | Moyenne | **Fait** (lot 11) : depuis Mes tâches, « Tâche hors projet » est attribuée par défaut à la personne |
 | T-9 | Pour la DG, « Tâche hors projet » vise l'entité racine « ANAT », pas la Direction générale. | Moyenne | **Fait** (lot 11) : la tâche hors projet vise l'entité de rattachement de la personne (la Direction générale pour la DG) |
 | T-10 | Données de démo : Fiston est rattaché à Cartographie et SIG alors qu'il dirige l'Ingénierie territoriale. Même famille que A-3. | Moyenne (démo) | **Fait** (lot 1) : Fiston est rattaché à l'Ingénierie territoriale, qu'il dirige |
@@ -264,12 +264,12 @@ propriétaire ou administrateur de l'organisation est responsable de toutes les 
 | E-2 | Les projets « de l'entité » incluent tout projet dont le responsable ou un agent est simple membre (Refonte du site web chez l'Ingénierie territoriale, Schéma national chez plusieurs entités). Les mêmes projets se retrouvent comptés dans plusieurs entités. | Haute | **Fait** (lot 10) : projets portés par l'entité et projets auxquels elle contribue, distingués et comptés à part |
 | E-3 | Le chef d'une entité rattachée apparaît comme simple « agent » dans le suivi de l'entité du dessus (Gaston, chef du Suivi-évaluation, dans le suivi de Fiston). | Moyenne | **Fait** (lot 11) : le chef d'une entité rattachée est présenté « Responsable · entité », après le responsable et avant les agents |
 | E-4 | L'entité ouverte par défaut est la première entité dirigée, pas l'entité de rattachement (Esther arrive aux RH, la DG à la racine « ANAT » et non à la Direction générale). | Moyenne | **Fait** (lot 11) : Mon entité s'ouvre sur l'entité de rattachement, même quand la personne en dirige d'autres |
-| E-5 | Une réunion de l'entité que l'on préside apparaît deux fois dans la vue d'ensemble. | Basse | À corriger : ne pas répéter dans « Où vous êtes attendu·e » une réunion déjà listée |
-| E-6 | La réunion hebdomadaire présidée par Fiston, dans 7 jours, est « Pas encore convoquée », sans rappel visible. | Basse | À vérifier au module Réunions |
+| E-5 | Une réunion de l'entité que l'on préside apparaît deux fois dans la vue d'ensemble. | Basse | **Fait** (lot 12) : une réunion déjà listée pour l'entité ne se répète plus dans « Où vous êtes attendu·e » |
+| E-6 | La réunion hebdomadaire présidée par Fiston, dans 7 jours, est « Pas encore convoquée », sans rappel visible. | Basse | **Fait** (lot 12) : le rappel « réunion à convoquer » prévient aussi la présidence, même sans rédacteur désigné |
 | E-7 | Le bouton « Projet » s'affiche pour tout le monde ; le serveur refuse ensuite si le profil n'a pas le droit de créer un projet. Même famille que A-6. | Moyenne | **Fait** (lot 3) : le bouton n'apparaît qu'avec le droit de créer un projet |
 | E-8 | Pas de vue « tâches que j'ai confiées » (voir T-12) : une tâche confiée hors de l'arbre de l'entité n'est suivie nulle part par celui qui l'a confiée. | Moyenne | À décider |
 | E-9 | Données de démo : départements vides ou presque (Fiston n'a qu'un agent, Didier et Clarisse aucun), Esther cheffe des RH, projets de start-up. Même famille que A-3 et A-7. | Haute (démo) | **Fait en partie** (lots 1 et 9) : un chef distinct par entité, des agents dans les services, projets de l'Agence ; certaines entités restent peu peuplées |
-| E-10 | Vers 800 px de large, les onglets débordent (« Suivi des agents » coupé) et défilent horizontalement. | Basse | À corriger avec A-10 |
+| E-10 | Vers 800 px de large, les onglets débordent (« Suivi des agents » coupé) et défilent horizontalement. | Basse | **Fait** (lot 12) : les onglets passent à la ligne dès la tablette ; ils ne défilent que sur téléphone |
 
 ### Ce qui fonctionne bien
 
@@ -354,7 +354,7 @@ d'identité, adresse personnelle, personnes à prévenir et observations du serv
 | D-3 | La consultation d'un dossier par quelqu'un d'autre que l'agent n'est pas journalisée. | Haute | **Fait** (lot 5) : chaque consultation par un tiers est journalisée (« Dossier d'agent consulté par un tiers », une fois par lecteur et par demi-heure) |
 | D-4 | L'agent ne peut rien corriger, mais aucun bouton ne lui permet de signaler une erreur ou de demander une mise à jour au service RH. | Moyenne | **Fait** (lot 8) : « Demander une correction » ; le service RH traite, l'agent est prévenu, la demande reste au dossier |
 | D-5 | Fonction et entité se contredisent dans les dossiers de démo (Fiston rangé dans Cartographie et SIG, Didier dans le service Communication). Même famille que A-3. | Moyenne (démo) | **Fait** (lot 1) : fonction et entité des dossiers alignées sur le rattachement |
-| D-6 | L'historique des affectations de la DG est vide. | Basse (démo) | À corriger dans la démo |
+| D-6 | L'historique des affectations de la DG est vide. | Basse (démo) | **Fait** (lot 12) : chaque dossier de la démonstration a son affectation ; la DG garde aussi son poste précédent |
 | D-7 | Les adresses professionnelles sont en « @cadence.app » et la nationalité vaut « Fictivienne ». | Basse (démo) | **Fait** (lot 9) : adresses en « @anat.example » (domaine fictif réservé), domaine de l'institution assorti, nationalité « Congolaise » |
 | D-8 | Dans la démo, personne d'autre que la DG ne gère les dossiers RH : la cheffe des RH (Esther) n'en lit aucun. La DG ne pouvant pas modifier son propre dossier, il ne peut être tenu par personne. | Moyenne (démo) | **Fait** (lot 1) : la cheffe du service RH tient les dossiers (droit « gérer les RH ») |
 | D-9 | Le dossier ne contient ni congés, ni pièces (actes de nomination, contrats, arrêtés), ni formations, ni évaluations. | Moyenne | **Décidé et fait** (lot 8) : pièces du dossier (RH et agent), formations, évaluations (RH et agent), congés et absences |
@@ -426,12 +426,12 @@ Fiston crée, dans « Application mobile v2 », la tâche « Préparer un point 
 | I-2 | Refuser une proposition n'arrête pas l'intervention : le coéquipier enchaîne d'autres propositions. | Haute | **Fait** (lot 4) : un refus arrête l'intervention ; « Refuser, laisser continuer » permet au coéquipier de poursuivre |
 | I-3 | Deux coéquipiers peuvent travailler en même temps sur la même tâche (tâche confiée + règle) et proposer la même action. | Moyenne | **Fait** (lot 11) : une seule intervention de l'IA à la fois sur une tâche, quel que soit le coéquipier |
 | I-4 | La personne visée par une proposition peut la valider elle-même (Fiston valide la relance qui le concerne). | Moyenne | **Décidé et fait** (lot 4) : la personne visée (chargé de la tâche touchée, personne mentionnée) ne valide pas la proposition et n'est pas sollicitée |
-| I-5 | Les propositions sont visibles par des personnes qui ne peuvent pas les valider (Gaston, Clarisse) et absentes des notifications de ceux qui pourraient (autres éditeurs avec le droit). | Basse | À corriger : n'afficher que les propositions que l'on peut décider |
+| I-5 | Les propositions sont visibles par des personnes qui ne peuvent pas les valider (Gaston, Clarisse) et absentes des notifications de ceux qui pourraient (autres éditeurs avec le droit). | Basse | **Fait** (lot 12) : seules les personnes qui peuvent décider (droit de valider l'IA et rôle d'éditeur) voient et reçoivent les propositions |
 | I-6 | Les coéquipiers ne sont membres que des projets de start-up. Aucun projet de l'ANAT (Schéma national d'aménagement, RH) ne les utilise. | Moyenne (démo) | **Fait** (lot 1) : les coéquipiers travaillent dans les projets de l'Agence |
 | I-7 | Les rôles et consignes viennent d'une start-up (« chef de projet IA », « analyste QA et triage », bugs, étapes de reproduction). | Moyenne | **Fait** (lot 1) : rôles de chargé de suivi et d'analyste des données, règle de tri sans vocabulaire de start-up |
-| I-8 | Le ton de la page (« Des collègues qui ne dorment jamais ») et le message vide « Assignez une tâche à Atlas ou Nova » ne conviennent pas à un outil institutionnel. | Basse | À corriger |
+| I-8 | Le ton de la page (« Des collègues qui ne dorment jamais ») et le message vide « Assignez une tâche à Atlas ou Nova » ne conviennent pas à un outil institutionnel. | Basse | **Fait** (lot 12) : ton institutionnel : « L'IA prépare le travail, une personne habilitée décide » |
 | I-9 | Avec une clé configurée, le contenu des tâches, commentaires et pièces jointes lues est envoyé à un service d'IA hors de l'agence. La page ne le dit pas et aucun réglage ne permet d'exclure un projet ou une pièce confidentielle. | Haute | **Décidé et fait** (lot 7) : avec un service extérieur, l'IA demande la permission avant chaque lecture (et avant d'envoyer la tâche de départ) ; un refus arrête l'intervention ; la règle est affichée sur la page des coéquipiers |
-| I-10 | En mode démonstration, les propositions sont génériques (sous-tâches « Produire une première version ») et ne reflètent pas ce que ferait le vrai modèle. | Basse | À noter dans le guide |
+| I-10 | En mode démonstration, les propositions sont génériques (sous-tâches « Produire une première version ») et ne reflètent pas ce que ferait le vrai modèle. | Basse | **Fait** (lot 12) : noté dans le guide fonctionnel (§ 5.15 bis) : en mode démonstration, les propositions sont simulées |
 
 ### Ce qui fonctionne bien
 
@@ -516,10 +516,10 @@ assistante. Les chefs de direction et les agents reçoivent un refus.
 | P-1 | Deux définitions de « tâche en retard » sur la même page : 4 dans le compteur du haut (projets du portefeuille et suites d'activités), 5 dans le bloc par direction et sur l'Accueil (toutes les tâches des agents). Même famille que A-2. | Haute | **Fait** (lot 6) : une seule règle des retards, écrite dans le code et renvoyée avec les chiffres ; le compteur sépare tâches et suites d'activités, et l'institution compte les mêmes tâches que la vue par direction |
 | P-2 | « Recommandations exécutées 62/90 » (indicateur saisi) et « Recommandations réalisées 0/2 » (calculé) côte à côte. | Moyenne | **Décidé et fait** (lot 6) : l'indicateur relié aux recommandations réalisées est calculé ; la ligne en double disparaît ; chaque indicateur dit s'il est calculé ou saisi |
 | P-3 | « Retards à résorber » additionne des natures différentes (tâches, recommandations, livrables, plan, courrier, décisions) et ne mène nulle part. | Moyenne | **Fait** (lot 11) : la carte « Retards à résorber » ouvre le détail par nature, chaque ligne menant à la page où le traiter |
-| P-4 | Le bloc « Assistant IA » affiche un « Point de situation » calculé par des règles, pas par l'IA. Le titre laisse croire que l'IA a analysé la situation. | Basse | À corriger : intituler « Point de situation », et réserver « Assistant IA » aux trois demandes |
+| P-4 | Le bloc « Assistant IA » affiche un « Point de situation » calculé par des règles, pas par l'IA. Le titre laisse croire que l'IA a analysé la situation. | Basse | **Fait** (lot 12) : le bloc s'intitule « Point de situation », calculé à partir des données de l'outil ; « Assistant IA » est réservé aux demandes |
 | P-5 | Les chefs de direction n'ont pas accès au tableau de bord, même limité à leur direction. | Moyenne | À décider : leur ouvrir la ligne et le détail de leur direction (« Par direction » existe déjà) |
 | P-6 | Données de démo : la DG est aussi responsable de la Direction technique ; l'Antenne Sud et la Représentation Nord sont vides ; les projets du portefeuille sont ceux d'une start-up (« Campagne de lancement », « Application mobile v2 »). Même famille que A-3 et A-7. | Moyenne (démo) | **Fait** (lot 1) : un chef distinct par direction, antenne et représentation peuplées, portefeuille de l'Agence |
-| P-7 | « 5 directions · 1 en alerte » alors que deux lignes sont en alerte (l'Agence et la Direction technique). | Basse | À corriger : préciser que la ligne Agence n'est pas comptée, ou la compter |
+| P-7 | « 5 directions · 1 en alerte » alors que deux lignes sont en alerte (l'Agence et la Direction technique). | Basse | **Fait** (lot 12) : l'en-tête « Par direction » signale à part l'alerte de la ligne Agence |
 | P-8 | La page reprend le bloc « Saisir » de l'Accueil : la DG le voit deux fois si elle passe d'une page à l'autre. | Basse | À décider avec A-1 |
 
 ### Ce qui fonctionne bien
@@ -598,7 +598,7 @@ gestionnaire de l'agenda, et ne se supprime que par un gestionnaire. La suppress
 | F-2 | La liste des projets ne montre que les projets dont on est membre. Le portefeuille de l'assistante de la DG est incomplet (4 sur 6), alors qu'elle a accès au tableau de bord. | Haute | **Fait** (lot 10) : le droit de pilotage donne la lecture de tous les projets non privés de l'institution |
 | F-3 | « 3 décisions attendues » (tableau de bord) et « Arbitrages attendus : 0 » (revue) : deux notions proches, deux chiffres. | Moyenne | **Décidé et fait** (lot 6) : une seule notion, « décision attendue de la DG » : dossier marqué « décision attendue » ou arbitrage en attente, compté une fois ; la revue précise son périmètre (« sur ces projets ») |
 | F-4 | Tous les agents voient toutes les activités non confidentielles de la DG (commissions, conférences, activités internes, leur état). | Moyenne | **Décidé et fait** (lot 7) : un agent voit les activités dont il est responsable, dont il suit une suite, ou de son entité ; la direction voit tout le non-confidentiel |
-| F-5 | L'onglet « Contrats et paiements » est ouvert aux chefs d'entité (Fiston, Didier) mais pas à l'assistante de la DG. | Basse | À vérifier au module Administration (profils) |
+| F-5 | L'onglet « Contrats et paiements » est ouvert aux chefs d'entité (Fiston, Didier) mais pas à l'assistante de la DG. | Basse | **Fait** (lot 12) : le pilotage lit tous les contrats ; un gestionnaire ne lit que ceux de ses entités, de ses dossiers et de ses missions |
 | F-6 | Un responsable d'activité modifie lui-même l'état (santé) de son activité. L'état affiché est corrigé si des suites sont en retard, mais pas pour les autres signaux. | Basse | À noter : même logique déclaré / calculé que F-1 |
 | F-7 | « Nouveau projet » apparaît dans l'onglet Projets sans vérifier le droit. Même famille que A-6 et E-7. | Basse | **Fait** (lot 3) : « Nouveau projet » ne s'affiche qu'avec le droit |
 | F-8 | Données de démo : « Campagne de lancement » a pour responsable Fiston, chef de l'Ingénierie territoriale ; projets de start-up. Même famille que A-7. | Moyenne (démo) | **Fait** (lot 1) : projets de l'Agence, confiés aux chefs concernés |
@@ -959,7 +959,7 @@ préparer ; seule la DG les approuve.
 | PT-4 | Les activités de la démo n'ont pas de date de début : l'« avancement attendu à date » du Tableau de bord DG est alors approximatif. | Moyenne | **Fait** (lot 11) : date de début obligatoire à la soumission du plan ; démonstration complétée |
 | PT-5 | Aucune campagne de préparation : pas de rappel pour le plan de l'année suivante, pas de vue « entités sans plan ». | Moyenne | **Fait** (lot 8) : campagne des plans (entités sans plan pour l'année) et relance de leurs chefs |
 | PT-6 | Tous les profils voient tous les plans, budgets prévus et dépensés compris. | Basse | **Décidé et fait** (lot 7) : budgets des plans réservés à la direction, aux chefs de l'entité et à qui prépare ou approuve les plans |
-| PT-7 | Les retards de la liste des plans sont calculés sur la date UTC du serveur (`CURRENT_DATE`), pas sur la date de Kinshasa : entre minuit et 1 h, un jour d'écart. | Basse | À corriger (déjà noté dans le plan de travail) |
+| PT-7 | Les retards de la liste des plans sont calculés sur la date UTC du serveur (`CURRENT_DATE`), pas sur la date de Kinshasa : entre minuit et 1 h, un jour d'écart. | Basse | **Fait** (lot 12) : plus aucune requête ne compare à CURRENT_DATE (UTC) ; un test l'interdit |
 | PT-8 | Données de démo : 3 plans pour 12 entités, aucun pour la Direction générale ni l'Ingénierie territoriale ; toutes les activités de l'Agence confiées à Fiston. | Moyenne (démo) | **Fait** (lot 9) : plans de la Direction générale et de l'Ingénierie territoriale (en préparation) ; activités du plan de l'Agence réparties entre les directions |
 
 ### Ce qui fonctionne bien
@@ -1049,7 +1049,7 @@ présenté comme le bailleur du programme.
 | PA-2 | Un point focal ne peut pas suspendre une relation, même en urgence ; il n'a aucun moyen de le demander dans l'outil. | Moyenne | À décider : « Demander la suspension » qui notifie les gestionnaires, ou droit de suspendre avec motif |
 | PA-3 | Les notes d'échange sont lisibles par tous les profils qui voient l'annuaire. | Moyenne | **Fait** (lot 7) : notes d'échange réservées aux gestionnaires, aux points focaux et à la direction |
 | PA-4 | Rien ne signale un partenaire actif ou en discussion sans point focal (4 sur 6 dans la démo). | Moyenne | **Fait** (lot 11) : point focal obligatoire pour passer « En discussion » ou « Actif », et le dernier ne se retire pas ; une fiche ancienne sans point focal est signalée |
-| PA-5 | Rien ne signale une relation sans échange depuis longtemps (date de dernière note connue mais non exploitée). | Basse | À corriger : « sans contact depuis 6 mois » dans la liste |
+| PA-5 | Rien ne signale une relation sans échange depuis longtemps (date de dernière note connue mais non exploitée). | Basse | **Fait** (lot 12) : une relation vivante sans échange noté depuis six mois est signalée (« sans contact ») |
 | PA-6 | Données de démo : aucun partenaire rattaché à un projet ou une activité du portefeuille, contacts presque vides. | Moyenne (démo) | **Fait** (lot 9) : le FFDT commanditaire du schéma national et interlocuteur de l'audience ; le ministère à la commission interministérielle ; un contact principal pour cinq partenaires |
 
 ### Ce qui fonctionne bien
@@ -1127,7 +1127,7 @@ Les six comptes voient les quatre accords.
 | CV-3 | Tous les profils voient tous les accords non confidentiels, texte compris. | Basse | **Décidé et fait** (lot 7) : un agent voit les accords de son entité ou qu'il suit ; la direction voit tout le non-confidentiel |
 | CV-4 | Un accord peut être préparé et envoyé au parapheur sans point focal. | Moyenne | **Fait** (lot 11) : un accord ne part pas au parapheur sans point focal |
 | CV-5 | Les risques ne se rattachent pas à un accord (voir RI-5). | Basse | À décider avec RI-5 |
-| CV-6 | Un avenant en préparation n'empêche pas l'échéance de l'accord principal : aucune alerte croisée « échéance proche, avenant non signé ». | Basse | À corriger : signaler l'avenant en attente dans le rappel d'échéance |
+| CV-6 | Un avenant en préparation n'empêche pas l'échéance de l'accord principal : aucune alerte croisée « échéance proche, avenant non signé ». | Basse | **Fait** (lot 12) : le rappel d'échéance signale l'avenant pas encore signé |
 
 ### Ce qui fonctionne bien
 
@@ -1297,7 +1297,7 @@ Historique de ENT/2026/0001 : « Enregistré au bureau d'ordre », « **Imputé 
 | C-1 | L'historique du courrier porte encore « Imputé à Nova Mobile » : les annotations figées gardent l'ancien nom de l'organisation de démonstration. | Basse (démo) | **Fait** (lot 1) : les textes figés du courrier portent les noms de l'Agence |
 | C-2 | La clôture d'un courrier demande une référence de réponse en texte libre ; elle n'est pas reliée au courrier sortant enregistré. | Moyenne | **Fait** (lot 11) : la clôture d'un courrier entrant propose les courriers sortants enregistrés ; le choix relie les deux et reprend la référence |
 | C-3 | Les chefs d'entité qui consultent le registre voient tout le courrier non confidentiel, pas seulement celui de leur entité. | Moyenne | **Décidé et fait** (lot 7) : un chef lit le courrier de son entité (et des entités rattachées) ; le secrétariat et la direction gardent le registre complet |
-| C-4 | Un correspondant saisi en texte libre (« Partenaire technique ») ne se rattache à aucune fiche partenaire. | Basse | À corriger : proposer de rattacher à une fiche existante ou d'en créer une |
+| C-4 | Un correspondant saisi en texte libre (« Partenaire technique ») ne se rattache à aucune fiche partenaire. | Basse | **Fait** (lot 12) : un correspondant tapé à la main qui ressemble à une fiche de l'annuaire propose son rattachement |
 | C-5 | Imputer à l'entité racine « ANAT » fait remonter les retards à la DG elle-même. | Basse | À décider : interdire l'imputation à la racine, ou la réserver à la DG |
 | C-6 | Données de démo : la DG fait office de bureau d'ordre (enregistre et impute) ; trois courriers seulement, aucun sortant. | Moyenne (démo) | **Fait** (lot 9) : l'assistante tient le bureau d'ordre (enregistre et impute) ; deux courriers sortants répondent à des entrants |
 
@@ -1609,7 +1609,7 @@ accès ; le profil « Responsable informatique » existe mais n'est attribué à
 | AD-3 | La messagerie n'est pas configurée : aucun courriel ne part, alors que plusieurs écrans annoncent un envoi par courriel. | Moyenne | **Fait** (lot 11) : l'interface sait si la messagerie est en service et ne promet plus de courriel sinon |
 | AD-4 | L'analyse du journal d'audit par l'IA envoie des données nominatives à un service extérieur. Même famille que I-9. | Moyenne | **Décidé et fait** (lot 7) : avec un service extérieur, l'appréciation du journal attend un accord explicite donné après avoir vu ce qui partirait |
 | AD-5 | Une seconde organisation de démonstration subsiste (« Studio Lumen »). Même famille que A-7. | Basse (démo) | **Fait** (lot 1) : le second espace « Studio Lumen » est retiré de la démonstration |
-| AD-6 | 30 sessions actives pour 6 personnes : les sessions s'accumulent (une par connexion) sans durée visible. | Basse | À vérifier : durée de vie des sessions, déconnexion des sessions anciennes |
+| AD-6 | 30 sessions actives pour 6 personnes : les sessions s'accumulent (une par connexion) sans durée visible. | Basse | **Fait** (lot 12) : au-delà de dix sessions ouvertes, les plus anciennes sont fermées ; le compteur ignore les sessions inactives |
 
 ### Ce qui fonctionne bien
 
@@ -1913,3 +1913,22 @@ accords, une date de début aux activités de plan, un motif aux changements de 
 triage d'exemple quand un test lance un autre coéquipier sur la même tâche (I-3).
 
 **Remarques traitées** : A-5, T-4, T-5, T-6, T-8, T-9, E-3, E-4, I-3, P-3, DEC-5, R-4, RI-3, RI-6, PT-4, PA-4, CV-4, PH-4, C-2, S-4, RH-4, AD-3.
+
+### Lot 12 — Remarques basses à corriger (18/11/2026, branche `lot-remarques-basses`)
+
+Les remarques de gravité basse marquées « À corriger » ou « À vérifier », traitées en l'absence de l'utilisateur, en
+retenant chaque fois l'option la plus prudente.
+
+| Domaine | Remarques | Ce qui change |
+|---|---|---|
+| Accueil et tableau de bord | A-9, A-10, P-4, P-7 | Bloc IA resserré ; libellés lisibles vers 800 px ; « Point de situation » distinct de l'assistant ; alerte de l'Agence dite à part |
+| Mes tâches et Mon entité | T-7, E-5, E-6, E-10 | Livrables attendus visibles du valideur ; plus de réunion en double ; rappel à la présidence ; onglets lisibles |
+| IA | I-5, I-8, I-10 | Propositions réservées à qui peut décider ; ton institutionnel ; mode démonstration expliqué |
+| Contrats, plans, partenariats, courrier | F-5, PT-7, PA-5, CV-6, C-4 | Contrats lus selon son périmètre ; date locale partout ; relation sans contact signalée ; avenant non signé rappelé ; correspondant rattaché à sa fiche |
+| Administration et démonstration | AD-6, D-6 | Sessions plafonnées ; historique d'affectation de la DG |
+
+Point d'attention (F-5) : un chef d'entité qui gère les prestataires ne voit plus les contrats des autres directions ;
+le cabinet de la DG (droit de pilotage) les lit tous. Tests : `server/src/remarques-basses.test.ts` (10), un test de
+démonstration (D-6).
+
+**Remarques traitées** : A-9, A-10, T-7, E-5, E-6, E-10, D-6, I-5, I-8, I-10, P-4, P-7, F-5, PT-7, PA-5, CV-6, C-4, AD-6.

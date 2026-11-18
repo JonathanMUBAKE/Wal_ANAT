@@ -188,6 +188,15 @@ describe("démonstration ANAT", () => {
     for (const r of rows) expect(r.assigned, `affectation de ${r.user_id}`).toBe(r.member);
   });
 
+  it("D-6 : la DG a son historique d'affectations, poste précédent compris", async () => {
+    const rows = await q<{ ended_on: string | null }>(
+      "SELECT ended_on::text AS ended_on FROM agent_assignments WHERE org_id = $1 AND user_id = 'u_alice'",
+      [org],
+    );
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    expect(rows.some((r) => r.ended_on === null)).toBe(true);
+  });
+
   // Remarques de démonstration restantes (D-7, R-9, DEC-7, C-6, RI-8, PT-8, PA-6, S-7) : une agence vivante
   it("D-7 : adresses à un domaine propre à l'Agence, nationalité plausible", async () => {
     const mails = await q<{ email: string }>(

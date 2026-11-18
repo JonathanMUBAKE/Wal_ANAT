@@ -1118,14 +1118,16 @@ export class Meetings {
     const rows = await this.svc.db.query<{
       id: string;
       org_id: string;
-      writer_id: string;
+      writer_id: string | null;
+      chair_id: string | null;
       title: string;
       meeting_type: string;
       meeting_date: string;
       convened_at: string | null;
     }>(
-      `SELECT id, org_id, writer_id, title, meeting_type, to_char(meeting_date, 'YYYY-MM-DD') AS meeting_date, convened_at
-         FROM meetings WHERE status = 'planned' AND writer_id IS NOT NULL
+      // Le rédacteur et la présidence sont prévenus, même sans rédacteur désigné (E-6)
+      `SELECT id, org_id, writer_id, chair_id, title, meeting_type, to_char(meeting_date, 'YYYY-MM-DD') AS meeting_date, convened_at
+         FROM meetings WHERE status = 'planned' AND (writer_id IS NOT NULL OR chair_id IS NOT NULL)
           AND ((convened_at IS NULL AND meeting_date >= $1::date AND meeting_date <= $2::date) OR meeting_date <= $3::date)`,
       [now, in7, ago2],
     );
@@ -1139,14 +1141,15 @@ export class Meetings {
       if (!fresh.length) continue;
       const when = r.meeting_date.split("-").reverse().join("/");
       const label = r.title || r.meeting_type;
-      await this.svc.notify(r.writer_id, r.org_id, {
-        kind: "meeting.reminder",
-        title: past ? `Réunion sans compte rendu : ${label} du ${when}` : `Réunion à convoquer : ${label} du ${when}`,
-        body: past
-          ? "Établissez le compte rendu, ou déclarez la séance non tenue."
-          : "La séance approche et n'est pas encore convoquée : envoyez la convocation.",
-        link: `/reunions/${r.id}`,
-      });
+      for (const to of new Set([r.writer_id, r.chair_id].filter((x): x is string => !!x)))
+        await this.svc.notify(to, r.org_id, {
+          kind: "meeting.reminder",
+          title: past ? `Réunion sans compte rendu : ${label} du ${when}` : `Réunion à convoquer : ${label} du ${when}`,
+          body: past
+            ? "Établissez le compte rendu, ou déclarez la séance non tenue."
+            : "La séance approche et n'est pas encore convoquée : envoyez la convocation.",
+          link: `/reunions/${r.id}`,
+        });
     }
   }
 

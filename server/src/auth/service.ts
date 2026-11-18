@@ -8,7 +8,9 @@ import { generateSecret, matchTotp, otpauthUri } from "./totp.js";
 
 export const SESSION_COOKIE = "cadence_session";
 export const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
-const IDLE_DAYS = 7,
+/** Au-delà de ce nombre de sessions ouvertes, les plus anciennes sont fermées (AD-6). */
+export const MAX_SESSIONS = 10;
+export const IDLE_DAYS = 7,
   MFA_PENDING_MINUTES = 5,
   MFA_MAX_ATTEMPTS = 5;
 const LOCK_AFTER = 5,
@@ -77,6 +79,12 @@ export class Auth {
         info.userAgent.slice(0, 400),
         mfaPending ? String(MFA_PENDING_MINUTES * 60) : String(SESSION_MAX_AGE),
       ],
+    );
+    // Les sessions ne s'accumulent pas : au-delà du plafond, les plus anciennes sont fermées (AD-6)
+    await this.svc.db.query(
+      `UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL AND id NOT IN (
+         SELECT id FROM sessions WHERE user_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC, last_seen_at DESC LIMIT $2)`,
+      [userId, MAX_SESSIONS],
     );
     return token;
   }

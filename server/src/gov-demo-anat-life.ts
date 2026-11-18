@@ -286,4 +286,23 @@ export async function anatLife(svc: Services, org: string) {
     const s = await quiet(at.create(writer, org, { unit_id: u, mission, domains: [{ domain_id: d, role: "responsable" }], relations: [] }));
     if (s) await quiet(at.approve("u_alice", (s as { id: string }).id));
   }
+  // D-6 : chaque dossier a son historique d'affectations ; la DG garde son poste précédent
+  await db.query(
+    `INSERT INTO agent_assignments (id, org_id, user_id, unit_id, function_title, started_on, created_by)
+     SELECT 'asg_' || a.user_id, a.org_id, a.user_id, om.unit_id, a.function_title,
+            COALESCE(a.hired_on, DATE '2020-01-06'), 'u_alice'
+       FROM agent_records a JOIN org_members om ON om.org_id = a.org_id AND om.user_id = a.user_id
+      WHERE a.org_id = $1 AND NOT EXISTS (SELECT 1 FROM agent_assignments s WHERE s.org_id = a.org_id AND s.user_id = a.user_id)`,
+    [org],
+  );
+  const dgFirst = await db.one<{ started_on: string }>(
+    "SELECT min(started_on)::text AS started_on FROM agent_assignments WHERE org_id = $1 AND user_id = 'u_alice'",
+    [org],
+  );
+  if (dgFirst?.started_on && !(await db.one("SELECT 1 FROM agent_assignments WHERE org_id = $1 AND user_id = 'u_alice' AND ended_on IS NOT NULL", [org])))
+    await db.query(
+      `INSERT INTO agent_assignments (id, org_id, user_id, unit_id, function_title, started_on, ended_on, reference, created_by)
+       VALUES ('asg_dg_prev', $1, 'u_alice', NULL, 'Directrice générale adjointe (fictif)', ($2::date - 1460), ($2::date - 1), 'Arrêté fictif n° 001', 'u_alice')`,
+      [org, dgFirst.started_on],
+    );
 }

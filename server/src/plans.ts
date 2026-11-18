@@ -1,5 +1,5 @@
 import { uid } from "./db.js";
-import { HttpError, badRequest, forbidden, isRealDate, notFound, type Services } from "./services.js";
+import { HttpError, badRequest, forbidden, isRealDate, localDate, notFound, type Services } from "./services.js";
 import { PlanReviews } from "./plan-reviews.js";
 import { weightedProgress } from "./rules.js";
 
@@ -102,7 +102,7 @@ export class Plans {
       `SELECT p.*, ou.name AS unit_name, count(a.id)::int AS activity_count,
         -- Avancement pondéré par le poids de chaque activité (thème 4, PT-3)
         COALESCE(round(sum(COALESCE(eff.progress, a.progress) * a.weight)::numeric / NULLIF(sum(a.weight), 0)), 0)::int AS progress,
-        count(a.id) FILTER (WHERE a.end_on < CURRENT_DATE AND COALESCE(eff.progress, a.progress) < 100)::int AS late
+        count(a.id) FILTER (WHERE a.end_on < $3::date AND COALESCE(eff.progress, a.progress) < 100)::int AS late
        FROM work_plans p JOIN org_units ou ON ou.id = p.unit_id LEFT JOIN plan_activities a ON a.plan_id = p.id
        LEFT JOIN LATERAL (
          SELECT round(avg(x.progress))::int AS progress FROM (
@@ -114,7 +114,7 @@ export class Plans {
          ) x
        ) eff ON TRUE
        WHERE p.org_id = $1 AND ($2::int IS NULL OR p.year = $2) GROUP BY p.id, ou.name ORDER BY p.year DESC, ou.name`,
-      [orgId, f.year ?? null],
+      [orgId, f.year ?? null, localDate()],
     );
   }
 

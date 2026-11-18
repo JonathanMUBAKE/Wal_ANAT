@@ -424,7 +424,10 @@ export class Deliverables {
   /** Contrats : le service gestionnaire voit tout ; les membres d'un projet voient ceux de leur dossier. */
   async contracts(actorId: string, orgId: string, f: { project_id?: string } = {}) {
     if (!(await this.svc.orgRole(actorId, orgId))) throw forbidden("Vous n'appartenez pas à cette organisation");
-    let all = (await this.perms(actorId, orgId)).includes("consultants.manage");
+    // Le pilotage lit tous les contrats ; un gestionnaire, ceux de ses entités et de ses dossiers (F-5)
+    const scope = await this.svc.scopeOf(actorId, orgId);
+    const manager = (await this.perms(actorId, orgId)).includes("consultants.manage");
+    let all = scope.wide;
     if (f.project_id) {
       await this.assertProject(orgId, f.project_id, "Un contrat");
       if (!all) {
@@ -450,9 +453,14 @@ export class Deliverables {
         (SELECT COALESCE(round(sum(c.amount * d.payment_percent / 100), 2), 0)::float8 FROM deliverables d WHERE d.contract_id = c.id AND d.to_pay) AS to_pay_amount,
         (SELECT COALESCE(round(sum(c.amount * d.payment_percent / 100), 2), 0)::float8 FROM deliverables d WHERE d.contract_id = c.id AND d.paid_at IS NOT NULL) AS paid_amount
        FROM consultant_contracts c LEFT JOIN users s ON s.id = c.supervisor_id LEFT JOIN projects p ON p.id = c.project_id
-       WHERE c.org_id = $1 AND ($2 OR c.user_id = $3 OR c.supervisor_id = $3) AND ($4::text IS NULL OR c.project_id = $4)
+       WHERE c.org_id = $1 AND (($2 AND (p.access IS DISTINCT FROM 'private'
+           OR EXISTS (SELECT 1 FROM memberships pm WHERE pm.project_id = c.project_id AND pm.user_id = $3)))
+         OR c.user_id = $3 OR c.supervisor_id = $3
+         OR ($5 AND (p.unit_id = ANY($6::text[])
+           OR EXISTS (SELECT 1 FROM memberships pm WHERE pm.project_id = c.project_id AND pm.user_id = $3))))
+         AND ($4::text IS NULL OR c.project_id = $4)
        ORDER BY c.status, c.end_on`,
-      [orgId, all, actorId, f.project_id ?? null],
+      [orgId, all, actorId, f.project_id ?? null, manager, scope.units],
     );
   }
   async createContract(actorId: string, orgId: string, i: ContractInput) {

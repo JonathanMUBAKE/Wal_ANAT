@@ -98,8 +98,9 @@ export function QuickEntry({ className, wide, noSign }: { className?: string; wi
               )}
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-[13px] font-medium">{i.label}</span>
-              <span className="block truncate text-[12px] text-muted">{i.hint}</span>
+              {/* Les libellés passent à la ligne plutôt que d'être coupés vers 800 px (A-10) */}
+              <span className="block text-[13px] font-medium leading-snug">{i.label}</span>
+              <span className="block text-[12px] leading-snug text-muted">{i.hint}</span>
             </span>
           </Link>
         ))}

@@ -12,12 +12,24 @@ import { cn } from "@/components/ui";
 
 export interface DirectionStats {
   agents: number;
-  projects: { total: number; on_track: number; at_risk: number; off_track: number; done: number };
+  projects: {
+    total: number;
+    on_track: number;
+    at_risk: number;
+    off_track: number;
+    done: number;
+  };
   tasks: { open: number; overdue: number };
   decisions: { open: number; late: number };
   mail: { open: number; late: number };
   recommendations: { open: number; late: number };
-  plan: { activities: number; progress: number | null; expected: number | null; behind: number; late: number };
+  plan: {
+    activities: number;
+    progress: number | null;
+    expected: number | null;
+    behind: number;
+    late: number;
+  };
   assessment: "sous_controle" | "vigilance" | "alerte";
   alerts: string[];
 }
@@ -30,8 +42,16 @@ export interface DirectionRow extends DirectionStats {
 }
 
 export const ASSESSMENT = {
-  sous_controle: { label: "Sous contrôle", cls: "bg-success-soft text-success", Icon: CircleCheck },
-  vigilance: { label: "Vigilance", cls: "bg-warning-soft text-warning", Icon: AlertTriangle },
+  sous_controle: {
+    label: "Sous contrôle",
+    cls: "bg-success-soft text-success",
+    Icon: CircleCheck,
+  },
+  vigilance: {
+    label: "Vigilance",
+    cls: "bg-warning-soft text-warning",
+    Icon: AlertTriangle,
+  },
   alerte: { label: "Alerte", cls: "bg-danger-soft text-danger", Icon: Siren },
 } as const;
 
@@ -51,8 +71,15 @@ export function Assessment({ value }: { value: DirectionStats["assessment"] }) {
 }
 
 /** Avancement du plan : la barre est le réalisé, le trait vertical l'attendu à date. */
-export function PlanBar({ progress, expected }: { progress: number | null; expected: number | null }) {
-  if (progress === null) return <span className="text-[12px] text-faint">Pas de plan approuvé</span>;
+export function PlanBar({
+  progress,
+  expected,
+}: {
+  progress: number | null;
+  expected: number | null;
+}) {
+  if (progress === null)
+    return <span className="text-[12px] text-faint">Pas de plan approuvé</span>;
   const behind = expected !== null && expected - progress >= 15;
   return (
     <span className="block min-w-[120px]">
@@ -61,7 +88,10 @@ export function PlanBar({ progress, expected }: { progress: number | null; expec
         role="img"
         aria-label={`Réalisé ${progress} %${expected !== null ? `, attendu à date ${expected} %` : ""}`}
       >
-        <span className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${progress}%` }} />
+        <span
+          className="absolute inset-y-0 left-0 rounded-full bg-primary"
+          style={{ width: `${progress}%` }}
+        />
         {expected !== null && (
           <span
             className="absolute -top-1 h-3.5 w-0.5 rounded-full bg-fg"
@@ -70,7 +100,9 @@ export function PlanBar({ progress, expected }: { progress: number | null; expec
         )}
       </span>
       <span className="mt-1 block text-[12px] tabular-nums text-muted">
-        <span className={cn("font-medium text-fg", behind && "text-danger")}>{progress} %</span>
+        <span className={cn("font-medium text-fg", behind && "text-danger")}>
+          {progress} %
+        </span>
         {expected !== null && <> · attendu {expected} %</>}
       </span>
     </span>
@@ -80,7 +112,8 @@ export function PlanBar({ progress, expected }: { progress: number | null; expec
 const Late = ({ n, label }: { n: number; label: string }) =>
   n ? (
     <span className="whitespace-nowrap">
-      <span className="font-semibold tabular-nums text-danger">{n}</span> <span className="text-muted">{label}</span>
+      <span className="font-semibold tabular-nums text-danger">{n}</span>{" "}
+      <span className="text-muted">{label}</span>
     </span>
   ) : null;
 
@@ -89,29 +122,55 @@ export function ByDirection({ className }: { className?: string }) {
   const { data, error } = useQuery({
     queryKey: ["pilotage-directions"],
     queryFn: () =>
-      api.get<{ today: string; agency: DirectionRow | null; directions: DirectionRow[] }>("/api/pilotage/directions"),
+      api.get<{
+        today: string;
+        agency: DirectionRow | null;
+        directions: DirectionRow[];
+      }>("/api/pilotage/directions"),
   });
-  const alerts = data?.directions.filter((d) => d.assessment === "alerte").length ?? 0;
+  const alerts =
+    data?.directions.filter((d) => d.assessment === "alerte").length ?? 0;
   return (
-    <section id="par-direction" className={cn("flex min-w-0 flex-col scroll-mt-4 rounded-2xl border border-line bg-panel", className)}>
+    <section
+      id="par-direction"
+      className={cn(
+        "flex min-w-0 scroll-mt-4 flex-col rounded-2xl border border-line bg-panel",
+        className,
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-3 pt-4">
-        <h2 className="text-[14.5px] font-semibold tracking-[-0.01em]">Par direction</h2>
+        <h2 className="text-[14.5px] font-semibold tracking-[-0.01em]">
+          Par direction
+        </h2>
         {data && (
           <span className="text-[12px] text-muted">
-            {data.directions.length} direction{data.directions.length > 1 ? "s" : ""}
-            {alerts ? ` · ${alerts} en alerte` : ""} · le trait marque l'avancement attendu à date
+            {data.directions.length} direction
+            {data.directions.length > 1 ? "s" : ""}
+            {alerts ? ` · ${alerts} en alerte` : ""}
+            {/* La ligne « Agence » n'est pas une direction : son alerte se dit à part (P-7) */}
+            {data.agency?.assessment === "alerte" ? " · l'Agence aussi" : ""} ·
+            le trait marque l'avancement attendu à date
           </span>
         )}
       </div>
       {error ? (
-        <p className="px-5 pb-5 text-[13px] text-danger">{(error as Error).message}</p>
+        <p className="px-5 pb-5 text-[13px] text-danger">
+          {(error as Error).message}
+        </p>
       ) : !data ? (
         <p className="px-5 pb-5 text-[13px] text-muted">Chargement…</p>
       ) : (
         <DirectionTable
           rows={[
             // Ce qui est rattaché à l'Agence elle-même (son plan, son courrier), en tête (I-16)
-            ...(data.agency ? [{ ...data.agency, name: `${data.agency.name} · niveau de l'Agence` }] : []),
+            ...(data.agency
+              ? [
+                  {
+                    ...data.agency,
+                    name: `${data.agency.name} · niveau de l'Agence`,
+                  },
+                ]
+              : []),
             ...data.directions,
           ]}
           empty="Aucune direction : créez-les dans Organisation › Structure."
@@ -122,8 +181,19 @@ export function ByDirection({ className }: { className?: string }) {
 }
 
 /** Le tableau des directions (ou des services d'une direction). */
-export function DirectionTable({ rows, empty }: { rows: DirectionRow[]; empty?: string }) {
-  if (!rows.length) return <p className="px-5 pb-5 text-[13px] text-muted">{empty ?? "Aucune entité."}</p>;
+export function DirectionTable({
+  rows,
+  empty,
+}: {
+  rows: DirectionRow[];
+  empty?: string;
+}) {
+  if (!rows.length)
+    return (
+      <p className="px-5 pb-5 text-[13px] text-muted">
+        {empty ?? "Aucune entité."}
+      </p>
+    );
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[860px] text-[13px]">
@@ -139,14 +209,23 @@ export function DirectionTable({ rows, empty }: { rows: DirectionRow[]; empty?: 
         </thead>
         <tbody>
           {rows.map((d) => (
-            <tr key={d.id} className="group border-b border-line last:border-0 hover:bg-hover">
+            <tr
+              key={d.id}
+              className="group border-b border-line last:border-0 hover:bg-hover"
+            >
               <td className="px-5 py-3 align-top">
-                <Link to={`/pilotage/directions/${d.id}`} className="block font-medium hover:underline">
+                <Link
+                  to={`/pilotage/directions/${d.id}`}
+                  className="block font-medium hover:underline"
+                >
                   {d.name}
                 </Link>
                 <span className="block text-[12px] text-muted">
-                  {d.manager_name ?? "Sans chef désigné"} · {d.agents} agent{d.agents > 1 ? "s" : ""}
-                  {d.services ? ` · ${d.services} service${d.services > 1 ? "s" : ""}` : ""}
+                  {d.manager_name ?? "Sans chef désigné"} · {d.agents} agent
+                  {d.agents > 1 ? "s" : ""}
+                  {d.services
+                    ? ` · ${d.services} service${d.services > 1 ? "s" : ""}`
+                    : ""}
                 </span>
               </td>
               <td className="max-w-[260px] px-3 py-3 align-top">
@@ -158,13 +237,18 @@ export function DirectionTable({ rows, empty }: { rows: DirectionRow[]; empty?: 
                 )}
               </td>
               <td className="px-3 py-3 align-top">
-                <span className="block font-medium tabular-nums">{d.projects.total}</span>
+                <span className="block font-medium tabular-nums">
+                  {d.projects.total}
+                </span>
                 {d.projects.total > 0 && (
                   <span className="block text-[12px] text-muted">
                     {[
-                      d.projects.off_track && `${d.projects.off_track} en difficulté`,
-                      d.projects.at_risk && `${d.projects.at_risk} à surveiller`,
-                      d.projects.on_track && `${d.projects.on_track} dans les temps`,
+                      d.projects.off_track &&
+                        `${d.projects.off_track} en difficulté`,
+                      d.projects.at_risk &&
+                        `${d.projects.at_risk} à surveiller`,
+                      d.projects.on_track &&
+                        `${d.projects.on_track} dans les temps`,
                     ]
                       .filter(Boolean)
                       .join(" · ")}
@@ -172,21 +256,39 @@ export function DirectionTable({ rows, empty }: { rows: DirectionRow[]; empty?: 
                 )}
               </td>
               <td className="px-3 py-3 align-top">
-                <PlanBar progress={d.plan.progress} expected={d.plan.expected} />
+                <PlanBar
+                  progress={d.plan.progress}
+                  expected={d.plan.expected}
+                />
               </td>
               <td className="px-3 py-3 align-top text-[12.5px]">
                 <span className="flex flex-col gap-0.5">
-                  <Late n={d.tasks.overdue} label={`tâche${d.tasks.overdue > 1 ? "s" : ""}`} />
-                  <Late n={d.decisions.late} label={`décision${d.decisions.late > 1 ? "s" : ""}`} />
+                  <Late
+                    n={d.tasks.overdue}
+                    label={`tâche${d.tasks.overdue > 1 ? "s" : ""}`}
+                  />
+                  <Late
+                    n={d.decisions.late}
+                    label={`décision${d.decisions.late > 1 ? "s" : ""}`}
+                  />
                   <Late n={d.mail.late} label="courrier" />
-                  <Late n={d.recommendations.late} label={`recommandation${d.recommendations.late > 1 ? "s" : ""}`} />
-                  {!d.tasks.overdue && !d.decisions.late && !d.mail.late && !d.recommendations.late && (
-                    <span className="text-muted">Aucun</span>
-                  )}
+                  <Late
+                    n={d.recommendations.late}
+                    label={`recommandation${d.recommendations.late > 1 ? "s" : ""}`}
+                  />
+                  {!d.tasks.overdue &&
+                    !d.decisions.late &&
+                    !d.mail.late &&
+                    !d.recommendations.late && (
+                      <span className="text-muted">Aucun</span>
+                    )}
                 </span>
               </td>
               <td className="pr-4 align-middle">
-                <Link to={`/pilotage/directions/${d.id}`} aria-label={`Ouvrir ${d.name}`}>
+                <Link
+                  to={`/pilotage/directions/${d.id}`}
+                  aria-label={`Ouvrir ${d.name}`}
+                >
                   <ChevronRight className="size-4 text-faint group-hover:text-fg" />
                 </Link>
               </td>

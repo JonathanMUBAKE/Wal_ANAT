@@ -58,7 +58,8 @@ describe("Mes tâches et Mon entité (T-4, T-5, T-9, E-4)", () => {
 
 describe("Point focal des partenariats (PA-4, CV-4)", () => {
   it("PA-4 : une relation en discussion ou active a un point focal ; une fiche ancienne qui n'en a pas est signalée", async () => {
-    const p = (await g.api("u_alice", "POST", "/api/partners", { name: "Bailleur fictif", type_code: "autre" })).body;
+    const created = await g.api("u_alice", "POST", "/api/partners", { name: "Bailleur fictif", type_code: "autre" });
+    const p = created.body;
     const r = await g.api("u_alice", "POST", `/api/partners/${p.id}/state`, { state: "actif" });
     expect(r.status).toBe(400);
     expect(r.body.error).toMatch(/point focal/);

@@ -656,6 +656,17 @@ export class AiEngine {
     if (run.kind === "assistant") {
       if (run.requested_by !== userId) throw forbidden("Seule la personne qui a lancé l'assistant peut valider");
     } else if (a.project_id) await this.svc.require(userId, a.project_id, "editor");
+    // Une retouche ne fait pas du décideur la personne visée : la cible se recalcule sur le contenu retouché (testeurs)
+    if (edits && approve && run.kind !== "assistant") {
+      const edited = { ...a.input, ...Object.fromEntries(Object.entries(edits).filter(([k]) => !LOCKED_INPUTS.has(k))) };
+      const ctx = {
+        actorId: a.agent_id,
+        orgId: run.org_id ?? "",
+        ...(run.project_id ? { scope: { requesterId: run.requested_by, projectId: run.project_id } } : {}),
+      };
+      if ((await this.tools.targets(ctx as never, a.tool, edited)).includes(userId))
+        throw forbidden("Retouchée ainsi, la proposition vous vise : une autre personne habilitée la valide");
+    }
     // Deux décisions simultanées : une seule l'emporte
     if (
       !(await this.svc.db.one(

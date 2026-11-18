@@ -553,11 +553,15 @@ export class Registers {
    */
   async risks(actorId: string, orgId: string, projectId?: string) {
     let ownerOnly = false;
+    // Le pilotage lit tout le registre ; un gestionnaire des risques, ceux des projets qu'il lit et ceux qu'il porte
+    let readable: string[] | null = null;
     if (projectId) await this.svc.require(actorId, projectId, "viewer");
     else {
       await this.svc.requireOrg(actorId, orgId, "member");
       const perms = await this.svc.permissionsOf(actorId, orgId);
       ownerOnly = !perms.includes("pilotage.view") && !perms.includes("risks.manage");
+      if (!perms.includes("pilotage.view") && perms.includes("risks.manage"))
+        readable = await this.svc.readableProjectIds(actorId, orgId);
     }
     return this.svc.db.query(
       `SELECT r.*, r.probability * r.impact AS score, u.name AS owner_name, p.name AS project_name,
@@ -569,8 +573,9 @@ export class Registers {
               (SELECT ag.title FROM agreements ag WHERE ag.id = r.agreement_id) AS agreement_title
          FROM risks r LEFT JOIN users u ON u.id = r.owner_id LEFT JOIN projects p ON p.id = r.project_id
         WHERE r.org_id = $1 AND ($2::text IS NULL OR r.project_id = $2) AND (NOT $3 OR r.owner_id = $4)
+          AND ($5::text[] IS NULL OR r.owner_id = $4 OR r.project_id IS NULL OR r.project_id = ANY($5::text[]))
         ORDER BY r.status, score DESC, r.created_at DESC`,
-      [orgId, projectId ?? null, ownerOnly, actorId],
+      [orgId, projectId ?? null, ownerOnly, actorId, readable],
     );
   }
   private async riskRow(id: string) {
@@ -585,6 +590,13 @@ export class Registers {
          FROM risks r LEFT JOIN users u ON u.id = r.owner_id LEFT JOIN projects p ON p.id = r.project_id WHERE r.id = $1`,
       [id],
     );
+  }
+  /** Un gestionnaire des risques agit dans son périmètre : projets qu'il lit, risques qu'il porte ; le pilotage partout (testeurs). */
+  private async assertRiskScope(actorId: string, orgId: string, projectId: string | null, ownerId: string | null) {
+    if ((await this.svc.permissionsOf(actorId, orgId)).includes("pilotage.view") || ownerId === actorId) return;
+    if (!projectId) throw forbidden("Un risque de l'Agence entière relève de la direction");
+    if (!(await this.svc.readableProjectIds(actorId, orgId)).includes(projectId))
+      throw forbidden("Ce risque n'est pas dans votre périmètre");
   }
   private async assertRiskRefs(orgId: string, i: RiskInput) {
     if (i.mitigation_due_on && !isRealDate(i.mitigation_due_on)) throw badRequest(`Date invalide : ${i.mitigation_due_on}`);
@@ -610,6 +622,7 @@ export class Registers {
   ) {
     await this.svc.requirePerm(actorId, orgId, "risks.manage");
     await this.assertRiskRefs(orgId, i);
+    await this.assertRiskScope(actorId, orgId, i.project_id ?? null, null);
     const id = uid("rsk");
     await this.svc.db.query(
       "INSERT INTO risks (id, org_id, title, probability, impact, owner_id, mitigation, project_id, activity_id, agreement_id, mitigation_due_on) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
@@ -655,6 +668,7 @@ export class Registers {
         throw forbidden("Le responsable d'un risque met à jour sa parade et l'état ; le reste revient au gestionnaire des risques");
     }
     await this.assertRiskRefs(r.org_id, i);
+    await this.assertRiskScope(actorId, r.org_id, i.project_id !== undefined ? (i.project_id ?? null) : r.project_id, r.owner_id);
     // Rattachements et échéance de la mesure (RI-5, CV-5) : comme le reste de la fiche, au gestionnaire des risques
     for (const k of ["activity_id", "agreement_id", "mitigation_due_on"] as const)
       if (i[k] !== undefined)

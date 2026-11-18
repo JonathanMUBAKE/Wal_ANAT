@@ -129,3 +129,130 @@ describe("parapheur, arbitrages et décisions", () => {
     expect((await g.api("u_alice", "GET", `/api/decisions/${first.id}`)).body.status).toBe("remplacee");
   });
 });
+
+describe("tâches confiées : le verrou ne se contourne pas", () => {
+  it("le chargé ne se retire pas, ne se réattribue pas, ne supprime pas ; le chef de sous-entité reste chargé", async () => {
+    const p = await g.project();
+    await g.api("u_alice", "PUT", `/api/projects/${p}/members/u_hugo`, { role: "admin" });
+    const t = (
+      await g.api("u_alice", "POST", "/api/tasks", { project_id: p, title: "Note confiée", assignee_id: "u_hugo", due_on: day(5) })
+    ).body;
+    // Didier administre le projet mais reste le chargé : il ne lève pas le verrou de Bernadette
+    expect((await g.api("u_hugo", "PATCH", `/api/tasks/${t.id}`, { assignee_id: null })).status).toBe(403);
+    expect((await g.api("u_hugo", "PATCH", `/api/tasks/${t.id}`, { due_on: day(60) })).status).toBe(403);
+    expect((await g.api("u_hugo", "PATCH", `/api/tasks/${t.id}`, { recurrence: "weekly" })).status).toBe(403);
+    expect((await g.api("u_hugo", "DELETE", `/api/tasks/${t.id}`)).status).toBe(403);
+    const done = (await g.api("u_hugo", "PATCH", `/api/tasks/${t.id}`, { completed: true })).body;
+    expect(done.completed).toBe(false);
+    expect(done.done_declared_at).toBeTruthy();
+  });
+});
+
+describe("réunions : la présidence est une personne habilitée", () => {
+  it("ni une IA ni une personne sans droit de validation ne préside", async () => {
+    const make = (chair: string) =>
+      g.api("u_alice", "POST", "/api/meetings", { meeting_type: "Réunion de cabinet", meeting_date: day(3), chair_id: chair });
+    expect((await make("ai_atlas")).status).toBe(400);
+    await g.api("u_alice", "PUT", "/api/org/members/u_hugo/permissions", { overrides: { "meetings.validate": false } });
+    expect((await make("u_hugo")).status).toBe(400);
+    expect((await make("u_alice")).status).toBe(200);
+  });
+});
+
+describe("accords : partenaires confidentiels et avenants", () => {
+  it("un point focal ne lie pas une fiche confidentielle qu'il ne voit pas", async () => {
+    const mine = (await g.api("u_alice", "POST", "/api/partners", { name: "Partenaire suivi", type_code: "autre", focal_id: "u_karim" })).body;
+    const secret = (await g.api("u_alice", "POST", "/api/partners", { name: "Fiche secrète", type_code: "autre", confidential: true })).body;
+    const r = await g.api("u_karim", "POST", "/api/agreements", {
+      type_code: "protocole_accord",
+      title: "Accord",
+      partner_ids: [mine.id, secret.id],
+    });
+    expect(r.status).toBe(400);
+    expect(JSON.stringify(r.body)).not.toMatch(/Fiche secrète/);
+  });
+
+  it("une résiliation ne se date pas dans le futur ; l'avenant d'un accord résilié ne prend pas effet", async () => {
+    const p = (await g.api("u_alice", "POST", "/api/partners", { name: "Partenaire fictif", type_code: "autre" })).body;
+    const a = (
+      await g.api("u_alice", "POST", "/api/agreements", {
+        type_code: "protocole_accord",
+        title: "Accord",
+        content: "Texte",
+        partner_ids: [p.id],
+        end_on: day(300),
+        focal_id: "u_karim",
+      })
+    ).body;
+    await g.api("u_alice", "POST", `/api/agreements/${a.id}/activate`, { signed_on: day() });
+    const av = (await g.api("u_alice", "POST", `/api/agreements/${a.id}/amend`, { title: "Prolongation", new_end_on: day(700) })).body;
+    expect((await g.api("u_alice", "POST", `/api/agreements/${a.id}/terminate`, { reason: "Fin", ended_on: day(30) })).status).toBe(400);
+    expect((await g.api("u_alice", "POST", `/api/agreements/${a.id}/terminate`, { reason: "Fin", ended_on: day() })).status).toBe(200);
+    // L'avenant ne prend plus effet : ni parapheur ni entrée en vigueur
+    expect((await g.api("u_alice", "POST", `/api/agreements/${av.id}/activate`, { signed_on: day() })).status).toBe(409);
+    expect((await g.api("u_alice", "GET", `/api/agreements/${a.id}`)).body.end_on).toBe(day(300));
+  });
+});
+
+describe("IA : une retouche ne fait pas du décideur la personne visée", () => {
+  it("se désigner chargé en retouchant la proposition est refusé", async () => {
+    const p = await g.project();
+    const t = (await g.api("u_alice", "POST", "/api/tasks", { project_id: p, title: "Note" })).body;
+    await g.ctx.db.query(
+      `INSERT INTO ai_runs (id, org_id, agent_id, kind, task_id, project_id, requested_by, status, provider)
+       VALUES ('run_t', $1, 'ai_cadence', 'task', $2, $3, 'u_karim', 'waiting_approval', 'mock')`,
+      [g.org, t.id, p],
+    );
+    await g.ctx.db.query(
+      `INSERT INTO ai_approvals (id, run_id, agent_id, task_id, project_id, tool, input, summary, status, target_ids)
+       VALUES ('apr_t', 'run_t', 'ai_cadence', $1, $2, 'create_task', '{"title":"Sous-tâche"}', 'Créer', 'pending', '[]')`,
+      [t.id, p],
+    );
+    const r = await g.api("u_alice", "POST", "/api/ai/approvals/apr_t", { approve: true, edits: { assignee: "u_alice" } });
+    expect(r.status).toBe(403);
+    expect(r.body.error).toMatch(/vous vise/);
+  });
+});
+
+describe("livrables et contrats dans le périmètre de chacun", () => {
+  it("un chef ne lit, ne crée ni n'évalue rien sur un projet qu'il ne lit pas ; la DG, si", async () => {
+    await g.promote("u_karim", "Chef d'entité");
+    const p = await g.project();
+    const d = await g.api("u_alice", "POST", "/api/deliverables", {
+      title: "Rapport d'étape",
+      project_id: p,
+      responsible_id: "u_hugo",
+      validator_id: "u_alice",
+    });
+    expect(d.status).toBe(200);
+    expect(((await g.api("u_karim", "GET", "/api/deliverables")).body as Any[]).some((x) => x.id === d.body.id)).toBe(false);
+    expect((await g.api("u_karim", "GET", `/api/deliverables/${d.body.id}`)).status).toBe(404);
+    expect(
+      (await g.api("u_karim", "POST", "/api/deliverables", { title: "Intrus", project_id: p, responsible_id: "u_karim", validator_id: "u_alice" }))
+        .status,
+    ).toBe(403);
+    const c = (
+      await g.api("u_alice", "POST", "/api/contracts", {
+        project_id: p,
+        consultant_name: "Cabinet fictif",
+        title: "Étude",
+        start_on: "2026-01-01",
+        end_on: "2026-12-31",
+        amount: 1000,
+        supervisor_id: "u_alice",
+      })
+    ).body;
+    expect((await g.api("u_karim", "POST", `/api/contracts/${c.id}/evaluate`, { evaluation: "x", rating: 1 })).status).toBe(403);
+  });
+});
+
+describe("risques dans le périmètre de chacun", () => {
+  it("un chef ne lit ni ne modifie le risque d'un projet privé qu'il ne lit pas", async () => {
+    await g.promote("u_karim", "Chef d'entité");
+    const p = await g.project();
+    const r = (await g.api("u_alice", "POST", "/api/risks", { title: "Désistement", probability: 2, impact: 3, project_id: p })).body;
+    expect(((await g.api("u_karim", "GET", "/api/risks")).body as Any[]).some((x) => x.id === r.id)).toBe(false);
+    expect((await g.api("u_karim", "PATCH", `/api/risks/${r.id}`, { probability: 4 })).status).toBe(403);
+    expect(((await g.api("u_alice", "GET", "/api/risks")).body as Any[]).some((x) => x.id === r.id)).toBe(true);
+  });
+});

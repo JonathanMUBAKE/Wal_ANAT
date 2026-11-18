@@ -9,6 +9,8 @@ import { localDate } from "./services.js";
 let g: GovCtx;
 beforeEach(async () => {
   g = await boot();
+  // La présidence valide les comptes rendus : Didier, qui préside ici, en a le droit (testeurs)
+  await g.api("u_alice", "PUT", "/api/org/members/u_hugo/permissions", { overrides: { "meetings.validate": true } });
 });
 afterEach(() => g.ctx.app.close());
 

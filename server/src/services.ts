@@ -1893,6 +1893,11 @@ export class Services {
       const same =
         k === "tags" ? JSON.stringify(before.tags) === JSON.stringify(v) : (before as unknown as Row)[k] === v;
       if (same) continue;
+      // Le chargé ne se retire pas d'une tâche confiée, et n'en change ni la récurrence ni le début (testeurs)
+      if (guard.locked && (k === "assignee_id" || k === "recurrence" || k === "start_on"))
+        throw forbidden(
+          `Cette tâche a été confiée par ${guard.ownerName} : son attribution et son calendrier restent à ${guard.ownerName}`,
+        );
       if (guard.locked && (k === "title" || k === "due_on" || k === "priority"))
         throw forbidden(
           `Cette tâche a été confiée par ${guard.ownerName} : son intitulé, son échéance et sa priorité restent à ${guard.ownerName}. Demandez un report si l'échéance ne peut pas être tenue`,
@@ -2004,7 +2009,10 @@ export class Services {
     if (!t.assignee_id || !t.assigned_by || t.assigned_by === t.assignee_id) return none;
     const [assignee, owner] = [await this.userOrNull(t.assignee_id), await this.userOrNull(t.assigned_by)];
     if (!assignee || assignee.is_ai || !owner) return none;
-    const responsible = actorId === owner.id || (await this.projectRole(actorId, t.project_id)) === "admin";
+    // Le chargé n'est jamais son propre responsable, même s'il administre le registre où la tâche est rangée (testeurs)
+    const responsible =
+      actorId === owner.id ||
+      (actorId !== t.assignee_id && (await this.projectRole(actorId, t.project_id)) === "admin");
     return { locked: !responsible, responsible, ownerId: owner.id, ownerName: owner.name };
   }
 
@@ -2320,6 +2328,9 @@ export class Services {
     const task = await this.taskRow(await this.resolveTaskId(actorId, ref));
     this.assertCanRemoveTask(actorId, task, await this.require(actorId, task.project_id, "editor"));
     await this.projectPerm(actorId, task.project_id, "tasks.delete");
+    // Le chargé ne supprime pas une tâche qu'on lui a confiée (testeurs)
+    const guard = await this.confidedGuard(actorId, task);
+    if (guard.locked) throw forbidden(`Cette tâche a été confiée par ${guard.ownerName} : elle ne se supprime pas à sa place`);
     await this.db.query("DELETE FROM tasks WHERE id = $1", [task.id]);
     await this.log(actorId, "task.deleted", { projectId: task.project_id, data: { title: task.title, key: task.key } });
     this.bus.emit({ type: "task.deleted", actorId, projectId: task.project_id, taskId: task.id });

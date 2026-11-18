@@ -103,6 +103,14 @@ export class Deliverables {
       () => false,
     );
   }
+  /**
+   * Agir sur un livrable ou un contrat : le droit ne suffit pas, il s'exerce sur un dossier que l'on lit ; seul le
+   * pilotage (DG, cabinet) agit sur tous (contrôle des testeurs).
+   */
+  private async assertScope(actorId: string, orgId: string, projectId: string | null) {
+    if ((await this.perms(actorId, orgId)).includes("pilotage.view")) return;
+    if (!(await this.seesProject(actorId, projectId))) throw forbidden("Ce dossier n'est pas dans votre périmètre");
+  }
   /** Le projet doit exister dans l'institution : c'est le domicile de toute nouvelle pièce. */
   private async assertProject(orgId: string, projectId: string | null | undefined, what: string) {
     if (!projectId) throw badRequest(`${what} appartient à un projet : choisissez le projet concerné`);
@@ -115,7 +123,7 @@ export class Deliverables {
     if (!(await this.svc.orgRole(actorId, d.org_id))) throw forbidden("Vous n'appartenez pas à cette organisation");
     const p = await this.perms(actorId, d.org_id);
     if (
-      !p.includes("deliverables.view") &&
+      !p.includes("pilotage.view") &&
       d.responsible_id !== actorId &&
       d.validator_id !== actorId &&
       !(await this.seesProject(actorId, d.project_id))
@@ -164,7 +172,11 @@ export class Deliverables {
 
   async list(actorId: string, orgId: string, f: { mine?: boolean; project_id?: string }) {
     if (!(await this.svc.orgRole(actorId, orgId))) throw forbidden("Vous n'appartenez pas à cette organisation");
-    let all = (await this.perms(actorId, orgId)).includes("deliverables.view") && !f.mine;
+    // Le pilotage voit tous les livrables ; le droit de les suivre s'exerce sur les projets que l'on lit (testeurs)
+    const perms = await this.perms(actorId, orgId);
+    let all = perms.includes("pilotage.view") && !f.mine;
+    const follow = perms.includes("deliverables.view") && !f.mine;
+    const readable = follow ? await this.svc.readableProjectIds(actorId, orgId) : [];
     if (f.project_id) {
       await this.assertProject(orgId, f.project_id, "Un livrable");
       // Le dossier d'un projet se lit par ses membres ; les autres n'y accèdent qu'avec le droit général
@@ -187,9 +199,10 @@ export class Deliverables {
         CASE WHEN d.payment_percent IS NOT NULL AND c.amount IS NOT NULL THEN round(c.amount * d.payment_percent / 100, 2)::float8 END AS amount_due
        FROM deliverables d LEFT JOIN users r ON r.id = d.responsible_id LEFT JOIN users v ON v.id = d.validator_id
        LEFT JOIN consultant_contracts c ON c.id = d.contract_id LEFT JOIN projects p ON p.id = d.project_id
-       WHERE d.org_id = $1 AND ($2 OR d.responsible_id = $3 OR d.validator_id = $3) AND ($4::text IS NULL OR d.project_id = $4)
+       WHERE d.org_id = $1 AND ($2 OR d.responsible_id = $3 OR d.validator_id = $3 OR d.project_id = ANY($5::text[]))
+         AND ($4::text IS NULL OR d.project_id = $4)
        ORDER BY d.status = 'valide', d.due_on NULLS LAST, d.created_at DESC`,
-      [orgId, all, actorId, f.project_id ?? null],
+      [orgId, all, actorId, f.project_id ?? null, readable],
     );
   }
 
@@ -227,6 +240,7 @@ export class Deliverables {
   ) {
     await this.svc.requirePerm(actorId, orgId, "deliverables.manage");
     await this.assertProject(orgId, i.project_id, "Un livrable");
+    await this.assertScope(actorId, orgId, i.project_id ?? null);
     await this.assertRefs(orgId, i);
     await this.assertPayment(i.contract_id ?? null, i.payment_percent ?? null, null);
     const id = uid("liv");
@@ -255,6 +269,7 @@ export class Deliverables {
   async update(actorId: string, id: string, i: DeliverableInput) {
     const d = await this.row(id);
     await this.svc.requirePerm(actorId, d.org_id, "deliverables.manage");
+    await this.assertScope(actorId, d.org_id, d.project_id);
     if (d.status === "valide") throw frozen();
     const responsible = i.responsible_id === undefined ? d.responsible_id : i.responsible_id;
     const validator = i.validator_id === undefined ? d.validator_id : i.validator_id;
@@ -290,6 +305,7 @@ export class Deliverables {
   async remove(actorId: string, id: string) {
     const d = await this.row(id);
     await this.svc.requirePerm(actorId, d.org_id, "deliverables.manage");
+    await this.assertScope(actorId, d.org_id, d.project_id);
     if (d.status === "valide") throw frozen();
     await this.svc.db.query("DELETE FROM deliverables WHERE id = $1", [id]);
     await this.svc.log(actorId, "deliverable.deleted", { orgId: d.org_id, data: { id, title: d.title } });
@@ -394,6 +410,7 @@ export class Deliverables {
   async markPaid(actorId: string, id: string) {
     const d = await this.row(id);
     await this.svc.requirePerm(actorId, d.org_id, "consultants.manage");
+    await this.assertScope(actorId, d.org_id, d.project_id);
     if (!d.to_pay) throw new HttpError(409, "Ce livrable n'attend aucun paiement");
     const done = await this.svc.db.tx(async (q) => {
       const r = await q.query(
@@ -501,8 +518,10 @@ export class Deliverables {
   }
   async evaluate(actorId: string, id: string, i: { evaluation: string; rating: number }) {
     const c = await this.contract(id);
-    if (c.supervisor_id !== actorId) await this.svc.requirePerm(actorId, c.org_id, "consultants.manage");
-    else if (!(await this.svc.orgRole(actorId, c.org_id)))
+    if (c.supervisor_id !== actorId) {
+      await this.svc.requirePerm(actorId, c.org_id, "consultants.manage");
+      await this.assertScope(actorId, c.org_id, c.project_id);
+    } else if (!(await this.svc.orgRole(actorId, c.org_id)))
       throw forbidden("Vous n'appartenez pas à cette organisation");
     await this.svc.db.query("UPDATE consultant_contracts SET evaluation = $1, rating = $2 WHERE id = $3", [
       i.evaluation.trim(),

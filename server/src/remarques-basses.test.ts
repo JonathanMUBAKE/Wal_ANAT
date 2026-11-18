@@ -100,7 +100,7 @@ describe("E-6 : une réunion proche non convoquée est rappelée à sa présiden
       await g.api("u_alice", "POST", "/api/meetings", {
         meeting_type: "Réunion hebdomadaire",
         meeting_date: day(5),
-        chair_id: "u_karim",
+        chair_id: "u_alice",
       })
     ).body;
     expect(m.id).toBeTruthy();
@@ -108,7 +108,7 @@ describe("E-6 : une réunion proche non convoquée est rappelée à sa présiden
     const { Meetings } = await import("./meetings.js");
     await new Meetings(g.ctx.svc).sweep(day());
     const n = await g.ctx.db.one(
-      "SELECT 1 FROM notifications WHERE user_id = 'u_karim' AND kind = 'meeting.reminder' AND link = $1",
+      "SELECT 1 FROM notifications WHERE user_id = 'u_alice' AND kind = 'meeting.reminder' AND link = $1",
       [`/reunions/${m.id}`],
     );
     expect(n).toBeTruthy();

@@ -333,7 +333,10 @@ export class Meetings {
   private async assertDecider(actorId: string, m: MeetingRow): Promise<{ onBehalf: string | null }> {
     if (m.writer_id === actorId) throw forbidden("Le rédacteur ne peut pas valider son propre compte rendu");
     if (m.chair_id) {
-      if (m.chair_id === actorId) return { onBehalf: null };
+      if (m.chair_id === actorId) {
+        await this.svc.requirePerm(actorId, m.org_id, "meetings.validate");
+        return { onBehalf: null };
+      }
       if (await this.delegateOf(m.chair_id, actorId, m.org_id)) return { onBehalf: m.chair_id };
       const chair = await this.svc.db.one<{ name: string }>("SELECT name FROM users WHERE id = $1", [m.chair_id]);
       throw forbidden(
@@ -501,6 +504,14 @@ export class Meetings {
 
   private async assertMember(orgId: string, userId: string, label: string) {
     if (!(await this.svc.orgRole(userId, orgId))) throw badRequest(`${label} doit être membre de l'organisation`);
+    // Une IA ne préside ni ne rédige : l'IA propose, une personne décide (testeurs)
+    if ((await this.svc.userOrNull(userId))?.is_ai) throw badRequest(`${label} doit être une personne`);
+  }
+  /** La présidence valide le compte rendu : elle en a le droit (testeurs). */
+  private async assertChair(orgId: string, userId: string) {
+    await this.assertMember(orgId, userId, "La présidence de séance");
+    if (!(await this.svc.permissionsOf(userId, orgId)).includes("meetings.validate"))
+      throw badRequest("La présidence de séance revient à une personne habilitée à valider les comptes rendus");
   }
 
   // ---------------------------------------------------------------- lecture
@@ -700,7 +711,7 @@ export class Meetings {
     }
     const writerId = input.writer_id ?? actorId;
     await this.assertMember(orgId, writerId, "Le rédacteur");
-    if (input.chair_id) await this.assertMember(orgId, input.chair_id, "La présidence de séance");
+    if (input.chair_id) await this.assertChair(orgId, input.chair_id);
     await this.assertDossier(orgId, input);
     const count = input.repeat?.count ?? 1;
     if (!Number.isInteger(count) || count < 1 || count > MAX_SERIES)
@@ -818,7 +829,7 @@ export class Meetings {
       fields.writer_name = (await this.svc.user(patch.writer_id)).name;
     }
     if (patch.writer_initials) fields.writer_initials = patch.writer_initials.trim().toUpperCase();
-    if (patch.chair_id) await this.assertMember(m.org_id, patch.chair_id, "La présidence de séance");
+    if (patch.chair_id) await this.assertChair(m.org_id, patch.chair_id);
     if (patch.project_id !== undefined || patch.activity_id !== undefined)
       await this.assertDossier(m.org_id, {
         project_id: patch.project_id === undefined ? m.project_id : patch.project_id,

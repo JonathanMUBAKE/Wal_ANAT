@@ -83,7 +83,10 @@ describe("tâches", () => {
     expect(notifs.some((n: { kind: string }) => n.kind === "mention")).toBe(true);
     expect(notifs.some((n: { kind: string }) => n.kind === "assigned")).toBe(true);
 
-    const done = await api("u_karim", "PATCH", `/api/tasks/${created.body.id}`, { completed: true });
+    // Fiston, chargé, déclare la tâche réalisée ; Bernadette, qui l'a confiée, confirme la clôture (testeurs)
+    const declared = await api("u_karim", "PATCH", `/api/tasks/${created.body.id}`, { completed: true });
+    expect(declared.body.done_declared_at).toBeTruthy();
+    const done = await api("u_alice", "PATCH", `/api/tasks/${created.body.id}`, { completed: true });
     expect(done.body.completed).toBe(true);
     const detail = (await api("u_alice", "GET", `/api/tasks/${created.body.key}`)).body;
     expect(detail.activity.map((a: { kind: string }) => a.kind)).toEqual(

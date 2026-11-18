@@ -297,7 +297,7 @@ export class Agreements {
   // ------------------------------------------------------------------ contrôles
 
   /** Partenaires de l'accord : de l'institution, fiches vivantes, ni suspendus ni clos. */
-  private async parties(orgId: string, ids: string[], lead?: string | null) {
+  private async parties(orgId: string, ids: string[], lead: string | null | undefined, actorId: string) {
     const unique = [...new Set(ids)];
     if (!unique.length) throw badRequest("Un accord lie au moins un partenaire");
     const rows = await this.svc.db.query<{
@@ -312,6 +312,16 @@ export class Agreements {
     ]);
     if (rows.length !== unique.length || rows.some((r) => r.merged_into))
       throw badRequest("Partenaire inconnu dans l'annuaire ou fiche fusionnée");
+    // Une fiche confidentielle qu'on ne lit pas reste inconnue : elle ne se lie pas (testeurs)
+    if (rows.some((r) => r.confidential) && !(await this.manager(actorId, orgId)))
+      for (const r of rows.filter((x) => x.confidential)) {
+        const sees = await this.svc.db.one(
+          `SELECT 1 FROM partners p WHERE p.id = $1 AND (p.focal_id = $2 OR p.created_by = $2
+             OR EXISTS (SELECT 1 FROM partner_focals pf WHERE pf.partner_id = p.id AND pf.user_id = $2))`,
+          [r.id, actorId],
+        );
+        if (!sees) throw badRequest("Partenaire inconnu dans l'annuaire ou fiche fusionnée");
+      }
     const blocked = rows.find((r) => r.state === "suspendu" || r.state === "clos");
     if (blocked)
       throw new HttpError(
@@ -394,7 +404,7 @@ export class Agreements {
     i: AgreementInput & { title: string; type_code: string; partner_ids: string[] },
   ) {
     await this.human(actorId);
-    const p = await this.parties(orgId, i.partner_ids ?? [], i.lead_partner_id);
+    const p = await this.parties(orgId, i.partner_ids ?? [], i.lead_partner_id, actorId);
     if (!(await this.manager(actorId, orgId))) {
       // Le point focal d'un des partenaires prépare l'accord qu'il suit
       const follows = await this.svc.db.one(
@@ -474,12 +484,13 @@ export class Agreements {
         : a.type_code;
     const p =
       i.partner_ids !== undefined
-        ? await this.parties(a.org_id, i.partner_ids, i.lead_partner_id)
+        ? await this.parties(a.org_id, i.partner_ids, i.lead_partner_id, actorId)
         : i.lead_partner_id !== undefined
           ? await this.parties(
               a.org_id,
               a.parties.map((x) => x.id),
               i.lead_partner_id,
+              actorId,
             )
           : null;
     this.dates(i, a);
@@ -545,9 +556,18 @@ export class Agreements {
   }
 
   /** Passage au parapheur : le texte est scellé pendant le circuit ; la signature fait entrer l'accord en vigueur. */
+  /** Un avenant suit son accord : rien ne se signe ni n'entre en vigueur sur un accord qui ne l'est plus (testeurs). */
+  private async assertParentLive(a: Row) {
+    if (!a.parent_id) return;
+    const parent = await this.svc.db.one<{ state: string }>("SELECT state FROM agreements WHERE id = $1", [a.parent_id]);
+    if (parent?.state !== "vigueur")
+      throw new HttpError(409, "L'accord principal n'est plus en vigueur : cet avenant ne peut plus prendre effet");
+  }
+
   async sign(actorId: string, id: string, steps: { actor_id: string; action: "avis" | "visa" | "signature" }[]) {
     const { a } = await this.writable(actorId, id);
     if (a.state !== "preparation") throw new HttpError(409, "Seul un accord en préparation passe au parapheur");
+    await this.assertParentLive(a);
     if (!a.content.trim()) throw badRequest("Rédigez le texte de l'accord avant de le soumettre à la signature");
     // Un accord signé se suit : il part au parapheur avec son point focal (CV-4)
     if (!a.focal_id) throw badRequest("Désignez le point focal de l'accord avant de l'envoyer au parapheur");
@@ -649,6 +669,7 @@ export class Agreements {
 
   /** Numéro du registre, texte figé, partenaires actifs ; un avenant reporte sa nouvelle échéance sur l'accord. */
   private async enter(a: Row, actorId: string, signedOn: string, effectiveOn: string | null, outside: boolean) {
+    await this.assertParentLive(a);
     const year = Number(signedOn.slice(0, 4));
     for (let attempt = 0; ; attempt++) {
       try {
@@ -756,6 +777,7 @@ export class Agreements {
     if (!reason) throw badRequest("Le motif de la résiliation est obligatoire");
     if (!isRealDate(i.ended_on) || (a.signed_on && i.ended_on < a.signed_on))
       throw badRequest("Date de résiliation invalide");
+    if (i.ended_on > today()) throw badRequest("Une résiliation se constate : sa date ne peut pas être dans le futur");
     await this.svc.db.tx(async (q) => {
       await q.query(
         "UPDATE agreements SET state = 'resilie', ended_on = $1, ended_reason = $2, updated_at = now() WHERE id = $3",

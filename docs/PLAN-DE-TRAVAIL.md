@@ -164,6 +164,72 @@ réception d'e-mails sur les adresses de service pour créer des tâches. Le dé
 
 ---
 
+### Lot S — Séparation des droits d'accès : chacun n'accède qu'à ce qui lui est destiné (planifié le 19/11/2026)
+
+Demande de l'utilisateur (18/11/2026) : séparer les droits d'accès de tout le monde selon une logique claire, pour que
+chacun n'accède qu'à ce qui lui est destiné. L'authentification (mots de passe, double authentification, SSO) vient
+plus tard et n'est pas dans ce lot.
+
+**Point de départ.** Les lots 3, 7, 10 à 14 ont déjà posé l'essentiel :
+- 13 profils (Propriétaire, Administrateur, Membre, Invité, Lecture seule, Agent, Stagiaire, Consultant,
+  Chef d'entité, DGA, DG, Assistant(e) de direction, Responsable informatique) et 58 droits ;
+- la règle « ce qui le concerne » (`svc.scopeOf`), la matrice de toutes les routes (`matrice.test.ts`) ;
+- les corrections des agents testeurs (lot 14).
+
+Ce qui manque, c'est une règle unique, écrite, appliquée partout et vérifiée profil par profil, plutôt qu'une
+décision prise module par module.
+
+**Principes (à valider avec l'utilisateur avant le code).**
+1. *Besoin d'en connaître* : on lit ce qu'on porte (ses tâches, ses dossiers, son dossier RH), ce que dirige son
+   entité (et ses entités rattachées), et ce à quoi on est convié. Le reste n'existe pas pour soi (404, pas 403).
+2. *Trois périmètres seulement* : **soi**, **son entité** (et en dessous), **l'institution** (pilotage de la DG et
+   son cabinet). Chaque lecture et chaque écriture déclare son périmètre.
+3. *Séparation des fonctions* : piloter (DG, DGA, cabinet), administrer la plateforme (responsable informatique),
+   gérer les personnes (RH) sont trois fonctions distinctes ; aucune ne donne accès aux données des deux autres.
+4. *Confidentiel avant tout* : une fiche, une réunion, un document, un projet marqué confidentiel ou privé ne sort
+   de son cercle ni par une liste, ni par une recherche, ni par un message d'erreur, ni par un export.
+5. *Champs sensibles* : montants (contrats, budgets, finance des accords), données personnelles (RH), notes RH,
+   évaluations ; ils se masquent par fonction même quand l'objet est lisible.
+6. *L'IA lit avec les droits de qui la lance*, jamais plus, et n'agit jamais comme une personne.
+7. *Contrôle serveur, journal, test* : chaque règle est contrôlée côté serveur, chaque accès sensible journalisé,
+   chaque règle couverte par un test qui rejoue le contournement.
+
+**Matrice cible (à compléter et faire valider).**
+
+| Module | Agent / Stagiaire / Consultant | Chef d'entité | Cabinet (assistante) | DG / DGA | RH | Responsable informatique |
+|---|---|---|---|---|---|---|
+| Tâches, projets | Les siens, ceux de son entité ouverts | Ceux de son arbre ; confie, valide | Tous les non privés, lecture | Tous les non privés | Les siens | Les siens |
+| Décisions | Celles dont il est chargé ou concerné | Celles de son arbre | Inscrit, prépare ; ne tranche ni ne confirme | Tranche, confirme | Concernées | Concernées |
+| Réunions, comptes rendus | Où il est convié, de son entité | Préside, valide celles de son entité | Prépare, rédige | Préside, valide | Conviées | Conviées |
+| Courrier | Imputé ou en copie | De son arbre ; impute dans son arbre | Registre complet (non confidentiel) | Registre complet | Imputé | Imputé |
+| Parapheur | Ses circuits | Ses circuits, ses visas | Pile de la DG en lecture ; filtre ce qui va à la DG | Signe au nom de l'Agence | Ses circuits | Ses circuits |
+| Partenaires, accords | Ceux qu'il suit ou de son entité | Ceux de son arbre | Lecture du non confidentiel | Tout le non confidentiel | — | — |
+| Plans, risques, indicateurs | Ses activités, ses risques | Son plan, risques de ses projets | Lecture | Tout ; approuve | — | — |
+| Livrables, contrats, montants | Les siens | Son périmètre, montants compris | Lecture | Tout | — | — |
+| RH | Son dossier (sans notes RH) | Partie administrative de ses agents | — | Partie administrative (à confirmer : notes RH ?) | Tout, sauf son propre dossier | — |
+| Administration, journal | — | — | — | Relit le journal des administrateurs | — | Administre ; ne lit ni RH ni pilotage |
+
+**Étapes de mise en œuvre.**
+1. *Inventaire automatique* : un script parcourt toutes les routes et produit, pour chacune, le droit exigé et le
+   périmètre appliqué ; il signale les routes sans périmètre (cible : zéro).
+2. *Un seul garde de périmètre* : généraliser `scopeOf` en un garde commun (`assertScope(actor, objet)`) utilisé par
+   tous les modules ; supprimer les variantes locales.
+3. *Points restants du lot 14* : budgets du portefeuille masqués aux agents non membres (C-M8) ; un projet porté par
+   une entité reste lisible de son chef (C-M9) ; fiche partenaire limitée aux accords du périmètre (P-M4) ; recherche
+   globale passée au même filtre, étendue aux partenaires et accords.
+4. *Champs sensibles* : une fonction unique de masquage par fonction (montants, données personnelles, notes RH),
+   appliquée aux réponses de l'API et aux exports.
+5. *Matrice des profils* : étendre `matrice.test.ts` à chaque profil métier (agent, chef, cabinet, DG, RH,
+   informatique) et à chaque route, avec le résultat attendu ; toute route nouvelle sans ligne fait échouer la suite.
+6. *Interface* : n'afficher que ce qui est accessible (menus, boutons, onglets) à partir de la même matrice.
+7. *Agents testeurs* : relancer les quatre agents testeurs sur la démo à la fin du lot ; zéro anomalie haute.
+
+**Décisions à prendre avec l'utilisateur avant le code.**
+- La DG lit-elle les notes RH et les évaluations, ou seulement la partie administrative ? (aujourd'hui : elle les lit)
+- Le cabinet voit-il les montants des contrats et des accords ?
+- Un agent voit-il l'annuaire complet (noms, fonctions) ou seulement son entité ?
+- Les comptes rendus du comité de direction : réservés à ses membres, ou lisibles des chefs ?
+
 ## 4. Décisions ouvertes (à trancher par Jonathan)
 
 | N° | Question | Proposition par défaut |
@@ -266,4 +332,5 @@ Ne pas commencer le Lot D3 avant la réponse à Q1. Les lots P1 à P5 (`docs/PAR
 | 2026-11-18 | Claude (session sur l'ordinateur) | Remarques basses à corriger | A-9, A-10, T-7, E-5, E-6, E-10, D-6, I-5, I-8, I-10, P-4, P-7, F-5, PT-7, PA-5, CV-6, C-4, AD-6 : date locale partout, propositions IA réservées à qui décide, contrats lus selon le périmètre, sessions plafonnées, rappels et alertes complétés, interface lisible vers 800 px. | `lot-remarques-basses` |
 | 2026-11-18 | Claude (session sur l'ordinateur) | Décisions prudentes | A-1, P-8, T-11, T-12, E-8, P-5, F-6, DEC-4, R-5, RI-5, RI-7, PT-2, PA-2, CV-5, PH-6, C-5, EQ-2, RH-2, RH-5, RH-8 : options les plus prudentes retenues en l'absence de l'utilisateur, à relire (voir le lot 13 de l'analyse). | `lot-decisions-prudentes` |
 | 2026-11-19 | Claude (session sur l'ordinateur) | Corrections des agents testeurs | Quatre agents testeurs (DG et cabinet, chefs et agents, RH et administration, partenariats et robustesse) ; 19 anomalies graves corrigées (élévation de privilèges de l'administrateur, contournements du cabinet, des tâches confiées, des périmètres) et la plupart des moyennes et basses. Tests : `server/src/testeurs.test.ts`. | `lot-corrections-testeurs` |
+| 2026-11-19 | Claude (session sur l'ordinateur) | Plan de séparation des droits d'accès | Lot S planifié : principes (besoin d'en connaître, trois périmètres, séparation des fonctions, confidentiel, champs sensibles), matrice cible par profil, sept étapes, quatre décisions à prendre avec l'utilisateur. Rien n'est codé. | `plan-droits-acces` |
 | 2026-11-12 | Claude (session sur l'ordinateur) | Congés et absences, fins de contrat | Migration 039 : demandes de congé (nature, dates, jours ouvrés, intérim, motif) ; le chef de l'entité (ou le service RH à défaut) accorde ou refuse avec motif ; personne ne décide de sa propre demande ni de celle qu'il a saisie ; le service RH enregistre une absence constatée ; annulation ; chevauchements refusés ; absents du jour ; avis à chaque étape (nouveau domaine « Ressources humaines ») ; alerte 60 jours avant une fin de contrat au service RH et au chef. Écran « Congés et absences », carte « Congés à valider » à l'accueil. 539 tests au vert. | `lot-recurrence-rh` |

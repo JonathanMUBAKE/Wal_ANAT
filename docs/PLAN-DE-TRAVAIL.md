@@ -224,11 +224,11 @@ décision prise module par module.
 6. *Interface* : n'afficher que ce qui est accessible (menus, boutons, onglets) à partir de la même matrice.
 7. *Agents testeurs* : relancer les quatre agents testeurs sur la démo à la fin du lot ; zéro anomalie haute.
 
-**Décisions à prendre avec l'utilisateur avant le code.**
-- La DG lit-elle les notes RH et les évaluations, ou seulement la partie administrative ? (aujourd'hui : elle les lit)
-- Le cabinet voit-il les montants des contrats et des accords ?
-- Un agent voit-il l'annuaire complet (noms, fonctions) ou seulement son entité ?
-- Les comptes rendus du comité de direction : réservés à ses membres, ou lisibles des chefs ?
+**Décisions de l'utilisateur (19/11/2026).**
+- **La DG lit tout, mais ne fait pas tout** : lecture de l'ensemble, notes RH et évaluations comprises ; ses actions restent celles de sa fonction (trancher, confirmer, signer, approuver), pas celles des RH, de l'administration ou des chargés.
+- **Le cabinet voit la même chose que la DG** (lecture), montants compris ; il prépare, il ne tranche ni ne confirme.
+- **Les comptes rendus du comité de direction sont lisibles des chefs d'entité.**
+- *Annuaire d'un agent* : en attente (voir l'explication donnée à l'utilisateur).
 
 ## 4. Décisions ouvertes (à trancher par Jonathan)
 

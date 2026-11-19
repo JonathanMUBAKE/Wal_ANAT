@@ -99,6 +99,20 @@ function NavSection({
   );
 }
 
+/**
+ * Un module paraît dans le menu s'il a quelque chose pour la personne (lot S) : ce que lui renvoie l'API, qui applique
+ * déjà « ce qui le concerne ». Qui gère le module le voit toujours, pour y créer.
+ */
+function useHas(url: string, enabled: boolean) {
+  const { data } = useQuery({
+    queryKey: ["reach", url],
+    queryFn: () => api.get<unknown[]>(url).catch(() => [] as unknown[]),
+    enabled,
+    staleTime: 60_000,
+  });
+  return Array.isArray(data) && data.length > 0;
+}
+
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { data: me } = useMe();
   const { data: approvals } = useApprovals();
@@ -114,6 +128,39 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     queryFn: () => api.get<unknown[]>("/api/risks"),
     enabled: !!me && !risksPage && currentOrg?.role !== "guest",
   });
+
+  const member = !!me && currentOrg?.role !== "guest";
+  const wide = can("pilotage.view");
+  // Les requêtes partent seulement quand le droit de gestion ne suffit pas à décider (lot S)
+  const ask = (perm: string, ...managers: string[]) =>
+    member && can(perm as never) && !wide && !managers.some((m) => can(m as never));
+  const hasDecisions = useHas("/api/decisions", ask("decisions.view", "decisions.record"));
+  const hasMeetings = useHas("/api/meetings", ask("meetings.view", "meetings.manage"));
+  const hasPlans = useHas("/api/plans", ask("plans.view", "plans.manage", "plans.approve"));
+  const hasPartners = useHas("/api/partners", ask("partners.view", "partners.manage"));
+  const hasAgreements = useHas("/api/agreements", ask("partners.view", "partners.manage"));
+  const hasMail = useHas(
+    "/api/correspondence",
+    member && !wide && !can("correspondence.manage") && !can("correspondence.view"),
+  );
+  const hasSignature = useHas("/api/signature?box=all", ask("signature.use", "units.lead"));
+  const hasTeams = useHas("/api/teams", member && !can("teams.create"));
+  const show = {
+    decisions: wide || can("decisions.record") || hasDecisions,
+    meetings: wide || can("meetings.manage") || hasMeetings,
+    plans: wide || can("plans.manage") || can("plans.approve") || hasPlans,
+    partners: wide || can("partners.manage") || hasPartners,
+    agreements: wide || can("partners.manage") || hasAgreements,
+    mail: wide || can("correspondence.manage") || can("correspondence.view") || hasMail,
+    signature: wide || can("units.lead") || hasSignature,
+    teams: can("teams.create") || hasTeams,
+    structure:
+      wide ||
+      can("org.structure") ||
+      can("org.members") ||
+      can("org.profiles") ||
+      !!myUnits?.some((u) => u.role === "responsable"),
+  };
 
   const link = (to: string, Icon: typeof House, label: string, badge?: number, ai?: boolean) => (
     <NavLink
@@ -173,33 +220,35 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <NavSection title="Pilotage">
           {can("pilotage.view") && link("/pilotage", Gauge, "Tableau de bord DG")}
           {(can("agenda.view") || can("projects.create")) && link("/activites", Briefcase, "Portefeuille")}
-          {(can("decisions.view") || can("decisions.record")) && link("/decisions", Scale, "Décisions")}
-          {can("meetings.view") && link("/reunions", CalendarDays, "Réunions")}
+          {(can("decisions.view") || can("decisions.record")) &&
+            show.decisions &&
+            link("/decisions", Scale, "Décisions")}
+          {can("meetings.view") && show.meetings && link("/reunions", CalendarDays, "Réunions")}
           {(risksPage || !!myRisks?.length) && link("/risques", ShieldAlert, "Risques et indicateurs")}
         </NavSection>
 
         {/* Livrables et contrats vivent dans leur projet (docs/PARCOURS-METIER.md) : plus de module à part */}
-        {can("plans.view") && (
+        {can("plans.view") && show.plans && (
           <NavSection title="Suivi-évaluation">{link("/plans", ClipboardList, "Plans de travail")}</NavSection>
         )}
 
-        {can("partners.view") && (
+        {can("partners.view") && (show.partners || show.agreements) && (
           <NavSection title="Partenariats">
-            {link("/partenaires", Handshake, "Partenaires")}
-            {link("/conventions", ScrollText, "Conventions")}
+            {show.partners && link("/partenaires", Handshake, "Partenaires")}
+            {show.agreements && link("/conventions", ScrollText, "Conventions")}
           </NavSection>
         )}
 
-        {(can("signature.use") || can("correspondence.view") || currentOrg?.role !== "guest") && (
+        {((can("signature.use") && show.signature) || show.mail) && (
           <NavSection title="Secrétariat">
-            {can("signature.use") && link("/parapheur", FileSignature, "Parapheur")}
-            {(can("correspondence.view") || currentOrg?.role !== "guest") && link("/courrier", Mail, "Courrier")}
+            {can("signature.use") && show.signature && link("/parapheur", FileSignature, "Parapheur")}
+            {show.mail && link("/courrier", Mail, "Courrier")}
           </NavSection>
         )}
 
         <NavSection title="Organisation">
-          {link("/org", Network, "Structure")}
-          {link("/teams", Users, "Équipes")}
+          {show.structure && link("/org", Network, "Structure")}
+          {show.teams && link("/teams", Users, "Équipes")}
           {(can("hr.view") || can("hr.manage")) && link("/rh", IdCard, "Ressources humaines")}
           {currentOrg?.role !== "guest" && link("/conges", CalendarOff, "Congés et absences")}
           {me?.platform_role && link("/admin", ShieldCheck, "Administration système")}
@@ -221,7 +270,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <span className="min-w-0 flex-1">
             <span className="block text-[13px] font-medium">Assistant IA</span>
             <span className="block truncate text-[11.5px] text-muted">
-              Il propose, vous décidez{aiStatus?.provider === "anthropic" ? "" : " · démo"}
+              Il propose, vous décidez
+              {aiStatus?.provider === "anthropic" ? "" : " · démo"}
             </span>
           </span>
         </button>

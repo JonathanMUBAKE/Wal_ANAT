@@ -78,7 +78,7 @@ describe("PA-2 : le point focal demande la suspension, les gestionnaires décide
     await g.api("u_alice", "POST", `/api/partners/${p.id}/state`, { state: "actif" });
     expect((await g.api("u_karim", "POST", `/api/partners/${p.id}/state`, { state: "suspendu", reason: "x" })).status).toBe(403);
     expect((await g.api("u_karim", "POST", `/api/partners/${p.id}/suspension-request`, { reason: "" })).status).toBe(400);
-    expect((await g.api("u_hugo", "POST", `/api/partners/${p.id}/suspension-request`, { reason: "x" })).status).toBe(403);
+    expect((await g.api("u_hugo", "POST", `/api/partners/${p.id}/suspension-request`, { reason: "x" })).status).toBe(404); // lot S : hors de son périmètre, la fiche n'existe pas
     const r = await g.api("u_karim", "POST", `/api/partners/${p.id}/suspension-request`, { reason: "Différend sur les livrables" });
     expect(r.status).toBe(200);
     const n = await g.ctx.db.one("SELECT 1 FROM notifications WHERE user_id = 'u_alice' AND kind = 'partner.suspension_request'");

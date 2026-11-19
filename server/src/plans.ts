@@ -95,8 +95,28 @@ export class Plans {
     return a;
   }
 
+  /**
+   * Ce qui concerne la personne (lot S) : le pilotage, l'approbation et la préparation de tous les plans voient tout ;
+   * les autres, les plans de leurs entités et ceux où ils portent une activité.
+   */
+  private async planScope(actorId: string, orgId: string): Promise<string[] | null> {
+    const perms = await this.svc.permissionsOf(actorId, orgId);
+    if (perms.includes("pilotage.view") || perms.includes("plans.approve") || perms.includes("plans.manage_all")) return null;
+    return (await this.svc.scopeOf(actorId, orgId)).units;
+  }
+  private async assertPlanScope(actorId: string, p: { id: string; org_id: string; unit_id: string }) {
+    const units = await this.planScope(actorId, p.org_id);
+    if (!units || units.includes(p.unit_id)) return;
+    const carries = await this.svc.db.one("SELECT 1 FROM plan_activities WHERE plan_id = $1 AND responsible_id = $2 LIMIT 1", [
+      p.id,
+      actorId,
+    ]);
+    if (!carries) throw notFound("Plan introuvable");
+  }
+
   async list(actorId: string, orgId: string, f: { year?: number }) {
     await this.svc.requirePerm(actorId, orgId, "plans.view");
+    const units = await this.planScope(actorId, orgId);
     // L'avancement affiché tient compte des dossiers qui réalisent chaque activité (lot P3c)
     return this.svc.db.query<Plan & { unit_name: string; activity_count: number; progress: number; late: number }>(
       `SELECT p.*, ou.name AS unit_name, count(a.id)::int AS activity_count,
@@ -113,8 +133,11 @@ export class Plans {
            SELECT aa.progress::numeric FROM agency_activities aa WHERE aa.plan_activity_id = a.id
          ) x
        ) eff ON TRUE
-       WHERE p.org_id = $1 AND ($2::int IS NULL OR p.year = $2) GROUP BY p.id, ou.name ORDER BY p.year DESC, ou.name`,
-      [orgId, f.year ?? null, localDate()],
+       WHERE p.org_id = $1 AND ($2::int IS NULL OR p.year = $2)
+         AND ($4::text[] IS NULL OR p.unit_id = ANY($4::text[])
+              OR EXISTS (SELECT 1 FROM plan_activities x WHERE x.plan_id = p.id AND x.responsible_id = $5))
+       GROUP BY p.id, ou.name ORDER BY p.year DESC, ou.name`,
+      [orgId, f.year ?? null, localDate(), units, actorId],
     );
   }
 
@@ -171,6 +194,7 @@ export class Plans {
   async get(actorId: string, id: string) {
     const p = await this.row(id);
     await this.svc.requirePerm(actorId, p.org_id, "plans.view");
+    await this.assertPlanScope(actorId, p);
     const perms = await this.svc.permissionsOf(actorId, p.org_id);
     const rows = await this.svc.db.query<
       PlanActivity & { responsible_name: string | null; domain_name: string | null }

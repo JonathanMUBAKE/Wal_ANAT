@@ -136,6 +136,10 @@ describe("pilotage, dossiers et courrier", () => {
   it("PA-3 : les notes d'échange restent aux gestionnaires, aux points focaux et à la direction", async () => {
     const p = (await g.api("u_alice", "POST", "/api/partners", { name: "Bailleur", type_code: "organisation_internationale", categories: ["ptf"] })).body;
     await g.api("u_alice", "POST", `/api/partners/${p.id}/notes`, { body: "Le bailleur hésite sur la seconde tranche" });
+    // Le partenaire est suivi par l'entité de Didier : la fiche le concerne, pas les notes (lot S)
+    const [u] = await g.units(1);
+    await g.ctx.db.query("UPDATE org_members SET unit_id = $1 WHERE org_id = $2 AND user_id = 'u_hugo'", [u, g.org]);
+    await g.ctx.db.query("UPDATE partners SET unit_id = $1 WHERE id = $2", [u, p.id]);
     const agent = (await g.api("u_hugo", "GET", `/api/partners/${p.id}`)).body;
     expect(agent.notes).toEqual([]);
     expect(agent.history.some((h: Any) => h.kind === "note")).toBe(false);

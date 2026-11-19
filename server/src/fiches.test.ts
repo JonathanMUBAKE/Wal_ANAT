@@ -85,7 +85,7 @@ describe("documents : un formulaire selon la nature", () => {
       g.api(who, "PATCH", `/api/partner-documents/${d.id}`, body);
     expect((await edit({ title: "Rapport du 1er trimestre" })).body.title).toBe("Rapport du 1er trimestre");
     expect((await edit({ issued_on: null })).status).toBe(400);
-    expect((await edit({ title: "x" }, "u_hugo")).status).toBe(403);
+    expect((await edit({ title: "x" }, "u_hugo")).status).toBe(404); // lot S : hors de son périmètre, la fiche n'existe pas
     expect((await edit({ nature_code: "autre", other_label: "Note" })).status).toBe(200);
     const o = (await up("u_alice", p.id, { nature: "convention_signee", title: "Convention", issued_on: day(-5) }))
       .body;
@@ -106,7 +106,7 @@ describe("contacts : gestion complète", () => {
     const p = await partner({ focal_id: "u_karim" });
     const a = (await g.api("u_karim", "POST", `/api/partners/${p.id}/contacts`, { name: "M. Un" })).body;
     const b = (await g.api("u_karim", "POST", `/api/partners/${p.id}/contacts`, { name: "Mme Deux" })).body;
-    expect((await g.api("u_hugo", "DELETE", `/api/partner-contacts/${a.id}`)).status).toBe(403);
+    expect((await g.api("u_hugo", "DELETE", `/api/partner-contacts/${a.id}`)).status).toBe(404); // lot S : hors de son périmètre, la fiche n'existe pas
     expect((await g.api("u_karim", "DELETE", `/api/partner-contacts/${a.id}`)).status).toBe(200);
     await g.api("u_alice", "POST", "/api/correspondence", {
       direction: "entrant",

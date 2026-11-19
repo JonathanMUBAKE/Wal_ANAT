@@ -127,11 +127,10 @@ describe("plans de travail (PT-1)", () => {
     const refused = await g.api("u_hugo", "POST", "/api/plans", { unit_id: other, year: 2027, title: "Plan B" });
     expect(refused.status).toBe(403);
     expect(refused.body.error).toMatch(/votre entité/);
-    // Le plan d'une autre direction, préparé par la DG : le chef le lit sans pouvoir le modifier ni le supprimer
+    // Le plan d'une autre direction, préparé par la DG : il ne concerne pas le chef, qui ne le voit pas (lot S)
     const b = (await g.api("u_alice", "POST", "/api/plans", { unit_id: other, year: 2027, title: "Plan B" })).body;
     const read = await g.api("u_hugo", "GET", `/api/plans/${b.id}`);
-    expect(read.status).toBe(200);
-    expect(read.body.can).toMatchObject({ edit: false, submit: false });
+    expect(read.status).toBe(404);
     expect((await g.api("u_hugo", "POST", `/api/plans/${b.id}/activities`, { title: "Ajout" })).status).toBe(403);
     expect((await g.api("u_hugo", "POST", `/api/plans/${b.id}/submit`)).status).toBe(403);
     expect((await g.api("u_hugo", "DELETE", `/api/plans/${b.id}`)).status).toBe(403);

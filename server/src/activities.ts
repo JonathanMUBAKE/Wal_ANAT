@@ -342,6 +342,11 @@ export class Activities {
         LEFT JOIN partners sp ON sp.id = p.sponsor_partner_id WHERE p.id = $1`,
       [projectId],
     );
+    // Les montants d'un projet restent à ceux qu'il concerne (lot S)
+    if (g && !(await this.svc.seesBudget(actorId, p.org_id, projectId))) {
+      g.budget_planned = null;
+      g.budget_spent = null;
+    }
     const ids = p.members.map((m: { user_id: string }) => m.user_id);
     const team = await this.svc.db.query<{
       user_id: string;

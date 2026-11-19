@@ -194,6 +194,12 @@ export class Portfolio {
     const now = today();
     const projects = await this.svc.listProjects(actorId, orgId);
     const rows = await assessProjects(this.svc, projects, now);
+    // Les montants d'un projet restent à ceux qu'il concerne (lot S) : la santé et ses raisons restent lisibles
+    for (const r of rows)
+      if (!(await this.svc.seesBudget(actorId, orgId, r.id))) {
+        r.budget = { planned: null, spent: null, consumed: null };
+        r.reasons = r.reasons.filter((x) => !x.startsWith("budget"));
+      }
     rows.sort(
       (a, b) =>
         Number(b.divergent) - Number(a.divergent) ||

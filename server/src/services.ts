@@ -272,7 +272,8 @@ const ACCESS_SQL = `
           AND COALESCE((om.permission_overrides->>'pilotage.view')::boolean,
                        COALESCE((SELECT ap.permissions ? 'pilotage.view' FROM access_profiles ap WHERE ap.id = om.profile_id), FALSE))
          THEN 1 ELSE 0 END,
-    CASE WHEN p.kind = 'project' AND p.access = 'team' AND om.role <> 'guest' AND p.unit_id IN (SELECT id FROM managed) THEN 1
+    -- Un projet porté par une entité se lit de ses chefs, même privé : un agent ne le soustrait pas à sa hiérarchie (lot S)
+    CASE WHEN p.kind = 'project' AND om.role <> 'guest' AND p.unit_id IN (SELECT id FROM managed) THEN 1
          WHEN p.kind = 'unit' AND om.role <> 'guest' AND p.unit_id IN (SELECT id FROM managed) THEN 4
          WHEN p.kind = 'unit' AND om.role <> 'guest' AND om.unit_id = p.unit_id THEN 3 ELSE 0 END
   ) AS rank
@@ -540,6 +541,22 @@ export class Services {
    * Ce qui « concerne » une personne (thème 5 de l'analyse) : son entité, et les entités qu'elle dirige avec celles
    * qui leur sont rattachées. `wide` : elle voit tout le non-confidentiel (droit de pilotage : DG, DGA, cabinet).
    */
+  /**
+   * Le budget d'un projet se lit de la direction, des chefs de l'entité qui le porte et des membres du projet (lot S) ;
+   * les autres lecteurs du projet n'en voient pas les montants.
+   */
+  async seesBudget(actorId: string, orgId: string, projectId: string) {
+    if ((await this.permissionsOf(actorId, orgId)).includes("pilotage.view")) return true;
+    return !!(await this.db.one(
+      `SELECT 1 FROM projects p WHERE p.id = $1 AND (
+         EXISTS (SELECT 1 FROM memberships m WHERE m.project_id = p.id AND m.user_id = $2)
+         OR p.unit_id IN (WITH RECURSIVE down(id) AS (
+              SELECT id FROM org_units WHERE org_id = $3 AND manager_id = $2
+              UNION SELECT u.id FROM org_units u JOIN down ON u.parent_id = down.id) SELECT id FROM down))`,
+      [projectId, actorId, orgId],
+    ));
+  }
+
   async scopeOf(actorId: string, orgId: string) {
     const wide = (await this.permissionsOf(actorId, orgId)).includes("pilotage.view");
     const rows = await this.db.query<{ id: string }>(

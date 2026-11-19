@@ -1980,3 +1980,22 @@ des anomalies moyennes et basses.
 Restent ouverts, de gravité basse : recherche globale étendue aux partenaires et accords et insensible aux accents,
 budgets des projets masqués aux agents non membres (C-M8), projet porté par une entité rendu privé par un agent
 (C-M9), fiche partenaire montrant des accords hors périmètre (P-M4), fusion qui ne reporte pas l'état (P-M6).
+
+### Lot S, première partie — Chacun n'accède qu'à ce qui lui est destiné (19/11/2026, branche `lot-s-droits`)
+
+Décisions de l'utilisateur : la DG lit tout mais n'agit que dans sa fonction ; le cabinet lit comme elle, montants
+compris ; les comptes rendus du comité de direction se lisent des chefs ; l'annuaire reste complet, limité aux
+informations professionnelles.
+
+| Ce qui change | Avant | Après |
+|---|---|---|
+| Menu | Tous les modules pour tous, même vides | Un module paraît s'il a du contenu pour la personne, ou si elle le gère |
+| Plans de travail | Tous les plans de l'institution | Ceux de ses entités et ceux où l'on porte une activité ; la direction et l'approbation voient tout |
+| Partenaires | Tout l'annuaire non confidentiel | Ceux que l'on suit ou que suit son entité ; la liste de choix des formulaires reste complète |
+| Comité de direction | Réservé à ses participants | Lisible de tous les chefs d'entité |
+| Budgets des projets | Visibles de tout lecteur | Direction, cabinet, chefs de l'entité porteuse, membres |
+| Projet d'entité privé | Un agent pouvait le soustraire à son chef | Toujours lisible des chefs de l'entité porteuse |
+| Fiche partenaire | Tous les accords non confidentiels | Les accords de son périmètre |
+
+Points C-M8, C-M9 et P-M4 du lot 14 traités. Tests : `server/src/lot-s.test.ts` ; dix tests ajustés (un agent
+reçoit désormais 404, et non 403, sur ce qui ne le concerne pas).

@@ -39,6 +39,8 @@ describe("plans de travail", () => {
   });
   it("un membre consulte mais ne prépare pas", async () => {
     await plan();
+    // Le plan de son entité le concerne (lot S)
+    await g.ctx.db.query("UPDATE org_members SET unit_id = $1 WHERE org_id = $2 AND user_id = 'u_karim'", [unit, g.org]);
     expect((await g.api("u_karim", "GET", "/api/plans")).body).toHaveLength(1);
     expect((await g.api("u_karim", "POST", "/api/plans", { unit_id: unit, year: 2028, title: "x" })).status).toBe(403);
   });

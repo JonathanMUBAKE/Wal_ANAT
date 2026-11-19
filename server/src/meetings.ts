@@ -255,7 +255,10 @@ const VISIBLE = (alias: string, actor: string, level: string) =>
            UNION SELECT u.id FROM org_units u JOIN down ON u.parent_id = down.id)
          SELECT id FROM down UNION SELECT unit_id FROM org_members WHERE user_id = ${actor} AND unit_id IS NOT NULL)
       OR EXISTS (SELECT 1 FROM memberships ms WHERE ms.project_id = ${alias}.project_id AND ms.user_id = ${actor})
-      OR EXISTS (SELECT 1 FROM agency_activities aa WHERE aa.id = ${alias}.activity_id AND aa.lead_id = ${actor}))))`;
+      OR EXISTS (SELECT 1 FROM agency_activities aa WHERE aa.id = ${alias}.activity_id AND aa.lead_id = ${actor})
+      -- Le comité de direction se lit de tous les chefs d'entité (décision de l'utilisateur, lot S)
+      OR (${alias}.meeting_type ILIKE 'Comité de direction%'
+          AND EXISTS (SELECT 1 FROM org_units cu WHERE cu.org_id = ${alias}.org_id AND cu.manager_id = ${actor})))))`;
 
 export class Meetings {
   constructor(private svc: Services) {}

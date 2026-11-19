@@ -224,6 +224,9 @@ export class Partners {
     if (!manager && !mine) {
       await this.svc.requirePerm(actorId, p.org_id, "partners.view");
       if (p.confidential) throw notFound("Partenaire introuvable");
+      // Ce qui concerne la personne (lot S) : la direction lit l'annuaire ; les autres, les partenaires de leurs entités
+      const scope = await this.svc.scopeOf(actorId, p.org_id);
+      if (!scope.wide && !(p.unit_id && scope.units.includes(p.unit_id))) throw notFound("Partenaire introuvable");
     }
     return { p, manager };
   }
@@ -258,6 +261,10 @@ export class Partners {
   ) {
     await this.svc.requirePerm(actorId, orgId, "partners.view");
     const manager = await this.manager(actorId, orgId);
+    // L'annuaire complet : la direction et les gestionnaires ; la liste de choix des formulaires reste complète ;
+    // les autres voient les partenaires qu'ils suivent ou que suit leur entité (lot S)
+    const scope = await this.svc.scopeOf(actorId, orgId);
+    const units = manager || scope.wide || f.selectable ? null : scope.units;
     const q = f.q?.trim() ?? "";
     const key = partnerKey(q);
     const rows = await this.svc.db.query<Row>(
@@ -268,6 +275,8 @@ export class Partners {
        AND ($7::text IS NULL OR p.name ILIKE $7 ESCAPE '\\' OR p.acronym ILIKE $7 ESCAPE '\\'
             OR ($8::text <> '' AND (p.name_key LIKE '%' || $8 || '%' OR p.acronym_key = $8)))
        AND (NOT $9 OR p.state NOT IN ('suspendu', 'clos'))
+       AND ($10::text[] IS NULL OR p.focal_id = $3 OR p.created_by = $3 OR p.unit_id = ANY($10::text[])
+            OR EXISTS (SELECT 1 FROM partner_focals pf WHERE pf.partner_id = p.id AND pf.user_id = $3))
        ORDER BY p.name_key`,
       [
         orgId,
@@ -279,6 +288,7 @@ export class Partners {
         q ? `%${q.replace(/[\\%_]/g, "\\$&")}%` : null,
         key,
         !!f.selectable,
+        units,
       ],
     );
     return rows.map((r) => this.view(r));
@@ -312,6 +322,7 @@ export class Partners {
           [p.focal_ids],
         )
       : [];
+    const scope = await this.svc.scopeOf(actorId, p.org_id);
     // Accords du partenaire : un accord confidentiel n'apparaît qu'aux gestionnaires et à ses points focaux
     const agreements = (
       await db.query<{
@@ -333,8 +344,10 @@ export class Partners {
           a.tacit_renewal, a.parent_id, a.amendment_no, a.confidential, ap.lead
          FROM agreements a JOIN agreement_parties ap ON ap.agreement_id = a.id
          WHERE ap.partner_id = $1 AND (NOT a.confidential OR $2 OR $3 OR a.focal_id = $4 OR a.created_by = $4)
+           -- Les accords du périmètre seulement, comme la liste des accords (lot S)
+           AND ($2 OR $3 OR $5 OR a.focal_id = $4 OR a.created_by = $4 OR a.unit_id = ANY($6::text[]))
          ORDER BY a.year DESC NULLS FIRST, a.seq DESC NULLS FIRST, a.created_at DESC`,
-        [id, manager, focal, actorId],
+        [id, manager, focal, actorId, scope.wide, scope.units],
       )
     ).map((a) => ({ ...a, reference: agreementRef(a), state: agreementState(a) }));
     const documents = await db.query(

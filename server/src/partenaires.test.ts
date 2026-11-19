@@ -112,7 +112,7 @@ describe("partenaires : fiche et droits", () => {
       expect((await g.api("u_karim", "PATCH", `/api/partners/${p.id}`, body)).status).toBe(403);
     // Un membre qui n'est pas point focal ne modifie rien
     const other = (await create()).body;
-    expect((await g.api("u_karim", "PATCH", `/api/partners/${other.id}`, { description: "x" })).status).toBe(403);
+    expect((await g.api("u_karim", "PATCH", `/api/partners/${other.id}`, { description: "x" })).status).toBe(404); // lot S : hors de son périmètre, la fiche n'existe pas
   });
 
   it("des points focaux supplémentaires partagent les droits du point focal principal", async () => {
@@ -246,7 +246,7 @@ describe("partenaires : états", () => {
 
   it("une fiche jamais sortie de « Identifié » et sans note se supprime ; sinon elle se clôt", async () => {
     const a = (await create()).body;
-    expect((await g.api("u_karim", "DELETE", `/api/partners/${a.id}`)).status).toBe(403);
+    expect((await g.api("u_karim", "DELETE", `/api/partners/${a.id}`)).status).toBe(404); // lot S : hors de son périmètre, la fiche n'existe pas
     expect((await g.api("u_alice", "DELETE", `/api/partners/${a.id}`)).status).toBe(200);
     expect((await get(a.id)).status).toBe(404);
     const b = (await create()).body;
@@ -279,13 +279,13 @@ describe("partenaires : contacts et historique", () => {
       (await g.api("u_alice", "POST", `/api/partners/${p.id}/contacts`, { name: "X", email: "pas-une-adresse" }))
         .status,
     ).toBe(400);
-    expect((await g.api("u_hugo", "POST", `/api/partners/${p.id}/contacts`, { name: "Y" })).status).toBe(403);
+    expect((await g.api("u_hugo", "POST", `/api/partners/${p.id}/contacts`, { name: "Y" })).status).toBe(404); // lot S : hors de son périmètre, la fiche n'existe pas
     const arch = await g.api("u_alice", "PATCH", `/api/partner-contacts/${c2.body.id}`, { archived: true });
     expect(arch.status).toBe(200);
     const after = (await get(p.id)).body.contacts as Any[];
     expect(after.find((c) => c.id === c2.body.id).archived).toBe(true);
     expect(after.find((c) => c.id === c2.body.id).principal).toBe(false);
-    expect((await g.api("u_hugo", "PATCH", `/api/partner-contacts/${c1.body.id}`, { name: "Z" })).status).toBe(403);
+    expect((await g.api("u_hugo", "PATCH", `/api/partner-contacts/${c1.body.id}`, { name: "Z" })).status).toBe(404); // lot S
   });
 
   it("notes d'échange : datées, jamais dans le futur, versées à l'historique et non modifiables", async () => {
@@ -300,7 +300,7 @@ describe("partenaires : contacts et historique", () => {
     });
     expect(r.status).toBe(200);
     expect(r.body.notes[0]).toMatchObject({ happened_on: "2026-11-02", author_name: "Fiston Banza" });
-    expect((await g.api("u_hugo", "POST", `/api/partners/${p.id}/notes`, { body: "x" })).status).toBe(403);
+    expect((await g.api("u_hugo", "POST", `/api/partners/${p.id}/notes`, { body: "x" })).status).toBe(404); // lot S : hors de son périmètre, la fiche n'existe pas
   });
 
   it("la liste se filtre par état, type, catégorie et recherche, et compte les contacts", async () => {

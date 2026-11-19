@@ -425,7 +425,7 @@ export class UnitTasks {
     return forbidden(`Les tâches de « ${u.name} » sont réservées à ses agents et à son responsable`);
   }
   private async manages(actorId: string, orgId: string, unitId: string) {
-    if (["owner", "admin"].includes((await this.svc.orgRole(actorId, orgId)) ?? "")) return true;
+    if (await this.svc.administersAll(actorId, orgId)) return true;
     return !!(await this.svc.db.one(
       `WITH RECURSIVE up(id, manager_id, parent_id) AS (
          SELECT id, manager_id, parent_id FROM org_units WHERE id = $1

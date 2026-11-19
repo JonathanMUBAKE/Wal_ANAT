@@ -1999,3 +1999,20 @@ informations professionnelles.
 
 Points C-M8, C-M9 et P-M4 du lot 14 traités. Tests : `server/src/lot-s.test.ts` ; dix tests ajustés (un agent
 reçoit désormais 404, et non 403, sur ce qui ne le concerne pas).
+
+### Politique d'accès et propriété technique (19/11/2026, branches `politique-acces` et `proprietaire-technique`)
+
+Référence retenue : la politique canadienne sur la sécurité du gouvernement (besoin de savoir, accès consignés),
+complétée par la protection européenne des données personnelles et par le référentiel NIST SP 800-53.
+
+| Ce qui change | Avant | Après |
+|---|---|---|
+| Projet privé lu par la hiérarchie | Lecture possible et invisible | Lecture possible, inscrite au journal du projet |
+| Congé de maladie | Nature et motif visibles du chef et de la DG | « Absence » et dates ; nature et motif à l'agent et aux RH |
+| Rôle de la DG | Propriétaire : les 58 droits, RH et profils compris | Profil DG : lit tout, décide, signe ; ni RH ni profils |
+| Propriété technique | Tenue par la DG | Responsable informatique, sans accès au pilotage, relu par la DG |
+| Niveau propriétaire ou administrateur | Ouvrait tous les droits et tous les projets | Seulement avec le profil généraliste ; sinon, les droits du profil |
+| Se donner des droits | Interdit, sauf au propriétaire | Interdit à tous ; son propre profil se change par une autre personne |
+| Droit sensible accordé | Visible à la relecture périodique | Signalé aussitôt à qui relit le journal de l'administration |
+
+Tests : `server/src/proprietaire.test.ts` (9 tests) ; deux attentes de la démonstration ajustées.

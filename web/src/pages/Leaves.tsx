@@ -35,6 +35,8 @@ import { api } from "@/lib/api";
 export const LEAVE_LABEL: Record<string, string> = {
   conge_annuel: "Congé annuel",
   maladie: "Congé de maladie",
+  /** Nature protégée (santé) : seuls l'agent et le service RH la voient. */
+  absence: "Absence",
   maternite: "Congé de maternité",
   paternite: "Congé de paternité",
   permission: "Permission d'absence",

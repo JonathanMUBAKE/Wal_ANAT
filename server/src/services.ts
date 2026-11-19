@@ -520,6 +520,19 @@ export class Services {
     );
     return r ? effectivePermissions(r.role, r.permissions, r.permission_overrides) : [];
   }
+  /**
+   * Ce que la fonction de la personne lui donne vraiment : son profil, ou un droit qui lui est expressément accordé —
+   * jamais l'ouverture générale du rôle de propriétaire. Sert aux catégories protégées (besoin de savoir).
+   */
+  async grantedByFunction(userId: string, orgId: string, perm: Permission) {
+    const r = await this.db.one<{ permission_overrides: Record<string, boolean>; permissions: string[] | null }>(
+      "SELECT om.permission_overrides, p.permissions FROM org_members om LEFT JOIN access_profiles p ON p.id = om.profile_id WHERE om.org_id = $1 AND om.user_id = $2",
+      [orgId, userId],
+    );
+    if (!r) return false;
+    if (r.permission_overrides?.[perm] !== undefined) return !!r.permission_overrides[perm];
+    return (r.permissions ?? []).includes(perm);
+  }
   /** Le profil s'ajoute au rôle sur le projet : il faut les deux. Les coéquipiers IA restent gouvernés par leur seul rôle. */
   async requirePerm(actorId: string, orgId: string, perm: Permission) {
     if ((await this.userOrNull(actorId))?.is_ai) return;
@@ -1309,6 +1322,16 @@ export class Services {
       "SELECT p.*, t.name AS team_name FROM projects p LEFT JOIN teams t ON t.id = p.team_id WHERE p.id = $1",
       [projectId],
     ))!;
+    // Accès tracé (besoin d'en connaître) : la hiérarchie lit un projet privé dont elle n'est pas membre, et cela se voit
+    // au journal du projet, une fois par lecteur et par demi-heure
+    if (p.access === "private" && !(await this.db.one("SELECT 1 FROM memberships WHERE project_id = $1 AND user_id = $2", [projectId, actorId]))) {
+      const recent = await this.db.one(
+        `SELECT 1 FROM activity WHERE project_id = $1 AND actor_id = $2 AND kind = 'project.oversight_read'
+           AND created_at > now() - interval '30 minutes'`,
+        [projectId, actorId],
+      );
+      if (!recent) await this.log(actorId, "project.oversight_read", { projectId, data: { name: p.name } });
+    }
     return {
       ...p,
       role,

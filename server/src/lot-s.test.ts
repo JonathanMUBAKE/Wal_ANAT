@@ -68,3 +68,39 @@ describe("montants et projets d'entité", () => {
     expect((await g.api("u_hugo", "GET", `/api/projects/${p.id}/governance`)).body.budget_planned).toBe(1000);
   });
 });
+
+describe("besoin d'en connaître : santé protégée, lectures de la hiérarchie tracées", () => {
+  it("le chef voit une absence et ses dates, pas la maladie ; l'agente et les RH voient tout", async () => {
+    const [unit] = await g.units(1);
+    await g.login("u_chloe");
+    await g.ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id IN ('u_karim', 'u_chloe')");
+    await g.ctx.db.query("UPDATE org_units SET manager_id = 'u_karim' WHERE id = $1", [unit]);
+    await g.ctx.db.query("UPDATE org_members SET unit_id = $1 WHERE org_id = $2 AND user_id = 'u_chloe'", [unit, g.org]);
+    const sick = await g.api("u_alice", "POST", "/api/leaves", {
+      kind: "maladie",
+      start_on: day(-1),
+      end_on: day(2),
+      user_id: "u_chloe",
+      reason: "Certificat médical reçu",
+    });
+    expect(sick.status).toBe(200);
+    const chief = (await g.api("u_karim", "GET", "/api/leaves/summary")).body.absent_today.find((a: Any) => a.user_id === "u_chloe");
+    expect(chief.kind).toBe("absence");
+    const team = ((await g.api("u_karim", "GET", "/api/leaves?scope=team")).body as Any[]).find((l) => l.user_id === "u_chloe");
+    expect(team).toMatchObject({ kind: "absence", reason: "" });
+    const self = ((await g.api("u_chloe", "GET", "/api/leaves?scope=mine")).body as Any[])[0];
+    expect(self).toMatchObject({ kind: "maladie", reason: "Certificat médical reçu" });
+  });
+
+  it("la lecture d'un projet privé par la hiérarchie entre au journal du projet", async () => {
+    const [unit] = await g.units(1);
+    await g.ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_karim'");
+    await g.ctx.db.query("UPDATE org_units SET manager_id = 'u_karim' WHERE id = $1", [unit]);
+    const p = (await g.api("u_alice", "POST", "/api/projects", { name: "Projet privé de l'entité" })).body;
+    await g.ctx.db.query("UPDATE projects SET unit_id = $1, access = 'private' WHERE id = $2", [unit, p.id]);
+    expect((await g.api("u_karim", "GET", `/api/projects/${p.id}`)).status).toBe(200);
+    await g.api("u_karim", "GET", `/api/projects/${p.id}`);
+    const logs = await g.ctx.db.query("SELECT 1 FROM activity WHERE project_id = $1 AND actor_id = 'u_karim' AND kind = 'project.oversight_read'", [p.id]);
+    expect(logs).toHaveLength(1);
+  });
+});

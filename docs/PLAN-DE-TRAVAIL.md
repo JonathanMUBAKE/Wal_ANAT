@@ -230,6 +230,23 @@ décision prise module par module.
 - **Les comptes rendus du comité de direction sont lisibles des chefs d'entité.**
 - **Annuaire** : complet pour tous, limité aux informations professionnelles (nom, fonction, entité, adresse professionnelle) ; les données personnelles restent au dossier RH.
 
+**Politique d'accès retenue (19/11/2026, demandée par l'utilisateur : « la meilleure »).** Le modèle de référence est
+celui de l'administration canadienne (Politique sur la sécurité du gouvernement : *besoin de savoir*, renseignements
+protégés, accès consignés), le plus opérationnel des trois et rédigé en français. Il est complété par la protection
+des données personnelles à l'européenne (minimisation, finalité) pour les dossiers des agents, et par le référentiel
+américain NIST SP 800-53 comme liste de contrôles techniques (moindre privilège, séparation des fonctions, journal).
+Concrètement :
+- *Contrôle hiérarchique admis, mais jamais invisible* : un chef ou la DG lit un projet privé de son périmètre ; la
+  lecture entre au journal du projet (« Projet privé consulté par la hiérarchie »). La consultation d'un dossier RH par
+  un tiers était déjà tracée.
+- *Catégories protégées*, fermées même à la hiérarchie et réservées à la personne concernée et à qui traite le dossier :
+  santé (congés de maladie : le chef et la DG voient « Absence » et les dates, pas la nature ni le motif) ; et, pour les
+  modules à venir, procédures disciplinaires, plaintes et signalements, travaux d'audit interne en cours.
+- *Point de fond relevé* : la DG de la démonstration a le rôle « propriétaire » de l'institution, qui ouvre les 58 droits
+  (gestion RH comprise). Cela contredit « la DG lit tout, mais ne fait pas tout ». Les catégories protégées s'appuient
+  déjà sur la fonction (profil ou droit accordé), pas sur ce rôle. À faire dans la suite du lot S : séparer la propriété
+  technique de l'institution (une personne de confiance, sous contrôle croisé) du profil de la DG.
+
 **Fait (lot S, première partie, 19/11/2026)** : menu limité à ce qui concerne chacun ; plans et partenaires limités au périmètre (la liste de choix des formulaires reste complète) ; comptes rendus du comité de direction lisibles des chefs ; budgets des projets réservés à la direction, au cabinet, aux chefs de l'entité porteuse et aux membres ; projet d'entité lisible de ses chefs même privé ; fiche partenaire limitée aux accords du périmètre. Tests : `server/src/lot-s.test.ts`. Restent les étapes 1 (inventaire automatique), 2 (garde unique), 5 (matrice par profil métier) et 7 (nouvelle passe des agents testeurs).
 
 ## 4. Décisions ouvertes (à trancher par Jonathan)
@@ -336,4 +353,5 @@ Ne pas commencer le Lot D3 avant la réponse à Q1. Les lots P1 à P5 (`docs/PAR
 | 2026-11-19 | Claude (session sur l'ordinateur) | Corrections des agents testeurs | Quatre agents testeurs (DG et cabinet, chefs et agents, RH et administration, partenariats et robustesse) ; 19 anomalies graves corrigées (élévation de privilèges de l'administrateur, contournements du cabinet, des tâches confiées, des périmètres) et la plupart des moyennes et basses. Tests : `server/src/testeurs.test.ts`. | `lot-corrections-testeurs` |
 | 2026-11-19 | Claude (session sur l'ordinateur) | Plan de séparation des droits d'accès | Lot S planifié : principes (besoin d'en connaître, trois périmètres, séparation des fonctions, confidentiel, champs sensibles), matrice cible par profil, sept étapes, quatre décisions à prendre avec l'utilisateur. Rien n'est codé. | `plan-droits-acces` |
 | 2026-11-19 | Claude (session sur l'ordinateur) | Lot S, première partie | Décisions de l'utilisateur appliquées : la DG lit tout, le cabinet lit comme elle (montants compris), comptes rendus du comité de direction lisibles des chefs, annuaire complet (informations professionnelles). Menu selon ce qui concerne chacun ; plans, partenaires, accords d'une fiche et budgets limités au périmètre ; projet d'entité lisible de ses chefs. | `lot-s-droits` |
+| 2026-11-19 | Claude (session sur l'ordinateur) | Politique d'accès (besoin de savoir) | Référence canadienne complétée par la protection européenne des données et le NIST : lectures de la hiérarchie sur un projet privé tracées au journal du projet ; congé de maladie présenté comme « Absence » au chef et à la DG ; catégories protégées listées pour les modules à venir. | `politique-acces` |
 | 2026-11-12 | Claude (session sur l'ordinateur) | Congés et absences, fins de contrat | Migration 039 : demandes de congé (nature, dates, jours ouvrés, intérim, motif) ; le chef de l'entité (ou le service RH à défaut) accorde ou refuse avec motif ; personne ne décide de sa propre demande ni de celle qu'il a saisie ; le service RH enregistre une absence constatée ; annulation ; chevauchements refusés ; absents du jour ; avis à chaque étape (nouveau domaine « Ressources humaines ») ; alerte 60 jours avant une fin de contrat au service RH et au chef. Écran « Congés et absences », carte « Congés à valider » à l'accueil. 539 tests au vert. | `lot-recurrence-rh` |

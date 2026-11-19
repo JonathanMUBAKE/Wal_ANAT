@@ -87,6 +87,18 @@ const frDate = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4
 export class Leaves {
   constructor(private svc: Services) {}
 
+  /**
+   * Catégorie protégée (santé) : la nature et le motif d'un congé de maladie restent à l'agent et au service RH ;
+   * le chef et la direction voient une absence et ses dates, ce qui suffit à organiser le travail.
+   */
+  private async mask<T extends { user_id: string; kind: string; reason?: string }>(actorId: string, orgId: string, rows: T[]) {
+    // Le service RH par sa fonction, pas le rôle de propriétaire qui ouvre tout : la DG voit l'absence, pas la maladie
+    const manage = await this.svc.grantedByFunction(actorId, orgId, "hr.manage");
+    return rows.map((r) =>
+      r.user_id === actorId || manage || r.kind !== "maladie" ? r : { ...r, kind: "absence", reason: "" },
+    );
+  }
+
   private async perms(actorId: string, orgId: string) {
     const p = await this.svc.permissionsOf(actorId, orgId);
     return { view: p.includes("hr.view") || p.includes("hr.manage"), manage: p.includes("hr.manage") };
@@ -145,8 +157,9 @@ export class Leaves {
   async get(actorId: string, orgId: string, id: string) {
     const l = await this.row(orgId, id);
     if (!(await this.canRead(actorId, l))) throw forbidden("Cette demande ne vous est pas ouverte");
+    const [shown] = await this.mask(actorId, orgId, [l]);
     return {
-      ...l,
+      ...shown,
       can: {
         decide: l.status === "demande" && (await this.canDecide(actorId, l)),
         cancel: await this.canCancel(actorId, l),
@@ -169,10 +182,14 @@ export class Leaves {
       params.push(f.on);
       where.push(`l.start_on <= $${params.length}::date AND l.end_on >= $${params.length}::date`);
     }
-    return this.svc.db.query(
-      `SELECT ${COLS} FROM ${FROM} WHERE ${where.join(" AND ")}
+    return this.mask(
+      actorId,
+      orgId,
+      await this.svc.db.query<Leave>(
+        `SELECT ${COLS} FROM ${FROM} WHERE ${where.join(" AND ")}
         ORDER BY (l.status = 'demande') DESC, l.start_on DESC LIMIT 500`,
-      params,
+        params,
+      ),
     );
   }
 
@@ -194,14 +211,19 @@ export class Leaves {
     );
     let toDecide = 0;
     for (const l of pending) if (await this.canDecide(actorId, l)) toDecide++;
-    const absent = await this.svc.db.query(
+    const absent = await this.svc.db.query<{ user_id: string; kind: string }>(
       `SELECT l.user_id, u.name AS user_name, l.kind, to_char(l.end_on, 'YYYY-MM-DD') AS end_on, l.interim_id, i.name AS interim_name
          FROM agent_leaves l JOIN users u ON u.id = l.user_id LEFT JOIN users i ON i.id = l.interim_id
         WHERE ${scope} AND l.status = 'approuve' AND l.start_on <= $3::date AND l.end_on >= $3::date
         ORDER BY u.name`,
       [orgId, actorId, today()],
     );
-    return { mine, to_decide: toDecide, absent_today: absent, can: { all: p.view, manage: p.manage } };
+    return {
+      mine,
+      to_decide: toDecide,
+      absent_today: await this.mask(actorId, orgId, absent),
+      can: { all: p.view, manage: p.manage },
+    };
   }
 
   async ask(actorId: string, orgId: string, input: z.infer<typeof Ask>) {

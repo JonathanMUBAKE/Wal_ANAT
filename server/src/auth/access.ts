@@ -4,10 +4,14 @@ import {
   PERMISSION_GROUPS,
   effectivePermissions,
   isPermission,
+  permissionLabel,
   type BaseRole,
 } from "../permissions.js";
-import { badRequest, forbidden, notFound, type OrgRole, type Services } from "../services.js";
+import { badRequest, forbidden, isSensitive, notFound, type OrgRole, type Services } from "../services.js";
 import type { Auth, RequestInfo } from "./service.js";
+
+/** Droits dont l'octroi est signalé à la relecture : les droits sensibles, la vue d'ensemble et les dossiers RH. */
+const watched = (p: string) => isSensitive(p) || p === "pilotage.view" || p === "hr.view";
 
 export interface AccessProfile {
   id: string;
@@ -180,6 +184,8 @@ export class Access {
     // Un changement de profil change les droits de quelqu'un : il se motive (S-4)
     reason = reason.trim();
     if (!reason) throw badRequest("Indiquez le motif du changement de profil");
+    // Contrôle croisé (lot S) : une autre personne change le profil, jamais l'intéressé lui-même
+    if (actorId === userId) throw forbidden("Vous ne pouvez pas changer votre propre profil : une autre personne le fait");
     const { role } = await this.target(actorId, orgId, userId);
     const p = await this.assertCanAssign(actorId, orgId, profileId);
     if (role === "owner" && p.base_role !== "owner") {
@@ -203,6 +209,7 @@ export class Access {
       ip: info.ip,
       data: { org_id: orgId, profile: p.name, reason },
     });
+    await this.alertSensitive(actorId, orgId, userId, p.permissions.filter(watched), `profil « ${p.name} »`);
     this.svc.bus.emit({ type: "org.changed", actorId, orgId });
   }
 
@@ -213,8 +220,9 @@ export class Access {
       profile_id: string | null;
       permission_overrides: Record<string, boolean>;
       profile_permissions: string[] | null;
+      base_role: BaseRole | null;
     }>(
-      `SELECT om.role, om.profile_id, om.permission_overrides, p.permissions AS profile_permissions FROM org_members om LEFT JOIN access_profiles p ON p.id = om.profile_id WHERE om.org_id = $1 AND om.user_id = $2`,
+      `SELECT om.role, om.profile_id, om.permission_overrides, p.permissions AS profile_permissions, p.base_role FROM org_members om LEFT JOIN access_profiles p ON p.id = om.profile_id WHERE om.org_id = $1 AND om.user_id = $2`,
       [orgId, userId],
     );
     if (!r) throw notFound("Cette personne n'est pas membre de l'organisation");
@@ -223,7 +231,7 @@ export class Access {
       profile_id: r.profile_id,
       overrides: r.permission_overrides,
       profile_permissions: r.profile_permissions ?? [],
-      effective: effectivePermissions(r.role, r.profile_permissions, r.permission_overrides),
+      effective: effectivePermissions(r.role, r.profile_permissions, r.permission_overrides, r.base_role),
     };
   }
 
@@ -238,13 +246,12 @@ export class Access {
     await this.svc.requirePerm(actorId, orgId, "org.members");
     const { mine } = await this.target(actorId, orgId, userId);
     this.clean(Object.keys(changes));
-    if (mine.role !== "owner") {
-      const granted = Object.entries(changes)
-        .filter(([, v]) => v === true)
-        .map(([k]) => k);
-      this.assertSubset(granted, mine);
-      if (actorId === userId && granted.length) throw forbidden("Vous ne pouvez pas vous accorder de droits vous-même");
-    }
+    const granted = Object.entries(changes)
+      .filter(([, v]) => v === true)
+      .map(([k]) => k);
+    // Personne ne s'accorde de droits, pas même le propriétaire (contrôle croisé, lot S)
+    if (actorId === userId && granted.length) throw forbidden("Vous ne pouvez pas vous accorder de droits vous-même");
+    if (mine.role !== "owner") this.assertSubset(granted, mine);
     const current = (await this.memberAccess(actorId, orgId, userId)).overrides;
     const next = { ...current };
     for (const [k, v] of Object.entries(changes)) {
@@ -259,6 +266,32 @@ export class Access {
       userId,
     ]);
     await this.auth.record("member.permissions", { userId, actorId, ip: info.ip, data: { org_id: orgId, changes } });
+    await this.alertSensitive(actorId, orgId, userId, granted.filter(watched), "droit individuel");
     this.svc.bus.emit({ type: "org.changed", actorId, orgId });
+  }
+
+  /**
+   * Contrôle croisé (lot S) : un droit sensible accordé par l'administration est signalé, aussitôt, à qui relit le
+   * journal de l'administration (la DG), sans attendre la relecture périodique.
+   */
+  private async alertSensitive(actorId: string, orgId: string, userId: string, perms: string[], how: string) {
+    if (!perms.length) return;
+    const [who, by] = [await this.svc.user(userId), await this.svc.user(actorId)];
+    const labels = perms.map((k) => { const l = permissionLabel(k); return l.charAt(0).toLowerCase() + l.slice(1); });
+    const readers = await this.svc.db.query<{ user_id: string }>(
+      "SELECT om.user_id FROM org_members om JOIN users u ON u.id = om.user_id WHERE om.org_id = $1 AND u.status = 'active' AND NOT u.is_ai",
+      [orgId],
+    );
+    for (const r of readers) {
+      if (r.user_id === actorId) continue;
+      if (!(await this.svc.permissionsOf(r.user_id, orgId)).includes("audit.review")) continue;
+      await this.svc.notify(r.user_id, orgId, {
+        kind: "access.sensitive_granted",
+        title: `Droit sensible accordé à ${who.name}`,
+        body: `${by.name} (${how}) : ${labels.join(" ; ")}. Relisez-le au journal de l'administration.`,
+        actor_id: actorId,
+        link: "/controle-administration",
+      });
+    }
   }
 }

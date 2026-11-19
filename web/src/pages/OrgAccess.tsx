@@ -327,7 +327,7 @@ function MemberAccessDialog({ user, onClose }: { user: OrgUser; onClose: () => v
     >
       {!data || !catalog ? (
         <Spinner />
-      ) : data.role === "owner" ? (
+      ) : data.role === "owner" && (!data.profile_id || data.profile_id.startsWith("prf_owner_")) ? (
         <p className="text-[13.5px] text-muted">Un propriétaire a toujours tous les droits.</p>
       ) : (
         <div className="space-y-4">

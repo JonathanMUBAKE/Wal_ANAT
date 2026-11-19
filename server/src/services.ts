@@ -258,7 +258,10 @@ const ACCESS_SQL = `
     UNION SELECT u.id FROM org_units u JOIN managed m ON u.parent_id = m.id
   )
   SELECT p.id, p.org_id, p.archived, GREATEST(
-    CASE WHEN om.role IN ('owner','admin') THEN 4 ELSE 0 END,
+    -- Administrer tous les projets suit les profils généralistes (Propriétaire, Administrateur) ; une fonction (DG,
+    -- informatique…) lit et agit selon son profil, même au niveau propriétaire (lot S)
+    CASE WHEN om.role IN ('owner','admin') AND (om.profile_id IS NULL OR om.profile_id = 'prf_' || om.role || '_' || om.org_id)
+         THEN 4 ELSE 0 END,
     COALESCE((SELECT CASE ms.role WHEN 'admin' THEN 4 WHEN 'editor' THEN 3 WHEN 'commenter' THEN 2 ELSE 1 END
               FROM memberships ms WHERE ms.project_id = p.id AND ms.user_id = $1),
       GREATEST(
@@ -514,11 +517,12 @@ export class Services {
       role: BaseRole;
       permission_overrides: Record<string, boolean>;
       permissions: string[] | null;
+      base_role: BaseRole | null;
     }>(
-      "SELECT om.role, om.permission_overrides, p.permissions FROM org_members om LEFT JOIN access_profiles p ON p.id = om.profile_id WHERE om.org_id = $1 AND om.user_id = $2",
+      "SELECT om.role, om.permission_overrides, p.permissions, p.base_role FROM org_members om LEFT JOIN access_profiles p ON p.id = om.profile_id WHERE om.org_id = $1 AND om.user_id = $2",
       [orgId, userId],
     );
-    return r ? effectivePermissions(r.role, r.permissions, r.permission_overrides) : [];
+    return r ? effectivePermissions(r.role, r.permissions, r.permission_overrides, r.base_role) : [];
   }
   /**
    * Ce que la fonction de la personne lui donne vraiment : son profil, ou un droit qui lui est expressément accordé —
@@ -532,6 +536,14 @@ export class Services {
     if (!r) return false;
     if (r.permission_overrides?.[perm] !== undefined) return !!r.permission_overrides[perm];
     return (r.permissions ?? []).includes(perm);
+  }
+  /** Administrateur généraliste : niveau propriétaire ou administrateur, avec le profil système de ce niveau (lot S). */
+  async administersAll(userId: string, orgId: string) {
+    return !!(await this.db.one(
+      `SELECT 1 FROM org_members WHERE org_id = $1 AND user_id = $2 AND role IN ('owner','admin')
+          AND (profile_id IS NULL OR profile_id = 'prf_' || role || '_' || org_id)`,
+      [orgId, userId],
+    ));
   }
   /** Le profil s'ajoute au rôle sur le projet : il faut les deux. Les coéquipiers IA restent gouvernés par leur seul rôle. */
   async requirePerm(actorId: string, orgId: string, perm: Permission) {

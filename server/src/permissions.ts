@@ -380,13 +380,19 @@ export const SYSTEM_PROFILES: {
   },
 ];
 
-/** Profil + exceptions individuelles : une exception l'emporte toujours sur le profil. */
+/**
+ * Profil + exceptions individuelles : une exception l'emporte toujours sur le profil. Le niveau « Propriétaire » ouvre
+ * tous les droits avec le profil système du même nom ; une personne propriétaire qui tient un profil de fonction
+ * (DG, responsable informatique…) n'a que les droits de ce profil (lot S : la propriété technique est distincte de la
+ * fonction).
+ */
 export function effectivePermissions(
   role: BaseRole,
   profile: string[] | null,
   overrides: Record<string, boolean>,
+  profileRole: BaseRole | null = null,
 ): Permission[] {
-  if (role === "owner") return ALL_PERMISSIONS;
+  if (role === "owner" && (profile === null || profileRole === null || profileRole === "owner")) return ALL_PERMISSIONS;
   const base = new Set<string>(profile ?? SYSTEM_PROFILES.find((p) => p.role === role)!.permissions);
   for (const [k, allowed] of Object.entries(overrides)) {
     if (allowed) base.add(k);

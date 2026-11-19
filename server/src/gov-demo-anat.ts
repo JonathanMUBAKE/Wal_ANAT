@@ -317,6 +317,20 @@ const PEOPLE: Person[] = [
     "Attachée principale",
     "2011-01-10",
   ],
+  // Seconde gestionnaire RH : le dossier de la cheffe du service est tenu par une autre personne (contrôle croisé)
+  [
+    "u_mireille",
+    "Mireille Ngoy",
+    "mireille@cadence.app",
+    "Gestionnaire des ressources humaines",
+    "#AB4ABA",
+    "Ressources humaines",
+    "agent",
+    "Mme",
+    "fonctionnaire",
+    "Attachée",
+    "2016-09-01",
+  ],
   [
     "u_rose",
     "Rose Mbombo",
@@ -487,7 +501,9 @@ async function people(svc: Services, org: string) {
         await svc.addOrgMember(org, id, "member");
     }
     await db.query("UPDATE users SET title = $2 WHERE id = $1", [id, title]);
-    const role = id === "u_alice" ? "owner" : "member";
+    // La propriété technique de l'institution revient au responsable informatique, sous la relecture de la DG ; la DG
+    // tient sa fonction par son profil (« elle lit tout, elle ne fait pas tout », lot S)
+    const role = id === "u_cedric" ? "owner" : id === "u_alice" ? "admin" : "member";
     await db.query(
       "UPDATE org_members SET unit_id = $3, profile_id = $4, role = $5 WHERE org_id = $1 AND user_id = $2",
       [org, id, unitId.get(unit) ?? null, profileId(slug), role],
@@ -501,7 +517,7 @@ async function people(svc: Services, org: string) {
   await db.query("UPDATE users SET platform_role = 'super_admin' WHERE id = 'u_cedric'");
   // Le service RH tient les dossiers : sa cheffe reçoit le droit de les gérer
   await db.query(
-    `UPDATE org_members SET permission_overrides = '{"hr.manage": true, "hr.view": true}' WHERE org_id = $1 AND user_id = 'u_sylvie'`,
+    `UPDATE org_members SET permission_overrides = '{"hr.manage": true, "hr.view": true}' WHERE org_id = $1 AND user_id IN ('u_sylvie', 'u_mireille')`,
     [org],
   );
   // La direction chargée des partenariats gère l'annuaire (PA-1) ; le suivi-évaluation prépare tous les plans (PT-1)
@@ -522,7 +538,8 @@ async function people(svc: Services, org: string) {
     const [first, ...last] = name.split(" ");
     await hr
       .create(
-        "u_alice",
+        // Le service RH tient les dossiers, la DG ne les crée pas (lot S) ; nul ne crée le sien
+        id === "u_sylvie" ? "u_mireille" : "u_sylvie",
         org,
         {
           user_id: id,

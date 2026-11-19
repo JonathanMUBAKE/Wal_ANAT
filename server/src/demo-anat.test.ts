@@ -138,7 +138,8 @@ describe("démonstration ANAT", () => {
       "SELECT om.role, om.profile_id AS profile, ap.name FROM org_members om JOIN access_profiles ap ON ap.id = om.profile_id WHERE om.org_id = $1 AND om.user_id = 'u_alice'",
       [org],
     );
-    expect(dg).toEqual({ role: "owner", profile: `prf_dg_${org}`, name: "DG" });
+    // La propriété technique est confiée à l'informatique (lot S) : la DG tient sa fonction par son profil
+    expect(dg).toEqual({ role: "admin", profile: `prf_dg_${org}`, name: "DG" });
     const rh = await ctx.db.one<{ manager_id: string }>(
       "SELECT manager_id FROM org_units WHERE org_id = $1 AND name = 'Ressources humaines'",
       [org],

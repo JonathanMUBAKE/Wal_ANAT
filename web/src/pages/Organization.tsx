@@ -42,7 +42,8 @@ export function OrganizationPage() {
   const setTab = (t: OrgTab) => setParams(t === "tree" ? {} : { tab: t }, { replace: true });
   const can = useCan();
   const org = me?.orgs.find((o) => o.id === me.org_id);
-  const isAdmin = org?.role === "owner" || org?.role === "admin";
+  // La structure se modifie selon le profil, non selon le niveau (lot S : la DG lit, l'informatique administre)
+  const isAdmin = can("org.structure");
   const canManage = can("org.members"),
     canProfiles = can("org.profiles");
   const humans = (people ?? []).filter((u) => !u.is_ai);

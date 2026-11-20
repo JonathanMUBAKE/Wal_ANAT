@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { buildApp } from "./app.js";
@@ -12,6 +13,11 @@ import { Registers } from "./registers.js";
 import { loadLocalSecret, startupProblems } from "./secrets.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
+// Nom de la DG pour la démonstration : réglage local (fichier .env à la racine, exclu du dépôt), jamais écrit dans le code
+if (!process.env.ANAT_DG_NAME && existsSync(resolve(here, "../../.env"))) {
+  const line = readFileSync(resolve(here, "../../.env"), "utf8").match(/^ANAT_DG_NAME=(.*)$/m);
+  if (line) process.env.ANAT_DG_NAME = line[1].trim().replace(/^["']|["']$/g, "");
+}
 const port = Number(process.env.PORT || 4000);
 // La connexion de démonstration n'a pas de mot de passe : par défaut, seul cet ordinateur y accède
 const host = process.env.HOST || "127.0.0.1";

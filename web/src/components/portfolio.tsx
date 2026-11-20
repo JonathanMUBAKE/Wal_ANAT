@@ -1,3 +1,4 @@
+import { StatCard } from "./gov";
 import { type ExportDoc, ExportMenu, tableDoc } from "@/components/export-menu";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
@@ -85,12 +86,7 @@ const fail = (e: unknown) => toast.error((e as Error).message);
 const decisionRef = (a: Arbitration) =>
   a.decision_year ? `DEC/${a.decision_year}/${String(a.decision_seq).padStart(4, "0")}` : null;
 
-const Tile = ({ label, value, alert }: { label: string; value: number; alert?: boolean }) => (
-  <div className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm">
-    <p className="truncate text-[12.5px] text-muted">{label}</p>
-    <p className={cn("text-[22px] font-semibold tabular-nums leading-tight", alert && "text-danger")}>{value}</p>
-  </div>
-);
+const Tile = ({ label, value, alert }: { label: string; value: number; alert?: boolean }) => <StatCard label={label} value={value} strong={alert && value > 0} />;
 
 /** La revue de portefeuille : ce que disent les chefs de projet, ce que disent les faits. */
 export function PortfolioReview() {

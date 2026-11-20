@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, Check, Info, Megaphone, MonitorSmartphone, ShieldAlert, X } from "lucide-react";
 import { Button, Chip, Empty, Spinner, cn, Hint } from "@/components/ui";
-import { Field, Input, Section, Select, Table, Td, Tr } from "@/components/gov";
+import { Field, Input, Section, Select, Table, Td, Tr, StatCard } from "@/components/gov";
 import { ago, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 
@@ -62,13 +62,7 @@ function Tile({
   hint?: string;
   alert?: boolean;
 }) {
-  return (
-    <div className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm">
-      <p className="text-[12.5px] text-muted">{label}</p>
-      <p className={cn("mt-0.5 text-[24px] font-semibold tabular-nums", alert && "text-danger")}>{value}</p>
-      {hint && <p className="text-[12px] text-muted">{hint}</p>}
-    </div>
-  );
+  return <StatCard label={label} value={value} hint={hint} strong={alert} />;
 }
 
 export function SystemHealth() {

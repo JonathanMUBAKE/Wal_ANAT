@@ -124,7 +124,7 @@ export function ByDirection({ className }: { className?: string }) {
       }>("/api/pilotage/directions"),
   });
   return (
-    <section id="par-direction" className={cn("min-w-0 scroll-mt-4 rounded-2xl border border-line", className)}>
+    <section id="par-direction" className={cn("min-w-0 scroll-mt-4 overflow-hidden rounded-2xl border border-line bg-panel shadow-sm", className)}>
       <h2 className="px-4 pb-1 pt-3.5 text-[14px] font-medium">Directions</h2>
       {error ? (
         <p className="px-5 pb-5 text-[13px] text-danger">

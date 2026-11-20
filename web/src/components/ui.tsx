@@ -548,7 +548,7 @@ export function ConfirmDialog({
  * Explication repliée (écrans sobres, 20/11/2026) : une seule ligne discrète précédée d'une icône ; un clic ou une
  * pression du doigt affiche le texte entier. L'explication reste disponible sans encombrer l'écran.
  */
-export function Hint({ children, className }: { children: ReactNode; className?: string }) {
+export function Hint({ children, className, iconOnly }: { children: ReactNode; className?: string; iconOnly?: boolean }) {
   return (
     <PO.Root>
       <PO.Trigger asChild>
@@ -560,8 +560,8 @@ export function Hint({ children, className }: { children: ReactNode; className?:
             className,
           )}
         >
-          <Info className="size-3.5 shrink-0" />
-          <span className="min-w-0 max-w-[46ch] truncate">{children}</span>
+          <Info className={iconOnly ? "size-4 shrink-0" : "size-3.5 shrink-0"} />
+          {!iconOnly && <span className="min-w-0 max-w-[46ch] truncate">{children}</span>}
         </button>
       </PO.Trigger>
       <PopoverContent className="max-w-sm p-3 text-[13px] leading-relaxed text-muted">{children}</PopoverContent>

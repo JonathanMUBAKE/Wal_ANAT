@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CalendarOff, Check, CirclePlus, ClipboardPen, Plane, UserRoundX, X } from "lucide-react";
-import { Button, Empty, Spinner, cn } from "@/components/ui";
+import { Button, Empty, Spinner } from "@/components/ui";
 import { Drawer, DrawerSection } from "@/components/drawer";
 import {
   Field,
@@ -19,8 +19,7 @@ import {
   Textarea,
   Tr,
   frDate,
-  type Tone,
-} from "@/components/gov";
+  type Tone, StatCard } from "@/components/gov";
 import { Fact, Facts } from "@/components/record";
 import { useUsers } from "@/lib/hooks";
 import { todayIso, pl } from "@/lib/format";
@@ -201,15 +200,7 @@ export function LeavesPage() {
 }
 
 function Tile({ label, value, unit, alert }: { label: string; value?: number; unit?: string; alert?: boolean }) {
-  return (
-    <div className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm">
-      <p className="truncate text-[12.5px] text-muted">{label}</p>
-      <p className={cn("text-[22px] font-semibold tabular-nums leading-tight", alert && "text-danger")}>
-        {value ?? "—"}
-      </p>
-      {unit && <p className="truncate text-[12px] text-muted">{unit}</p>}
-    </div>
-  );
+  return <StatCard label={label} value={value ?? "—"} hint={unit} strong={alert && !!value} />;
 }
 
 /** Demande de congé (l'agent) ou absence enregistrée au nom d'un agent (service RH). */

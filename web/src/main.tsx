@@ -10,7 +10,6 @@ toast.error = ((message, data) =>
   showError(message, { duration: Number.POSITIVE_INFINITY, closeButton: true, ...data })) as typeof toast.error;
 import { MotionConfig } from "motion/react";
 import "@fontsource-variable/geist/wght.css";
-import "@fontsource-variable/onest/wght.css";
 import "@fontsource/instrument-serif/400.css";
 import "@fontsource/instrument-serif/400-italic.css";
 import "./styles.css";

@@ -96,7 +96,7 @@ export const Facts = ({ children, className }: { children: ReactNode; className?
   // Dans un tiroir ou un dialogue (classe p-0), les faits s'alignent sur le titre, sans marge propre
   <dl
     className={cn(
-      "grid gap-x-6 gap-y-3.5 text-[13.5px] sm:grid-cols-2",
+      "text-[13.5px]",
       !className?.includes("p-0") && "p-5 pt-2",
       className,
     )}
@@ -121,13 +121,24 @@ export function Fact({
 }) {
   const empty = children === undefined || children === null || children === "" || children === false;
   if (empty && optional) return null;
+  // À la verticale (demande de l'utilisateur) : un fait par ligne ; un contenu long (`wide`) passe sous son libellé
+  if (wide)
+    return (
+      <div className="border-t border-line py-2.5 first:border-t-0">
+        <dt className="flex items-center gap-1.5 text-[12.5px] text-muted">
+          {Icon && <Icon className="size-3.5" />}
+          {label}
+        </dt>
+        <dd className={cn("mt-1 break-words", empty && "text-faint")}>{empty ? "—" : children}</dd>
+      </div>
+    );
   return (
-    <div className={cn("min-w-0", wide && "sm:col-span-2")}>
-      <dt className="flex items-center gap-1 text-[12px] text-muted">
+    <div className="flex items-baseline justify-between gap-6 border-t border-line py-2.5 first:border-t-0">
+      <dt className="flex shrink-0 items-center gap-1.5 text-[13px] text-muted">
         {Icon && <Icon className="size-3.5" />}
         {label}
       </dt>
-      <dd className={cn("mt-0.5 break-words", empty ? "text-faint" : "font-medium")}>{empty ? "—" : children}</dd>
+      <dd className={cn("min-w-0 break-words text-right", empty ? "text-faint" : "font-medium")}>{empty ? "—" : children}</dd>
     </div>
   );
 }

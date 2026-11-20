@@ -219,8 +219,8 @@ export function PilotagePage() {
             </>
           );
           const cls = cn(
-            "group block rounded-2xl border p-3.5 text-left transition-colors",
-            f.strong ? "border-danger/35 bg-danger-soft/50 hover:border-danger/60" : "border-line hover:border-line-strong",
+            "group block rounded-2xl border p-3.5 text-left shadow-sm transition-colors",
+            f.strong ? "border-danger/40 bg-danger-soft hover:border-danger/70" : "border-line bg-panel hover:border-line-strong",
           );
           return f.to ? (
             <Link key={f.label} to={f.to} className={cls}>
@@ -403,7 +403,7 @@ function Card({
   children: ReactNode;
 }) {
   return (
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-line">
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
       <div className="flex items-center justify-between gap-2 px-4 pb-2.5 pt-3">
         <h2 className="flex items-center gap-2 text-[14px] font-medium">
           {title}

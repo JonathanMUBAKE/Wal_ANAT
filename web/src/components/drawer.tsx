@@ -41,15 +41,15 @@ export function Drawer({
     <>
       <DI.Root open={open} onOpenChange={(v) => !v && request()}>
         <DI.Portal>
-          <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-[#0B2A45]/25 dark:bg-black/50" />
+          <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-black/20 dark:bg-black/50" />
           <DI.Content
-            className="drawer-in fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-line bg-panel shadow-lg outline-none sm:w-[calc(100vw-48px)]"
+            className="drawer-in fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-hidden border-line bg-panel shadow-lg outline-none sm:inset-y-2.5 sm:right-2.5 sm:w-[calc(100vw-48px)] sm:rounded-3xl sm:border"
             style={{ maxWidth: width }}
           >
-            <header className="flex items-start gap-3 border-b border-line px-6 pb-4 pt-5">
+            <header className="flex items-start gap-3 border-b border-line px-5 pb-3.5 pt-4">
               <div className="min-w-0 flex-1">
-                {subtitle && <p className="mb-1 text-[12px] font-medium text-muted">{subtitle}</p>}
-                <DI.Title className="text-[18px] font-semibold leading-snug tracking-[-0.01em]">{title}</DI.Title>
+                {subtitle && <p className="mb-1 text-[12.5px] text-muted">{subtitle}</p>}
+                <DI.Title className="text-[16.5px] font-semibold leading-snug tracking-[-0.01em]">{title}</DI.Title>
                 <DI.Description className="sr-only">{typeof title === "string" ? title : "Fiche"}</DI.Description>
                 {badges && <div className="mt-2 flex flex-wrap items-center gap-2">{badges}</div>}
               </div>
@@ -57,9 +57,9 @@ export function Drawer({
                 <X className="size-4" />
               </IconButton>
             </header>
-            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
             {footer && (
-              <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line bg-bg/50 px-6 py-3">
+              <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3">
                 {footer}
               </footer>
             )}
@@ -90,7 +90,7 @@ export const DrawerSection = ({
 }) => (
   <section className="border-t border-line py-4 first:border-t-0 first:pt-0">
     <div className="mb-2.5 flex items-center justify-between gap-2">
-      <h3 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-muted">{title}</h3>
+      <h3 className="text-[12.5px] text-muted">{title}</h3>
       {aside}
     </div>
     {children}

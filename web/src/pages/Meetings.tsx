@@ -1026,7 +1026,8 @@ export function MeetingPage() {
           </>
         }
       />
-      <div className="mx-auto max-w-[1480px] space-y-4 p-4 sm:px-8 sm:py-6">
+      {/* En lecture, la fiche se lit à la verticale, dans une colonne de la largeur d'un document */}
+      <div className={cn("mx-auto space-y-4 p-4 sm:px-8 sm:py-6", editing ? "max-w-[1480px]" : "max-w-[860px]")}>
         {draft.return_comment && draft.status !== "validated" && draft.status !== "submitted" && (
           <p className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft px-4 py-3 text-[13px]">
             <CornerUpLeft className="mt-0.5 size-4 shrink-0 text-warning" />

@@ -85,9 +85,9 @@ export function PageHeader({
   crumbs?: string[];
 }) {
   return (
-    <header className="mx-auto w-full max-w-[1480px] px-4 pb-4 pt-6 sm:px-8">
+    <header className="mx-auto w-full max-w-[1480px] px-4 pb-3 pt-5 sm:px-6">
       {crumbs && (
-        <p className="mb-3 flex items-center gap-1.5 text-[12.5px] text-muted">
+        <p className="mb-2.5 flex items-center gap-1.5 text-[12.5px] text-muted">
           {crumbs.map((c, i) => (
             <span key={c} className="flex items-center gap-1.5">
               {i > 0 && <ChevronRight className="size-3 text-faint" />}
@@ -97,23 +97,21 @@ export function PageHeader({
         </p>
       )}
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
           {Icon && (
             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-primary">
               <Icon className="size-[18px]" />
             </span>
           )}
-          <h1 className="min-w-0 text-[24px] font-semibold leading-tight tracking-[-0.025em]">{title}</h1>
+          <h1 className="min-w-0 text-[22px] font-semibold leading-tight tracking-[-0.02em]">{title}</h1>
+          {typeof subtitle === "string" && subtitle.length > 70 && <Hint iconOnly>{subtitle}</Hint>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
-      {/* Écrans sobres : un sous-titre long se replie en une ligne, le texte entier au clic */}
-      {subtitle &&
-        (typeof subtitle === "string" && subtitle.length > 70 ? (
-          <Hint className="mt-1.5">{subtitle}</Hint>
-        ) : (
-          <p className="mt-1.5 max-w-2xl text-[13px] text-muted">{subtitle}</p>
-        ))}
+      {/* Un sous-titre court (date, numéro) reste sous le titre ; une explication passe derrière ⓘ */}
+      {subtitle && !(typeof subtitle === "string" && subtitle.length > 70) && (
+        <p className="mt-1 max-w-2xl text-[13px] text-muted">{subtitle}</p>
+      )}
     </header>
   );
 }
@@ -131,8 +129,8 @@ export const Section = ({
 }) => (
   <section className={cn("rounded-2xl border border-line bg-panel shadow-sm", className)}>
     {title && (
-      <div className="flex items-center justify-between gap-2 px-5 pb-1 pt-5">
-        <h2 className="text-[16px] font-semibold tracking-[-0.015em]">{title}</h2>
+      <div className="flex items-center justify-between gap-2 px-5 pb-1 pt-4">
+        <h2 className="text-[14.5px] font-medium tracking-[-0.01em]">{title}</h2>
         {aside}
       </div>
     )}
@@ -161,6 +159,47 @@ export function Status({ label, tone = "neutral" }: { label: string; tone?: Tone
       <span aria-hidden className={cn("size-2 rounded-[2px] bg-current", cls.split(" ").find((c) => c.startsWith("text-")))} />
       {label}
     </span>
+  );
+}
+
+export type StatTone = "danger" | "warning" | "success" | "info" | "neutral";
+const STAT_TILE: Record<StatTone, string> = {
+  danger: "bg-danger text-white",
+  warning: "bg-warning-soft text-warning",
+  success: "bg-success-soft text-success",
+  info: "bg-info-soft text-info",
+  neutral: "bg-hover text-muted",
+};
+/**
+ * Un chiffre clé : un libellé court, une pastille d'icône dont la couleur dit s'il faut agir, le chiffre. Un point
+ * d'attention majeur (`strong`) teinte la carte entière.
+ */
+export function StatCard({
+  label,
+  value,
+  hint,
+  icon,
+  tone = "neutral",
+  strong,
+}: {
+  label: ReactNode;
+  value: ReactNode;
+  hint?: ReactNode;
+  icon?: ReactNode;
+  tone?: StatTone;
+  strong?: boolean;
+}) {
+  return (
+    <div className={cn("min-w-0 rounded-2xl border p-3.5 shadow-sm", strong ? "border-danger/40 bg-danger-soft" : "border-line bg-panel")}>
+      <p className="truncate text-[13px] font-medium">{label}</p>
+      <p className="mt-3 flex items-center gap-2.5">
+        {icon && <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4", STAT_TILE[tone])}>{icon}</span>}
+        <span className={cn("text-[26px] font-medium leading-none tracking-[-0.02em] tabular", (strong || tone === "danger") && "text-danger")}>
+          {value}
+        </span>
+      </p>
+      {hint && <p className="mt-2 truncate text-[12px] text-muted">{hint}</p>}
+    </div>
   );
 }
 
@@ -224,7 +263,7 @@ export const Stamp = ({ children }: { children: ReactNode }) => (
   </span>
 );
 
-/** Tableau institutionnel : en-tête grisé, défilement horizontal sur téléphone. */
+/** Tableau institutionnel : en-tête discret sur un filet, défilement horizontal sur téléphone. */
 export function Table({ head, children }: { head: ReactNode[]; children: ReactNode }) {
   return (
     <div className="relative overflow-x-auto px-3 pt-2">
@@ -235,7 +274,7 @@ export function Table({ head, children }: { head: ReactNode[]; children: ReactNo
               <th
                 key={i}
                 scope="col"
-                className="whitespace-nowrap bg-bg px-3 py-2.5 text-[12px] font-medium text-muted first:rounded-l-[10px] last:rounded-r-[10px]"
+                className="whitespace-nowrap bg-bg px-3 py-2.5 text-[12px] font-medium text-muted first:rounded-l-lg last:rounded-r-lg"
               >
                 {h}
               </th>

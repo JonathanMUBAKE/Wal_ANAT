@@ -1,3 +1,4 @@
+import { StatCard } from "./gov";
 import { pl } from "@/lib/format";
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
@@ -75,23 +76,7 @@ function Tile({
   icon: ReactNode;
   tone?: "danger";
 }) {
-  return (
-    <div className="rounded-2xl border border-line bg-panel px-4 py-3.5 shadow-sm">
-      <p className="flex items-center gap-1.5 text-[12.5px] text-muted">
-        <span className={cn("text-faint", tone === "danger" && "text-danger")}>{icon}</span>
-        {label}
-      </p>
-      <p
-        className={cn(
-          "mt-1 text-[28px] font-semibold leading-none tracking-[-0.02em] tabular-nums",
-          tone === "danger" && "text-danger",
-        )}
-      >
-        {value}
-      </p>
-      {hint && <p className="mt-1.5 text-[12px] text-muted">{hint}</p>}
-    </div>
-  );
+  return <StatCard label={label} value={value} hint={hint} icon={icon} tone={tone === "danger" ? "danger" : "neutral"} strong={tone === "danger"} />;
 }
 
 function Legend({ items }: { items: { label: string; color: string }[] }) {

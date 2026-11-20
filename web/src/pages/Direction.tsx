@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCan } from "@/lib/hooks";
 import { Building2, ChevronRight } from "lucide-react";
 import { Empty, Spinner, cn } from "@/components/ui";
-import { PageHeader, Section, Status, Table, Td, Tr, frDate, type Tone } from "@/components/gov";
+import { PageHeader, Section, Status, Table, Td, Tr, frDate, type Tone, StatCard } from "@/components/gov";
 import { Assessment, DirectionTable, PlanBar, type DirectionRow, type DirectionStats } from "@/components/directions";
 import { api } from "@/lib/api";
 
@@ -236,11 +236,5 @@ export function DirectionPage() {
 }
 
 function Kpi({ label, value, hint, alert }: { label: string; value: number; hint: string; alert?: boolean }) {
-  return (
-    <div className="rounded-xl bg-hover/60 px-3 py-2.5">
-      <p className="text-[12px] text-muted">{label}</p>
-      <p className={cn("text-[22px] font-semibold leading-tight tabular-nums", alert && "text-danger")}>{value}</p>
-      <p className="text-[12px] text-muted">{hint}</p>
-    </div>
-  );
+  return <StatCard label={label} value={value} hint={hint} strong={alert} />;
 }

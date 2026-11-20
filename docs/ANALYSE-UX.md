@@ -398,6 +398,17 @@ Compléments demandés le même jour :
 | « Trop fade » : des accents sur les points d'attention | La couleur dit l'urgence : rouge pour un retard ou une alerte, ambre pour ce qui attend une action, vert pour ce qui est tenu, bleu pour l'information ; carte « Retards » teintée, liseré de couleur sur les lignes en alerte, barre d'avancement colorée |
 | Un composant adapté à chaque contenu, avec bascule de vue | Agenda en semaine (sept colonnes) ou en liste ; risques en matrice probabilité × impact ou en liste ; la bascule se retient sur le poste. À étendre : réunions, congés (calendrier d'équipe), tâches (liste, tableau, calendrier), organigramme |
 
+Dernière précision de l'utilisateur (20/11/2026, en fin de journée) : la direction artistique d'origine était déjà
+bonne ; ce qui gênait, c'était la disposition des contenus (à l'horizontal). La règle devient donc :
+
+| Sujet | Règle définitive |
+|---|---|
+| Apparence | Celle d'origine : graphite et bleu de l'Agence, police Geist ; **sombre par défaut**, thème clair soigné en second |
+| Visibilité | Cartes pleines qui se détachent du fond ; la couleur dit l'urgence (rouge, ambre, vert, bleu) |
+| Disposition | À la verticale : un fait par ligne (libellé à gauche, valeur à droite), fiches en colonne de lecture |
+| Composants | À la manière de shadcn/ui (mêmes briques : React, Tailwind, Radix) : carte titrée, lignes libellé-valeur, bascule de vue |
+| Abandonné | La fenêtre blanche sur fond gris, la barre latérale claire à trait noir, la police Onest, la barre latérale bleu nuit |
+
 ## Avancement
 
 | Date | Lot | Fait |

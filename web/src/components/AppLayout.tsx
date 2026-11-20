@@ -57,9 +57,8 @@ function Shell() {
   const loc = useLocation();
   useEffect(() => setMobileNav(false), [loc.pathname]);
   return (
-    <div className="h-full lg:p-2.5">
-    <div className="flex h-full overflow-hidden bg-panel lg:rounded-3xl lg:border lg:border-line">
-      <aside className="hidden w-[244px] shrink-0 border-r border-line lg:block">
+    <div className="flex h-full">
+      <aside className="hidden w-[256px] shrink-0 border-r border-line bg-panel lg:block">
         <Sidebar />
       </aside>
       <AnimatePresence>
@@ -111,7 +110,6 @@ function Shell() {
       <CommandPalette />
       <NewProjectDialog />
       <QuickAddDialog />
-    </div>
     </div>
   );
 }

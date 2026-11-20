@@ -15,8 +15,7 @@ import {
   Plus,
   Trash2,
   UserRoundPlus,
-  X,
-} from "lucide-react";
+  X, AlarmClock, CheckCheck, Loader, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Empty, IconButton, cn } from "@/components/ui";
 import {
@@ -37,8 +36,7 @@ import {
   Tr,
   frDate,
   isLate,
-  type Tone,
-} from "@/components/gov";
+  type Tone, StatCard } from "@/components/gov";
 import { api } from "@/lib/api";
 import {
   PartnerSelect,
@@ -1051,34 +1049,17 @@ export function CourrierPage() {
       <div className="mx-auto max-w-[1480px] space-y-4 p-4 sm:px-8 sm:py-6">
         {summary && (
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-            {(
-              [
-                ["À imputer", summary.to_assign, false],
-                ["En cours", summary.in_progress, false],
-                ["En retard", summary.late, summary.late > 0],
-                ["Traités ce mois", summary.done_month, false],
-                [
-                  "À moi · en retard",
-                  `${summary.mine.open} · ${summary.mine.late}`,
-                  summary.mine.late > 0,
-                ],
-              ] as const
-            ).map(([label, v, alert]) => (
-              <div
-                key={label}
-                className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm"
-              >
-                <p className="text-[12.5px] text-muted">{label}</p>
-                <p
-                  className={cn(
-                    "mt-0.5 text-[24px] font-semibold tabular-nums",
-                    alert && "text-danger",
-                  )}
-                >
-                  {v}
-                </p>
-              </div>
-            ))}
+            <StatCard label="À imputer" value={summary.to_assign} icon={<Inbox />} tone={summary.to_assign ? "warning" : "neutral"} />
+            <StatCard label="En cours" value={summary.in_progress} icon={<Loader />} tone={summary.in_progress ? "info" : "neutral"} />
+            <StatCard label="En retard" value={summary.late} icon={<AlarmClock />} tone={summary.late ? "danger" : "success"} strong={summary.late > 0} />
+            <StatCard label="Traités ce mois" value={summary.done_month} icon={<CheckCheck />} tone="success" />
+            <StatCard
+              label="À moi"
+              value={summary.mine.open}
+              icon={<UserRound />}
+              tone={summary.mine.late ? "danger" : summary.mine.open ? "info" : "neutral"}
+              hint={summary.mine.late ? `${summary.mine.late} en retard` : undefined}
+            />
           </div>
         )}
         <Section>

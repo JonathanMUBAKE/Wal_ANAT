@@ -8,7 +8,7 @@
     <title>ANAT Pilotage</title>
     <link rel="icon" type="image/png" href="/anat-logo.png" />
     <script>
-      try { const t = localStorage.getItem("cadence-theme"); const dark = t === "dark"; if (dark) document.documentElement.classList.add("dark"); } catch {}
+      try { const t = localStorage.getItem("cadence-theme"); const dark = t !== "light"; if (dark) document.documentElement.classList.add("dark"); } catch {}
     </script>
   </head>
   <body>

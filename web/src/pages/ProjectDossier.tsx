@@ -960,7 +960,7 @@ export function ProjectMeetings({ projectId }: { projectId: string }) {
             {data.map((m) => {
               const s = stageOf(m);
               return (
-                <Tr key={m.id} onClick={() => nav(`/reunions/${m.id}`)}>
+                <Tr key={m.id} onClick={() => nav(`/reunions/${m.id}`)} href={`/reunions/${m.id}`}>
                   <Td>
                     <Seal>{m.reference}</Seal>
                   </Td>

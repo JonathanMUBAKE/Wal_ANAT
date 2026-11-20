@@ -176,6 +176,7 @@ function Box({ box }: { box: "to_sign" | "mine" | "all" | "dg" }) {
             <Tr
               key={d.id}
               onClick={box === "dg" ? undefined : () => setOpen(d.id)}
+              reference={d.reference}
             >
               <Td className="font-mono text-[12px]">{d.reference}</Td>
               <Td className="font-medium">
@@ -1097,7 +1098,7 @@ export function CourrierPage() {
               ]}
             >
               {data.map((m) => (
-                <Tr key={m.id} onClick={() => setOpen(m)}>
+                <Tr key={m.id} onClick={() => setOpen(m)} reference={m.reference}>
                   <Td className="whitespace-nowrap font-mono text-[12px]">
                     {m.reference}
                   </Td>

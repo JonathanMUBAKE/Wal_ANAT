@@ -322,7 +322,7 @@ export function PartnersPage() {
           ) : rows.length ? (
             <Table head={["Partenaire", "État", "Type", "Catégories", "Point focal", "Dernier échange", ""]}>
               {rows.map((p) => (
-                <Tr key={p.id} onClick={() => nav(`/partenaires/${p.id}`)}>
+                <Tr key={p.id} onClick={() => nav(`/partenaires/${p.id}`)} href={`/partenaires/${p.id}`}>
                   <Td className="min-w-[220px]">
                     <span className="flex items-center gap-1.5 font-medium">
                       {p.name}

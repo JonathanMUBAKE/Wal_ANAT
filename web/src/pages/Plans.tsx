@@ -144,7 +144,7 @@ export function PlansPage() {
           ) : data?.length ? (
             <Table head={["Plan", "Entité", "Année", "Activités", "Avancement", "Retards", "Statut"]}>
               {data.map((p) => (
-                <Tr key={p.id} onClick={() => nav(`/plans/${p.id}`)}>
+                <Tr key={p.id} onClick={() => nav(`/plans/${p.id}`)} href={`/plans/${p.id}`}>
                   <Td className="font-medium">{p.title}</Td>
                   <Td>{p.unit_name}</Td>
                   <Td className="tabular">{p.year}</Td>

@@ -77,7 +77,7 @@ export function DossiersTab({ links }: { links: PartnerLinks }) {
         {links.dossiers.length ? (
           <Table head={["Dossier", "Nature", "Rôle du partenaire", "Date"]}>
             {links.dossiers.map((d) => (
-              <Tr key={d.id} onClick={() => nav(d.href)}>
+              <Tr key={d.id} onClick={() => nav(d.href)} href={d.href}>
                 <Td className="font-medium">{d.label}</Td>
                 <Td className="text-muted">{d.kind === "project" ? "Projet" : form(d.type_code ?? "").label}</Td>
                 <Td className="text-muted">{d.role}</Td>
@@ -139,7 +139,7 @@ export function MeetingsTab({ partner, links }: { partner: { id: string; name: s
       {links.meetings.length ? (
         <Table head={["Numéro", "Réunion", "Date", "État"]}>
           {links.meetings.map((m) => (
-            <Tr key={m.id} onClick={() => nav(`/reunions/${m.id}`)}>
+            <Tr key={m.id} onClick={() => nav(`/reunions/${m.id}`)} href={`/reunions/${m.id}`}>
               <Td className="whitespace-nowrap font-mono text-[12px] text-muted">{m.reference}</Td>
               <Td className="font-medium">
                 {m.title && m.title !== "Réunion" ? `${m.meeting_type} — ${m.title}` : m.meeting_type}

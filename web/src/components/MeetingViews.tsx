@@ -395,6 +395,8 @@ function ListView({ rows, filtered, onClear }: { rows: MeetingRow[]; filtered: b
       columns={columns}
       rowKey={(m) => m.id}
       onOpen={(m) => nav(`/reunions/${m.id}`)}
+      rowHref={(m) => `/reunions/${m.id}`}
+      rowRef={(m) => m.reference ?? undefined}
       actions={(m) => (
         <>
           <ExportMenu

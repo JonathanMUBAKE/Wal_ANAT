@@ -38,8 +38,7 @@ import {
   greeting,
   isoIn,
   longDate,
-  todayIso,
-} from "@/lib/format";
+  todayIso, pl } from "@/lib/format";
 
 export function HomePage() {
   const can = useCan();
@@ -122,7 +121,7 @@ export function HomePage() {
           {!!approvals?.length && (
             <span className="text-ai-fg">
               <b className="font-semibold tabular">{approvals.length}</b>{" "}
-              validation(s) IA en attente
+              {pl(approvals.length, "validation(s) IA")} en attente
             </span>
           )}
         </div>

@@ -11,7 +11,7 @@ import { useCan, useMe, useProject, useProjects, useTeams, useUserMap } from "@/
 import { useShell } from "@/lib/shell";
 import { api } from "@/lib/api";
 import type { ParsedTask, ProjectDetail, StatusProposal } from "@/lib/types";
-import { STATUS } from "@/lib/format";
+import { STATUS, pl } from "@/lib/format";
 
 const COLORS = ["#6E56CF", "#0090FF", "#12A594", "#30A46C", "#F76B15", "#E5484D", "#D6409F", "#8E8C99"];
 const TEMPLATES: { id: string; label: string; hint: string; sections: string[] }[] = [
@@ -308,7 +308,7 @@ export function QuickAddDialog() {
           section_id: t.section_id,
         })),
       });
-      toast.success(`${items!.length} tâche(s) créée(s)`);
+      toast.success(`${items!.length} ${pl(items!.length, "tâche(s) créée(s)")}`);
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
       setText("");
@@ -338,7 +338,7 @@ export function QuickAddDialog() {
           <>
             <Button onClick={() => setItems(null)}>Retour</Button>
             <Button variant="primary" disabled={!items.length} loading={loading} onClick={create}>
-              Créer {items.length} tâche(s)
+              Créer {items.length} {pl(items.length, "tâche(s)")}
             </Button>
           </>
         ) : (
@@ -389,7 +389,7 @@ export function QuickAddDialog() {
       ) : (
         <div className="space-y-1.5">
           <div className="mb-2 flex items-center gap-2">
-            <AiBadge label={`${items.length} tâche(s) détectée(s)`} />
+            <AiBadge label={`${items.length} ${pl(items.length, "tâche(s) détectée(s)")}`} />
             <span className="text-[12.5px] text-muted">Modifiez avant de valider</span>
           </div>
           {items.map((t, i) => (

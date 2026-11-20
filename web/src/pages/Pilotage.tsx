@@ -1,4 +1,4 @@
-import { QuickEntry } from "@/components/quick-entry";
+import { QuickEntryMenu } from "@/components/quick-entry";
 import { useState } from "react";
 import { Link } from "react-router";
 import { addDays } from "date-fns";
@@ -14,10 +14,8 @@ import {
   ChevronRight,
   FileSignature,
   Gauge,
-  Plus,
   Scale,
   Sparkles,
-  Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button, Dialog, Empty, cn } from "@/components/ui";
@@ -32,7 +30,6 @@ import { HealthRing } from "@/components/territory";
 import { CollectionHeader } from "@/components/collection";
 import { ByDirection } from "@/components/directions";
 
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 import { api } from "@/lib/api";
 import { useCan, useMe } from "@/lib/hooks";
 import { useForms } from "@/lib/referentials";
@@ -182,30 +179,10 @@ export function PilotagePage() {
       <CollectionHeader
         Icon={Gauge}
         crumbs={["Pilotage", "Tableau de bord DG"]}
-        title={`${greeting()}, ${firstName(me?.name ?? "")}`}
-        subtitle={`${cap(format(parseISO(o.today), "EEEE d MMMM yyyy", { locale: fr }))} · voici l'essentiel pour décider aujourd'hui.`}
-        actions={
-          <>
-            <RoundLink to="/reunions" label="Réunions" Icon={Users} />
-            <RoundLink
-              to="/parapheur"
-              label="Parapheur"
-              Icon={FileSignature}
-              dot={o.to_sign > 0}
-            />
-            <Link
-              to="/activites"
-              className="btn-brand inline-flex h-9 items-center gap-1.5 rounded-[10px] px-3.5 text-[13px] font-medium text-on-primary"
-            >
-              <Plus className="size-4" />
-              Nouvelle activité
-            </Link>
-          </>
-        }
+        title="Où en est l'Agence"
+        subtitle={`${greeting()}, ${firstName(me?.name ?? "")} · ${format(parseISO(o.today), "EEEE d MMMM yyyy", { locale: fr })}`}
+        actions={<QuickEntryMenu />}
       />
-
-      {/* Saisir : les saisies de la direction, sans détour (la DG ou son assistant) */}
-      <QuickEntry wide />
 
       {/* Grille bento : 12 colonnes, chaque carte occupe la place que mérite son importance */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-6 xl:grid-cols-12 xl:grid-flow-row-dense">
@@ -874,32 +851,6 @@ function CircleAction({ to, label }: { to: string; label: string }) {
       className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:bg-hover hover:text-fg"
     >
       <ArrowUpRight className="size-4" />
-    </Link>
-  );
-}
-
-function RoundLink({
-  to,
-  label,
-  Icon,
-  dot,
-}: {
-  to: string;
-  label: string;
-  Icon: LucideIcon;
-  dot?: boolean;
-}) {
-  return (
-    <Link
-      to={to}
-      aria-label={label}
-      title={label}
-      className="relative flex size-9 items-center justify-center rounded-[10px] border border-line-strong bg-panel text-fg transition-colors hover:bg-hover"
-    >
-      <Icon className="size-4.5" />
-      {dot && (
-        <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-danger ring-2 ring-panel" />
-      )}
     </Link>
   );
 }

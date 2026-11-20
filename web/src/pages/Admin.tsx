@@ -9,7 +9,7 @@ import { fr } from "date-fns/locale";
 import { Button, Chip, Dialog, Empty, Menu, MenuContent, MenuItem, MenuTrigger, Spinner, cn } from "@/components/ui";
 import { Drawer, DrawerSection } from "@/components/drawer";
 import { useMe, usePrimaryDomain } from "@/lib/hooks";
-import { ago } from "@/lib/format";
+import { ago, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 import type {
   AdminOrg,
@@ -135,7 +135,7 @@ function Users({ meId }: { meId?: string }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[13px] text-muted">
-          {users.length} compte(s). Un compte créé ici reste « Invité » tant que la personne n'a pas choisi son mot de
+          {users.length} {pl(users.length, "compte(s)")}. Un compte créé ici reste « Invité » tant que la personne n'a pas choisi son mot de
           passe.
         </p>
         <span className="ml-auto">
@@ -206,7 +206,7 @@ function Users({ meId }: { meId?: string }) {
                   {u.orgs.map((o) => o.org_name).join(", ") || "—"}
                 </td>
                 <td className="px-2 text-[12.5px] text-muted">
-                  {u.totp_enabled ? "2FA active" : "Sans 2FA"} · {u.active_sessions} session(s)
+                  {u.totp_enabled ? "2FA active" : "Sans 2FA"} · {u.active_sessions} {pl(u.active_sessions, "session(s)")}
                 </td>
                 <td className="px-2 text-[12.5px] text-muted">{u.last_login_at ? ago(u.last_login_at) : "Jamais"}</td>
                 <td className="px-2 py-2 text-right">
@@ -632,7 +632,7 @@ function AuditJournal() {
               ? ""
               : isFetching
                 ? "Mise à jour…"
-                : `${data.entries.length} trace(s)${data.truncated ? " — les plus récentes ; affinez ou exportez" : ""}`}
+                : `${data.entries.length} ${pl(data.entries.length, "trace(s)")}${data.truncated ? " — les plus récentes ; affinez ou exportez" : ""}`}
           </span>
         </div>
       </div>

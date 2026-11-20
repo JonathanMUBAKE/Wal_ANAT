@@ -1,3 +1,4 @@
+import { pl } from "@/lib/format";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -64,7 +65,7 @@ export function ProfilesPanel() {
               >
                 <span className="block text-[13.5px] font-medium">{p.name}</span>
                 <span className="block text-[12px] text-faint">
-                  {p.member_count} personne(s){p.is_system ? " · système" : ""}
+                  {p.member_count} {pl(p.member_count, "personne(s)")}{p.is_system ? " · système" : ""}
                 </span>
               </button>
             </li>

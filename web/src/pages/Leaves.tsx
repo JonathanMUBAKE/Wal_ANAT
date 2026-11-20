@@ -23,7 +23,7 @@ import {
 } from "@/components/gov";
 import { Fact, Facts } from "@/components/record";
 import { useUsers } from "@/lib/hooks";
-import { todayIso } from "@/lib/format";
+import { todayIso, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 
 /*
@@ -126,7 +126,7 @@ export function LeavesPage() {
         }
       />
       <div className="mx-auto grid max-w-[1240px] gap-3 px-4 pb-4 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
-        <Tile label="Congé annuel pris cette année" value={sum?.mine.taken} unit="jour(s) ouvré(s)" />
+        <Tile label="Congé annuel pris cette année" value={sum?.mine.taken} unit={pl(sum?.mine.taken, "jour(s) ouvré(s)")} />
         <Tile label="Mes demandes en attente" value={sum?.mine.pending} />
         <Tile label="À valider" value={sum?.to_decide} alert={!!sum?.to_decide} />
         <Tile label="Absents aujourd'hui" value={sum?.absent_today.length} unit="dans votre périmètre" />

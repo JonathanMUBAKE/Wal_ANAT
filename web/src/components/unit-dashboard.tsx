@@ -1,3 +1,4 @@
+import { pl } from "@/lib/format";
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import {
@@ -287,8 +288,8 @@ function Workload({ rows }: { rows: NonNullable<UnitDashboard["workload"]> }) {
                 <div className="pointer-events-none absolute left-[160px] top-full z-10 mt-1 w-max rounded-lg border border-line bg-panel px-3 py-2 text-[12px] shadow-lg">
                   <p className="font-medium">{r.name}</p>
                   <p className="text-muted">
-                    {r.open} ouverte(s) · <span className="text-danger">{r.overdue} en retard</span> · {r.due_soon} sous
-                    7 jours · {r.done_30} terminée(s) en 30 jours
+                    {r.open} {pl(r.open, "ouverte(s)")} · <span className="text-danger">{r.overdue} en retard</span> · {r.due_soon} sous
+                    7 jours · {r.done_30} {pl(r.done_30, "terminée(s)")} en 30 jours
                   </p>
                 </div>
               )}
@@ -408,7 +409,7 @@ export function UnitDashboardView({
         <Tile
           label="Tâches ouvertes"
           value={k.open}
-          hint={k.unassigned ? `dont ${k.unassigned} non attribuée(s)` : "toutes attribuées"}
+          hint={k.unassigned ? `dont ${k.unassigned} ${pl(k.unassigned, "non attribuée(s)")}` : "toutes attribuées"}
           icon={<CircleDot className="size-3.5" />}
         />
         <Tile
@@ -427,7 +428,7 @@ export function UnitDashboardView({
         <Tile
           label="Terminées (30 j)"
           value={k.done_30}
-          hint={responsable && k.agents !== null ? `${k.agents} agent(s) suivi(s)` : undefined}
+          hint={responsable && k.agents !== null ? `${k.agents} ${pl(k.agents, "agent(s) suivi(s)")}` : undefined}
           icon={<CheckCircle2 className="size-3.5" />}
         />
         <div className="col-span-2 rounded-2xl border border-line bg-panel px-4 py-3.5 shadow-sm lg:col-span-1">
@@ -554,7 +555,7 @@ export function UnitDashboardView({
           <Card title="Projets de l'entité">
             <p className="text-[13px] text-muted">
               {data.projects.length
-                ? `${data.projects.length} projet(s) porté(s) par l'entité, détaillés ci-dessous.`
+                ? `${data.projects.length} ${pl(data.projects.length, "projet(s) porté(s)")} par l'entité, détaillés ci-dessous.`
                 : "Aucun projet n'est encore porté par l'entité."}
             </p>
           </Card>
@@ -562,7 +563,7 @@ export function UnitDashboardView({
       </div>
 
       <Card
-        title={`Projets de l'entité : ${data.projects.filter((p) => p.role !== "contribue").length} porté(s), ${data.projects.filter((p) => p.role === "contribue").length} en contribution`}
+        title={`Projets de l'entité : ${data.projects.filter((p) => p.role !== "contribue").length} ${pl(data.projects.filter((p) => p.role !== "contribue").length, "porté(s)")}, ${data.projects.filter((p) => p.role === "contribue").length} en contribution`}
         aside={<FolderKanban className="size-4 text-faint" />}
       >
         <UnitProjects rows={data.projects} onCreate={onNewProject} />

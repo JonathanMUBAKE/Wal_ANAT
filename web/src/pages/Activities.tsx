@@ -3,9 +3,9 @@ import { todayIso } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Briefcase, CalendarRange, Lock, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Briefcase, CalendarRange, Lock, Plus, Trash2, GitCompareArrows } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Checkbox, ConfirmDialog, Dialog, Empty, IconButton, ProjectIcon, cn } from "@/components/ui";
+import { Button, Checkbox, ConfirmDialog, Dialog, Empty, IconButton, ProjectIcon, Tip, cn } from "@/components/ui";
 import { useShell } from "@/lib/shell";
 import { PartnerSelect } from "@/components/partners";
 import { DossierDocuments } from "@/components/documents";
@@ -928,9 +928,16 @@ function ComputedHealth({ p, health }: { p: ProjectSummary; health: Map<string, 
   const h = health.get(p.id);
   const state = h?.health_computed ?? p.status;
   return (
-    <span className="inline-flex flex-wrap items-center gap-1.5" title={h?.reasons.join(" · ") || undefined}>
+    <span className="inline-flex flex-wrap items-center gap-1.5">
       <Status label={HEALTH[state].label} tone={HEALTH[state].tone} />
-      {h?.divergent && <span className="text-[11.5px] text-faint">déclaré : {HEALTH[h.health_declared].label}</span>}
+      {/* Un seul statut visible ; l'écart avec le déclaré se signale par une icône, expliquée au survol (écrans sobres) */}
+      {h?.divergent && (
+        <Tip label={`Le responsable déclare « ${HEALTH[h.health_declared].label} » ; le calcul dit « ${HEALTH[state].label} »${h.reasons.length ? ` : ${h.reasons.join(" · ")}` : ""}`}>
+          <span aria-label={`Écart avec le statut déclaré : ${HEALTH[h.health_declared].label}`} className="text-warning">
+            <GitCompareArrows className="size-3.5" />
+          </span>
+        </Tip>
+      )}
     </span>
   );
 }

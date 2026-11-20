@@ -1,3 +1,4 @@
+import { pl } from "@/lib/format";
 import { DOCUMENT_FORMATS, ExportMenu, tableDoc } from "@/components/export-menu";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
@@ -363,7 +364,7 @@ function ListView({ rows, filtered, onClear }: { rows: MeetingRow[]; filtered: b
       render: (m) =>
         m.action_count ? (
           <span
-            title={`${m.open_actions} recommandation(s) ouverte(s) sur ${m.action_count}`}
+            title={`${m.open_actions} ${pl(m.open_actions, "recommandation(s) ouverte(s)")} sur ${m.action_count}`}
             className={cn(
               "inline-flex h-[22px] items-center gap-1 rounded-md px-1.5 text-[11.5px] font-medium tabular",
               m.open_actions ? "bg-warning-soft text-warning" : "bg-success-soft text-success",

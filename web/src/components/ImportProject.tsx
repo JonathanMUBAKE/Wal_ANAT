@@ -7,7 +7,7 @@ import { Button, Dialog, Spinner, cn, Hint } from "./ui";
 import { AiBadge } from "./ai";
 import { DueChip, DuePicker } from "./pickers";
 import { useAiStatus, useMe, useTeams, useUsers } from "@/lib/hooks";
-import { PRIORITIES } from "@/lib/format";
+import { PRIORITIES, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { ImportAnalysis, ImportProposal, ImportSubtask, ImportTask, Priority, ProjectDetail } from "@/lib/types";
 
@@ -191,7 +191,7 @@ export function ImportProjectDialog({ open, onOpenChange }: { open: boolean; onO
             Choisir un autre fichier
           </Button>
           <Button variant="primary" disabled={!draft.name.trim()} loading={saving} onClick={create}>
-            Créer le projet · {chosen.length} tâche(s), {subCount} sous-tâche(s)
+            Créer le projet · {chosen.length} {pl(chosen.length, "tâche(s)")}, {subCount} {pl(subCount, "sous-tâche(s)")}
           </Button>
         </>
       }
@@ -236,7 +236,7 @@ export function ImportProjectDialog({ open, onOpenChange }: { open: boolean; onO
             </DuePicker>
           </span>
           {newMembers.size > 0 && (
-            <span>{newMembers.size} personne(s) assignée(s) seront ajoutées au projet si besoin.</span>
+            <span>{newMembers.size} {pl(newMembers.size, "personne(s) assignée(s)")} seront ajoutées au projet si besoin.</span>
           )}
         </div>
         {(analysis?.truncated || draft.notes.length > 0) && (
@@ -253,8 +253,8 @@ export function ImportProjectDialog({ open, onOpenChange }: { open: boolean; onO
           </div>
         )}
         <div className="flex items-center gap-2">
-          <AiBadge label={`${rows.length} tâche(s) proposée(s)`} />
-          <span className="text-[12.5px] text-muted">{draft.sections.length} section(s)</span>
+          <AiBadge label={`${rows.length} ${pl(rows.length, "tâche(s) proposée(s)")}`} />
+          <span className="text-[12.5px] text-muted">{draft.sections.length} {pl(draft.sections.length, "section(s)")}</span>
         </div>
         {rows.length === 0 && (
           <p className="text-[13px] text-muted">

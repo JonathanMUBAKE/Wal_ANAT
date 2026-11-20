@@ -17,7 +17,7 @@ import {
   useUserMap,
 } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
-import { ago } from "@/lib/format";
+import { ago, pl } from "@/lib/format";
 
 export function AgentsPage() {
   const { data: agents } = useAgents();
@@ -223,7 +223,7 @@ export function AgentsPage() {
                         </span>
                         <span className="text-faint">
                           {" "}
-                          · {r.step_count} étape(s) · {ago(r.created_at)}
+                          · {r.step_count} {pl(r.step_count, "étape(s)")} · {ago(r.created_at)}
                         </span>
                       </span>
                     </span>

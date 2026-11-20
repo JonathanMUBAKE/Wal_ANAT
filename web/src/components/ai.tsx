@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Avatar, Button, Markdown, cn } from "./ui";
 import { useDecide, useMe, useRun, useUserMap } from "@/lib/hooks";
-import { ago } from "@/lib/format";
+import { ago, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { AiApproval, AiRun, AiStep } from "@/lib/types";
 
@@ -54,7 +54,7 @@ export function stepLabel(s: AiStep): string {
       if (i.due_before) f.push(`avant le ${i.due_before}`);
       if (i.completed === false) f.push("ouvertes");
       const out = s.output as { count?: number } | null;
-      return `Recherche des tâches${f.length ? " " + f.join(", ") : ""}${out && typeof out === "object" && "count" in out ? ` · ${out.count} résultat(s)` : ""}`;
+      return `Recherche des tâches${f.length ? " " + f.join(", ") : ""}${out && typeof out === "object" && "count" in out ? ` · ${out.count} ${pl(out.count, "résultat(s)")}` : ""}`;
     }
     case "get_task":
       return `Lecture de la tâche ${i.task}`;

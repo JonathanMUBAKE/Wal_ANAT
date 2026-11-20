@@ -26,7 +26,7 @@ import { isActive } from "@/components/ai";
 import { useCan, useMe, useMyUnits, useProject, useProjectTasks, useRuns } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { useTaskMenu } from "@/lib/context-menu";
-import { todayIso } from "@/lib/format";
+import { todayIso, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { ProjectDetail, Task, UnitBoard, UnitDashboard, UnitFollowUp } from "@/lib/types";
 import { ListView } from "@/views/ListView";
@@ -236,7 +236,7 @@ function Overview({
       ) : !data ? (
         <Spinner />
       ) : projectsOnly ? (
-        <Section title={`Projets de l'entité : ${data.projects.filter((p) => p.role !== "contribue").length} porté(s), ${data.projects.filter((p) => p.role === "contribue").length} en contribution`}>
+        <Section title={`Projets de l'entité : ${data.projects.filter((p) => p.role !== "contribue").length} ${pl(data.projects.filter((p) => p.role !== "contribue").length, "porté(s)")}, ${data.projects.filter((p) => p.role === "contribue").length} en contribution`}>
           <div className="p-5 pt-3">
             <UnitProjects rows={data.projects} onCreate={onNewProject} />
           </div>

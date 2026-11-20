@@ -6,7 +6,7 @@ import { Avatar, Button, ConfirmDialog, Dialog, Empty, IconButton, cn, Hint } fr
 import { RUN_STATUS, RunTimeline } from "@/components/ai";
 import { useAgents, useRules, useRuns, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
-import { ago } from "@/lib/format";
+import { ago, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { AiRule } from "@/lib/types";
 import type { ViewProps } from "@/pages/Project";
@@ -163,7 +163,7 @@ export function AutomationsView({ project }: ViewProps) {
                       <span className={RUN_STATUS[r.status].tone}>{RUN_STATUS[r.status].label}</span>
                       <span className="text-faint">
                         {" "}
-                        · {r.step_count} étape(s) · {ago(r.created_at)}
+                        · {r.step_count} {pl(r.step_count, "étape(s)")} · {ago(r.created_at)}
                       </span>
                     </span>
                   </span>

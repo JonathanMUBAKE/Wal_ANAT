@@ -1900,13 +1900,23 @@ function MeetingReading({ m }: { m: MeetingDetail }) {
             {frDate(m.meeting_date)}
             {m.start_time ? ` · ${m.start_time.slice(0, 5)}${m.end_time ? ` – ${m.end_time.slice(0, 5)}` : ""}` : ""}
           </Fact>
-          <Fact label="Lieu">{[m.location, m.video_link ? "visioconférence" : ""].filter(Boolean).join(" · ")}</Fact>
+          <Fact label="Lieu">
+            {[m.location, m.video_link && !/visio/i.test(m.location ?? "") ? "visioconférence" : ""]
+              .filter(Boolean)
+              .join(" · ")}
+          </Fact>
           <Fact label="Présidence">{m.chair_name}</Fact>
-          <Fact label="Convoquée par">{m.convened_by}</Fact>
-          <Fact label="Animation">{m.facilitator}</Fact>
+          <Fact label="Convoquée par" optional>
+            {m.convened_by}
+          </Fact>
+          <Fact label="Animation" optional>
+            {m.facilitator}
+          </Fact>
           <Fact label="Rédaction">{m.writer_name}</Fact>
-          <Fact label="Gardien du temps">{m.timekeeper}</Fact>
-          <Fact label="Dossier">
+          <Fact label="Gardien du temps" optional>
+            {m.timekeeper}
+          </Fact>
+          <Fact label="Dossier" optional>
             {m.dossier && (
               <Link to={m.dossier.href} className="text-primary hover:underline">
                 {m.dossier.label}
@@ -1915,26 +1925,29 @@ function MeetingReading({ m }: { m: MeetingDetail }) {
           </Fact>
         </Facts>
       </Section>
-      <Section title="Participants">
-        {present.length ? (
-          <ul className="divide-y divide-line">
-            {present.map((a) => (
-              <li key={a.id ?? a.name} className="flex flex-wrap items-center gap-x-3 px-5 py-2 text-[13px]">
-                <span className="min-w-0 flex-1">
-                  <span className="font-medium">{a.name}</span>
-                  {a.function_label && <span className="text-muted"> · {a.function_label}</span>}
-                </span>
-                <span className="text-muted">
-                  {PRESENCE[a.presence as keyof typeof PRESENCE] ?? a.presence}
-                  {a.delegate_name ? ` (${a.delegate_name})` : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="px-5 pb-5 text-[13px] text-muted">La feuille de présence n'est pas encore remplie.</p>
-        )}
-      </Section>
+      {/* Avant la séance, la convocation liste déjà les convoqués : pas de seconde liste (écrans sobres) */}
+      {m.status !== "planned" && (
+        <Section title="Participants">
+          {present.length ? (
+            <ul className="divide-y divide-line">
+              {present.map((a) => (
+                <li key={a.id ?? a.name} className="flex flex-wrap items-center gap-x-3 px-5 py-2 text-[13px]">
+                  <span className="min-w-0 flex-1">
+                    <span className="font-medium">{a.name}</span>
+                    {a.function_label && <span className="text-muted"> · {a.function_label}</span>}
+                  </span>
+                  <span className="text-muted">
+                    {PRESENCE[a.presence as keyof typeof PRESENCE] ?? a.presence}
+                    {a.delegate_name ? ` (${a.delegate_name})` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-5 pb-5 text-[13px] text-muted">La feuille de présence n'est pas encore remplie.</p>
+          )}
+        </Section>
+      )}
       {m.previous_summary?.trim() && (
         <Section title="Rappel de la séance précédente">
           <div className="p-5 pt-2">
@@ -2028,7 +2041,15 @@ function MeetingReading({ m }: { m: MeetingDetail }) {
 }
 
 /** Une séance passée qui n'a pas eu lieu se déclare non tenue, avec un motif (thème 6, R-6). */
-function NotHeldDialog({ id, onClose, onDone }: { id: string; onClose: () => void; onDone: (r: MeetingDetail) => void }) {
+function NotHeldDialog({
+  id,
+  onClose,
+  onDone,
+}: {
+  id: string;
+  onClose: () => void;
+  onDone: (r: MeetingDetail) => void;
+}) {
   const [reason, setReason] = useState("");
   const save = useMutation({
     mutationFn: () => api.post<MeetingDetail>(`/api/meetings/${id}/not-held`, { reason }),

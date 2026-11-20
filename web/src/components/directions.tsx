@@ -224,7 +224,7 @@ export function DirectionTable({
                   {d.manager_name ?? "Sans chef désigné"} · {d.agents} agent
                   {d.agents > 1 ? "s" : ""}
                   {d.services
-                    ? ` · ${d.services} service${d.services > 1 ? "s" : ""}`
+                    ? ` · ${d.services} cellule${d.services > 1 ? "s" : ""}`
                     : ""}
                 </span>
               </td>

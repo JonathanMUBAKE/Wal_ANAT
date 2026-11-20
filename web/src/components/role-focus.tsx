@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { ArrowRight, CalendarOff, FileSignature, Mail, Scale, Users } from "lucide-react";
 import { cn } from "@/components/ui";
 import { useCan, useMe, useMyUnits } from "@/lib/hooks";
-import { todayIso } from "@/lib/format";
+import { todayIso, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { UnitDashboard } from "@/lib/types";
 
@@ -78,7 +78,7 @@ export function RoleFocus() {
       icon: Users,
       label: `Votre entité · ${headed.name}`,
       value: unit.kpis.overdue,
-      hint: `tâche(s) en retard · ${unit.kpis.open} ouverte(s)`,
+      hint: `${pl(unit.kpis.overdue, "tâche(s) en retard")} · ${unit.kpis.open} ${pl(unit.kpis.open, "ouverte(s)")}`,
       alert: unit.kpis.overdue > 0,
     });
   if (leaves?.to_decide)
@@ -87,7 +87,7 @@ export function RoleFocus() {
       icon: CalendarOff,
       label: "Congés à valider",
       value: leaves.to_decide,
-      hint: `${leaves.absent_today.length} absent(s) aujourd'hui`,
+      hint: `${leaves.absent_today.length} ${pl(leaves.absent_today.length, "absent(s)")} aujourd'hui`,
     });
   const mineDecisions = (decisions ?? []).filter(
     (d) => d.owner_id === me?.id && ["a_executer", "en_cours"].includes(d.status),

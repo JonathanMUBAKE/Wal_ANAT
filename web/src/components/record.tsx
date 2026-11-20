@@ -110,13 +110,17 @@ export function Fact({
   children,
   wide,
   Icon,
+  optional,
 }: {
   label: string;
   children?: ReactNode;
   wide?: boolean;
   Icon?: LucideIcon;
+  /** Champ secondaire : vide, il ne s'affiche pas du tout (écrans sobres : on ne montre que ce qui est renseigné). */
+  optional?: boolean;
 }) {
   const empty = children === undefined || children === null || children === "" || children === false;
+  if (empty && optional) return null;
   return (
     <div className={cn("min-w-0", wide && "sm:col-span-2")}>
       <dt className="flex items-center gap-1 text-[12px] text-muted">

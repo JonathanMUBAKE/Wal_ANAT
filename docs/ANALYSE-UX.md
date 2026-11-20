@@ -356,3 +356,9 @@ navigateur, en bureau et en téléphone, sous les profils DG, chef d'entité et 
 - Tableaux et mobile : [Guide 2026 des tableaux de données (Setproduct)](https://www.setproduct.com/blog/data-table-ui-design) ;
   [Five ways to replace a table](https://uxdesign.cc/five-ways-to-replace-a-table-and-make-it-better-on-mobile-f9cc3daf8258) ;
   [Tableaux réactifs accessibles (Smashing Magazine)](https://shop.smashingmagazine.com/2022/12/accessible-front-end-patterns-responsive-tables-part2/).
+
+## Avancement
+
+| Date | Lot | Fait |
+|---|---|---|
+| 20/11/2026 | UX-1, première partie | Pluriels accordés ; champs facultatifs vides masqués (fiche réunion) ; lieu sans doublon ; participants affichés seulement après la séance ; statut unique au portefeuille ; graphique vide remplacé par une phrase (RH) ; tableau de bord DG : information d'abord, saisies dans le menu « Saisir » |

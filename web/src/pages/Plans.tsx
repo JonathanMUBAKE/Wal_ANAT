@@ -1,3 +1,4 @@
+import { pl } from "@/lib/format";
 import { ExportMenu, tableDoc } from "@/components/export-menu";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -728,14 +729,14 @@ function Campaign() {
   });
   const remind = useMutation({
     mutationFn: () => api.post<{ sent: number }>("/api/plans/campaign/remind", { year }),
-    onSuccess: (r) => toast.success(`${r.sent} chef(s) d'entité relancé(s)`),
+    onSuccess: (r) => toast.success(`${r.sent} ${pl(r.sent, "chef(s) d'entité relancé(s)")}`),
     onError: fail,
   });
   if (!data) return null;
   const ready = data.total - data.missing.length;
   return (
     <Section
-      title={`Campagne ${year} : ${ready} plan(s) sur ${data.total} entités`}
+      title={`Campagne ${year} : ${ready} ${pl(ready, "plan(s)")} sur ${data.total} entités`}
       aside={
         <div className="flex items-center gap-2">
           <Select aria-label="Année" value={String(year)} onChange={(e) => setYear(Number(e.target.value))}>

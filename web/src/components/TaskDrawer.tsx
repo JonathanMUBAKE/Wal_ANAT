@@ -65,7 +65,7 @@ import {
   useUpdateTask,
   useUserMap,
 } from "@/lib/hooks";
-import { ago, dueLabel, shortDate } from "@/lib/format";
+import { ago, dueLabel, shortDate, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { Recurrence, Task, TaskDetail } from "@/lib/types";
 
@@ -1007,7 +1007,7 @@ function Subtasks({
       })
       .catch((e) => toast.error(e.message));
     setSuggest(null);
-    toast.success(`${chosen.length} sous-tâche(s) ajoutée(s)`);
+    toast.success(`${chosen.length} ${pl(chosen.length, "sous-tâche(s) ajoutée(s)")}`);
     qc.invalidateQueries({ queryKey: ["task", t.id] });
     qc.invalidateQueries({ queryKey: ["tasks"] });
   };
@@ -1096,7 +1096,7 @@ function Subtasks({
               Annuler
             </Button>
             <Button size="sm" variant="primary" disabled={!suggest.some((s) => s.on)} onClick={accept}>
-              Ajouter {suggest.filter((s) => s.on).length} sous-tâche(s)
+              Ajouter {suggest.filter((s) => s.on).length} {pl(suggest.filter((s) => s.on).length, "sous-tâche(s)")}
             </Button>
           </div>
         </div>

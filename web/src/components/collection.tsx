@@ -253,7 +253,7 @@ export function GroupedTable<T>({
                         )}
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="stagger">
                       {g.rows.map((r) => {
                         const id = rowKey(r);
                         const on = selected.has(id);

@@ -264,10 +264,14 @@ export const Stamp = ({ children }: { children: ReactNode }) => (
 );
 
 /** Tableau institutionnel : libellés discrets sur un filet, une ligne par enregistrement, défilement horizontal sur téléphone. */
+/** Colonnes de repère (numéro, matricule) : ce n'est pas elles qui portent le titre de la ligne. */
+const REFERENCE_HEAD = /^(numéro|n°|matricule|référence|réf.?)$/i;
 export function Table({ head, children }: { head: ReactNode[]; children: ReactNode }) {
+  // La colonne du titre : la première qui n'est pas un simple numéro ; elle reçoit la place libre
+  const main = head.findIndex((h) => typeof h !== "string" || !REFERENCE_HEAD.test(h.trim())) + 1;
   return (
     <div className="grid-scroll relative">
-      <table className="grid-table">
+      <table className="grid-table" data-main={main || 1}>
         <thead>
           <tr className="text-left">
             {head.map((h, i) => (

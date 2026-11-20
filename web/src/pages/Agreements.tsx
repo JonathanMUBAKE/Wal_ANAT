@@ -264,11 +264,12 @@ export function AgreementsPage() {
                   <Td className="whitespace-nowrap font-mono text-[12px] text-muted">{a.reference ?? "—"}</Td>
                   <Td className="min-w-[240px]">
                     <span className="flex items-center gap-1.5 font-medium">
-                      {a.amendment_no ? `Avenant n° ${a.amendment_no} — ` : ""}
-                      {a.title}
+                      <span className="truncate" title={a.title}>
+                        {a.amendment_no ? `Avenant n° ${a.amendment_no} — ` : ""}
+                        {a.title}
+                      </span>
                       {a.confidential && <Lock aria-label="Confidentiel" className="size-3 shrink-0 text-warning" />}
                     </span>
-                    <TypeTag value={types.find((t) => t.code === a.type_code)} code={a.type_code} />
                   </Td>
                   <Td>
                     <Status label={AGREEMENT_STATE[a.state].label} tone={AGREEMENT_STATE[a.state].tone} />

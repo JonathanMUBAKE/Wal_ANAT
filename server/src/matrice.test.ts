@@ -633,6 +633,10 @@ const TABLE = [
     ...(await taskUrl("/move")(X)),
     body: { section_id: X.detail.sections[1].id },
   })),
+  R_("POST", "/api/tasks/:id/stage", async (X) => ({
+    ...(await taskUrl("/stage")(X)),
+    body: { name: X.detail.sections[1].name },
+  })),
   R_("POST", "/api/tasks/:id/duplicate", async (X) => ({ ...(await taskUrl("/duplicate")(X)), body: {} })),
   // Tâche confiée : le propriétaire la confie à Fiston (renvoi, réponse au report) ou la reçoit de lui (demande)
   R_("POST", "/api/tasks/:id/return", async (X) => {

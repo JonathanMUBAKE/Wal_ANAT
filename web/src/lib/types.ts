@@ -304,6 +304,8 @@ export interface Task {
   comment_count?: number;
   /** Titre de la tâche parente d'une sous-tâche (T-5). */
   parent_title?: string | null;
+  /** Colonne de la tâche dans son projet (listes de tâches). */
+  section_name?: string | null;
   /** Entité d'une tâche hors projet (T-4). */
   unit_name?: string | null;
 }

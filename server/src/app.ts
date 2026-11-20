@@ -765,6 +765,9 @@ export async function buildApp(opts: AppOptions = {}) {
     r.post<{ Params: { id: string } }>("/api/tasks/:id/duplicate", async (req) =>
       svc.duplicateTask(me(req), req.params.id, z.object({ subtasks: z.boolean().optional() }).parse(req.body ?? {})),
     );
+    r.post<{ Params: { id: string } }>("/api/tasks/:id/stage", async (req) =>
+      svc.moveTaskToStage(me(req), req.params.id, z.object({ name: z.string().min(1).max(120) }).parse(req.body).name),
+    );
     r.post<{ Params: { id: string } }>("/api/tasks/:id/move-project", async (req) =>
       svc.moveTaskToProject(me(req), req.params.id, z.object({ project_id: z.string() }).parse(req.body).project_id),
     );

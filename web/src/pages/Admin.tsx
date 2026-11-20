@@ -196,7 +196,7 @@ function Users({ meId }: { meId?: string }) {
                   </button>
                   <span className="block text-[12px] text-faint">{u.email}</span>
                   {u.access_request_note && (
-                    <span className="block text-[12px] text-muted">« {u.access_request_note} »</span>
+                    <span className="block whitespace-normal text-[12.5px] italic">« {u.access_request_note} »</span>
                   )}
                 </td>
                 <td className="px-2">

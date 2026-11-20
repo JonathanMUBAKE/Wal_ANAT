@@ -1670,6 +1670,7 @@ export class Services {
     return this.db.query(
       `SELECT t.id, p.key || '-' || t.number AS key, t.title, t.assignee_id, u.name AS assignee_name,
               to_char(t.due_on, 'YYYY-MM-DD') AS due_on, t.completed, t.completed_at, t.done_declared_at,
+              t.priority, (SELECT sc.name FROM sections sc WHERE sc.id = t.section_id) AS section_name,
               CASE WHEN p.kind = 'unit' THEN (SELECT ou.name FROM org_units ou WHERE ou.id = p.unit_id) ELSE p.name END AS place,
               (NOT t.completed AND t.due_on IS NOT NULL AND t.due_on < $3::date) AS overdue,
               EXISTS (SELECT 1 FROM task_postponements tp WHERE tp.task_id = t.id AND tp.status = 'pending') AS postpone_pending
@@ -1721,7 +1722,9 @@ export class Services {
         (SELECT count(*)::int FROM comments c WHERE c.task_id = t.id) AS comment_count,
         -- La tâche parente d'une sous-tâche (T-5) et l'entité d'une tâche hors projet (T-4)
         (SELECT pt.title FROM tasks pt WHERE pt.id = t.parent_id) AS parent_title,
-        CASE WHEN p.kind = 'unit' THEN (SELECT ou.name FROM org_units ou WHERE ou.id = p.unit_id) END AS unit_name
+        CASE WHEN p.kind = 'unit' THEN (SELECT ou.name FROM org_units ou WHERE ou.id = p.unit_id) END AS unit_name,
+        -- La colonne de la tâche dans son projet : Mes tâches range par colonne, tous projets confondus
+        (SELECT sc.name FROM sections sc WHERE sc.id = t.section_id) AS section_name
       FROM tasks t JOIN projects p ON p.id = t.project_id WHERE ${where.join(" AND ")}
       ORDER BY t.position LIMIT $${params.length}`,
         params,
@@ -2268,6 +2271,24 @@ export class Services {
       data: { next_id: id, due_on: due, recurrence: r },
     });
     this.bus.emit({ type: "task.created", actorId, projectId: t.project_id, taskId: id });
+  }
+
+  /**
+   * Fait avancer une tâche vers la colonne de son projet qui porte ce nom (« En cours », « Terminé »). Mes tâches
+   * réunit des tâches de plusieurs projets : la colonne s'y désigne par son nom, le serveur trouve la bonne.
+   */
+  async moveTaskToStage(actorId: string, ref: string, name: string) {
+    const task = await this.taskRow(await this.resolveTaskId(actorId, ref));
+    await this.require(actorId, task.project_id, "editor");
+    const section = await this.db.one<{ id: string }>(
+      "SELECT id FROM sections WHERE project_id = $1 AND lower(name) = lower($2) ORDER BY position LIMIT 1",
+      [task.project_id, name.trim()],
+    );
+    if (!section) {
+      const project = await this.projectRow(task.project_id);
+      throw badRequest(`« ${project.name} » n'a pas de colonne « ${name.trim()} »`);
+    }
+    return this.moveTask(actorId, ref, { section_id: section.id });
   }
 
   async moveTask(

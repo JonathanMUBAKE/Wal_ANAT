@@ -239,6 +239,16 @@ export function useMoveTask() {
     onSettled: (_d, _e, v) => invalidateTask(qc, v.id),
   });
 }
+/** Fait avancer une tâche vers la colonne de son projet qui porte ce nom (tableau de Mes tâches). */
+export function useStageTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; name: string }) => api.post<Task>(`/api/tasks/${v.id}/stage`, { name: v.name }),
+    onMutate: () => qc.cancelQueries({ queryKey: ["tasks"] }),
+    onError: errorToast,
+    onSettled: (_d, _e, v) => invalidateTask(qc, v.id),
+  });
+}
 export function useDeleteTask() {
   const qc = useQueryClient();
   return useMutation({

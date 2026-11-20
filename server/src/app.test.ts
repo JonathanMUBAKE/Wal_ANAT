@@ -94,6 +94,31 @@ describe("tâches", () => {
     );
   });
 
+  it("fait avancer une tâche confiée d'une colonne à l'autre par son nom, sans toucher à son échéance", async () => {
+    const pid = await projectId("Application mobile");
+    const proj = (await api("u_alice", "GET", `/api/projects/${pid}`)).body;
+    const t = (
+      await api("u_alice", "POST", "/api/tasks", {
+        project_id: pid,
+        title: "Tâche à faire avancer",
+        assignee_id: "u_karim",
+        due_on: "2030-01-15",
+      })
+    ).body;
+    // Le chargé ne change pas l'échéance d'une tâche qu'on lui a confiée…
+    expect((await api("u_karim", "PATCH", `/api/tasks/${t.id}`, { due_on: "2030-02-01" })).status).toBe(403);
+    // … mais il la fait avancer, c'est son travail : la colonne se désigne par son nom, quel que soit le projet
+    const moved = await api("u_karim", "POST", `/api/tasks/${t.id}/stage`, { name: "en cours" });
+    expect(moved.status).toBe(200);
+    expect(moved.body.section_id).toBe(proj.sections.find((s: { name: string }) => s.name === "En cours").id);
+    const mine = (await api("u_karim", "GET", "/api/tasks?assignee=me&subtasks=true")).body as { id: string; section_name: string }[];
+    expect(mine.find((x) => x.id === t.id)?.section_name).toBe("En cours");
+    // Celle qui a confié la tâche la retrouve avec sa colonne
+    const given = (await api("u_alice", "GET", "/api/tasks/confided")).body as { id: string; section_name: string }[];
+    expect(given.find((x) => x.id === t.id)?.section_name).toBe("En cours");
+    expect((await api("u_karim", "POST", `/api/tasks/${t.id}/stage`, { name: "Colonne inconnue" })).status).toBe(400);
+  });
+
   it("refuse d'assigner quelqu'un qui n'est pas membre du projet", async () => {
     const pid = await projectId("RH");
     const res = await api("u_alice", "POST", "/api/tasks", { project_id: pid, title: "Test", assignee_id: "u_karim" });

@@ -29,6 +29,7 @@ import { useTaskMenu } from "@/lib/context-menu";
 import { todayIso, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { ProjectDetail, Task, UnitBoard, UnitDashboard, UnitFollowUp } from "@/lib/types";
+import { TabBar } from "@/components/tabs";
 import { ListView } from "@/views/ListView";
 import { BoardView } from "@/views/BoardView";
 import { CalendarView } from "@/views/CalendarView";
@@ -134,26 +135,13 @@ export function UnitPage() {
           </div>
         }
       />
-      <nav
-        aria-label="Vues de l'entité"
-        className="mx-auto -mb-px flex w-full max-w-[1480px] gap-1 overflow-x-auto border-b border-line px-4 sm:flex-wrap sm:overflow-visible sm:px-8"
-      >
-        {views.map((v) => (
-          <button
-            key={v.id}
-            type="button"
-            aria-current={view === v.id ? "page" : undefined}
-            onClick={() => go({ vue: v.id })}
-            className={cn(
-              "flex h-10 shrink-0 items-center gap-1.5 border-b-2 px-2.5 text-[13px]",
-              view === v.id ? "border-fg font-medium text-fg" : "border-transparent text-muted hover:text-fg",
-            )}
-          >
-            <v.Icon className="size-3.5" />
-            {v.label}
-          </button>
-        ))}
-      </nav>
+      <TabBar
+        label="Vues de l'entité"
+        className="mx-auto -mb-px w-full max-w-[1480px] border-b border-line px-4 sm:flex-wrap sm:overflow-visible sm:px-8"
+        value={view}
+        onChange={(v) => go({ vue: v })}
+        items={views.map((v) => ({ id: v.id, label: v.label, Icon: v.Icon }))}
+      />
       <div className="min-h-0 flex-1">
         {error ? (
           <p className="p-8 text-[13px] text-danger">{(error as Error).message}</p>

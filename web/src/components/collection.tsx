@@ -116,40 +116,6 @@ export function CollectionHeader({
   );
 }
 
-/** Onglet souligné : vue ou section d'une même page. */
-export function TabLink({
-  on,
-  onClick,
-  Icon,
-  children,
-  count,
-}: {
-  on: boolean;
-  onClick: () => void;
-  Icon?: LucideIcon;
-  children: ReactNode;
-  count?: number;
-}) {
-  return (
-    <button
-      role="tab"
-      aria-selected={on}
-      onClick={onClick}
-      className={cn(
-        "relative inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 text-[13px] font-medium transition-colors",
-        "after:absolute after:inset-x-2 after:bottom-0 after:h-[2px] after:rounded-full after:transition-colors",
-        on ? "text-fg after:bg-primary" : "text-muted after:bg-transparent hover:text-fg",
-      )}
-    >
-      {Icon && <Icon className={cn("size-4", on ? "text-primary" : "")} />}
-      {children}
-      {count !== undefined && count > 0 && (
-        <span className="rounded-md bg-hover px-1.5 text-[11px] font-semibold tabular text-muted">{count}</span>
-      )}
-    </button>
-  );
-}
-
 // ------------------------------------------------------------------ liste groupée (sections repliables)
 export interface Group<T> {
   id: string;
@@ -223,11 +189,8 @@ export function GroupedTable<T>({
           const ids = g.rows.map(rowKey);
           const allOn = ids.every((i) => selected.has(i));
           return (
-            <section key={g.id} className="rounded-2xl border border-line bg-panel p-1.5">
-              <div
-                className="flex items-center gap-2 rounded-lg px-2.5 py-2"
-                style={{ background: `color-mix(in oklab, ${g.hue} 8%, var(--panel))` }}
-              >
+            <section key={g.id} className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+              <div className={cn("grid-group", !open && "border-b-0")}>
                 <button
                   onClick={() => toggleGroup(g.id)}
                   aria-expanded={open}
@@ -241,15 +204,10 @@ export function GroupedTable<T>({
                 ) : (
                   <span className="size-2.5 rounded-full" style={{ background: g.hue }} />
                 )}
-                <h3 className="text-[13.5px] font-semibold" title={g.hint}>
+                <h3 className="text-[13.5px] font-medium" title={g.hint}>
                   {g.label}
                 </h3>
-                <span
-                  className="rounded-md px-1.5 text-[11.5px] font-semibold tabular"
-                  style={{ color: g.hue, background: `color-mix(in oklab, ${g.hue} 12%, transparent)` }}
-                >
-                  {g.rows.length}
-                </span>
+                <span className="text-[12.5px] tabular text-faint">{g.rows.length}</span>
               </div>
               {open && (
                 <div className="grid-scroll relative">
@@ -283,16 +241,13 @@ export function GroupedTable<T>({
                           <th
                             key={c.key}
                             scope="col"
-                            className="bg-bg px-3 py-2.5 text-[12px] font-medium text-muted first:rounded-l-[10px] last:rounded-r-[10px]"
+                            className="text-left"
                           >
-                            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                              {c.Icon && <c.Icon className="size-3.5 text-faint" />}
-                              {c.label}
-                            </span>
+                            {c.label}
                           </th>
                         ))}
                         {actions && (
-                          <th className="bg-bg last:rounded-r-[10px]">
+                          <th>
                             <span className="sr-only">Actions</span>
                           </th>
                         )}
@@ -375,15 +330,22 @@ export function ViewSwitch<T extends string>({
   onChange,
   items,
   label = "Affichage",
+  size = "md",
 }: {
   value: T;
   onChange: (v: T) => void;
   items: { id: T; label: string; Icon?: LucideIcon }[];
   label?: string;
+  /** « sm » dans l'en-tête d'un bloc, « md » dans une barre d'outils. */
+  size?: "sm" | "md";
 }) {
   const group = useId();
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex h-9 items-center gap-0.5 rounded-lg bg-hover p-[3px]">
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className={cn("inline-flex items-center gap-0.5 rounded-lg bg-hover p-[3px]", size === "sm" ? "h-7" : "h-9")}
+    >
       {items.map(({ id, label: l, Icon }) => {
         const on = value === id;
         return (
@@ -393,7 +355,8 @@ export function ViewSwitch<T extends string>({
             aria-checked={on}
             onClick={() => onChange(id)}
             className={cn(
-              "relative inline-flex h-full items-center rounded-[8px] px-3 text-[12.5px] font-medium transition-colors duration-200",
+              "relative inline-flex h-full items-center rounded-[8px] font-medium transition-colors duration-200",
+              size === "sm" ? "px-2 text-[12px]" : "px-3 text-[12.5px]",
               on ? "text-fg" : "text-muted hover:text-fg",
             )}
           >
@@ -566,7 +529,7 @@ export const Badge = ({ tone, label, count }: { tone: BadgeTone; label: string; 
 
 /** Numéro officiel : se lit comme un tampon, jamais tronqué. */
 export const Seal = ({ children }: { children: ReactNode }) => (
-  <span className="inline-flex whitespace-nowrap rounded-md bg-hover px-1.5 py-0.5 font-mono text-[11px] text-muted">
+  <span className="whitespace-nowrap font-mono text-[12px] text-muted">
     {children}
   </span>
 );
@@ -676,7 +639,7 @@ export function DataTable<T>({
                     key={c.key}
                     scope="col"
                     aria-sort={on ? (sort!.dir === 1 ? "ascending" : "descending") : undefined}
-                    className="whitespace-nowrap bg-bg px-3 py-2.5 text-[12px] font-medium text-muted first:rounded-l-[10px] first:pl-4 last:rounded-r-[10px]"
+                    className="text-left"
                   >
                     {c.sort ? (
                       <button
@@ -701,7 +664,7 @@ export function DataTable<T>({
                 );
               })}
               {actions && (
-                <th className="rounded-r-[10px] bg-bg px-3 py-2.5 pr-4 text-right text-[12px] font-medium text-muted">
+                <th className="text-right">
                   Actions
                 </th>
               )}

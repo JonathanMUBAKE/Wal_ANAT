@@ -1,6 +1,24 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, ChevronDown, Circle, CircleDot, FolderClosed, Plus } from "lucide-react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  ChevronDown,
+  Circle,
+  CircleCheck,
+  CircleDot,
+  FolderClosed,
+  LayoutList,
+  Plus,
+  SquareKanban,
+} from "lucide-react";
+import { useLocalPref } from "@/components/collection";
+import { TaskBoard } from "@/views/BoardView";
+import { TabBar, type TabItem } from "@/components/tabs";
+import { format, parseISO } from "date-fns";
+import { fr } from "date-fns/locale";
+import { CalendarView } from "@/views/CalendarView";
+import type { ProjectDetail } from "@/lib/types";
 import { toast } from "sonner";
 import { Avatar, Button, Empty, cn, Hint } from "@/components/ui";
 import { LineBadge, TaskLine, TaskRow } from "@/components/TaskRow";
@@ -50,10 +68,10 @@ function GroupHeader({
     <button
       onClick={onToggle}
       aria-expanded={open}
-      className="sticky top-0 z-10 flex h-10 w-full items-center gap-2 border-b border-line bg-bg/90 px-4 text-left backdrop-blur sm:px-8"
+      className="sticky top-0 z-10 flex h-11 w-full items-center gap-2 border-b border-line bg-bg/90 px-4 text-left backdrop-blur sm:px-8"
     >
       <ChevronDown className={cn("size-4 text-faint transition-transform duration-200", !open && "-rotate-90")} />
-      <span className={cn("text-[13px] font-semibold", danger && "text-danger")}>{label}</span>
+      <span className={cn("text-[13.5px] font-semibold", danger && "text-danger")}>{label}</span>
       <span className="text-[12px] tabular text-faint">{count}</span>
       {note && <span className="text-[12px] text-danger">{note}</span>}
     </button>
@@ -137,6 +155,21 @@ const BUCKETS: { id: string; label: string; test: (t: Task) => boolean }[] = [
   { id: "none", label: "Sans échéance", test: (t) => !t.due_on },
 ];
 
+type View = "liste" | "tableau" | "calendrier";
+const VIEWS: TabItem<View>[] = [
+  { id: "liste", label: "Liste", Icon: LayoutList },
+  { id: "tableau", label: "Tableau", Icon: SquareKanban },
+  { id: "calendrier", label: "Calendrier", Icon: CalendarDays },
+];
+const NO_AI = new Set<string>();
+/** L'échéance que prend une tâche déposée dans une colonne du tableau. */
+const DUE_FOR: Record<string, () => string | null> = {
+  today: () => todayIso(),
+  week: () => isoIn(7),
+  later: () => isoIn(14),
+  none: () => null,
+};
+
 export function MyTasksPage() {
   const { data: me } = useMe();
   const { data: tasks } = useMyTasks();
@@ -172,66 +205,143 @@ export function MyTasksPage() {
   const nestedUnder = (t: Task) => !!t.parent_id && mine.has(t.parent_id);
   const childrenOf = (id: string) => open.filter((t) => t.parent_id === id);
   const top = open.filter((t) => !nestedUnder(t));
+  const [view, setView] = useLocalPref<View>("anat.vue.mes-taches", "liste");
+  const { data: confided } = useQuery({
+    queryKey: ["tasks", "confided"],
+    queryFn: () => api.get<Confided[]>("/api/tasks/confided"),
+  });
+  const given = (confided ?? []).filter((t) => !t.completed);
+  const givenTasks = given.map(
+    (t) =>
+      ({
+        id: t.id,
+        key: t.key,
+        title: t.title,
+        completed: false,
+        due_on: t.due_on,
+        assignee_id: t.assignee_id,
+        priority: "none",
+        tags: [],
+        subtask_count: 0,
+        subtask_done: 0,
+      }) as unknown as Task,
+  );
   const done = (tasks ?? [])
     .filter(match)
     .filter((t) => t.completed)
     .sort((a, b) => ((b.completed_at ?? "") < (a.completed_at ?? "") ? -1 : 1));
 
   return (
-    <div className="mx-auto max-w-[1480px] pb-16">
-      <header className="flex flex-wrap items-center gap-3 px-4 pb-4 pt-6 sm:px-8">
-        <h1 className="text-[22px] font-semibold tracking-[-0.02em]">Mes tâches</h1>
-        <Hint iconOnly>
-          Tout ce qui vous est assigné, dans vos projets et dans votre entité : livrables à produire ou à valider, puis
-          tâches.
-        </Hint>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <input
-            aria-label="Rechercher une tâche"
-            placeholder="Rechercher…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="h-9 w-44 rounded-lg border border-line bg-panel px-2.5 text-[13px]"
-          />
-          <select
-            aria-label="Projet ou entité"
-            value={where}
-            onChange={(e) => setWhere(e.target.value)}
-            className="h-9 max-w-[220px] rounded-lg border border-line bg-panel px-2 text-[13px]"
-          >
-            <option value="">Tous les projets et entités</option>
-            {places.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
+    <div className="flex min-h-full flex-col">
+      {/* Même en-tête que la page d'un projet : titre et actions, puis les vues en onglets soulignés */}
+      <header className="border-b border-line px-4 pt-5 sm:px-8 sm:pt-7">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-primary">
+            <CircleCheck className="size-5" />
+          </span>
+          <h1 className="text-[22px] font-semibold tracking-[-0.01em]">Mes tâches</h1>
+          <Hint iconOnly>
+            Tout ce qui vous est assigné, dans vos projets et dans votre entité : livrables à produire ou à valider,
+            puis tâches.
+          </Hint>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <input
+              aria-label="Rechercher une tâche"
+              placeholder="Rechercher…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="h-9 w-44 rounded-lg border border-line bg-panel px-2.5 text-[13px]"
+            />
+            <select
+              aria-label="Projet ou entité"
+              value={where}
+              onChange={(e) => setWhere(e.target.value)}
+              className="h-9 max-w-[220px] rounded-lg border border-line bg-panel px-2 text-[13px]"
+            >
+              <option value="">Tous les projets et entités</option>
+              {places.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+            {home && (
+              <Button variant="primary" icon={<Plus className="size-3.5" />} onClick={newTask}>
+                Tâche
+              </Button>
+            )}
+          </div>
         </div>
-        <label className="flex items-center gap-2 text-[13px] text-muted">
-          <input
-            type="checkbox"
-            checked={showDone}
-            onChange={(e) => setShowDone(e.target.checked)}
-            className="accent-[var(--fg)]"
-          />
-          Afficher les terminées
-        </label>
-        {home && (
-          <Button variant="primary" icon={<Plus className="size-4" />} onClick={newTask}>
-            Tâche hors projet
-          </Button>
-        )}
+        <TabBar label="Vues" className="-mb-px mt-5" value={view} onChange={setView} items={VIEWS} />
       </header>
       {board && <GiveTask board={board} self onClose={() => setBoard(null)} />}
+      {view === "liste" && (
+        <div className="flex items-center gap-3 border-b border-line px-4 py-2 text-[12.5px] text-muted sm:px-8">
+          <label className="flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              checked={!showDone}
+              onChange={(e) => setShowDone(!e.target.checked)}
+              className="accent-[var(--fg)]"
+            />
+            Masquer les terminées
+          </label>
+          <span className="ml-auto tabular">
+            {done.length}/{done.length + open.length} terminées
+          </span>
+        </div>
+      )}
       {/* Les livrables à produire ou à valider vivent dans leur projet ; ils se retrouvent ici (docs/PARCOURS-METIER.md) */}
-      <div className="px-4 pb-6 sm:px-8">
-        <MyDeliverables />
-      </div>
-      <div className="border-t border-line">
+      {view === "liste" && (
+        <div className="border-b border-line px-4 py-5 empty:hidden sm:px-8">
+          <MyDeliverables />
+        </div>
+      )}
+      {view === "tableau" && (
+        <div className="min-h-0 flex-1">
+          <TaskBoard
+            canEdit
+            columns={[
+              // Les retards ne s'affichent que s'il y en a, et l'on n'y dépose rien ; les autres échéances restent des cibles
+              ...BUCKETS.filter((b) => b.id !== "overdue" || open.some(b.test)).map((b) => ({
+                id: b.id,
+                name: b.label,
+                tasks: open.filter(b.test),
+                noDrop: b.id === "overdue",
+              })),
+              ...(givenTasks.length ? [{ id: "confiees", name: "Confiées", tasks: givenTasks, locked: true }] : []),
+            ]}
+            // Déposer une carte dans une échéance, c'est lui donner cette échéance
+            onMove={({ task, from, to, revert }) => {
+              if (from === to || !(to in DUE_FOR)) return revert();
+              const due_on = DUE_FOR[to]();
+              update.mutate(
+                { id: task.id, due_on },
+                {
+                  onError: revert,
+                  onSuccess: () =>
+                    toast.success(
+                      due_on ? `Échéance fixée au ${format(parseISO(due_on), "d MMMM", { locale: fr })}` : "Échéance retirée",
+                    ),
+                },
+              );
+            }}
+          />
+        </div>
+      )}
+      {view === "calendrier" && (
+        <CalendarView
+          project={UNIT_TASK as unknown as ProjectDetail}
+          tasks={[...open, ...givenTasks]}
+          aiActive={NO_AI}
+          canEdit={false}
+        />
+      )}
+      <div className={cn("pb-24", view !== "liste" && "hidden")}>
         {open.length === 0 && <Empty title="Vous êtes à jour">Aucune tâche ouverte ne vous est assignée.</Empty>}
         {!open.some(BUCKETS[0].test) && lateDeliverables > 0 && (
-          <div className="flex h-10 items-center gap-2 border-b border-line px-4 sm:px-8">
-            <span className="text-[13px] font-semibold text-danger">En retard</span>
+          <div className="flex h-11 items-center gap-2 border-b border-line px-4 sm:px-8">
+            <span className="text-[13.5px] font-semibold text-danger">En retard</span>
             <span className="text-[12px] text-danger">
               {lateDeliverables} livrable{lateDeliverables > 1 ? "s" : ""} en retard, ci-dessus
             </span>

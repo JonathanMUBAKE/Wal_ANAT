@@ -154,6 +154,8 @@ export class Pilotage {
         form: a.kind as string,
         title: a.title,
         date: a.start_on as string,
+        time: null as string | null,
+        place: null as string | null,
         href: `/activites/${a.id}`,
       }));
     const meetings = await db.query<{
@@ -163,7 +165,7 @@ export class Pilotage {
       start_time: string | null;
       location: string;
     }>(
-      "SELECT id, meeting_type, meeting_date, start_time, location FROM meetings WHERE org_id = $1 AND status <> 'cancelled' AND NOT confidential AND meeting_date BETWEEN $2::date AND $3::date ORDER BY meeting_date",
+      "SELECT id, meeting_type, meeting_date, start_time, location FROM meetings WHERE org_id = $1 AND status <> 'cancelled' AND NOT confidential AND meeting_date BETWEEN $2::date AND $3::date ORDER BY meeting_date, start_time NULLS LAST",
       [orgId, today, horizon],
     );
     const agenda = [
@@ -173,9 +175,13 @@ export class Pilotage {
         form: "reunion",
         title: m.meeting_type,
         date: m.meeting_date,
+        // L'heure et le lieu : sans eux, l'agenda de l'accueil oblige à ouvrir chaque séance
+        time: m.start_time ? String(m.start_time).slice(0, 5) : null,
+        place: m.location || null,
         href: `/reunions/${m.id}`,
       })),
-    ].sort((a, b) => a.date.localeCompare(b.date));
+      // Dans un même jour, les rendez-vous à heure fixe d'abord, dans l'ordre des heures
+    ].sort((a, b) => a.date.localeCompare(b.date) || (a.time ?? "99").localeCompare(b.time ?? "99"));
 
     const recs = await db.one<{ open: number; late: number; done: number }>(
       `SELECT count(*) FILTER (WHERE a.status NOT IN ('realise','annule'))::int AS open,

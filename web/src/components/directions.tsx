@@ -60,11 +60,10 @@ export function Assessment({ value }: { value: DirectionStats["assessment"] }) {
   return (
     <span
       className={cn(
-        "inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-md px-1.5 text-[12px] font-medium text-fg",
-        a.cls.split(" ").find((c) => c.startsWith("bg-")),
+        "inline-flex h-6 items-center whitespace-nowrap rounded-md px-2 text-[12.5px] font-medium",
+        a.cls,
       )}
     >
-      <span aria-hidden className={cn("size-2 rounded-[2px] bg-current", a.cls.split(" ").find((c) => c.startsWith("text-")))} />
       {a.label}
     </span>
   );
@@ -82,7 +81,7 @@ export function PlanBar({
     return <span className="text-faint">—</span>;
   const behind = expected !== null && expected - progress >= 15;
   return (
-    <span className="flex min-w-[150px] items-center gap-3" title={expected !== null ? `Attendu à date : ${expected} %` : undefined}>
+    <span className="flex min-w-[150px] items-center gap-3" title={expected !== null ? `Réalisé ${progress} %, attendu à date ${expected} % (le trait)` : `Réalisé ${progress} %`}>
       <span
         className="relative block h-1.5 flex-1 rounded-full bg-hover"
         role="img"
@@ -181,7 +180,7 @@ export function DirectionTable({
         </thead>
         <tbody>
           {rows.map((d) => {
-            const late = d.tasks.overdue + d.decisions.late + d.mail.late + d.recommendations.late;
+            const late = d.tasks.overdue + d.decisions.late + d.mail.late + d.recommendations.late + d.plan.late;
             return (
               <tr key={d.id} className="border-t border-line hover:bg-hover">
                 <td

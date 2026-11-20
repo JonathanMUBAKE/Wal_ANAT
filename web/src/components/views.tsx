@@ -1,59 +1,14 @@
-import { type ReactNode, useId } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { motion } from "motion/react";
 import { Link } from "react-router";
 import { addDays, format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import type { LucideIcon } from "lucide-react";
 import { cn } from "./ui";
 
 /*
  * Un composant par nature de contenu (demande de l'utilisateur, 20/11/2026) : un agenda se lit comme un agenda, des
  * risques comme une matrice ; une bascule permet de revenir à la liste. Le choix de vue se retient par bloc.
  */
-
-/** Bascule de vue : piste grise, vue active sur fond blanc. */
-export function ViewSwitch<T extends string>({
-  value,
-  onChange,
-  options,
-  label = "Affichage",
-}: {
-  value: T;
-  onChange: (v: T) => void;
-  options: { id: T; label: string; Icon?: LucideIcon }[];
-  label?: string;
-}) {
-  const group = useId();
-  return (
-    <div role="tablist" aria-label={label} className="inline-flex rounded-lg bg-hover p-0.5">
-      {options.map((o) => (
-        <button
-          key={o.id}
-          type="button"
-          role="tab"
-          aria-selected={value === o.id}
-          onClick={() => onChange(o.id)}
-          className={cn(
-            "relative inline-flex h-6 items-center gap-1 rounded-md px-2 text-[12px] transition-colors duration-200",
-            value === o.id ? "font-medium text-fg" : "text-muted hover:text-fg",
-          )}
-        >
-          {value === o.id && (
-            <motion.span
-              layoutId={`view-${group}`}
-              className="absolute inset-0 rounded-md border border-line bg-panel shadow-sm"
-              transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.7 }}
-            />
-          )}
-          <span className="relative inline-flex items-center gap-1">
-            {o.Icon && <o.Icon className="size-3.5" />}
-            {o.label}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-}
 
 export interface AgendaEvent {
   id: string;
@@ -62,53 +17,97 @@ export interface AgendaEvent {
   href: string;
   color?: string;
   kind?: string;
+  /** Heure de début « HH:MM » ; absente pour un rendez-vous sur la journée. */
+  time?: string | null;
+  place?: string | null;
 }
+const hour = (t: string) => `${Number(t.slice(0, 2))} h ${t.slice(3, 5)}`;
 
-/** La semaine en sept colonnes : aujourd'hui en évidence, chaque rendez-vous à sa couleur de nature. */
+/**
+ * La semaine en une frise de sept jours ; le jour choisi déroule ses rendez-vous en entier : heure, titre, lieu.
+ * Rien n'est coupé dans une case étroite : la vue d'ensemble tient dans les points de couleur sous chaque jour.
+ */
 export function WeekAgenda({ start, events }: { start: string; events: AgendaEvent[] }) {
+  const group = useId();
   const days = Array.from({ length: 7 }, (_, n) => {
     const d = addDays(parseISO(start), n);
     const key = format(d, "yyyy-MM-dd");
     return { key, d, events: events.filter((e) => e.date === key) };
   });
+  // Au départ : aujourd'hui, ou le premier jour qui a quelque chose
+  const [picked, setPicked] = useState<string | null>(null);
+  const day = days.find((d) => d.key === picked) ?? (days[0].events.length ? days[0] : (days.find((d) => d.events.length) ?? days[0]));
   return (
-    <div className="overflow-x-auto">
-      <div className="grid min-w-[560px] grid-cols-7 border-t border-line">
-        {days.map((day, n) => (
-          <div key={day.key} className={cn("min-h-[148px] border-line px-1.5 pb-2 pt-2.5", n > 0 && "border-l", n === 0 && "bg-brand-soft/50")}>
-            <p className="flex items-center gap-1.5 px-1 pb-2.5">
+    <div className="border-t border-line">
+      <div role="tablist" aria-label="Jours de la semaine" className="grid grid-cols-7 gap-1 px-3 pt-3">
+        {days.map((d, n) => {
+          const on = d.key === day.key;
+          return (
+            <button
+              key={d.key}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              aria-label={`${format(d.d, "EEEE d MMMM", { locale: fr })}, ${d.events.length} rendez-vous`}
+              onClick={() => setPicked(d.key)}
+              className={cn(
+                "relative flex h-[66px] flex-col items-center justify-center gap-1 rounded-xl transition-colors duration-200",
+                !on && "hover:bg-hover",
+              )}
+            >
+              {on && (
+                <motion.span
+                  layoutId={`day-${group}`}
+                  className="absolute inset-0 rounded-xl border border-line-strong bg-hover"
+                  transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.7 }}
+                />
+              )}
+              <span className={cn("relative text-[11.5px] capitalize leading-none", n === 0 ? "font-medium text-primary" : "text-muted")}>
+                {format(d.d, "EEE", { locale: fr }).replace(".", "")}
+              </span>
               <span
                 className={cn(
-                  "flex size-6 items-center justify-center rounded-full text-[12.5px] font-semibold tabular",
-                  n === 0 && "bg-primary text-on-primary",
+                  "relative text-[16px] font-semibold leading-none tabular",
+                  !d.events.length && !on && "font-normal text-muted",
                 )}
               >
-                {format(day.d, "d")}
+                {format(d.d, "d")}
               </span>
-              <span className={cn("text-[11.5px] capitalize", n === 0 ? "font-medium text-primary" : "text-muted")}>
-                {format(day.d, "EEE", { locale: fr }).replace(".", "")}
+              <span className="relative flex h-1.5 items-center gap-[3px]">
+                {d.events.slice(0, 3).map((e) => (
+                  <span key={e.id} className="size-1.5 rounded-full" style={{ background: e.color ?? "var(--primary)" }} />
+                ))}
               </span>
-            </p>
-            <ul className="space-y-1">
-              {day.events.map((e) => (
-                <li key={e.id}>
-                  <Link
-                    to={e.href}
-                    title={e.kind ? `${e.title} · ${e.kind}` : e.title}
-                    className="block rounded-lg py-1 pl-2.5 pr-1.5 text-[11.5px] font-medium leading-snug transition-[transform,filter] duration-200 ease-out hover:-translate-y-0.5 hover:brightness-110"
-                    style={{
-                      background: `color-mix(in oklab, ${e.color ?? "var(--primary)"} 15%, var(--panel))`,
-                      boxShadow: `inset 3px 0 0 ${e.color ?? "var(--primary)"}, inset 0 0 0 1px color-mix(in oklab, ${e.color ?? "var(--primary)"} 26%, transparent)`,
-                    }}
-                  >
-                    <span className="line-clamp-2 hyphens-auto break-words" lang="fr">{e.title}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+            </button>
+          );
+        })}
       </div>
+      <motion.ul
+        key={day.key}
+        role="tabpanel"
+        className="min-h-[140px] px-3 pb-3 pt-2"
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {day.events.map((e) => (
+          <li key={e.id}>
+            <Link
+              to={e.href}
+              title={[e.title, e.kind, e.place].filter(Boolean).join(", ")}
+              className="flex h-11 items-center gap-3 rounded-lg px-2 transition-colors duration-150 hover:bg-hover"
+            >
+              <span className="w-[54px] shrink-0 whitespace-nowrap text-[12.5px] tabular text-muted">
+                {e.time ? hour(e.time) : "Journée"}
+              </span>
+              <span className="h-5 w-[3px] shrink-0 rounded-full" style={{ background: e.color ?? "var(--primary)" }} />
+              <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">{e.title}</span>
+              <span className="hidden max-w-[42%] shrink-0 truncate text-[12.5px] text-muted sm:block">{e.place || e.kind}</span>
+            </Link>
+          </li>
+        ))}
+        {!day.events.length && <li className="flex h-11 items-center px-2 text-[13px] text-faint">Rien de prévu ce jour</li>}
+      </motion.ul>
     </div>
   );
 }
@@ -162,7 +161,7 @@ export function RiskMatrix({
     <div className={cn("grid gap-x-6 gap-y-4", legend && "sm:grid-cols-[minmax(0,230px)_minmax(0,1fr)]")}>
       <div>
         <div className="flex gap-1.5">
-          <span className="flex rotate-180 items-center justify-center text-[11px] text-muted [writing-mode:vertical-rl]">Probabilité</span>
+          <span className="flex rotate-180 items-center justify-center text-[12px] text-muted [writing-mode:vertical-rl]">Probabilité</span>
           <div className="grid flex-1 grid-cols-5 gap-1" role="img" aria-label="Matrice probabilité × impact">
             {[5, 4, 3, 2, 1].flatMap((p) =>
               [1, 2, 3, 4, 5].map((i) => {
@@ -189,7 +188,7 @@ export function RiskMatrix({
             )}
           </div>
         </div>
-        <p className="mt-1.5 pl-5 text-center text-[11px] text-muted">Impact</p>
+        <p className="mt-1.5 pl-5 text-center text-[12px] text-muted">Impact</p>
       </div>
       {legend && (
         <ol className="min-w-0 self-center">

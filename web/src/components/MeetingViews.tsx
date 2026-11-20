@@ -27,6 +27,7 @@ import {
   Users,
 } from "lucide-react";
 import { Empty, cn } from "./ui";
+import { TabBar } from "./tabs";
 import { LoadingRows } from "./gov";
 import {
   Badge,
@@ -46,7 +47,6 @@ import {
   RoundBtn,
   SearchField,
   Seal,
-  TabLink,
   TimeGrid,
   ViewSwitch,
   hhmm,
@@ -183,24 +183,18 @@ export function MeetingsBrowser({
         subtitle="Chaque réunion produit un compte rendu officiel, et chaque recommandation reste suivie jusqu'à sa clôture."
         actions={primary}
         tabs={
-          <>
-            <TabLink on={view === "liste"} onClick={() => setView("liste")} Icon={List}>
-              Liste
-            </TabLink>
-            <TabLink on={view === "tableau"} onClick={() => setView("tableau")} Icon={Columns3}>
-              Tableau
-            </TabLink>
-            <TabLink on={view === "calendrier"} onClick={() => setView("calendrier")} Icon={CalendarDays}>
-              Calendrier
-            </TabLink>
-            <span aria-hidden className="mx-2 my-3 w-px bg-line" />
-            <TabLink on={view === "actions"} onClick={() => setView("actions")} Icon={ListChecks}>
-              Recommandations
-            </TabLink>
-            <TabLink on={view === "mine"} onClick={() => setView("mine")} Icon={UserRound}>
-              Les miennes
-            </TabLink>
-          </>
+          <TabBar
+            label="Vues des réunions"
+            value={view}
+            onChange={setView}
+            items={[
+              { id: "liste", label: "Liste", Icon: List },
+              { id: "tableau", label: "Tableau", Icon: Columns3 },
+              { id: "calendrier", label: "Calendrier", Icon: CalendarDays },
+              { id: "actions", label: "Recommandations", Icon: ListChecks, divided: true },
+              { id: "mine", label: "Les miennes", Icon: UserRound },
+            ]}
+          />
         }
         tools={
           meetingsView && (
@@ -366,7 +360,7 @@ function ListView({ rows, filtered, onClear }: { rows: MeetingRow[]; filtered: b
           <span
             title={`${m.open_actions} ${pl(m.open_actions, "recommandation(s) ouverte(s)")} sur ${m.action_count}`}
             className={cn(
-              "inline-flex h-[22px] items-center gap-1 rounded-md px-1.5 text-[11.5px] font-medium tabular",
+              "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[12.5px] font-medium tabular",
               m.open_actions ? "bg-warning-soft text-warning" : "bg-success-soft text-success",
             )}
           >

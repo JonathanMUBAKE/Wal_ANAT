@@ -325,7 +325,7 @@ export function PartnersPage() {
                 <Tr key={p.id} onClick={() => nav(`/partenaires/${p.id}`)} href={`/partenaires/${p.id}`}>
                   <Td className="min-w-[220px]">
                     <span className="flex items-center gap-1.5 font-medium">
-                      {p.name}
+                      <span className="truncate">{p.name}</span>
                       {p.confidential && <Lock aria-label="Confidentiel" className="size-3 shrink-0 text-warning" />}
                     </span>
                     <span className="block text-[12px] text-muted">
@@ -346,9 +346,21 @@ export function PartnersPage() {
                   </Td>
                   <Td>
                     <span className="flex flex-wrap gap-1">
-                      {p.categories.length
-                        ? p.categories.map((c) => <RefTag key={c} value={cats.find((x) => x.code === c)} code={c} />)
-                        : "—"}
+                      {p.categories.length ? (
+                        <>
+                          <RefTag value={cats.find((x) => x.code === p.categories[0])} code={p.categories[0]} />
+                          {p.categories.length > 1 && (
+                            <span
+                              className="shrink-0 text-[12.5px] text-muted"
+                              title={p.categories.slice(1).map((c) => cats.find((x) => x.code === c)?.label ?? c).join(", ")}
+                            >
+                              +{p.categories.length - 1}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        "—"
+                      )}
                     </span>
                   </Td>
                   <Td className="text-muted">

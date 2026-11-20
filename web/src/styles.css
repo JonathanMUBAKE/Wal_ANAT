@@ -76,8 +76,8 @@
   --line: rgba(255, 255, 255, 0.09);
   --line-strong: rgba(255, 255, 255, 0.15);
   --fg: #EDEDF2;
-  --muted: #9B9BAA;
-  --faint: #66667A;
+  --muted: #A6A8B8;
+  --faint: #828497;
   --field: rgba(255, 255, 255, 0.15);
   --table-head: transparent;
   --primary: #4FB0EC;
@@ -286,20 +286,28 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
  */
 .grid-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .grid-table thead th {
-  height: 40px; padding: 0 12px; background: transparent; border-radius: 0; border-bottom: 1px solid var(--line);
-  font-size: 12.5px; font-weight: 400; color: var(--faint); white-space: nowrap;
+  height: 44px; padding: 0 14px; background: transparent; border-radius: 0; border-bottom: 1px solid var(--line);
+  font-size: 13px; font-weight: 400; color: var(--muted); white-space: nowrap;
 }
 .grid-table tbody tr { border-top: 1px solid var(--line); transition: background-color 150ms ease; }
 .grid-table tbody tr:first-child { border-top: 0; }
 .grid-table tbody tr:hover { background: var(--hover); }
 .grid-table tbody td {
-  height: 52px; padding: 8px 12px; vertical-align: middle;
-  max-width: clamp(140px, 12vw, 280px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  height: 56px; padding: 8px 14px; vertical-align: middle; font-size: 14px;
+  max-width: clamp(120px, 11vw, 240px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .grid-table tbody td > * { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .grid-table tbody td.wrap { white-space: normal; }
-.grid-table th:first-child, .grid-table td:first-child { padding-left: 16px; }
-.grid-table th:last-child, .grid-table td:last-child { padding-right: 16px; }
+.grid-table tbody td:first-child { max-width: clamp(200px, 18vw, 320px); }
+.grid-table th:first-child, .grid-table td:first-child { padding-left: 20px; }
+.grid-table th:last-child, .grid-table td:last-child { padding-right: 20px; }
+/* Une ligne par cellule : la précision écrite sous un nom ne s'affiche plus dans le tableau, elle se lit dans la fiche */
+.grid-table tbody td:not(.wrap) > :is(span.block, p, div, small):not(:first-child) { display: none; }
+/* Plusieurs étiquettes dans une cellule : côte à côte, jamais empilées */
+.grid-table tbody td:not(.wrap) .flex-wrap { flex-wrap: nowrap; }
+.grid-table tbody td:not(.wrap) .flex-col { flex-direction: row; gap: 6px; }
+/* Titre de groupe d'un tableau groupé : un simple rang, sans bandeau */
+.grid-group { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px; border-bottom: 1px solid var(--line); }
 .grid-scroll { overflow-x: auto; scrollbar-width: none; }
 .grid-scroll::-webkit-scrollbar { display: none; }
 @supports (animation-timeline: scroll()) {

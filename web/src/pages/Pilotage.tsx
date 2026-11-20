@@ -17,8 +17,8 @@ import {
   Scale,
   TrendingUp,
 } from "lucide-react";
-import { type AgendaEvent, type MatrixRisk, RiskMatrix, ViewSwitch, WeekAgenda } from "@/components/views";
-import { useLocalPref } from "@/components/collection";
+import { type AgendaEvent, type MatrixRisk, RiskMatrix, WeekAgenda } from "@/components/views";
+import { ViewSwitch, useLocalPref } from "@/components/collection";
 import { useForms } from "@/lib/referentials";
 import { Button, Dialog, Empty, cn } from "@/components/ui";
 import { CountUp, LoadingRows, type Tone } from "@/components/gov";
@@ -27,6 +27,7 @@ import { ByDirection } from "@/components/directions";
 
 import { api } from "@/lib/api";
 import { useCan, useMe } from "@/lib/hooks";
+import { DueChip } from "@/components/pickers";
 import { DecisionDialog, type DecisionSource } from "./Decisions";
 import { salutation } from "@/lib/format";
 
@@ -58,6 +59,8 @@ interface Overview {
     form: string;
     title: string;
     date: string;
+    time: string | null;
+    place: string | null;
     href: string;
   }[];
   recommendations: {
@@ -162,7 +165,7 @@ export function PilotagePage() {
   const act = (n: number, tone: Tone2): Tone2 => (n > 0 ? tone : "neutral");
   const figures: Figure[] = [
     {
-      label: "En bonne voie",
+      label: "Dossiers sains",
       value: `${score} %`,
       Icon: TrendingUp,
       tone: score >= 70 ? "success" : score >= 40 ? "warning" : "danger",
@@ -251,6 +254,16 @@ export function PilotagePage() {
                 <Link to={d.href} className="min-w-0 flex-1 truncate hover:underline" title={d.decision_needed}>
                   {d.title}
                 </Link>
+                {d.unit_name && (
+                  <span className="hidden w-[168px] shrink-0 truncate text-[12.5px] text-muted @xl:block" title={d.unit_name}>
+                    {d.unit_name}
+                  </span>
+                )}
+                {d.next_due && (
+                  <span className="hidden shrink-0 @md:block" title="Prochaine échéance du dossier">
+                    <DueChip due={d.next_due} />
+                  </span>
+                )}
                 {can("decisions.record") &&
                   (d.arbitration_id ? (
                     <Link
@@ -293,7 +306,8 @@ export function PilotagePage() {
             <ViewSwitch
               value={agendaView}
               onChange={setAgendaView}
-              options={[
+              size="sm"
+              items={[
                 { id: "semaine", label: "Semaine", Icon: CalendarDays },
                 { id: "liste", label: "Liste", Icon: List },
               ]}
@@ -311,9 +325,14 @@ export function PilotagePage() {
                 <span className="w-[52px] shrink-0 whitespace-nowrap text-[12px] tabular text-muted">
                   {format(parseISO(a.date), "d MMM", { locale: fr })}
                 </span>
-                <Link to={a.href} className="min-w-0 flex-1 truncate hover:underline">
+                <Link to={a.href} className="min-w-0 flex-1 truncate hover:underline" title={a.title}>
                   {a.title}
                 </Link>
+                {a.time && (
+                  <span className="shrink-0 whitespace-nowrap text-[12.5px] tabular text-muted">
+                    {Number(a.time.slice(0, 2))} h {a.time.slice(3, 5)}
+                  </span>
+                )}
               </Row>
             ))
           ) : (
@@ -330,7 +349,8 @@ export function PilotagePage() {
             <ViewSwitch
               value={riskView}
               onChange={setRiskView}
-              options={[
+              size="sm"
+              items={[
                 { id: "matrice", label: "Matrice", Icon: Grid3x3 },
                 { id: "liste", label: "Liste", Icon: List },
               ]}
@@ -409,7 +429,7 @@ function Card({
   children: ReactNode;
 }) {
   return (
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+    <section className="@container min-w-0 overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
       <div className="flex items-center justify-between gap-2 px-4 pb-2.5 pt-3">
         <h2 className="flex items-center gap-2 text-[14px] font-medium">
           {title}

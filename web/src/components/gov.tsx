@@ -1,4 +1,3 @@
-import { motion } from "motion/react";
 import { todayIso } from "@/lib/format";
 import {
   type InputHTMLAttributes,
@@ -13,6 +12,7 @@ import { AlertTriangle, Check, ChevronRight, CircleDashed, Clock, type LucideIco
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Hint, cn } from "./ui";
+import { TabBar } from "./tabs";
 import { useRowMenu } from "@/lib/context-menu";
 
 // Composants de la version ANAT : libellé permanent, filet fin, halo à la saisie, erreur écrite sous le champ.
@@ -153,11 +153,10 @@ export function Status({ label, tone = "neutral" }: { label: string; tone?: Tone
   return (
     <span
       className={cn(
-        "inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-md px-1.5 text-[12px] font-medium text-fg",
-        cls.split(" ").find((c) => c.startsWith("bg-")),
+        "inline-flex h-6 items-center whitespace-nowrap rounded-md px-2 text-[12.5px] font-medium",
+        cls,
       )}
     >
-      <span aria-hidden className={cn("size-2 rounded-[2px] bg-current", cls.split(" ").find((c) => c.startsWith("text-")))} />
       {label}
     </span>
   );
@@ -335,41 +334,10 @@ export function Tabs<T extends string>({
   onChange: (v: T) => void;
   items: { id: T; label: string; badge?: number }[];
 }) {
-  const group = useId();
   return (
     <div className="mx-auto w-full max-w-[1480px] px-4 sm:px-8">
       {/* Les onglets passent à la ligne dès la tablette ; ils ne défilent que sur téléphone (E-10) */}
-      <div role="tablist" className="flex overflow-x-auto border-b border-line sm:flex-wrap sm:overflow-visible">
-        {items.map((t) => {
-          const on = value === t.id;
-          return (
-            <button
-              key={t.id}
-              role="tab"
-              aria-selected={on}
-              onClick={() => onChange(t.id)}
-              className={cn(
-                "group/tab relative inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 text-[13px] font-medium transition-colors duration-200 first:pl-0",
-                on ? "text-fg" : "text-muted hover:text-fg",
-              )}
-            >
-              {on && (
-                <motion.span
-                  layoutId={`tab-${group}`}
-                  className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-primary group-first/tab:left-0"
-                  transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.7 }}
-                />
-              )}
-              {t.label}
-              {!!t.badge && (
-                <span className="rounded-md bg-brand-soft px-1.5 text-[11px] font-semibold tabular text-primary">
-                  {t.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <TabBar value={value} onChange={onChange} items={items} className="border-b border-line sm:flex-wrap sm:overflow-visible" />
     </div>
   );
 }

@@ -39,13 +39,13 @@ import {
   PopoverTrigger,
   ProjectIcon,
   Spinner,
-  cn,
 } from "@/components/ui";
 import { DueChip, DuePicker } from "@/components/pickers";
 import { StatusUpdateDialog } from "@/components/dialogs";
 import { isActive } from "@/components/ai";
 import { useCan, useProject, useProjectTasks, useRuns, useUserMap, useUsers } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
+import { TabBar } from "@/components/tabs";
 import { STATUS } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { ProjectDetail, ProjectStatus, Role, Task } from "@/lib/types";
@@ -235,24 +235,18 @@ export function ProjectPage() {
             )}
           </div>
         </div>
-        <nav className="-mb-px mt-5 flex gap-1 overflow-x-auto">
-          {views.map((v) => (
-            <NavLink
-              key={v.id}
-              to={`/projects/${project.id}/${v.id === "list" ? "" : v.id}`}
-              end
-              className={() =>
-                cn(
-                  "flex h-9 shrink-0 items-center gap-1.5 border-b-2 px-2.5 text-[13px]",
-                  view === v.id ? "border-fg font-medium text-fg" : "border-transparent text-muted hover:text-fg",
-                )
-              }
-            >
-              <v.icon className={cn("size-3.5", v.id === "automations" && "text-ai-fg")} />
-              {v.label}
-            </NavLink>
-          ))}
-        </nav>
+        <TabBar
+          label="Vues du projet"
+          className="-mb-px mt-5"
+          value={view}
+          items={views.map((v) => ({
+            id: v.id,
+            label: v.label,
+            Icon: v.icon,
+            iconClass: v.id === "automations" ? "text-ai-fg" : undefined,
+            to: `/projects/${project.id}/${v.id === "list" ? "" : v.id}`,
+          }))}
+        />
       </header>
       <div className="min-h-0 flex-1">
         {view === "list" && <ListView {...props} />}

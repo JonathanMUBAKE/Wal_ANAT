@@ -38,28 +38,59 @@ import type { ViewProps } from "@/pages/Project";
 
 type Columns = Record<string, string[]>;
 
-export function BoardView({ project, tasks, aiActive, canEdit }: ViewProps) {
+export interface BoardColumn {
+  id: string;
+  name: string;
+  /** Les tâches de la colonne, dans l'ordre d'affichage. */
+  tasks: Task[];
+  /** Jauge des tâches terminées dans l'en-tête. */
+  gauge?: boolean;
+  menu?: React.ReactNode;
+  footer?: React.ReactNode;
+  /** On peut en sortir une carte, pas en déposer (les retards). */
+  noDrop?: boolean;
+  /** Colonne en lecture : rien n'y entre, rien n'en sort (les tâches confiées). */
+  locked?: boolean;
+}
+
+/**
+ * Le tableau de tâches, le même partout (demande de l'utilisateur, 20/11/2026) : sections d'un projet, registre
+ * d'une entité, échéances de Mes tâches. Mêmes colonnes, mêmes cartes, même glisser-déposer ; chaque page dit
+ * seulement quelles colonnes elle montre et ce que signifie déposer une carte dans l'une d'elles.
+ */
+export function TaskBoard({
+  columns,
+  canEdit,
+  aiActive,
+  onMove,
+}: {
+  columns: BoardColumn[];
+  canEdit: boolean;
+  aiActive?: Set<string>;
+  onMove: (m: {
+    task: Task;
+    from: string;
+    to: string;
+    before: string | null;
+    after: string | null;
+    revert: () => void;
+  }) => void;
+}) {
   const users = useUserMap();
   const shell = useShell();
-  const move = useMoveTask();
   const update = useUpdateTask();
-  const byId = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
-  const derive = () =>
-    Object.fromEntries(
-      project.sections.map((s) => [
-        s.id,
-        tasks
-          .filter((t) => t.section_id === s.id)
-          .sort((a, b) => a.position - b.position)
-          .map((t) => t.id),
-      ]),
-    ) as Columns;
+  const byId = useMemo(() => new Map(columns.flatMap((c) => c.tasks).map((t) => [t.id, t])), [columns]);
+  const derive = () => Object.fromEntries(columns.map((c) => [c.id, c.tasks.map((t) => t.id)])) as Columns;
+  const closed = new Set(columns.filter((c) => c.noDrop || c.locked).map((c) => c.id));
+  const locked = new Set(columns.filter((c) => c.locked).map((c) => c.id));
   const [cols, setCols] = useState<Columns>(derive);
   const [dragging, setDragging] = useState<string | null>(null);
   const lastOver = useRef<Collision[]>([]);
+  // Les colonnes sont recréées à chaque rendu : c'est leur contenu qui dit s'il faut se resynchroniser
+  const signature = columns.map((c) => `${c.id}:${c.tasks.map((t) => t.id).join(",")}`).join("|");
   useEffect(() => {
     if (!dragging) setCols(derive());
-  }, [tasks, project.sections]);
+  }, [signature]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -73,7 +104,7 @@ export function BoardView({ project, tasks, aiActive, canEdit }: ViewProps) {
     if (!pointerCoordinates) return closestCorners(args);
     const column = pointerWithin({
       ...args,
-      droppableContainers: droppableContainers.filter((c) => cols[String(c.id)]),
+      droppableContainers: droppableContainers.filter((c) => cols[String(c.id)] && !closed.has(String(c.id))),
     })[0];
     // Entre deux colonnes, on garde la dernière cible : recalculer ferait sauter la carte d'une colonne à l'autre sans fin
     if (!column) return lastOver.current;
@@ -93,7 +124,7 @@ export function BoardView({ project, tasks, aiActive, canEdit }: ViewProps) {
     if (!o) return;
     const from = columnOf(a),
       to = columnOf(o);
-    if (!from || !to || from === to) return;
+    if (!from || !to || from === to || closed.has(to)) return;
     setCols((c) => {
       const src = c[from].filter((x) => x !== a);
       const dst = [...c[to]];
@@ -106,8 +137,9 @@ export function BoardView({ project, tasks, aiActive, canEdit }: ViewProps) {
     const a = String(e.active.id),
       o = e.over ? String(e.over.id) : null;
     setDragging(null);
+    const home = derive();
     if (!o) {
-      setCols(derive());
+      setCols(home);
       return;
     }
     const col = columnOf(a)!;
@@ -121,11 +153,11 @@ export function BoardView({ project, tasks, aiActive, canEdit }: ViewProps) {
       setCols({ ...cols, [col]: list });
     }
     const i = list.indexOf(a);
-    const t = byId.get(a)!;
     const before = list[i + 1] ?? null,
       after = list[i - 1] ?? null;
-    if (t.section_id === col && derive()[col].join() === list.join()) return; // déposée à sa place
-    move.mutate({ id: a, section_id: col, before_id: before, after_id: after }, { onError: () => setCols(derive()) });
+    const from = Object.keys(home).find((k) => home[k].includes(a)) ?? col;
+    if (from === col && home[col].join() === list.join()) return; // déposée à sa place
+    onMove({ task: byId.get(a)!, from, to: col, before, after, revert: () => setCols(derive()) });
   };
 
   const active = dragging ? byId.get(dragging) : null;
@@ -142,51 +174,45 @@ export function BoardView({ project, tasks, aiActive, canEdit }: ViewProps) {
       }}
     >
       <div className="flex h-full gap-3 overflow-x-auto px-4 py-5 sm:px-8">
-        {project.sections.map((s) => (
-          <Column
-            key={s.id}
-            id={s.id}
-            name={s.name}
-            count={cols[s.id]?.length ?? 0}
-            done={(cols[s.id] ?? []).filter((id) => byId.get(id)?.completed).length}
-            menu={
-              canEdit ? (
-                <SectionMenu
-                  section={s}
-                  sections={project.sections}
-                  taskCount={cols[s.id]?.length ?? 0}
-                  canDelete={project.role === "admin"}
-                />
-              ) : undefined
-            }
-          >
-            <SortableContext items={cols[s.id] ?? []} strategy={verticalListSortingStrategy}>
-              {(cols[s.id] ?? []).map((id) => {
-                const t = byId.get(id);
-                if (!t) return null;
-                return (
-                  <SortableCard
-                    key={id}
-                    t={t}
-                    disabled={!canEdit}
-                    assignee={t.assignee_id ? users.get(t.assignee_id) : null}
-                    ai={aiActive.has(id)}
-                    onOpen={() => shell.openTask(id)}
-                    onToggle={(v) => update.mutate({ id, completed: v })}
-                  />
-                );
-              })}
-            </SortableContext>
-            {canEdit && <InlineAdd projectId={project.id} sectionId={s.id} compact />}
-          </Column>
-        ))}
+        {columns.map((c) => {
+          const ids = cols[c.id] ?? [];
+          return (
+            <Column
+              key={c.id}
+              id={c.id}
+              name={c.name}
+              count={ids.length}
+              done={c.gauge ? ids.filter((id) => byId.get(id)?.completed).length : undefined}
+              menu={c.menu}
+            >
+              <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+                {ids.map((id) => {
+                  const t = byId.get(id);
+                  if (!t) return null;
+                  return (
+                    <SortableCard
+                      key={id}
+                      t={t}
+                      disabled={!canEdit || locked.has(c.id)}
+                      assignee={t.assignee_id ? users.get(t.assignee_id) : null}
+                      ai={!!aiActive?.has(id)}
+                      onOpen={() => shell.openTask(id)}
+                      onToggle={locked.has(c.id) ? undefined : (v) => update.mutate({ id, completed: v })}
+                    />
+                  );
+                })}
+              </SortableContext>
+              {c.footer}
+            </Column>
+          );
+        })}
       </div>
       <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(.2,.8,.2,1)" }}>
         {active && (
           <Card
             t={active}
             assignee={active.assignee_id ? users.get(active.assignee_id) : null}
-            ai={aiActive.has(active.id)}
+            ai={!!aiActive?.has(active.id)}
             overlay
           />
         )}
@@ -195,39 +221,89 @@ export function BoardView({ project, tasks, aiActive, canEdit }: ViewProps) {
   );
 }
 
+/** Le tableau d'un projet ou du registre d'une entité : une colonne par section, déposer range la tâche dans la section. */
+export function BoardView({ project, tasks, aiActive, canEdit }: ViewProps) {
+  const move = useMoveTask();
+  return (
+    <TaskBoard
+      canEdit={canEdit}
+      aiActive={aiActive}
+      columns={project.sections.map((s) => {
+        const items = tasks.filter((t) => t.section_id === s.id).sort((a, b) => a.position - b.position);
+        return {
+          id: s.id,
+          name: s.name,
+          tasks: items,
+          gauge: true,
+          menu: canEdit ? (
+            <SectionMenu
+              section={s}
+              sections={project.sections}
+              taskCount={items.length}
+              canDelete={project.role === "admin"}
+            />
+          ) : undefined,
+          footer: canEdit ? <InlineAdd projectId={project.id} sectionId={s.id} compact /> : undefined,
+        };
+      })}
+      onMove={({ task, to, before, after, revert }) =>
+        move.mutate({ id: task.id, section_id: to, before_id: before, after_id: after }, { onError: revert })
+      }
+    />
+  );
+}
+
 function Column({
   id,
-  name,
-  count,
-  done,
-  menu,
-  children,
+  ...rest
 }: {
   id: string;
   name: string;
   count: number;
-  done: number;
+  done?: number;
   menu?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
+  return <ColumnShell {...rest} innerRef={setNodeRef} over={isOver} />;
+}
+
+/** La colonne elle-même, sans le dépôt. */
+function ColumnShell({
+  name,
+  count,
+  done,
+  menu,
+  over,
+  innerRef,
+  children,
+}: {
+  name: string;
+  count: number;
+  /** Nombre de tâches terminées : la jauge ne s'affiche que s'il est donné. */
+  done?: number;
+  menu?: React.ReactNode;
+  over?: boolean;
+  innerRef?: (el: HTMLElement | null) => void;
+  children: React.ReactNode;
+}) {
   return (
     <section
-      ref={setNodeRef}
+      ref={innerRef}
       className={cn(
         "flex w-[288px] shrink-0 flex-col rounded-2xl border bg-sidebar/60 transition-colors",
-        isOver ? "border-line-strong" : "border-transparent",
+        over ? "border-line-strong" : "border-transparent",
       )}
     >
       <header className="flex h-11 items-center gap-2 px-3">
         <span className="text-[13px] font-semibold">{name}</span>
         <span className="text-[12px] tabular text-faint">{count}</span>
-        {count > 0 && (
+        {count > 0 && done !== undefined && (
           <span className="ml-auto h-1 w-12 overflow-hidden rounded-full bg-active">
             <span className="block h-full rounded-full bg-success" style={{ width: `${(done / count) * 100}%` }} />
           </span>
         )}
-        <span className={count > 0 ? "" : "ml-auto"}>{menu}</span>
+        <span className={count > 0 && done !== undefined ? "" : "ml-auto"}>{menu}</span>
       </header>
       <div className="flex min-h-[60px] flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">{children}</div>
     </section>
@@ -239,7 +315,7 @@ function SortableCard(props: {
   assignee?: User | null;
   ai: boolean;
   onOpen: () => void;
-  onToggle: (v: boolean) => void;
+  onToggle?: (v: boolean) => void;
   disabled: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({

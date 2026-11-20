@@ -3,8 +3,8 @@ import { Link, useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Grid3x3, List, Plus, ShieldAlert, Target } from "lucide-react";
-import { RiskMatrix, ViewSwitch } from "@/components/views";
-import { useLocalPref } from "@/components/collection";
+import { RiskMatrix } from "@/components/views";
+import { ViewSwitch, useLocalPref } from "@/components/collection";
 import { Button, Empty, Spinner, cn } from "@/components/ui";
 import { Drawer, DrawerSection } from "@/components/drawer";
 import {
@@ -185,7 +185,8 @@ export function RisksPage() {
             <ViewSwitch
               value={view}
               onChange={setView}
-              options={[
+              size="sm"
+              items={[
                 { id: "liste", label: "Liste", Icon: List },
                 { id: "matrice", label: "Matrice", Icon: Grid3x3 },
               ]}

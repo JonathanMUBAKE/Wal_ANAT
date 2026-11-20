@@ -15,7 +15,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { Button, Chip, Spinner, cn } from "@/components/ui";
+import { Button, Chip, Spinner, cn, Hint } from "@/components/ui";
 import { useMailConfig, useMailLog, useServiceAddresses } from "@/lib/hooks";
 import { api } from "@/lib/api";
 import type { MailConfig, ServiceAddress, SmtpSecurity } from "@/lib/types";
@@ -312,10 +312,10 @@ function Addresses({ domain }: { domain: string }) {
     >
       <header className="border-b border-line px-5 py-4">
         <h2 className="text-[15px] font-semibold">Adresses de service</h2>
-        <p className="mt-0.5 text-[12.5px] text-muted">
+        <Hint className="mt-0.5">
           Une adresse par niveau, toutes sur <span className="font-mono text-fg">@{domain}</span>. Créez-les ensuite
           chez votre hébergeur de messagerie (boîte ou alias) pour recevoir les réponses.
-        </p>
+        </Hint>
       </header>
       {isLoading ? (
         <div className="p-5">

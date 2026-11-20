@@ -47,6 +47,7 @@ import {
   ProjectIcon,
   Spinner,
   cn,
+  Hint,
 } from "./ui";
 import { AssigneePicker, DueChip, DuePicker, PriorityFlag, PriorityPicker, SectionPicker } from "./pickers";
 import { AiBadge, RUN_STATUS, RunTimeline, isActive } from "./ai";
@@ -855,10 +856,10 @@ function AiPanel({ t, canEdit, memberIds }: { t: TaskDetail; canEdit: boolean; m
           <RunTimeline runId={latest.id} />
         </div>
       ) : (
-        <p className="mt-2 text-[13px] text-muted">
+        <Hint className="mt-2">
           Confiez cette tâche à un coéquipier IA : il lit le contexte du projet, agit avec ses propres droits et vous
           demande votre accord avant chaque modification.
-        </p>
+        </Hint>
       )}
       {canEdit && !active && memberAgents.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">

@@ -5,6 +5,7 @@ import * as PO from "@radix-ui/react-popover";
 import * as DI from "@radix-ui/react-dialog";
 import * as TT from "@radix-ui/react-tooltip";
 import {
+  Info,
   Check,
   Globe,
   LoaderCircle,
@@ -540,6 +541,31 @@ export function ConfirmDialog({
     >
       <p className="text-[13.5px] text-muted">{description}</p>
     </Dialog>
+  );
+}
+
+/**
+ * Explication repliée (écrans sobres, 20/11/2026) : une seule ligne discrète précédée d'une icône ; un clic ou une
+ * pression du doigt affiche le texte entier. L'explication reste disponible sans encombrer l'écran.
+ */
+export function Hint({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <PO.Root>
+      <PO.Trigger asChild>
+        <button
+          type="button"
+          aria-label="Afficher l'explication"
+          className={cn(
+            "flex max-w-full min-w-0 items-center gap-1.5 text-left text-[12.5px] text-faint transition-colors hover:text-muted",
+            className,
+          )}
+        >
+          <Info className="size-3.5 shrink-0" />
+          <span className="min-w-0 max-w-[46ch] truncate">{children}</span>
+        </button>
+      </PO.Trigger>
+      <PopoverContent className="max-w-sm p-3 text-[13px] leading-relaxed text-muted">{children}</PopoverContent>
+    </PO.Root>
   );
 }
 

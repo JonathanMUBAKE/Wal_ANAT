@@ -4,6 +4,7 @@ import { Avatar, Checkbox, ProjectIcon, cn } from "./ui";
 import { DueChip, PriorityFlag } from "./pickers";
 import { TaskMetaRow } from "./TaskDrawer";
 import type { ProjectSummary, Task, User } from "@/lib/types";
+import { useTaskMenu } from "@/lib/context-menu";
 
 /** Ligne de tâche réutilisée par la vue Liste, Mes tâches et l'accueil. */
 export const TaskRow = memo(function TaskRow({
@@ -25,11 +26,13 @@ export const TaskRow = memo(function TaskRow({
   dense?: boolean;
   canEdit?: boolean;
 }) {
+  const taskMenu = useTaskMenu();
   return (
     <div
       role="button"
       tabIndex={0}
       onClick={onOpen}
+      onContextMenu={taskMenu(t, { onOpen, onToggle, canEdit })}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={cn(
         "group flex cursor-default items-center gap-3 border-b border-line px-3 transition-colors hover:bg-hover sm:px-4",

@@ -34,6 +34,7 @@ import {
   MenuItem,
   MenuTrigger,
   cn,
+  Hint,
 } from "@/components/ui";
 import {
   Field,
@@ -1481,9 +1482,9 @@ function HistoryTab({ partner, onChange }: { partner: Detail; onChange: (r: Deta
         </Section>
       )}
       {partner.can.read_notes === false && (
-        <p className="text-[12.5px] text-muted">
+        <Hint>
           Les notes d'échange sont réservées aux gestionnaires des partenariats, aux points focaux et à la direction.
-        </p>
+        </Hint>
       )}
       <Section title="Fil de la relation">
         <ol className="space-y-0 px-5 pb-5 pt-2">

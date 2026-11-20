@@ -11,7 +11,7 @@ import {
 import { AlertTriangle, Check, ChevronRight, CircleDashed, Clock, type LucideIcon, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { cn } from "./ui";
+import { Hint, cn } from "./ui";
 
 // Composants de la version ANAT : libellé permanent, filet fin, halo à la saisie, erreur écrite sous le champ.
 const fieldBase =
@@ -106,7 +106,13 @@ export function PageHeader({
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
-      {subtitle && <p className="mt-1.5 max-w-2xl text-[13px] text-muted">{subtitle}</p>}
+      {/* Écrans sobres : un sous-titre long se replie en une ligne, le texte entier au clic */}
+      {subtitle &&
+        (typeof subtitle === "string" && subtitle.length > 70 ? (
+          <Hint className="mt-1.5">{subtitle}</Hint>
+        ) : (
+          <p className="mt-1.5 max-w-2xl text-[13px] text-muted">{subtitle}</p>
+        ))}
     </header>
   );
 }
@@ -240,9 +246,18 @@ export function Table({ head, children }: { head: ReactNode[]; children: ReactNo
     </div>
   );
 }
-export const Tr = ({ children, onClick }: { children: ReactNode; onClick?: () => void }) => (
+export const Tr = ({
+  children,
+  onClick,
+  onContextMenu,
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
+}) => (
   <tr
     onClick={onClick}
+    onContextMenu={onContextMenu}
     className={cn("border-t border-line", onClick && "cursor-pointer transition-colors hover:bg-hover")}
   >
     {children}

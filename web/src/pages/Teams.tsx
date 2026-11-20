@@ -15,6 +15,7 @@ import {
   ProjectIcon,
   Spinner,
   cn,
+  Hint,
 } from "@/components/ui";
 import { AssigneePicker } from "@/components/pickers";
 import { useCan, useMe, useServiceAddress, useTeam, useTeams, useUnits, useUserMap, useUsers } from "@/lib/hooks";
@@ -77,11 +78,11 @@ export function TeamsPage() {
       <header className="mb-6 flex flex-wrap items-end gap-3">
         <div className="flex-1">
           <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Équipes</h1>
-          <p className="mt-1 text-[13px] text-muted">
+          <Hint className="mt-1">
             Les équipes servent aux groupes transversaux (comités, groupes de travail entre directions) ; l'organisation
             hiérarchique se tient dans les entités. Les membres d'une équipe éditent ses projets, ses responsables
             l'administrent.
-          </p>
+          </Hint>
         </div>
         {!guest && (
           <Button variant="primary" icon={<Plus className="size-3.5" />} onClick={() => setCreating(true)}>

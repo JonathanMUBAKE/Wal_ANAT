@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Empty, cn } from "@/components/ui";
+import { Button, Empty, cn, Hint } from "@/components/ui";
 import { TaskRow } from "@/components/TaskRow";
 import { useMe, useMyTasks, useMyUnits, useProjects, useUpdateTask } from "@/lib/hooks";
 import { api } from "@/lib/api";
@@ -131,10 +131,10 @@ export function MyTasksPage() {
       <header className="flex flex-wrap items-end gap-3 px-4 pb-5 pt-8 sm:px-8">
         <div>
           <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Mes tâches</h1>
-          <p className="mt-1 text-[13px] text-muted">
+          <Hint className="mt-1">
             Tout ce qui vous est assigné, dans vos projets et dans votre entité : livrables à produire ou à valider,
             puis tâches.
-          </p>
+          </Hint>
         </div>
         {home && (
           <Button variant="primary" icon={<Plus className="size-4" />} onClick={newTask}>

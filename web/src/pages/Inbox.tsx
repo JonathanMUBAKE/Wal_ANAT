@@ -19,7 +19,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Drawer } from "@/components/drawer";
-import { Avatar, Button, Empty, cn } from "@/components/ui";
+import { Avatar, Button, Empty, cn, Hint } from "@/components/ui";
 import { ApprovalCard } from "@/components/ai";
 import { useApprovals, useMe, useNotifications, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
@@ -210,9 +210,9 @@ function PrefsDrawer({ onClose }: { onClose: () => void }) {
       title="Préférences de notification"
       footer={<Button onClick={onClose}>Fermer</Button>}
     >
-      <p className="mb-4 text-[13px] text-muted">
+      <Hint className="mb-4">
         Chaque avis arrive toujours ici. Choisissez les domaines pour lesquels vous recevez aussi un courriel.
-      </p>
+      </Hint>
       {me && !me.mail_ready && (
         <p className="mb-4 rounded-lg border border-line bg-hover px-3 py-2 text-[12.5px] text-muted">
           La messagerie de l'institution n'est pas encore en service : aucun courriel ne part pour l'instant. Vos choix

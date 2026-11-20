@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowRight, Pencil, Plus, Trash2, Zap } from "lucide-react";
-import { Avatar, Button, ConfirmDialog, Dialog, Empty, IconButton, cn } from "@/components/ui";
+import { Avatar, Button, ConfirmDialog, Dialog, Empty, IconButton, cn, Hint } from "@/components/ui";
 import { RUN_STATUS, RunTimeline } from "@/components/ai";
 import { useAgents, useRules, useRuns, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
@@ -45,10 +45,10 @@ export function AutomationsView({ project }: ViewProps) {
         <div className="mb-4 flex flex-wrap items-end gap-3">
           <div className="flex-1">
             <h2 className="text-[18px] font-semibold">Règles IA</h2>
-            <p className="mt-0.5 text-[13px] text-muted">
+            <Hint className="mt-0.5">
               Un déclencheur, une consigne en langage naturel, un coéquipier IA pour l'appliquer. Ses actions passent
               par vos validations, sauf si vous l'autorisez à agir seul.
-            </p>
+            </Hint>
           </div>
           {isAdmin && (
             <Button
@@ -306,10 +306,10 @@ function RuleEditor({
             className={cn(field, "resize-y leading-relaxed")}
           />
         </label>
-        <p className="rounded-xl border border-line p-3 text-[12.5px] text-muted">
+        <Hint>
           Chaque action proposée par le coéquipier attend l'accord d'une personne habilitée : l'IA propose, un humain
           décide. La personne visée par une proposition ne la valide pas elle-même.
-        </p>
+        </Hint>
       </div>
     </Dialog>
   );

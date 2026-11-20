@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { addDays, differenceInCalendarDays, format, parseISO, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Avatar, cn } from "@/components/ui";
+import { Avatar, cn, Hint } from "@/components/ui";
 import { useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import type { ViewProps } from "@/pages/Project";
@@ -125,10 +125,10 @@ export function TimelineView({ project, tasks, aiActive }: ViewProps) {
           )}
         </div>
       </div>
-      <p className="mx-4 mt-2 text-[12px] text-faint sm:mx-8">
+      <Hint className="mx-4 mt-2 sm:mx-8">
         Les barres vont de la date de début (ou trois jours avant l'échéance) jusqu'à l'échéance. Contour rouge : en
         retard.
-      </p>
+      </Hint>
     </div>
   );
 }

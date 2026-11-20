@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, GraduationCap, IdCard, Pencil, Phone, Plus, Trash2, UserPlus, Users } from "lucide-react";
-import { Button, Chip, Empty, IconButton, Spinner } from "@/components/ui";
+import { Button, Chip, Empty, IconButton, Spinner, Hint } from "@/components/ui";
 import { DossierDocuments } from "@/components/documents";
 import { Textarea } from "@/components/gov";
 import { Drawer, DrawerSection } from "@/components/drawer";
@@ -685,10 +685,10 @@ export function AgentPage({ self }: { self?: boolean }) {
       <div className="mx-auto grid max-w-[1480px] gap-4 px-4 pb-16 pt-2 sm:px-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-4">
           {a.can.self && (
-            <p className="rounded-lg border border-line bg-hover px-4 py-3 text-[13px] text-muted">
+            <Hint>
               Votre dossier est tenu par le service des ressources humaines. Pour corriger une information,
               adressez-vous à lui : vous ne pouvez pas la modifier vous-même.
-            </p>
+            </Hint>
           )}
           {a.exit_on && (
             <p className="rounded-lg border border-line bg-danger-soft/40 px-4 py-3 text-[13px]">
@@ -698,11 +698,11 @@ export function AgentPage({ self }: { self?: boolean }) {
             </p>
           )}
           {a.restricted && (
-            <p className="rounded-lg border border-line bg-hover px-4 py-3 text-[13px] text-muted">
+            <Hint>
               Vous lisez la partie administrative du dossier : situation, affectations et diplômes. Les données
               personnelles (famille, pièce d'identité, coordonnées, personnes à prévenir) restent à l'agent et au
               service des ressources humaines.
-            </p>
+            </Hint>
           )}
           <Section title="Identité">
             <Facts>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUp, RotateCcw, Sparkles, X } from "lucide-react";
-import { IconButton, Markdown, ProjectIcon, cn } from "./ui";
+import { IconButton, Markdown, ProjectIcon, cn, Hint } from "./ui";
 import { RunTimeline } from "./ai";
 import { onAiDelta, useAiStatus, useProjects, useRun } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
@@ -127,10 +127,10 @@ export function Assistant() {
                 <p className="font-serif text-[30px] leading-[1.05] tracking-[-0.01em]">
                   Que voulez-vous savoir <span className="ai-text shimmer italic">sur votre travail</span> ?
                 </p>
-                <p className="mt-2 text-[13px] text-muted">
+                <Hint className="mt-2">
                   Je lis vos projets avec vos droits, je réponds avec les numéros de tâches, et je vous demande votre
                   accord avant de modifier quoi que ce soit.
-                </p>
+                </Hint>
                 <div className="mt-5 flex flex-col gap-1.5">
                   {SUGGESTIONS.map((s) => (
                     <button

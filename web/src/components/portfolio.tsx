@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Gavel, Plus, Scale, Trash2 } from "lucide-react";
-import { Button, Dialog, Empty, Spinner, cn } from "@/components/ui";
+import { Button, Dialog, Empty, Spinner, cn, Hint } from "@/components/ui";
 import { Drawer, DrawerSection } from "@/components/drawer";
 import { Field, Input, Section, Status, Table, Td, Textarea, Tr, frDate, type Tone } from "@/components/gov";
 import { Fact, Facts } from "@/components/record";
@@ -172,11 +172,11 @@ export function PortfolioReview() {
         <Tile label="Décisions attendues sur ces projets" value={s.decisions_expected} />
       </div>
       <Section>
-        <p className="px-5 pb-1 pt-4 text-[13px] text-muted">
+        <Hint className="px-5 pb-1 pt-4">
           La santé <b className="font-medium text-fg">calculée</b> se lit dans les faits : calendrier (le trait marque
           l'avancement attendu à date), livrables, budget, tâches, arbitrage attendu. Un projet est{" "}
           <b className="font-medium text-fg">en écart</b> quand les faits sont plus graves que ce qui est déclaré.
-        </p>
+        </Hint>
         {data.projects.length ? (
           <Table head={["Projet", "Déclarée", "Calculée", "Pourquoi", "Calendrier", "Livrables", "Budget"]}>
             {data.projects.map((p) => (
@@ -537,10 +537,10 @@ export function ProjectArbitrations({
           ))}
         </ul>
       ) : (
-        <p className="px-5 pb-5 text-[13px] text-muted">
+        <Hint className="px-5 pb-5">
           Une question que le projet ne peut pas trancher seul ? Demandez un arbitrage : options, recommandation, et la
           DG décide.
-        </p>
+        </Hint>
       )}
       {asking && <AskDialog base={base} onClose={() => setAsking(false)} />}
     </Section>

@@ -15,6 +15,7 @@ import { UpcomingMeetingList } from "@/components/upcoming-meetings";
 import { Button, ProjectIcon, cn } from "@/components/ui";
 import { frDate } from "@/components/gov";
 import { useShell } from "@/lib/shell";
+import { useTaskMenu } from "@/lib/context-menu";
 import type { UnitDashboard } from "@/lib/types";
 
 /*
@@ -300,6 +301,7 @@ function Workload({ rows }: { rows: NonNullable<UnitDashboard["workload"]> }) {
 
 function TaskList({ rows, empty, late }: { rows: UnitDashboard["overdue"]; empty: string; late?: boolean }) {
   const shell = useShell();
+  const taskMenu = useTaskMenu();
   if (!rows.length) return <p className="py-4 text-center text-[13px] text-muted">{empty}</p>;
   return (
     <ul className="-mx-2 divide-y divide-line">
@@ -308,6 +310,7 @@ function TaskList({ rows, empty, late }: { rows: UnitDashboard["overdue"]; empty
           <button
             type="button"
             onClick={() => shell.openTask(t.id)}
+            onContextMenu={taskMenu(t)}
             className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-hover"
           >
             <span className="min-w-0 flex-1">

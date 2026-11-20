@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, FileUp, Sparkles } from "lucide-react";
-import { Button, Dialog, Spinner, cn } from "./ui";
+import { Button, Dialog, Spinner, cn, Hint } from "./ui";
 import { AiBadge } from "./ai";
 import { DueChip, DuePicker } from "./pickers";
 import { useAiStatus, useMe, useTeams, useUsers } from "@/lib/hooks";
@@ -164,10 +164,10 @@ export function ImportProjectDialog({ open, onOpenChange }: { open: boolean; onO
           onChange={(e) => void read(e.target.files?.[0])}
         />
         {ai?.provider === "demo" && (
-          <p className="mt-3 text-[12.5px] text-faint">
+          <Hint className="mt-3">
             Mode démo : sans clé ANTHROPIC_API_KEY, seuls les tableaux avec en-têtes et les plans à titres et puces sont
             compris.
-          </p>
+          </Hint>
         )}
       </Dialog>
     );

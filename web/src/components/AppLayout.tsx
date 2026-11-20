@@ -11,6 +11,7 @@ import { PlatformBanner } from "@/pages/AdminPlus";
 import { Spinner } from "./ui";
 import { useLiveUpdates, useMe } from "@/lib/hooks";
 import { ShellProvider, useShell } from "@/lib/shell";
+import { ContextMenuProvider } from "@/lib/context-menu";
 import { ApiError } from "@/lib/api";
 
 export function AppLayout() {
@@ -30,7 +31,9 @@ export function AppLayout() {
     return <Navigate to={me.data.platform_role ? "/admin" : "/account"} replace />;
   return (
     <ShellProvider>
-      <Shell />
+      <ContextMenuProvider>
+        <Shell />
+      </ContextMenuProvider>
     </ShellProvider>
   );
 }

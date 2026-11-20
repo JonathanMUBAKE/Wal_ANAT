@@ -32,6 +32,7 @@ import { InlineAdd } from "./ListView";
 import { SectionMenu } from "@/components/SectionMenu";
 import { useMoveTask, useUpdateTask, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
+import { useTaskMenu } from "@/lib/context-menu";
 import type { Task, User } from "@/lib/types";
 import type { ViewProps } from "@/pages/Project";
 
@@ -273,9 +274,11 @@ function Card({
   onToggle?: (v: boolean) => void;
   overlay?: boolean;
 }) {
+  const taskMenu = useTaskMenu();
   return (
     <article
       onClick={onOpen}
+      onContextMenu={taskMenu(t, { onOpen, onToggle })}
       className={cn(
         "group relative rounded-xl border bg-panel p-3 shadow-sm transition-[box-shadow,border-color] hover:border-line-strong hover:shadow-md",
         ai ? "ai-ring border-transparent" : "border-line",

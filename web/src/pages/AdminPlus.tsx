@@ -2,7 +2,7 @@ import { Fragment, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, Check, Info, Megaphone, MonitorSmartphone, ShieldAlert, X } from "lucide-react";
-import { Button, Chip, Empty, Spinner, cn } from "@/components/ui";
+import { Button, Chip, Empty, Spinner, cn, Hint } from "@/components/ui";
 import { Field, Input, Section, Select, Table, Td, Tr } from "@/components/gov";
 import { ago } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -167,10 +167,10 @@ function Banner() {
   return (
     <Section title="Bandeau d'information" aside={<Megaphone className="size-4 text-faint" />}>
       <div className="space-y-3 px-5 pb-5">
-        <p className="text-[13px] text-muted">
+        <Hint>
           Un message court affiché en tête de l'outil pour toutes les personnes connectées : maintenance prévue,
           annonce, incident en cours.
-        </p>
+        </Hint>
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
           <Field label="Message">
             {(a) => (
@@ -316,10 +316,10 @@ export function RolesMatrix() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
-        <p className="flex-1 text-[13px] text-muted">
+        <Hint className="flex-1">
           Chaque profil en colonne, chaque droit en ligne. Un profil se règle dans Organisation › Structure, onglet «
           Profils et droits ». Survolez un en-tête pour lire sa description.
-        </p>
+        </Hint>
         {orgs.length > 1 && (
           <Select aria-label="Institution" value={current} onChange={(e) => setOrg(e.target.value)} className="w-auto">
             {orgs.map((o) => (

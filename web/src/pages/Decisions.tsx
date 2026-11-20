@@ -18,7 +18,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Empty, cn } from "@/components/ui";
+import { Button, Dialog, Empty, cn, Hint } from "@/components/ui";
 import { GroupedTable, Seal } from "@/components/collection";
 import {
   Field,
@@ -464,9 +464,9 @@ function DecisionPanel({ id, onClose }: { id: string; onClose: () => void }) {
             </div>
           </div>
         )}
-        <p className="text-[12px] text-faint">
+        <Hint>
           Une décision enregistrée ne se modifie pas : une erreur se corrige par une nouvelle décision qui la remplace.
-        </p>
+        </Hint>
       </div>
     </Drawer>
   );

@@ -2028,3 +2028,17 @@ Passe de contrôle sur les 17 comptes de la démonstration (environ 40 écrans e
 | Le menu Parapheur paraissait au responsable informatique, sans document à traiter | Il paraît à qui y a un document, ou dirige réellement une entité |
 | Comité de recrutement dirigé par la DG, sans la cheffe RH | Dirigé par la cheffe RH, la gestionnaire RH y siège, la DG reste membre |
 | Le cabinet ne voit pas le partenaire confidentiel que voit la DG | Décision : « comme la DG ». La direction (DG, DGA, cabinet) lit partenaires, accords et pièces confidentiels, sans les modifier |
+
+### Écrans sobres et clic droit (20/11/2026, branche `ecrans-sobres`)
+
+Demande de l'utilisateur : trop de texte à l'écran ; un clic droit qui propose les actions du logiciel.
+
+| Ce qui change | Avant | Après |
+|---|---|---|
+| Explications des écrans | Paragraphes de deux à quatre lignes | Une ligne discrète précédée de ⓘ ; le texte entier au clic (souris ou doigt) |
+| Sous-titres longs des pages | Affichés en entier | Repliés de la même façon au-delà de 70 caractères |
+| Avertissements, confirmations | Affichés | Toujours affichés en entier (rien d'important n'est caché) |
+| Clic droit sur une tâche | Menu du navigateur | Ouvrir, terminer ou rouvrir, copier la référence ou le lien, nouvelle tâche dans le projet, assistant |
+| Clic droit sur un lien (projet, dossier, fiche) | Menu du navigateur | Ouvrir, ouvrir dans un nouvel onglet, copier le lien ; pour un projet, nouvelle tâche |
+| Clic droit ailleurs | Menu du navigateur | Rechercher, nouvelle tâche, assistant, retour, actualiser, copier le lien de la page, thème |
+| Champs de saisie, texte sélectionné, Maj + clic droit | Menu du navigateur | Inchangé (copier, coller, correcteur) |

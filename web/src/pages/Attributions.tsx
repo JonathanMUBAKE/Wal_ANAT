@@ -3,7 +3,7 @@ import { Navigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CopyPlus, Plus, Radar, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Empty, IconButton } from "@/components/ui";
+import { Button, Dialog, Empty, IconButton, Hint } from "@/components/ui";
 import {
   Field,
   Input,
@@ -461,10 +461,10 @@ export function Gaps() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="max-w-2xl text-[13px] text-muted">
+        <Hint className="max-w-2xl">
           Un écart est un signal à examiner, jamais une sanction. La comparaison porte sur les 90 derniers jours et sur
           les seules activités enregistrées dans l'outil.
-        </p>
+        </Hint>
         {can("attributions.manage") && (
           <Button
             variant="primary"

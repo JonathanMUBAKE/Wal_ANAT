@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { ShieldCheck, Sparkles, Eye, Hand, ScrollText } from "lucide-react";
-import { Avatar, Chip, Empty, ProjectIcon, cn } from "@/components/ui";
+import { Avatar, Chip, Empty, ProjectIcon, cn, Hint } from "@/components/ui";
 import {
   ApprovalCard,
   RUN_STATUS,
@@ -41,13 +41,13 @@ export function AgentsPage() {
           L'IA prépare le travail,
           <br className="hidden sm:block" /> une personne habilitée décide.
         </h1>
-        <p className="mt-3 max-w-2xl text-[13.5px] text-muted">
+        <Hint className="mt-3 max-w-2xl">
           {ai?.provider === "anthropic"
             ? `Propulsés par Claude (${ai.model}).`
             : "Mode démo : les décisions sont simulées par un moteur de règles tant qu'aucune clé ANTHROPIC_API_KEY n'est configurée sur le serveur."}{" "}
           Assignez-leur une tâche, mentionnez-les dans un commentaire, ou créez
           une règle d'automatisation dans un projet.
-        </p>
+        </Hint>
         {/* Ce qui part hors de l'Agence, dit clairement (thème 5, I-9) */}
         {ai?.read_rule && (
           <p

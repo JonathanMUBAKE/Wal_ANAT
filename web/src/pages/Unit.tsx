@@ -16,7 +16,7 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
-import { Button, Empty, Spinner, cn } from "@/components/ui";
+import { Button, Empty, Spinner, cn, Hint } from "@/components/ui";
 import { Drawer, DrawerSection } from "@/components/drawer";
 import { Field, Input, PageHeader, Section, Select, Status, Table, Td, Tr, frDate } from "@/components/gov";
 import { UnitDashboardView, UnitProjects } from "@/components/unit-dashboard";
@@ -25,6 +25,7 @@ import { NewMeeting, type MeetingRow } from "./Meetings";
 import { isActive } from "@/components/ai";
 import { useCan, useMe, useMyUnits, useProject, useProjectTasks, useRuns } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
+import { useTaskMenu } from "@/lib/context-menu";
 import { todayIso } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { ProjectDetail, Task, UnitBoard, UnitDashboard, UnitFollowUp } from "@/lib/types";
@@ -393,6 +394,7 @@ function FollowUp({ unitId }: { unitId: string }) {
     queryFn: () => api.get<UnitFollowUp>(`/api/units/${unitId}/follow-up`),
   });
   const shell = useShell();
+  const taskMenu = useTaskMenu();
   const [agent, setAgent] = useState<string | null>(null);
   const [state, setState] = useState<"open" | "overdue" | "done">("open");
   if (!data) return <Spinner />;
@@ -484,7 +486,7 @@ function FollowUp({ unitId }: { unitId: string }) {
         ) : (
           <Table head={["Tâche", "Agent", "Dossier", "Colonne", "Priorité", "Échéance"]}>
             {tasks.map((t) => (
-              <Tr key={t.id} onClick={() => shell.openTask(t.id)}>
+              <Tr key={t.id} onClick={() => shell.openTask(t.id)} onContextMenu={taskMenu(t)}>
                 <Td>
                   <span className="block font-medium">{t.title}</span>
                   <span className="font-mono text-[11.5px] text-faint">{t.key}</span>
@@ -506,10 +508,10 @@ function FollowUp({ unitId }: { unitId: string }) {
         )}
         <div className="h-3" />
       </Section>
-      <p className="text-[12px] text-muted">
+      <Hint>
         Le suivi couvre l'entité et les entités qui lui sont rattachées. Les tâches d'un projet auquel vous n'avez pas
         accès ne sont pas montrées.
-      </p>
+      </Hint>
     </>
   );
 }

@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AtSign, ChevronRight, MapPin, Network, Plus, Trash2, Users } from "lucide-react";
 import { useReferentials, useUnitTypes } from "@/lib/referentials";
-import { Avatar, Button, ConfirmDialog, Dialog, Empty, Spinner, cn } from "@/components/ui";
+import { Avatar, Button, ConfirmDialog, Dialog, Empty, Spinner, cn, Hint } from "@/components/ui";
 import { AssigneePicker } from "@/components/pickers";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { ORG_ROLE } from "@/components/Sidebar";
@@ -349,10 +349,10 @@ function UnitDetail({
                 </span>
               )}
             </div>
-            <p className="mt-2 text-[12px] leading-snug text-muted">
+            <Hint className="mt-2">
               Ce dont l'entité répond, avec qui elle travaille : c'est la référence pour repérer les écarts de
               participation.
-            </p>
+            </Hint>
             {(approved || draft || can("attributions.manage")) && (
               <Button
                 size="sm"

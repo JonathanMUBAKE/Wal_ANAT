@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, ClipboardCheck, Plus, Send, Undo2 } from "lucide-react";
-import { Button, Spinner } from "@/components/ui";
+import { Button, Spinner, Hint } from "@/components/ui";
 import { Drawer, DrawerSection } from "@/components/drawer";
 import { Field, Section, Select, Status, Textarea, frDate, type Tone } from "@/components/gov";
 import { Fact, Facts, LongText } from "@/components/record";
@@ -102,10 +102,10 @@ export function QuarterReviews({
   };
   return (
     <Section title="Revues trimestrielles">
-      <p className="px-5 pb-3 text-[13px] text-muted">
+      <Hint className="px-5 pb-3">
         Chaque trimestre, l'entité rend compte : avancement constaté face à l'attendu, écarts et mesures. La direction
         générale valide ; une revue validée est figée.
-      </p>
+      </Hint>
       <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((q) => {
           const r = reviews.find((x) => x.quarter === q);

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, Copy, Plus, Trash2, UserPlus } from "lucide-react";
-import { Button, Chip, ConfirmDialog, Dialog, Spinner, cn } from "@/components/ui";
+import { Button, Chip, ConfirmDialog, Dialog, Spinner, cn, Hint } from "@/components/ui";
 import { api } from "@/lib/api";
 import type {
   AccessProfile,
@@ -157,10 +157,10 @@ function ProfileForm({
   return (
     <div className="rounded-2xl border border-line bg-panel p-5 shadow-sm">
       {locked && (
-        <p className="mb-3 rounded-lg bg-hover px-3 py-2 text-[12.5px] text-muted">
+        <Hint className="mb-3 px-3">
           Le profil Propriétaire a tous les droits et ne peut pas être modifié : une organisation ne doit jamais perdre
           le contrôle d'elle-même.
-        </p>
+        </Hint>
       )}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="text-[12.5px] text-muted">

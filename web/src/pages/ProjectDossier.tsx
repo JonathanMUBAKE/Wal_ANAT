@@ -19,7 +19,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Empty, cn } from "@/components/ui";
+import { Button, Dialog, Empty, cn, Hint } from "@/components/ui";
 import { Badge, GroupedTable, Seal } from "@/components/collection";
 import { STAGE, stageOf } from "@/components/MeetingViews";
 import { type MeetingRow, NewMeeting } from "./Meetings";
@@ -157,10 +157,10 @@ export function ProjectDeliverables({ projectId }: { projectId: string }) {
   return (
     <div className="mx-auto max-w-[1480px] space-y-4 p-4 sm:px-8 sm:py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[13px] text-muted">
+        <Hint>
           Chaque livrable est validé par une autre personne que son auteur. Un livrable de contrat porte sa tranche de
           paiement.
-        </p>
+        </Hint>
         {can("deliverables.manage") && (
           <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
             Nouveau livrable
@@ -546,10 +546,10 @@ export function ProjectContracts({ projectId }: { projectId: string }) {
   return (
     <div className="mx-auto max-w-[1480px] space-y-4 p-4 sm:px-8 sm:py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[13px] text-muted">
+        <Hint>
           Consultants et cabinets engagés pour ce projet : termes de référence, durée, montant et échéancier de paiement
           par livrable. À la fin du contrat, l'accès d'un consultant externe est fermé.
-        </p>
+        </Hint>
         {can("consultants.manage") && (
           <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
             Nouveau contrat
@@ -942,10 +942,10 @@ export function ProjectMeetings({ projectId }: { projectId: string }) {
   return (
     <div className="mx-auto max-w-[1480px] space-y-4 p-4 sm:px-8 sm:py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[13px] text-muted">
+        <Hint>
           Les réunions de ce dossier : comité de pilotage, démarrage, revues. Leur compte rendu suit le circuit officiel
           (soumis au rédacteur, validé par la présidence).
-        </p>
+        </Hint>
         {can("meetings.manage") && (
           <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
             Programmer une réunion

@@ -16,7 +16,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Empty, IconButton, cn } from "@/components/ui";
+import { Button, Dialog, Empty, IconButton, cn, Hint } from "@/components/ui";
 import { Field, Input, LoadingRows } from "@/components/gov";
 import { api } from "@/lib/api";
 import { useMe } from "@/lib/hooks";
@@ -85,10 +85,10 @@ function PrimaryDomain() {
         <Globe className="size-4" />
         Domaine principal
       </h2>
-      <p className="mt-0.5 text-[12.5px] text-muted">
+      <Hint className="mt-0.5">
         Le domaine de l'institution : adresses des agents (prénom.nom@{example}) et messagerie (serveur proposé : mail.
         {example}).
-      </p>
+      </Hint>
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <Field label="Domaine principal du système" className="w-full max-w-[420px]">
           {(a) => (
@@ -167,10 +167,10 @@ function Referentials() {
           Ajouter une valeur
         </Button>
       </div>
-      <p className="text-[13px] text-muted">
+      <Hint>
         {meta.hint} Le code d'une valeur ne change jamais ; une valeur ne se supprime pas, elle s'archive et reste
         affichée sur les dossiers qui la portent.
-      </p>
+      </Hint>
       <section className="overflow-hidden rounded-2xl border border-line bg-panel">
         {isLoading ? (
           <LoadingRows />

@@ -21,7 +21,7 @@ interface Item {
   alert?: boolean;
 }
 
-export function RoleFocus() {
+export function RoleFocus({ className }: { className?: string } = {}) {
   const can = useCan();
   const { data: me } = useMe();
   const { data: units } = useMyUnits();
@@ -103,7 +103,7 @@ export function RoleFocus() {
     });
   if (!items.length) return null;
   return (
-    <section aria-label="Ce qui vous attend" className="grid gap-3 sm:grid-cols-2">
+    <section aria-label="Ce qui vous attend" className={cn("grid gap-3 sm:grid-cols-2", className)}>
       {items.map((i) => (
         <Link
           key={i.label}

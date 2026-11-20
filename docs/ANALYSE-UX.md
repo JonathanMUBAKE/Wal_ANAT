@@ -362,3 +362,4 @@ navigateur, en bureau et en téléphone, sous les profils DG, chef d'entité et 
 | Date | Lot | Fait |
 |---|---|---|
 | 20/11/2026 | UX-1, première partie | Pluriels accordés ; champs facultatifs vides masqués (fiche réunion) ; lieu sans doublon ; participants affichés seulement après la séance ; statut unique au portefeuille ; graphique vide remplacé par une phrase (RH) ; tableau de bord DG : information d'abord, saisies dans le menu « Saisir » |
+| 20/11/2026 | UX-2 | Accueil et tableau de bord DG fusionnés pour la direction : une note du jour en tête (chiffres cliquables, retards en rouge) à la place des quatre cartes, « Ce qui vous attend » selon la fonction, puis les directions ; sur téléphone, la situation se lit dès le premier écran |

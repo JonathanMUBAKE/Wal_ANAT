@@ -12,7 +12,6 @@ import {
   CircleUser,
   ClipboardList,
   FileSignature,
-  Gauge,
   Handshake,
   House,
   IdCard,
@@ -219,7 +218,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
         {/* Architecture : voir docs/ARCHITECTURE-INFORMATION.md — une information, un seul domicile */}
         <NavSection title="Pilotage">
-          {can("pilotage.view") && link("/pilotage", Gauge, "Tableau de bord DG")}
+          
           {(can("agenda.view") || can("projects.create")) && link("/activites", Briefcase, "Portefeuille")}
           {(can("decisions.view") || can("decisions.record")) &&
             show.decisions &&

@@ -15,6 +15,7 @@ import { ApprovalCard, RUN_STATUS, isActive } from "@/components/ai";
 import { TaskRow } from "@/components/TaskRow";
 import { MyMeetingsCard } from "@/components/upcoming-meetings";
 import { RoleFocus } from "@/components/role-focus";
+import { PilotagePage } from "./Pilotage";
 import {
   useApprovals,
   useArchivedProjects,
@@ -34,13 +35,18 @@ import { useShell } from "@/lib/shell";
 import {
   STATUS,
   ago,
-  firstName,
-  greeting,
+  salutation,
   isoIn,
   longDate,
   todayIso, pl } from "@/lib/format";
 
+/** Une seule page d'arrivée par fonction : la direction (DG, DGA, cabinet) arrive sur le point du jour (UX-2). */
 export function HomePage() {
+  const can = useCan();
+  return can("pilotage.view") ? <PilotagePage /> : <PersonalHome />;
+}
+
+function PersonalHome() {
   const can = useCan();
   const { data: me } = useMe();
   const { data: tasks } = useMyTasks();
@@ -91,7 +97,7 @@ export function HomePage() {
           {longDate(todayIso())}
         </p>
         <h1 className="mt-1 font-serif text-[40px] leading-[1.05] tracking-[-0.02em] sm:text-[52px]">
-          {greeting()}, {me ? firstName(me.name) : ""}
+          {salutation(me?.name)}
         </h1>
         {/* La page de travail de la direction est le tableau de bord DG : l'Accueil y mène d'abord (A-1) */}
         {can("pilotage.view") && (

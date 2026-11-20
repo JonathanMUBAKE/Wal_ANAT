@@ -1,10 +1,102 @@
-import { memo } from "react";
-import { Sparkles } from "lucide-react";
+import { memo, type MouseEvent, type ReactNode } from "react";
+import { CornerDownRight, Sparkles } from "lucide-react";
 import { Avatar, Checkbox, ProjectIcon, cn } from "./ui";
 import { DueChip, PriorityFlag } from "./pickers";
 import { TaskMetaRow } from "./TaskDrawer";
 import type { ProjectSummary, Task, User } from "@/lib/types";
 import { useTaskMenu } from "@/lib/context-menu";
+
+/*
+ * Une seule ligne pour tout ce qui est une tâche (demande de l'utilisateur, 20/11/2026) : tâche, sous-tâche et tâche
+ * confiée partagent les mêmes colonnes, dans le même ordre, aux mêmes largeurs. D'une section à l'autre, le lieu,
+ * la priorité, l'échéance et la personne tombent donc à la verticale les uns des autres.
+ *
+ *   [état] [↳ titre · précision]        [repères] [lieu] [priorité] [échéance] [personne]
+ */
+export function TaskLine({
+  leading,
+  title,
+  detail,
+  done,
+  sub,
+  nested,
+  badges,
+  meta,
+  place,
+  flag,
+  due,
+  person,
+  dense,
+  onOpen,
+  onContextMenu,
+}: {
+  /** Case à cocher, ou repère d'état quand la personne ne peut pas cocher elle-même. */
+  leading: ReactNode;
+  title: ReactNode;
+  /** Précision à la suite du titre, en retrait de ton : tâche parente, personne chargée. */
+  detail?: ReactNode;
+  done?: boolean;
+  /** Sous-tâche : une flèche de rattachement précède le titre. */
+  sub?: boolean;
+  /** Sous-tâche affichée sous sa tâche : elle se décale d'un cran. */
+  nested?: boolean;
+  /** États à signaler tout de suite (IA au travail, à valider, report demandé). */
+  badges?: ReactNode;
+  /** Repères discrets : sous-tâches, commentaires, étiquettes. */
+  meta?: ReactNode;
+  /** Projet ou entité. `undefined` : la colonne n'existe pas (liste d'un seul projet). */
+  place?: ReactNode | null;
+  flag?: ReactNode;
+  due?: ReactNode;
+  person?: ReactNode;
+  dense?: boolean;
+  onOpen: () => void;
+  onContextMenu?: (e: MouseEvent) => void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onContextMenu={onContextMenu}
+      onKeyDown={(e) => e.key === "Enter" && onOpen()}
+      className={cn(
+        "group flex cursor-default items-center gap-3 border-b border-line px-3 transition-colors hover:bg-hover sm:px-4",
+        dense ? "h-10" : "h-11",
+        nested && "pl-9 sm:pl-10",
+      )}
+    >
+      <span className="flex size-5 shrink-0 items-center justify-center">{leading}</span>
+      <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[13.5px]">
+        {sub && <CornerDownRight className="size-3.5 shrink-0 text-faint" aria-label="Sous-tâche" />}
+        <span className={cn("truncate", done && "text-faint line-through decoration-1")}>{title}</span>
+        {detail && <span className="hidden min-w-0 shrink truncate text-[12px] text-faint sm:inline">{detail}</span>}
+      </span>
+      {badges}
+      {meta && <span className="hidden shrink-0 items-center gap-3 md:flex">{meta}</span>}
+      {place !== undefined && (
+        <span className="hidden w-[200px] shrink-0 items-center gap-1.5 text-[12px] text-muted lg:flex">{place}</span>
+      )}
+      <span className="flex w-5 shrink-0 justify-center">{flag}</span>
+      <span className="w-[92px] shrink-0 text-right">{due}</span>
+      <span className="flex w-6 shrink-0 justify-end">{person}</span>
+    </div>
+  );
+}
+
+/** Étiquette d'état d'une ligne : même forme partout. */
+export const LineBadge = ({ tone, children }: { tone: "ai" | "info" | "warning"; children: ReactNode }) => (
+  <span
+    className={cn(
+      "inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-1.5 text-[11.5px] font-medium",
+      tone === "ai" && "bg-ai-soft text-ai-fg",
+      tone === "info" && "bg-info-soft text-info",
+      tone === "warning" && "bg-warning-soft text-warning",
+    )}
+  >
+    {children}
+  </span>
+);
 
 /** Ligne de tâche réutilisée par la vue Liste, Mes tâches et l'accueil. */
 export const TaskRow = memo(function TaskRow({
@@ -15,6 +107,7 @@ export const TaskRow = memo(function TaskRow({
   aiActive,
   project,
   dense,
+  nested,
   canEdit = true,
 }: {
   t: Task;
@@ -24,52 +117,42 @@ export const TaskRow = memo(function TaskRow({
   aiActive?: boolean;
   project?: ProjectSummary;
   dense?: boolean;
+  /** Sous-tâche rangée sous sa tâche : inutile alors de répéter le nom de la tâche. */
+  nested?: boolean;
   canEdit?: boolean;
 }) {
   const taskMenu = useTaskMenu();
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onOpen}
+    <TaskLine
+      leading={<Checkbox checked={t.completed} onChange={(v) => canEdit && onToggle(v)} />}
+      title={t.title}
+      detail={!nested && t.parent_title ? t.parent_title : undefined}
+      done={t.completed}
+      sub={!!t.parent_id}
+      nested={nested}
+      dense={dense}
+      badges={
+        aiActive ? (
+          <LineBadge tone="ai">
+            <Sparkles className="pulse-dot size-3" />
+            IA au travail
+          </LineBadge>
+        ) : undefined
+      }
+      meta={<TaskMetaRow t={t} />}
+      place={
+        project ? (
+          <>
+            <ProjectIcon icon={project.icon} color={project.color} size={16} />
+            <span className="truncate">{project.name}</span>
+          </>
+        ) : undefined
+      }
+      flag={<PriorityFlag p={t.priority} />}
+      due={<DueChip due={t.due_on} done={t.completed} />}
+      person={<Avatar user={assignee} size={22} />}
+      onOpen={onOpen}
       onContextMenu={taskMenu(t, { onOpen, onToggle, canEdit })}
-      onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      className={cn(
-        "group flex cursor-default items-center gap-3 border-b border-line px-3 transition-colors hover:bg-hover sm:px-4",
-        dense ? "h-10" : "h-11",
-      )}
-    >
-      <Checkbox checked={t.completed} onChange={(v) => canEdit && onToggle(v)} />
-      <span
-        className={cn("min-w-0 flex-1 truncate text-[13.5px]", t.completed && "text-faint line-through decoration-1")}
-      >
-        {t.parent_title && <span className="text-faint">{t.parent_title} › </span>}
-        {t.title}
-      </span>
-      {aiActive && (
-        <span className="flex items-center gap-1 rounded-md bg-ai-soft px-1.5 py-0.5 text-[11.5px] font-medium text-ai-fg">
-          <Sparkles className="pulse-dot size-3" />
-          IA au travail
-        </span>
-      )}
-      <span className="hidden items-center gap-3 md:flex">
-        <TaskMetaRow t={t} />
-      </span>
-      {project && (
-        <span className="hidden max-w-[180px] items-center gap-1.5 truncate text-[12px] text-muted sm:flex">
-          <ProjectIcon icon={project.icon} color={project.color} size={16} />
-          <span className="truncate">{project.name}</span>
-        </span>
-      )}
-      <span className="w-5">
-        <PriorityFlag p={t.priority} />
-      </span>
-      <span className="w-[92px] text-right">
-        <DueChip due={t.due_on} done={t.completed} />
-      </span>
-      <span className="w-6">
-        <Avatar user={assignee} size={22} />
-      </span>
-    </div>
+    />
   );
 });

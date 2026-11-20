@@ -1,15 +1,16 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, Plus } from "lucide-react";
+import { CheckCircle2, ChevronDown, Circle, CircleDot, FolderClosed, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Empty, cn, Hint } from "@/components/ui";
-import { TaskRow } from "@/components/TaskRow";
-import { useMe, useMyTasks, useMyUnits, useProjects, useUpdateTask } from "@/lib/hooks";
+import { Avatar, Button, Empty, cn, Hint } from "@/components/ui";
+import { LineBadge, TaskLine, TaskRow } from "@/components/TaskRow";
+import { DueChip } from "@/components/pickers";
+import { useMe, useMyTasks, useMyUnits, useProjects, useUpdateTask, useUserMap } from "@/lib/hooks";
 import { api } from "@/lib/api";
 import type { UnitBoard } from "@/lib/types";
 import { GiveTask } from "./Unit";
 import { useShell } from "@/lib/shell";
-import { isoIn, todayIso } from "@/lib/format";
+import { isoIn, pl, todayIso } from "@/lib/format";
 import type { ProjectSummary, Task } from "@/lib/types";
 import { MyDeliverables, useLateDeliverables } from "./ProjectDossier";
 
@@ -20,6 +21,7 @@ interface Confided {
   id: string;
   key: string;
   title: string;
+  assignee_id: string | null;
   assignee_name: string | null;
   due_on: string | null;
   completed: boolean;
@@ -28,53 +30,97 @@ interface Confided {
   overdue: boolean;
   postpone_pending: boolean;
 }
+/** En-tête d'un groupe de lignes : le même pour les échéances, les tâches confiées et les terminées. */
+function GroupHeader({
+  label,
+  count,
+  note,
+  danger,
+  open,
+  onToggle,
+}: {
+  label: string;
+  count: number;
+  note?: string;
+  danger?: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-expanded={open}
+      className="sticky top-0 z-10 flex h-10 w-full items-center gap-2 border-b border-line bg-bg/90 px-4 text-left backdrop-blur sm:px-8"
+    >
+      <ChevronDown className={cn("size-4 text-faint transition-transform duration-200", !open && "-rotate-90")} />
+      <span className={cn("text-[13px] font-semibold", danger && "text-danger")}>{label}</span>
+      <span className="text-[12px] tabular text-faint">{count}</span>
+      {note && <span className="text-[12px] text-danger">{note}</span>}
+    </button>
+  );
+}
+
 function ConfidedTasks({ onOpen }: { onOpen: (id: string) => void }) {
   const { data } = useQuery({
     queryKey: ["tasks", "confided"],
     queryFn: () => api.get<Confided[]>("/api/tasks/confided"),
   });
+  const users = useUserMap();
   const [open, setOpen] = useState(true);
   if (!data?.length) return null;
   const pending = data.filter((t) => !t.completed);
+  const late = pending.filter((t) => t.overdue).length;
   return (
-    <section className="border-t border-line">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex h-10 w-full items-center gap-2 border-b border-line px-4 text-left sm:px-8"
-      >
-        <ChevronDown className={cn("size-4 text-faint transition-transform", !open && "-rotate-90")} />
-        <span className="text-[13px] font-semibold">Tâches que j'ai confiées</span>
-        <span className="text-[12px] tabular text-faint">{pending.length}</span>
-        {pending.some((t) => t.overdue) && (
-          <span className="text-[12px] text-danger">{pending.filter((t) => t.overdue).length} en retard</span>
-        )}
-      </button>
+    <section>
+      <GroupHeader
+        label="Tâches que j'ai confiées"
+        count={pending.length}
+        note={late ? `${late} en retard` : undefined}
+        open={open}
+        onToggle={() => setOpen(!open)}
+      />
       {open && (
-        <ul className="divide-y divide-line sm:px-4">
+        <div className="sm:px-4">
           {data.map((t) => (
-            <li key={t.id}>
-              <button
-                onClick={() => onOpen(t.id)}
-                className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-hover sm:px-4"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className={cn("block truncate text-[13.5px]", t.completed && "text-faint line-through")}>
-                    {t.title}
-                  </span>
-                  <span className="block truncate text-[12px] text-muted">
-                    {t.assignee_name ?? "—"}
-                    {t.place ? ` · ${t.place}` : ""}
-                  </span>
+            <TaskLine
+              key={t.id}
+              // La personne qui a confié ne coche pas : elle lit l'état (faite, déclarée faite, en cours)
+              leading={
+                t.completed ? (
+                  <CheckCircle2 className="size-[18px] text-success" aria-label="Terminée" />
+                ) : t.done_declared_at ? (
+                  <CircleDot className="size-[18px] text-info" aria-label="Déclarée faite" />
+                ) : (
+                  <Circle className="size-[18px] text-faint" aria-label="En cours" />
+                )
+              }
+              title={t.title}
+              detail={t.assignee_name ?? undefined}
+              done={t.completed}
+              badges={
+                <>
+                  {t.postpone_pending && <LineBadge tone="warning">Report demandé</LineBadge>}
+                  {!t.completed && t.done_declared_at && <LineBadge tone="info">À valider</LineBadge>}
+                </>
+              }
+              place={
+                t.place ? (
+                  <>
+                    <FolderClosed className="size-4 shrink-0 text-faint" />
+                    <span className="truncate">{t.place}</span>
+                  </>
+                ) : null
+              }
+              due={<DueChip due={t.due_on} done={t.completed} />}
+              person={
+                <span title={t.assignee_name ?? undefined}>
+                  <Avatar user={t.assignee_id ? users.get(t.assignee_id) : null} size={22} />
                 </span>
-                {t.postpone_pending && <span className="text-[12px] text-warning">report demandé</span>}
-                {!t.completed && t.done_declared_at && <span className="text-[12px] text-primary">à valider</span>}
-                <span className={cn("text-[12px] tabular", t.overdue ? "font-medium text-danger" : "text-muted")}>
-                  {t.completed ? "terminée" : t.due_on ? t.due_on.split("-").reverse().join("/") : "sans échéance"}
-                </span>
-              </button>
-            </li>
+              }
+              onOpen={() => onOpen(t.id)}
+            />
           ))}
-        </ul>
+        </div>
       )}
     </section>
   );
@@ -121,6 +167,11 @@ export function MyTasksPage() {
     .filter(match)
     .filter((t) => !t.completed)
     .sort((a, b) => ((a.due_on ?? "9") < (b.due_on ?? "9") ? -1 : 1));
+  // Une sous-tâche se range sous sa tâche quand celle-ci est dans la liste ; sinon elle garde sa place et cite sa tâche
+  const mine = new Set(open.map((t) => t.id));
+  const nestedUnder = (t: Task) => !!t.parent_id && mine.has(t.parent_id);
+  const childrenOf = (id: string) => open.filter((t) => t.parent_id === id);
+  const top = open.filter((t) => !nestedUnder(t));
   const done = (tasks ?? [])
     .filter(match)
     .filter((t) => t.completed)
@@ -128,19 +179,12 @@ export function MyTasksPage() {
 
   return (
     <div className="mx-auto max-w-[1480px] pb-16">
-      <header className="flex flex-wrap items-end gap-3 px-4 pb-5 pt-8 sm:px-8">
-        <div>
-          <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Mes tâches</h1>
-          <Hint className="mt-1">
-            Tout ce qui vous est assigné, dans vos projets et dans votre entité : livrables à produire ou à valider,
-            puis tâches.
-          </Hint>
-        </div>
-        {home && (
-          <Button variant="primary" icon={<Plus className="size-4" />} onClick={newTask}>
-            Tâche hors projet
-          </Button>
-        )}
+      <header className="flex flex-wrap items-center gap-3 px-4 pb-4 pt-6 sm:px-8">
+        <h1 className="text-[22px] font-semibold tracking-[-0.02em]">Mes tâches</h1>
+        <Hint iconOnly>
+          Tout ce qui vous est assigné, dans vos projets et dans votre entité : livrables à produire ou à valider, puis
+          tâches.
+        </Hint>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <input
             aria-label="Rechercher une tâche"
@@ -172,6 +216,11 @@ export function MyTasksPage() {
           />
           Afficher les terminées
         </label>
+        {home && (
+          <Button variant="primary" icon={<Plus className="size-4" />} onClick={newTask}>
+            Tâche hors projet
+          </Button>
+        )}
       </header>
       {board && <GiveTask board={board} self onClose={() => setBoard(null)} />}
       {/* Les livrables à produire ou à valider vivent dans leur projet ; ils se retrouvent ici (docs/PARCOURS-METIER.md) */}
@@ -189,38 +238,35 @@ export function MyTasksPage() {
           </div>
         )}
         {BUCKETS.map((b) => {
-          const items = open.filter(b.test);
+          const items = top.filter(b.test);
           if (!items.length) return null;
+          const row = (t: Task, nested?: boolean) => (
+            <TaskRow
+              key={t.id}
+              t={t}
+              nested={nested}
+              assignee={me}
+              project={pm.get(t.project_id) ?? unitTask(t)}
+              onOpen={() => shell.openTask(t.id)}
+              onToggle={(v) => update.mutate({ id: t.id, completed: v })}
+            />
+          );
           return (
             <section key={b.id}>
-              <button
-                onClick={() => setCollapsed({ ...collapsed, [b.id]: !collapsed[b.id] })}
-                className="sticky top-0 z-10 flex h-10 w-full items-center gap-2 border-b border-line bg-bg/90 px-4 text-left backdrop-blur sm:px-8"
-              >
-                <ChevronDown
-                  className={cn("size-4 text-faint transition-transform", collapsed[b.id] && "-rotate-90")}
-                />
-                <span className={cn("text-[13px] font-semibold", b.id === "overdue" && "text-danger")}>{b.label}</span>
-                <span className="text-[12px] tabular text-faint">{items.length}</span>
-                {b.id === "overdue" && lateDeliverables > 0 && (
-                  <span className="text-[12px] text-danger">
-                    + {lateDeliverables} livrable{lateDeliverables > 1 ? "s" : ""} en retard, ci-dessus
-                  </span>
-                )}
-              </button>
+              <GroupHeader
+                label={b.label}
+                count={items.length}
+                danger={b.id === "overdue"}
+                note={
+                  b.id === "overdue" && lateDeliverables > 0
+                    ? `+ ${lateDeliverables} ${pl(lateDeliverables, "livrable(s)")} en retard, ci-dessus`
+                    : undefined
+                }
+                open={!collapsed[b.id]}
+                onToggle={() => setCollapsed({ ...collapsed, [b.id]: !collapsed[b.id] })}
+              />
               {!collapsed[b.id] && (
-                <div className="sm:px-4">
-                  {items.map((t) => (
-                    <TaskRow
-                      key={t.id}
-                      t={t}
-                      assignee={me}
-                      project={pm.get(t.project_id) ?? unitTask(t)}
-                      onOpen={() => shell.openTask(t.id)}
-                      onToggle={(v) => update.mutate({ id: t.id, completed: v })}
-                    />
-                  ))}
-                </div>
+                <div className="sm:px-4">{items.flatMap((t) => [row(t), ...childrenOf(t.id).map((c) => row(c, true))])}</div>
               )}
             </section>
           );
@@ -228,22 +274,26 @@ export function MyTasksPage() {
         <ConfidedTasks onOpen={(id) => shell.openTask(id)} />
         {showDone && done.length > 0 && (
           <section>
-            <div className="flex h-10 items-center gap-2 border-b border-line px-4 sm:px-8">
-              <span className="text-[13px] font-semibold text-muted">Terminées</span>
-              <span className="text-[12px] text-faint">{done.length}</span>
-            </div>
-            <div className="sm:px-4">
-              {done.map((t) => (
-                <TaskRow
-                  key={t.id}
-                  t={t}
-                  assignee={me}
-                  project={pm.get(t.project_id) ?? unitTask(t)}
-                  onOpen={() => shell.openTask(t.id)}
-                  onToggle={(v) => update.mutate({ id: t.id, completed: v })}
-                />
-              ))}
-            </div>
+            <GroupHeader
+              label="Terminées"
+              count={done.length}
+              open={!collapsed.done}
+              onToggle={() => setCollapsed({ ...collapsed, done: !collapsed.done })}
+            />
+            {!collapsed.done && (
+              <div className="sm:px-4">
+                {done.map((t) => (
+                  <TaskRow
+                    key={t.id}
+                    t={t}
+                    assignee={me}
+                    project={pm.get(t.project_id) ?? unitTask(t)}
+                    onOpen={() => shell.openTask(t.id)}
+                    onToggle={(v) => update.mutate({ id: t.id, completed: v })}
+                  />
+                ))}
+              </div>
+            )}
           </section>
         )}
       </div>

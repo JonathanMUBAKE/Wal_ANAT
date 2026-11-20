@@ -26,7 +26,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { Empty, cn } from "./ui";
+import { Dialog, Empty, cn } from "./ui";
 import { TabBar } from "./tabs";
 import { LoadingRows } from "./gov";
 import {
@@ -682,7 +682,6 @@ function CalendarView({
 }
 
 function MeetingDetailPanel({ id }: { id: string | null }) {
-  const nav = useNavigate();
   const { data: m, isLoading } = useQuery({
     queryKey: ["meeting", id],
     queryFn: () => api.get<MeetingDetail>(`/api/meetings/${id}`),
@@ -701,11 +700,6 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
       </aside>
     );
   const st = stageOf(m);
-  const open = m.agenda.reduce(
-    (n, i) => n + i.actions.filter((a) => !["realise", "annule"].includes(a.status)).length,
-    0,
-  );
-  const total = m.agenda.reduce((n, i) => n + i.actions.length, 0);
   return (
     <aside className="rise-in flex flex-col self-start rounded-2xl border border-line bg-panel shadow-sm lg:sticky lg:top-4">
       <div className="space-y-3 border-b border-line p-5">
@@ -729,6 +723,22 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
           <Seal>{m.reference}</Seal>
         </div>
       </div>
+      <MeetingSummary m={m} />
+      <div className="mt-auto flex gap-2 border-t border-line p-4">
+        <MeetingActions m={m} />
+      </div>
+    </aside>
+  );
+}
+
+/** Ce qu'il faut savoir d'une réunion : les mêmes informations dans le panneau du calendrier et dans la fiche rapide. */
+function MeetingSummary({ m }: { m: MeetingDetail }) {
+  const open = m.agenda.reduce(
+    (n, i) => n + i.actions.filter((a) => !["realise", "annule"].includes(a.status)).length,
+    0,
+  );
+  const total = m.agenda.reduce((n, i) => n + i.actions.length, 0);
+  return (
       <div className="space-y-4 p-5">
         <dl className="text-[12.5px]">
           {(
@@ -797,17 +807,47 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
           </p>
         )}
       </div>
-      <div className="mt-auto flex gap-2 border-t border-line p-4">
-        <span className="flex flex-1 [&>button]:w-full">
-          <ExportMenu formats={DOCUMENT_FORMATS} href={(f) => `/api/meetings/${m.id}/report?format=${f}`} />
-        </span>
-        <button
-          onClick={() => nav(`/reunions/${m.id}`)}
-          className="flex h-9 flex-[1.4] items-center justify-center gap-1.5 rounded-lg bg-night text-[12.5px] font-semibold text-white dark:bg-primary dark:text-on-primary"
-        >
-          Ouvrir le compte rendu
-        </button>
-      </div>
-    </aside>
+  );
+}
+
+function MeetingActions({ m }: { m: MeetingDetail }) {
+  const nav = useNavigate();
+  return (
+    <>
+      <span className="flex flex-1 [&>button]:w-full">
+        <ExportMenu formats={DOCUMENT_FORMATS} href={(f) => `/api/meetings/${m.id}/report?format=${f}`} />
+      </span>
+      <button
+        onClick={() => nav(`/reunions/${m.id}`)}
+        className="flex h-9 flex-[1.4] items-center justify-center gap-1.5 rounded-lg bg-night text-[12.5px] font-semibold text-white dark:bg-primary dark:text-on-primary"
+      >
+        Ouvrir le compte rendu
+      </button>
+    </>
+  );
+}
+
+/**
+ * La fiche rapide d'une réunion, en dialogue : depuis l'accueil, on lit l'essentiel sans quitter la page, et le
+ * compte rendu complet reste à un clic.
+ */
+export function MeetingPeek({ id, onClose }: { id: string | null; onClose: () => void }) {
+  const { data: m } = useQuery({
+    queryKey: ["meeting", id],
+    queryFn: () => api.get<MeetingDetail>(`/api/meetings/${id}`),
+    enabled: !!id,
+  });
+  return (
+    <Dialog
+      open={!!id}
+      onOpenChange={(v) => !v && onClose()}
+      title={m?.meeting_type ?? "Réunion"}
+      description={m ? `${fmt(m.meeting_date, "EEEE d MMMM")} · ${span(m)}` : "Chargement…"}
+      width={520}
+      footer={m ? <MeetingActions m={m} /> : undefined}
+    >
+      {/* Le dialogue pose déjà ses marges : la fiche s'y insère sans les siennes */}
+      <div className="-mx-5 -my-4">{m ? <MeetingSummary m={m} /> : <LoadingRows rows={5} />}</div>
+    </Dialog>
   );
 }

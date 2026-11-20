@@ -17,10 +17,13 @@ import {
   ArrowDown,
   ArrowUp,
   ChevronDown,
+  ChevronsDownUp,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
   type LucideIcon,
+  Minus,
+  Plus,
   Search,
   SlidersHorizontal,
   X,
@@ -904,6 +907,18 @@ export function MiniMonth({
   );
 }
 
+/** Densité d'une grille horaire : plus la journée est haute, plus chaque rendez-vous en dit. */
+type Density = "compacte" | "normale" | "detaillee";
+const ROW: Record<Density, number> = { compacte: 38, normale: 56, detaillee: 84 };
+const DENSITIES: Density[] = ["compacte", "normale", "detaillee"];
+/** Hauteur d'une heure repliée : la journée reste lisible sans dérouler les heures creuses. */
+const FOLDED = 16;
+
+/**
+ * La semaine (ou la journée) heure par heure : le même composant pour l'agenda de l'accueil et le calendrier des
+ * réunions. La journée se déroule en hauteur — trois densités, retenues d'une visite à l'autre — et les heures sans
+ * rendez-vous se replient quand la place manque.
+ */
 export function TimeGrid({
   days,
   events,
@@ -911,8 +926,8 @@ export function TimeGrid({
   onSelect,
   from = 7,
   to = 19,
-  rowHeight = 56,
   minColumn = 128,
+  density: fixedDensity,
 }: {
   days: Date[];
   events: CalEvent[];
@@ -920,13 +935,16 @@ export function TimeGrid({
   onSelect: (e: CalEvent) => void;
   from?: number;
   to?: number;
-  /** Hauteur d'une heure, en pixels. */
-  rowHeight?: number;
   /** Largeur minimale d'un jour avant de faire défiler. */
   minColumn?: number;
+  /** Densité imposée (sinon celle que la personne a choisie). */
+  density?: Density;
 }) {
-  const H = rowHeight;
-  // Bloc pastel : fond teinté et hachuré, contour fin, texte dans la couleur du rendez-vous
+  const [chosen, setChosen] = useLocalPref<Density>("anat.calendrier.densite", "normale");
+  const [folding, setFolding] = useLocalPref<"oui" | "non">("anat.calendrier.heures-creuses", "oui");
+  const density = fixedDensity ?? chosen;
+  const H = ROW[density];
+  const fold = folding === "oui";
   const tint = (hue: string) => ({
     backgroundColor: `color-mix(in oklab, ${hue} 13%, var(--panel))`,
     backgroundImage: `repeating-linear-gradient(135deg, color-mix(in oklab, ${hue} 10%, transparent) 0 1px, transparent 1px 7px)`,
@@ -935,132 +953,221 @@ export function TimeGrid({
   });
   const cols = { gridTemplateColumns: `56px repeat(${days.length}, minmax(0,1fr))` };
   const today = dkey(new Date());
-  const hours = Array.from({ length: to - from }, (_, n) => from + n);
+  const shown = days.map(dkey);
+  const timed = events.filter((e) => !e.allDay && shown.includes(e.date));
+  const span = (e: CalEvent) => {
+    const s = e.start ? toMin(e.start) : 9 * 60;
+    return [s, e.end ? Math.max(toMin(e.end), s + 30) : s + 60] as const;
+  };
+  // Une heure se replie si aucun rendez-vous de la période ne la traverse
+  const rows = Array.from({ length: to - from }, (_, n) => {
+    const h = from + n;
+    const busy = timed.some((e) => {
+      const [s, en] = span(e);
+      return s < (h + 1) * 60 && en > h * 60;
+    });
+    return { h, folded: fold && !busy };
+  });
+  const heightOf = (r: { folded: boolean }) => (r.folded ? FOLDED : H);
+  const total = rows.reduce((n, r) => n + heightOf(r), 0);
+  // La position d'une minute, en tenant compte des heures repliées
+  const yOf = (min: number) => {
+    let y = 0;
+    for (const r of rows) {
+      const start = r.h * 60;
+      if (min >= start + 60) {
+        y += heightOf(r);
+        continue;
+      }
+      return y + ((Math.max(min, start) - start) / 60) * heightOf(r);
+    }
+    return y;
+  };
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const showNow = days.some((d) => dkey(d) === today) && nowMin > from * 60 && nowMin < to * 60;
   const PAD = 10;
+  const level = DENSITIES.indexOf(density);
+  const zoom = (step: number) => setChosen(DENSITIES[Math.min(DENSITIES.length - 1, Math.max(0, level + step))]);
+  const foldable = rows.some((r) => r.folded) || timed.length > 0;
   return (
-    <div className="overflow-x-auto">
-      <div style={{ minWidth: days.length > 1 ? days.length * minColumn + 56 : undefined }}>
-        <div className="grid border-b border-line" style={cols}>
-          <span />
-          {days.map((d) => {
-            const isT = dkey(d) === today;
-            return (
-              <div key={dkey(d)} className="flex h-11 items-center justify-center gap-1.5 border-l border-line">
-                <span className={cn("text-[12.5px] capitalize", isT ? "font-medium text-fg" : "text-muted")}>
-                  {format(d, "EEE", { locale: fr }).replace(".", "")}
-                </span>
-                <span
-                  className={cn(
-                    "flex size-6 items-center justify-center rounded-full text-[12.5px] font-semibold tabular",
-                    isT && "bg-primary text-on-primary",
-                  )}
-                >
-                  {format(d, "d")}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        {events.some((e) => e.allDay) && (
+    <div>
+      {/* Dérouler la journée ou la replier : le réglage vaut pour tous les calendriers */}
+      <div className="flex items-center justify-end gap-1 px-2 pb-1">
+        {foldable && (
+          <button
+            type="button"
+            onClick={() => setFolding(fold ? "non" : "oui")}
+            aria-pressed={fold}
+            title={fold ? "Dérouler toute la journée" : "Replier les heures sans rendez-vous"}
+            className={cn(
+              "flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] transition-colors",
+              fold ? "text-muted hover:bg-hover hover:text-fg" : "bg-hover text-fg",
+            )}
+          >
+            {fold ? <ChevronsUpDown className="size-3.5" /> : <ChevronsDownUp className="size-3.5" />}
+            {fold ? "Journée entière" : "Replier les heures creuses"}
+          </button>
+        )}
+        {!fixedDensity && (
+          <span className="flex items-center rounded-lg bg-hover p-[3px]">
+            <button
+              type="button"
+              onClick={() => zoom(-1)}
+              disabled={level === 0}
+              aria-label="Moins de détails"
+              title="Moins de détails"
+              className="flex size-6 items-center justify-center rounded-md text-muted transition-colors hover:text-fg disabled:opacity-40"
+            >
+              <Minus className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => zoom(1)}
+              disabled={level === DENSITIES.length - 1}
+              aria-label="Plus de détails"
+              title="Plus de détails"
+              className="flex size-6 items-center justify-center rounded-md text-muted transition-colors hover:text-fg disabled:opacity-40"
+            >
+              <Plus className="size-3.5" />
+            </button>
+          </span>
+        )}
+      </div>
+      <div className="overflow-x-auto">
+        <div style={{ minWidth: days.length > 1 ? days.length * minColumn + 56 : undefined }}>
           <div className="grid border-b border-line" style={cols}>
-            <span className="pr-2.5 pt-2.5 text-right text-[11px] text-muted">Journée</span>
+            <span />
             {days.map((d) => {
-              const k = dkey(d);
+              const isT = dkey(d) === today;
               return (
-                <div key={k} className="min-w-0 space-y-1 border-l border-line p-1">
-                  {events
-                    .filter((e) => e.allDay && e.date === k)
-                    .map((e) => (
-                      <button
-                        key={e.id}
-                        onClick={() => onSelect(e)}
-                        title={[e.title, e.subtitle].filter(Boolean).join(", ")}
-                        className={cn(
-                          "block w-full truncate rounded-md px-2 py-1 text-left text-[12px] font-medium transition-[filter] duration-200 hover:brightness-110",
-                          selected === e.id && "ring-2 ring-[var(--ring)]",
-                        )}
-                        style={tint(e.hue)}
-                      >
-                        {e.title}
-                      </button>
-                    ))}
+                <div key={dkey(d)} className="flex h-11 items-center justify-center gap-1.5 border-l border-line">
+                  <span className={cn("text-[12.5px] capitalize", isT ? "font-medium text-fg" : "text-muted")}>
+                    {format(d, "EEE", { locale: fr }).replace(".", "")}
+                  </span>
+                  <span
+                    className={cn(
+                      "flex size-6 items-center justify-center rounded-full text-[12.5px] font-semibold tabular",
+                      isT && "bg-primary text-on-primary",
+                    )}
+                  >
+                    {format(d, "d")}
+                  </span>
                 </div>
               );
             })}
           </div>
-        )}
-        <div className="relative grid" style={{ ...cols, paddingTop: PAD }}>
-          <div>
-            {hours.map((h) => (
-              <div key={h} style={{ height: H }} className="pr-2.5 text-right text-[11px] tabular text-muted">
-                <span className="relative -top-2">{h} h</span>
-              </div>
-            ))}
-          </div>
-          {days.map((d) => {
-            const k = dkey(d);
-            const list = events.filter((e) => e.date === k && !e.allDay);
-            return (
-              <div key={k} className="relative border-l border-line" style={{ height: hours.length * H }}>
-                {hours.map((h) => (
-                  <div key={h} className="border-t border-line" style={{ height: H }}>
-                    {/* La demi-heure : un filet plus discret */}
-                    <div className="h-1/2 border-b border-line/50" />
+          {events.some((e) => e.allDay) && (
+            <div className="grid border-b border-line" style={cols}>
+              <span className="pr-2.5 pt-2.5 text-right text-[11px] text-muted">Journée</span>
+              {days.map((d) => {
+                const k = dkey(d);
+                return (
+                  <div key={k} className="min-w-0 space-y-1 border-l border-line p-1">
+                    {events
+                      .filter((e) => e.allDay && e.date === k)
+                      .map((e) => (
+                        <button
+                          key={e.id}
+                          onClick={() => onSelect(e)}
+                          title={[e.title, e.subtitle].filter(Boolean).join(", ")}
+                          className={cn(
+                            "block w-full truncate rounded-md px-2 py-1 text-left text-[12px] font-medium transition-[filter] duration-200 hover:brightness-110",
+                            selected === e.id && "ring-2 ring-[var(--ring)]",
+                          )}
+                          style={tint(e.hue)}
+                        >
+                          {e.title}
+                        </button>
+                      ))}
                   </div>
-                ))}
-                {list.map((e, n) => {
-                  const s = e.start ? toMin(e.start) : 9 * 60;
-                  const en = e.end ? Math.max(toMin(e.end), s + 30) : s + 60;
-                  const top = ((Math.max(s, from * 60) - from * 60) / 60) * H;
-                  const h = Math.max(((en - Math.max(s, from * 60)) / 60) * H - 3, 26);
-                  const overlap = list.filter((o) => (o.start ?? "09:00") === (e.start ?? "09:00")).length > 1;
-                  const time = e.start ? `${hhmm(e.start)}${e.end ? ` – ${hhmm(e.end)}` : ""}` : "Horaire à préciser";
-                  return (
-                    <button
-                      key={e.id}
-                      onClick={() => onSelect(e)}
-                      title={[e.title, time, e.subtitle].filter(Boolean).join(", ")}
-                      className={cn(
-                        "rise-in absolute z-10 overflow-hidden rounded-lg px-2 text-left transition-[transform,filter] duration-200 ease-out hover:-translate-y-px hover:brightness-110",
-                        h < 44 ? "py-0.5" : "py-1.5",
-                        selected === e.id && "ring-2 ring-[var(--ring)]",
-                        e.muted && "opacity-60",
-                      )}
-                      style={{
-                        top: top + 2,
-                        height: h,
-                        left: overlap ? `calc(${(n % 2) * 50}% + 3px)` : 3,
-                        right: overlap ? `calc(${(1 - (n % 2)) * 50}% + 3px)` : 3,
-                        ...tint(e.hue),
-                      }}
-                    >
-                      <p className={cn("text-[12.5px] font-semibold leading-snug", h >= 76 ? "line-clamp-2" : "truncate", e.muted && "line-through")}>
-                        {e.title}
-                      </p>
-                      {h >= 40 && <p className="truncate text-[11.5px] leading-snug opacity-85">{time}</p>}
-                      {h >= 92 && e.subtitle && <p className="truncate text-[11.5px] leading-snug opacity-70">{e.subtitle}</p>}
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
-          {showNow && (
-            // L'heure courante : un pointillé rouge sur toute la semaine, son heure dans la marge
-            <div
-              className="pointer-events-none absolute inset-x-0 z-20 flex items-center"
-              style={{ top: PAD + ((nowMin - from * 60) / 60) * H - 8 }}
-            >
-              <span className="w-[56px] shrink-0 bg-panel pr-2 text-right text-[11px] font-medium leading-4 tabular text-danger">
-                {hhmm(format(now, "HH:mm"))}
-              </span>
-              <span className="-ml-[3px] size-1.5 shrink-0 rounded-full bg-danger" />
-              <span className="flex-1 border-t border-dotted border-danger" />
+                );
+              })}
             </div>
           )}
+          <div className="relative grid" style={{ ...cols, paddingTop: PAD }}>
+            <div>
+              {rows.map((r) => (
+                <div
+                  key={r.h}
+                  style={{ height: heightOf(r) }}
+                  className={cn("pr-2.5 text-right tabular", r.folded ? "text-[10px] text-faint" : "text-[11px] text-muted")}
+                >
+                  <span className="relative -top-2">{r.h} h</span>
+                </div>
+              ))}
+            </div>
+            {days.map((d) => {
+              const k = dkey(d);
+              const list = timed.filter((e) => e.date === k);
+              return (
+                <div key={k} className="relative border-l border-line" style={{ height: total }}>
+                  {rows.map((r) => (
+                    <div
+                      key={r.h}
+                      className={cn("border-t border-line", r.folded && "bg-[color-mix(in_oklab,var(--fg)_3%,transparent)]")}
+                      style={{ height: heightOf(r) }}
+                    >
+                      {/* La demi-heure : un filet plus discret, inutile sur une heure repliée */}
+                      {!r.folded && <div className="h-1/2 border-b border-line/50" />}
+                    </div>
+                  ))}
+                  {list.map((e, n) => {
+                    const [s, en] = span(e);
+                    const top = yOf(Math.max(s, from * 60));
+                    const h = Math.max(yOf(Math.min(en, to * 60)) - top - 3, 26);
+                    const overlap = list.filter((o) => (o.start ?? "09:00") === (e.start ?? "09:00")).length > 1;
+                    const time = e.start ? `${hhmm(e.start)}${e.end ? ` – ${hhmm(e.end)}` : ""}` : "Horaire à préciser";
+                    return (
+                      <button
+                        key={e.id}
+                        onClick={() => onSelect(e)}
+                        title={[e.title, time, e.subtitle].filter(Boolean).join(", ")}
+                        className={cn(
+                          "rise-in absolute z-10 overflow-hidden rounded-lg px-2 text-left transition-[transform,filter] duration-200 ease-out hover:-translate-y-px hover:brightness-110",
+                          h < 44 ? "py-0.5" : "py-1.5",
+                          selected === e.id && "ring-2 ring-[var(--ring)]",
+                          e.muted && "opacity-60",
+                        )}
+                        style={{
+                          top: top + 2,
+                          height: h,
+                          left: overlap ? `calc(${(n % 2) * 50}% + 3px)` : 3,
+                          right: overlap ? `calc(${(1 - (n % 2)) * 50}% + 3px)` : 3,
+                          ...tint(e.hue),
+                        }}
+                      >
+                        <p
+                          className={cn(
+                            "text-[12.5px] font-semibold leading-snug",
+                            h >= 76 ? "line-clamp-2" : "truncate",
+                            e.muted && "line-through",
+                          )}
+                        >
+                          {e.title}
+                        </p>
+                        {h >= 40 && <p className="truncate text-[11.5px] leading-snug opacity-85">{time}</p>}
+                        {h >= 92 && e.subtitle && <p className="truncate text-[11.5px] leading-snug opacity-70">{e.subtitle}</p>}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+            {showNow && (
+              // L'heure courante : un pointillé rouge sur toute la semaine, son heure dans la marge
+              <div
+                className="pointer-events-none absolute inset-x-0 z-20 flex items-center"
+                style={{ top: PAD + yOf(nowMin) - 8 }}
+              >
+                <span className="w-[56px] shrink-0 bg-panel pr-2 text-right text-[11px] font-medium leading-4 tabular text-danger">
+                  {hhmm(format(now, "HH:mm"))}
+                </span>
+                <span className="-ml-[3px] size-1.5 shrink-0 rounded-full bg-danger" />
+                <span className="flex-1 border-t border-dotted border-danger" />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

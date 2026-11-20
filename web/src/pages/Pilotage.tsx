@@ -24,6 +24,7 @@ import { Button, Dialog, Empty, cn } from "@/components/ui";
 import { CountUp, LoadingRows, type Tone } from "@/components/gov";
 import { motion } from "motion/react";
 import { ByDirection } from "@/components/directions";
+import { MeetingPeek } from "@/components/MeetingViews";
 
 import { api } from "@/lib/api";
 import { useCan, useMe } from "@/lib/hooks";
@@ -131,6 +132,8 @@ export function PilotagePage() {
   const can = useCan();
   const [arbitrating, setArbitrating] = useState<DecisionSource | null>(null);
   const [lateOpen, setLateOpen] = useState(false);
+  /** Le rendez-vous de l'agenda dont on regarde la fiche rapide. */
+  const [peek, setPeek] = useState<Overview["agenda"][number] | null>(null);
   const {
     data: o,
     isLoading,
@@ -197,7 +200,6 @@ export function PilotagePage() {
       : form(code).color;
   // L'agenda : les sept jours qui viennent, sur la grille horaire du calendrier des réunions
   const days = Array.from({ length: 7 }, (_, n) => addDays(parseISO(o.today), n));
-  const hrefOf = new Map(o.agenda.map((a) => [a.id, a.href]));
   const events: CalEvent[] = o.agenda.map((a) => ({
     id: a.id,
     date: a.date,
@@ -309,9 +311,8 @@ export function PilotagePage() {
                 events={events}
                 from={firstHour}
                 to={lastHour}
-                rowHeight={52}
                 minColumn={92}
-                onSelect={(e) => nav(hrefOf.get(e.id) ?? "/reunions")}
+                onSelect={(e) => setPeek(o.agenda.find((a) => a.id === e.id) ?? null)}
               />
             </li>
           ) : o.agenda.length ? (
@@ -321,9 +322,14 @@ export function PilotagePage() {
                 <span className="w-[52px] shrink-0 whitespace-nowrap text-[12px] tabular text-muted">
                   {format(parseISO(a.date), "d MMM", { locale: fr })}
                 </span>
-                <Link to={a.href} className="min-w-0 flex-1 truncate hover:underline" title={a.title}>
+                <button
+                  type="button"
+                  onClick={() => setPeek(a)}
+                  className="min-w-0 flex-1 truncate text-left hover:underline"
+                  title={a.title}
+                >
                   {a.title}
-                </Link>
+                </button>
                 {a.time && (
                   <span className="shrink-0 whitespace-nowrap text-[12.5px] tabular text-muted">
                     {Number(a.time.slice(0, 2))} h {a.time.slice(3, 5)}
@@ -433,6 +439,38 @@ export function PilotagePage() {
 
       <ByDirection />
 
+      {/* Un rendez-vous de l'agenda s'ouvre d'abord ici : l'essentiel sans quitter l'accueil, le dossier à un clic */}
+      <MeetingPeek id={peek?.form === "reunion" ? peek.id : null} onClose={() => setPeek(null)} />
+      {peek && peek.form !== "reunion" && (
+        <Dialog
+          open
+          onOpenChange={(v) => !v && setPeek(null)}
+          title={peek.title}
+          description={`${form(peek.form).label} · ${format(parseISO(peek.date), "EEEE d MMMM", { locale: fr })}`}
+          width={460}
+          footer={
+            <Button variant="primary" onClick={() => nav(peek.href)}>
+              Ouvrir le dossier
+            </Button>
+          }
+        >
+          <dl className="text-[13px]">
+            {(
+              [
+                ["Horaire", peek.time ? `${Number(peek.time.slice(0, 2))} h ${peek.time.slice(3, 5)}` : "Sur la journée"],
+                ["Lieu", peek.place],
+              ] as [string, string | null][]
+            )
+              .filter(([, v]) => !!v)
+              .map(([l, v]) => (
+                <div key={l} className="flex items-baseline justify-between gap-4 border-t border-line py-2 first:border-t-0 first:pt-0">
+                  <dt className="shrink-0 text-muted">{l}</dt>
+                  <dd className="min-w-0 truncate text-right font-medium">{v}</dd>
+                </div>
+              ))}
+          </dl>
+        </Dialog>
+      )}
       {arbitrating && <DecisionDialog source={arbitrating} onClose={() => setArbitrating(null)} />}
     </div>
   );

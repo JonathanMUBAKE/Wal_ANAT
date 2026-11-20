@@ -390,6 +390,14 @@ autres écrans ont reçu l'habillage (couleurs, filets, rayons, barre latérale,
 se traitent un par un après accord, dans l'ordre Décisions, Courrier et Parapheur, Réunions, Mon entité, Projet,
 Portefeuille, RH et Congés.
 
+Compléments demandés le même jour :
+
+| Demande | Réponse |
+|---|---|
+| Garder l'ancien design pour comparer, et pouvoir y revenir | Étiquette Git `design-avant-2026-11-20` (état juste avant les retouches du jour) ; la nouvelle direction vit sur la branche `design-sobre`, non fusionnée |
+| « Trop fade » : des accents sur les points d'attention | La couleur dit l'urgence : rouge pour un retard ou une alerte, ambre pour ce qui attend une action, vert pour ce qui est tenu, bleu pour l'information ; carte « Retards » teintée, liseré de couleur sur les lignes en alerte, barre d'avancement colorée |
+| Un composant adapté à chaque contenu, avec bascule de vue | Agenda en semaine (sept colonnes) ou en liste ; risques en matrice probabilité × impact ou en liste ; la bascule se retient sur le poste. À étendre : réunions, congés (calendrier d'équipe), tâches (liste, tableau, calendrier), organigramme |
+
 ## Avancement
 
 | Date | Lot | Fait |

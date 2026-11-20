@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, ShieldAlert, Target } from "lucide-react";
+import { Grid3x3, List, Plus, ShieldAlert, Target } from "lucide-react";
+import { RiskMatrix, ViewSwitch } from "@/components/views";
+import { useLocalPref } from "@/components/collection";
 import { Button, Empty, Spinner, cn } from "@/components/ui";
 import { Drawer, DrawerSection } from "@/components/drawer";
 import {
@@ -111,6 +113,7 @@ export function RisksPage() {
   // Les indicateurs ont leur propre droit (RI-2).
   const manage = can("risks.manage");
   const manageIndicators = can("indicators.manage");
+  const [view, setView] = useLocalPref<"liste" | "matrice">("anat.vue.risques", "liste");
   const openRisk = (r: Risk) => (manage || r.owner_id === me?.id ? setRisk(r) : undefined);
   const canCreate = tab === "risques" ? manage : manageIndicators;
   return (
@@ -177,6 +180,18 @@ export function RisksPage() {
         ]}
       />
       <div className="mx-auto max-w-[1480px] p-4 sm:px-8 sm:py-6">
+        {tab === "risques" && !!risks?.length && (
+          <div className="mb-3 flex justify-end">
+            <ViewSwitch
+              value={view}
+              onChange={setView}
+              options={[
+                { id: "liste", label: "Liste", Icon: List },
+                { id: "matrice", label: "Matrice", Icon: Grid3x3 },
+              ]}
+            />
+          </div>
+        )}
         <Section>
           {error ? (
             <p className="p-5 text-[13px] text-danger">{(error as Error).message}</p>
@@ -184,6 +199,16 @@ export function RisksPage() {
             !risks ? (
               <div className="p-5">
                 <Spinner />
+              </div>
+            ) : risks.length && view === "matrice" ? (
+              <div className="p-5">
+                <RiskMatrix
+                  risks={risks.filter((r) => r.status === "open")}
+                  onOpen={(id) => {
+                    const r = risks.find((x) => x.id === id);
+                    if (r) openRisk(r);
+                  }}
+                />
               </div>
             ) : risks.length ? (
               <RiskTable risks={risks} onOpen={openRisk} canOpen={(r) => manage || r.owner_id === me?.id} />

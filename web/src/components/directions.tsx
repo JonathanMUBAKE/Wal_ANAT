@@ -89,12 +89,15 @@ export function PlanBar({
         aria-label={`Réalisé ${progress} %${expected !== null ? `, attendu à date ${expected} %` : ""}`}
       >
         <span
-          className="absolute inset-y-0 left-0 rounded-full bg-fg"
+          className={cn(
+            "absolute inset-y-0 left-0 rounded-full",
+            behind ? "bg-danger" : expected !== null && progress >= expected ? "bg-success" : "bg-warning",
+          )}
           style={{ width: `${progress}%` }}
         />
         {expected !== null && (
           <span
-            className="absolute -top-1 h-3.5 w-0.5 rounded-full bg-danger"
+            className="absolute -top-1 h-3.5 w-0.5 rounded-full bg-fg"
             style={{ left: `calc(${Math.min(expected, 100)}% - 1px)` }}
           />
         )}
@@ -181,7 +184,12 @@ export function DirectionTable({
             const late = d.tasks.overdue + d.decisions.late + d.mail.late + d.recommendations.late;
             return (
               <tr key={d.id} className="border-t border-line hover:bg-hover">
-                <td className="py-3 pl-4 pr-3">
+                <td
+                  className={cn(
+                    "border-l-[3px] py-3 pl-[13px] pr-3",
+                    d.assessment === "alerte" ? "border-l-danger" : d.assessment === "vigilance" ? "border-l-warning" : "border-l-transparent",
+                  )}
+                >
                   <Link to={`/pilotage/directions/${d.id}`} className="hover:underline">
                     {d.name}
                   </Link>

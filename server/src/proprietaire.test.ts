@@ -110,7 +110,7 @@ describe("propriété technique et fonction de DG", () => {
     const n = await ctx.db.one<{ title: string }>(
       "SELECT title FROM notifications WHERE user_id = 'u_alice' AND kind = 'access.sensitive_granted' ORDER BY created_at DESC LIMIT 1",
     );
-    expect(n?.title).toMatch(/Fiston/);
+    expect(n?.title).toMatch(/Ingénierie territoriale/);
   });
 });
 

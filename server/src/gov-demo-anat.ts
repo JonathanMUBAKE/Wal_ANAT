@@ -469,6 +469,87 @@ export async function anatContent(svc: Services, org: string, units: [string, st
   await new Gaps(svc).detect("u_alice", org);
   // Une agence vivante : décisions, courrier, risques, plans, partenaires, attributions (thème 7, suite)
   await anatLife(svc, org);
+  await byFunction(svc, org);
+}
+
+/**
+ * Comptes désignés par leur fonction (demande de l'utilisateur, 20/11/2026) : aucun nom de personne dans la
+ * démonstration ; les noms réels viendront plus tard. Le nom de la DG se lit dans un réglage local (ANAT_DG_NAME,
+ * fichier .env exclu du dépôt) : il ne part jamais sur GitHub.
+ */
+const FUNCTIONS: [string, string, string][] = [
+  ["u_alice", "Directrice générale", "Directrice générale"],
+  ["u_ines", "Assistante de direction", "Assistante de direction"],
+  ["u_albert", "Directeur technique", "Directeur technique"],
+  ["u_hugo", "Directeur Communication et Partenariats", "Directeur de la Communication et des Partenariats"],
+  ["u_karim", "Chef de cellule Ingénierie territoriale", "Chef de la cellule Ingénierie territoriale"],
+  ["u_jeanpierre", "Chef de cellule Études et Prospective", "Chef de la cellule Études et Prospective"],
+  ["u_patrick", "Chef de cellule Cartographie et SIG", "Chef de la cellule Cartographie et SIG"],
+  ["u_theo", "Chef de cellule Suivi-évaluation", "Chef de la cellule Suivi-évaluation"],
+  ["u_sylvie", "Chef de cellule Ressources humaines", "Chef de la cellule Ressources humaines"],
+  ["u_rose", "Chef de cellule Communication", "Chef de la cellule Communication"],
+  ["u_joseph", "Représentant provincial Nord", "Représentant provincial Nord"],
+  ["u_prisca", "Chef d'antenne Sud", "Chef de l'Antenne Sud"],
+  ["u_cedric", "Responsable informatique", "Responsable informatique (administrateur système)"],
+  ["u_chloe", "Agent Études et Prospective", "Chargée d'études"],
+  ["u_aimee", "Agent Cartographie et SIG", "Géomaticienne"],
+  ["u_samuel", "Agent Suivi-évaluation", "Chargé de suivi-évaluation"],
+  ["u_mireille", "Agent Ressources humaines", "Gestionnaire des ressources humaines"],
+];
+const slug = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/^\.+|\.+$/g, "");
+
+async function byFunction(svc: Services, org: string) {
+  const db = svc.db;
+  const dg = process.env.ANAT_DG_NAME?.trim();
+  const before = await db.query<{ id: string; name: string }>("SELECT id, name FROM users WHERE id = ANY($1)", [
+    FUNCTIONS.map(([id]) => id),
+  ]);
+  const label = new Map(FUNCTIONS.map(([id, l]) => [id, id === "u_alice" && dg ? dg : l]));
+  // Remplacements : noms complets d'abord, puis prénoms et noms seuls (les plus longs en premier)
+  const swaps: [string, string][] = [];
+  for (const u of before) {
+    const to = label.get(u.id)!;
+    if (u.name === to) continue;
+    swaps.push([u.name, to]);
+    for (const part of u.name.split(" ").filter((w) => w.length > 2)) swaps.push([part, to]);
+  }
+  swaps.sort((x, y) => y[0].length - x[0].length);
+  const cols = await db.query<{ table_name: string; column_name: string; data_type: string }>(
+    `SELECT c.table_name, c.column_name, c.data_type FROM information_schema.columns c
+       JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema
+      WHERE c.table_schema = 'public' AND t.table_type = 'BASE TABLE' AND c.data_type IN ('text', 'jsonb')
+        AND c.table_name NOT IN ('users', 'partner_contacts', 'partner_history')`,
+  );
+  for (const c of cols)
+    for (const [from, to] of swaps) {
+      const col = `"${c.column_name}"`;
+      const value = c.data_type === "jsonb" ? `replace(${col}::text, $1, $2)::jsonb` : `replace(${col}, $1, $2)`;
+      await db.query(
+        `UPDATE "${c.table_name}" SET ${col} = ${value} WHERE ${col}::text LIKE '%' || $1 || '%'`,
+        [from, c.data_type === "jsonb" ? JSON.stringify(to).slice(1, -1) : to],
+      );
+    }
+  for (const [id, , title] of FUNCTIONS) {
+    const name = label.get(id)!;
+    await db.query("UPDATE users SET name = $2, title = $3, email = $4 WHERE id = $1", [
+      id,
+      name,
+      title,
+      `${id === "u_alice" ? "dg" : slug(FUNCTIONS.find((x) => x[0] === id)![1])}@anat.example`,
+    ]);
+    await db.query(
+      "UPDATE agent_records SET civility = '', first_names = $3, last_name = '', function_title = $4 WHERE org_id = $1 AND user_id = $2",
+      [org, id, name, title],
+    );
+  }
+  // L'Agence compte des directions et des cellules : départements et services deviennent des cellules
+  await db.query("UPDATE org_units SET kind = 'cellule' WHERE org_id = $1 AND kind IN ('departement', 'service')", [org]);
 }
 
 /** Le jeu générique crée un second espace (Studio Lumen) : il n'a pas sa place dans la démonstration de l'Agence. */

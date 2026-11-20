@@ -133,6 +133,49 @@ describe("démonstration ANAT", () => {
     expect(agents).toEqual([]);
   });
 
+  // Demande de l'utilisateur (20/11/2026) : aucun nom de personne ; chaque compte porte sa fonction (Directeur, Chef de
+  // cellule, Agent…). Le nom de la DG vient d'un réglage local (ANAT_DG_NAME), jamais du dépôt.
+  const FORMER = [
+    "Bernadette", "Mbuyi", "Esther", "Mukendi", "Clarisse", "Diala", "Fiston", "Banza", "Gaston", "Kalala", "Didier",
+    "Lukusa", "Albert", "Mwamba", "Cédric", "Jean-Pierre", "Kabongo", "Patrick", "Aimée", "Ngalula", "Samuel",
+    "Kalonji", "Sylvie", "Kasongo", "Mireille", "Ngoy", "Rose Mbombo", "Mbombo", "Joseph", "Tshibangu", "Prisca", "Kanku",
+  ];
+  it("ne montre aucun nom de personne : chaque compte porte sa fonction", async () => {
+    const users = await q<{ id: string; name: string; email: string }>(
+      "SELECT u.id, u.name, u.email FROM users u JOIN org_members m ON m.user_id = u.id WHERE m.org_id = $1 AND NOT u.is_ai",
+      [org],
+    );
+    const by = new Map(users.map((u) => [u.id, u.name]));
+    expect(by.get("u_alice")).toBe(process.env.ANAT_DG_NAME?.trim() || "Directrice générale");
+    expect(by.get("u_albert")).toBe("Directeur technique");
+    expect(by.get("u_karim")).toBe("Chef de cellule Ingénierie territoriale");
+    expect(by.get("u_chloe")).toMatch(/^Agent/);
+    const mail = new Map(users.map((u) => [u.id, u.email]));
+    expect(mail.get("u_aimee")).toBe("agent.cartographie.et.sig@anat.example");
+    expect(mail.get("u_karim")).toBe("chef.de.cellule.ingenierie.territoriale@anat.example");
+    for (const u of users) for (const w of FORMER) expect(`${u.name} ${u.email}`, u.id).not.toContain(w);
+    const cols = await q<{ table_name: string; column_name: string }>(
+      "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public' AND data_type IN ('text', 'jsonb')",
+    );
+    for (const c of cols) {
+      if (["audit_log", "partner_contacts", "partner_history"].includes(c.table_name)) continue;
+      for (const w of FORMER) {
+        const r = await ctx.db.one<{ n: number }>(
+          `SELECT count(*)::int AS n FROM "${c.table_name}" WHERE "${c.column_name}"::text LIKE $1`,
+          [`%${w}%`],
+        );
+        expect(r?.n ?? 0, `${c.table_name}.${c.column_name} contient « ${w} »`).toBe(0);
+      }
+    }
+  }, 120_000);
+
+  it("organise l'Agence en directions et cellules", async () => {
+    const kinds = await q<{ kind: string }>("SELECT DISTINCT kind FROM org_units WHERE org_id = $1", [org]);
+    expect(kinds.map((k) => k.kind)).not.toContain("departement");
+    expect(kinds.map((k) => k.kind)).not.toContain("service");
+    expect(kinds.map((k) => k.kind)).toContain("cellule");
+  });
+
   it("présente la DG avec le profil DG et confie les dossiers RH au service RH", async () => {
     const dg = await ctx.db.one<{ role: string; profile: string; name: string }>(
       "SELECT om.role, om.profile_id AS profile, ap.name FROM org_members om JOIN access_profiles ap ON ap.id = om.profile_id WHERE om.org_id = $1 AND om.user_id = 'u_alice'",

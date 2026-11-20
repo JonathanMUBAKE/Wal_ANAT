@@ -10,12 +10,12 @@ Les personnes et les entités citées sont celles de la démonstration (données
 
 | Personne | Profil | Fonction dans la démo |
 |---|---|---|
-| Bernadette Mbuyi | Propriétaire | Directrice générale |
-| Esther Mukendi | Assistant(e) de direction | Assistante de direction |
-| Fiston Banza | Chef d'entité | Chef du département Ingénierie territoriale |
-| Didier Lukusa | Chef d'entité | Directeur de la Communication et des Partenariats |
-| Clarisse Diala | Agent | Chargée d'études |
-| Gaston Kalala | Agent | Chef du service Suivi-évaluation |
+| La DG | Propriétaire | Directrice générale |
+| L'assistante de direction | Assistant(e) de direction | Assistante de direction |
+| Le chef de cellule Ingénierie territoriale | Chef d'entité | Chef du département Ingénierie territoriale |
+| Le directeur Communication et Partenariats | Chef d'entité | Directeur de la Communication et des Partenariats |
+| L'agent Études et Prospective | Agent | Chargée d'études |
+| Le chef de cellule Suivi-évaluation | Agent | Chef du service Suivi-évaluation |
 
 ## Avancement
 
@@ -66,12 +66,12 @@ Activité des coéquipiers IA.
 
 | Personne | Saisir | Ce qui vous attend | Tâches |
 |---|---|---|---|
-| Bernadette (DG) | Les 6 boutons | Courrier à imputer 2 · À signer 1 · Votre entité : ANAT, 5 retards | 1 ouverte |
-| Esther (assistante) | 5 boutons | Courrier à imputer 2 · Votre entité : Ressources humaines | 3 |
-| Fiston (chef d'entité) | Viser ou signer seulement | Mon courrier 1 (en retard) · À signer 1 · Ingénierie territoriale 3 retards · Décisions à exécuter 2 | 8, dont 2 sous-tâches |
-| Didier (chef d'entité) | Viser ou signer seulement | Votre entité : 0 retard | 6, 1 en retard |
-| Gaston (Agent) | Viser ou signer seulement | Votre entité : Suivi-évaluation, 2 retards | 7, 3 en retard |
-| Clarisse (Agent) | Viser ou signer seulement | Votre entité : Études et Prospective | 7, dont 2 sous-tâches |
+| La DG | Les 6 boutons | Courrier à imputer 2 · À signer 1 · Votre entité : ANAT, 5 retards | 1 ouverte |
+| L'assistante de direction (assistante) | 5 boutons | Courrier à imputer 2 · Votre entité : Ressources humaines | 3 |
+| Le chef de cellule Ingénierie territoriale (chef d'entité) | Viser ou signer seulement | Mon courrier 1 (en retard) · À signer 1 · Ingénierie territoriale 3 retards · Décisions à exécuter 2 | 8, dont 2 sous-tâches |
+| Le directeur Communication et Partenariats (chef d'entité) | Viser ou signer seulement | Votre entité : 0 retard | 6, 1 en retard |
+| Le chef de cellule Suivi-évaluation (Agent) | Viser ou signer seulement | Votre entité : Suivi-évaluation, 2 retards | 7, 3 en retard |
+| L'agent Études et Prospective (Agent) | Viser ou signer seulement | Votre entité : Études et Prospective | 7, dont 2 sous-tâches |
 
 ### Cas d'usage
 
@@ -81,7 +81,7 @@ Activité des coéquipiers IA.
   l'intéresse (décisions en retard, arbitrages, santé des directions) est sur le Tableau de bord DG.
 - **L'assistante arrive.** Les 2 courriers à imputer et les raccourcis de saisie conviennent.
   Mais une carte « Votre entité : Ressources humaines » s'affiche, car elle est encore cheffe des RH.
-- **Un agent, Gaston, arrive.** Ses 3 tâches en retard sont utiles. Mais il voit un bloc « Saisir »
+- **Un agent, le chef de cellule Suivi-évaluation, arrive.** Ses 3 tâches en retard sont utiles. Mais il voit un bloc « Saisir »
   réduit à « Viser ou signer », et une carte « Votre entité » car la démo le fait chef d'un service
   alors que son profil est Agent.
 
@@ -91,7 +91,7 @@ Activité des coéquipiers IA.
 |---|---|---|---|
 | A-1 | L'Accueil de la DG est une page de collaborateur (mes tâches, mes projets, IA). Sa page de travail, le Tableau de bord DG, est ailleurs. | Haute | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : pas de redirection automatique ; l'Accueil de qui a le droit de pilotage mène d'abord au tableau de bord DG |
 | A-2 | Les retards de l'Accueil comptent les sous-tâches, contrairement à la règle du lot 3 (« un retard = une tâche principale échue ») appliquée par le Tableau de bord DG et la vue par direction. Les chiffres diffèrent d'une page à l'autre. | Haute | **Fait** (lot 6) : l'Accueil compte les retards comme le tableau de bord (tâches principales) ; les sous-tâches échues restent listées sans être comptées |
-| A-3 | Profil et responsabilité se contredisent : Gaston et Clarisse (Agent) dirigent une entité, Esther (assistante) reste cheffe des RH, Fiston dirige aussi l'Antenne Sud et la Représentation Nord. L'outil ne contrôle pas cet écart. | Haute | Décidé le 17/11/2026 : on refuse la nomination (lot 3) ; démo corrigée (lot 1) |
+| A-3 | Profil et responsabilité se contredisent : Le chef de cellule Suivi-évaluation et l'agent Études et Prospective (Agent) dirigent une entité, l'assistante de direction (assistante) reste cheffe des RH, le chef de cellule Ingénierie territoriale dirige aussi l'Antenne Sud et la Représentation Nord. L'outil ne contrôle pas cet écart. | Haute | Décidé le 17/11/2026 : on refuse la nomination (lot 3) ; démo corrigée (lot 1) |
 | A-4 | La DG apparaît comme « Propriétaire » dans l'en-tête, pas comme « DG ». | Moyenne | **Fait** (lot 1) : la DG a le profil « DG » et s'affiche comme telle |
 | A-5 | « Viser ou signer » figure deux fois (Saisir et Ce qui vous attend). Pour un agent, le bloc Saisir se réduit à ce seul bouton. | Moyenne | **Fait** (lot 11) : l'Accueil n'affiche plus « Viser ou signer » dans « Saisir » : le parapheur reste dans « Ce qui vous attend » |
 | A-6 | « Nouveau projet » s'affiche pour tout le monde sans vérifier le droit de créer un projet ; un stagiaire ou un consultant reçoit un refus en cliquant. | Moyenne | **Fait** (lot 3) : « Nouveau projet » ne s'affiche qu'à qui a le droit de créer un projet |
@@ -134,28 +134,28 @@ Une tâche du registre d'entité s'affiche avec l'étiquette « Tâche d'entité
 
 | Personne | Livrables | Tâches ouvertes | Remarque |
 |---|---|---|---|
-| Bernadette (DG) | Aucun à valider (la note d'orientation n'est pas encore remise) | 1 : « Grille de rémunération 2027 » | Une seule tâche, de RH |
-| Esther (assistante) | — | 3, dont 2 de start-up (« Instrumentation analytics du tunnel de paiement », « Tableau de suivi des conversions ») | |
-| Fiston (chef d'entité) | À produire : « Note d'orientation stratégique » (Schéma national d'aménagement) | 8 : 1 en retard, 3 cette semaine, 2 plus tard, 2 sans échéance | Les 2 sans échéance sont les sous-tâches « Apple Pay » et « Google Pay » |
-| Didier (chef d'entité) | À produire : « Rapport intermédiaire », en retard depuis le 15/11 | 6, dont 1 en retard | Le rapport en retard n'apparaît pas dans « En retard » |
-| Clarisse (Agent) | — | 7, dont 2 sous-tâches | Toutes issues de projets de start-up |
-| Gaston (Agent) | — | 7, dont 3 en retard | 5 tâches d'entité (Suivi-évaluation), 2 de projet |
+| La DG | Aucun à valider (la note d'orientation n'est pas encore remise) | 1 : « Grille de rémunération 2027 » | Une seule tâche, de RH |
+| L'assistante de direction (assistante) | — | 3, dont 2 de start-up (« Instrumentation analytics du tunnel de paiement », « Tableau de suivi des conversions ») | |
+| Le chef de cellule Ingénierie territoriale (chef d'entité) | À produire : « Note d'orientation stratégique » (Schéma national d'aménagement) | 8 : 1 en retard, 3 cette semaine, 2 plus tard, 2 sans échéance | Les 2 sans échéance sont les sous-tâches « Apple Pay » et « Google Pay » |
+| Le directeur Communication et Partenariats (chef d'entité) | À produire : « Rapport intermédiaire », en retard depuis le 15/11 | 6, dont 1 en retard | Le rapport en retard n'apparaît pas dans « En retard » |
+| L'agent Études et Prospective (Agent) | — | 7, dont 2 sous-tâches | Toutes issues de projets de start-up |
+| Le chef de cellule Suivi-évaluation (Agent) | — | 7, dont 3 en retard | 5 tâches d'entité (Suivi-évaluation), 2 de projet |
 
 ### Cas d'usage
 
-- **Fiston ouvre sa liste le lundi.** Il voit d'abord son livrable à produire, puis « Intégrer le SDK
+- **Le chef de cellule Ingénierie territoriale ouvre sa liste le lundi.** Il voit d'abord son livrable à produire, puis « Intégrer le SDK
   de paiement » en retard. Trois tâches portent l'étiquette « Tâche d'entité » sans dire de quelle
   entité : il en dirige cinq (Ingénierie territoriale, Antenne Sud, Représentation Nord, Cartographie
   et SIG, Suivi-évaluation). En bas, « Apple Pay » et « Google Pay » apparaissent seules, sans
   rappeler qu'elles sont des sous-tâches de « Intégrer le SDK de paiement ».
 - **La DG confie une tâche à son assistante, échéance au 17/11.** Test réel sur la démo, puis tâche
-  supprimée. Connectée comme Esther, l'assistante a pu :
+  supprimée. Connectée comme l'assistante de direction, l'assistante a pu :
   - repousser l'échéance au 31/03/2027 : accepté ;
   - changer l'intitulé : accepté ;
   - baisser la priorité : accepté ;
   - se retirer la tâche ou la passer à quelqu'un d'autre : refusé, à juste titre ;
   - la supprimer : refusé, à juste titre ;
-  - la marquer terminée : accepté, et la DG a reçu « Esther Mukendi a terminé « Titre changé par
+  - la marquer terminée : accepté, et la DG a reçu « l'assistante de direction a terminé « Titre changé par
     l'agent » ».
 
   La DG n'a reçu aucune notification pour le report d'échéance ni pour le changement d'intitulé. Elle
@@ -163,7 +163,7 @@ Une tâche du registre d'entité s'affiche avec l'étiquette « Tâche d'entité
 - **La DG clique sur « Tâche hors projet » depuis Mes tâches.** La fenêtre s'intitule « Confier une
   tâche » et vise l'entité racine « ANAT (démonstration) ». Le champ « Confiée à » vaut par défaut
   « Non attribuée pour l'instant » : une tâche enregistrée ainsi n'apparaît pas dans Mes tâches. La
-  liste propose « Fiston Banza — Cartographie et SIG » alors que Fiston dirige l'Ingénierie
+  liste propose « le chef de cellule Ingénierie territoriale — Cartographie et SIG » alors que le chef de cellule Ingénierie territoriale dirige l'Ingénierie
   territoriale.
 
 ### Remarques
@@ -175,11 +175,11 @@ Une tâche du registre d'entité s'affiche avec l'étiquette « Tâche d'entité
 | T-3 | Une tâche confiée se termine d'un clic, sans validation du responsable. Pour un travail qui produit un document, l'agent déclare « fait » et la tâche sort des retards. | Moyenne | **Fait** (lot 4) : le chargé déclare la tâche réalisée ; le responsable confirme la clôture ou la renvoie avec un motif |
 | T-4 | « Tâche d'entité » ne dit pas de quelle entité. Pour un chef qui en dirige plusieurs, les tâches ne se distinguent pas. | Moyenne | **Fait** (lot 11) : une tâche hors projet porte le nom de son entité |
 | T-5 | Les sous-tâches apparaissent seules (« Apple Pay ») sans le nom de la tâche parente. | Moyenne | **Fait** (lot 11) : une sous-tâche s'affiche « Tâche parente › sous-tâche » |
-| T-6 | Un livrable en retard (Didier, « Rapport intermédiaire ») reste dans « Livrables » avec une date rouge. Il n'est ni dans « En retard » ni dans le compteur de retards. | Moyenne | **Fait** (lot 11) : les livrables en retard se rangent en tête, en rouge, et comptent avec les retards de Mes tâches |
-| T-7 | Le valideur ne voit pas un livrable en retard qu'il devra valider (Fiston ne voit pas le rapport de Didier tant qu'il n'est pas remis). | Basse | **Fait** (lot 12) : « Attendus de vos équipes » : le valideur voit les livrables à venir avant leur remise, retards en tête |
+| T-6 | Un livrable en retard (le directeur Communication et Partenariats, « Rapport intermédiaire ») reste dans « Livrables » avec une date rouge. Il n'est ni dans « En retard » ni dans le compteur de retards. | Moyenne | **Fait** (lot 11) : les livrables en retard se rangent en tête, en rouge, et comptent avec les retards de Mes tâches |
+| T-7 | Le valideur ne voit pas un livrable en retard qu'il devra valider (le chef de cellule Ingénierie territoriale ne voit pas le rapport du directeur Communication et Partenariats tant qu'il n'est pas remis). | Basse | **Fait** (lot 12) : « Attendus de vos équipes » : le valideur voit les livrables à venir avant leur remise, retards en tête |
 | T-8 | « Tâche hors projet » ouvre « Confier une tâche » avec « Non attribuée » par défaut. Depuis Mes tâches, on veut une tâche pour soi : elle n'apparaît pas dans la liste après création. | Moyenne | **Fait** (lot 11) : depuis Mes tâches, « Tâche hors projet » est attribuée par défaut à la personne |
 | T-9 | Pour la DG, « Tâche hors projet » vise l'entité racine « ANAT », pas la Direction générale. | Moyenne | **Fait** (lot 11) : la tâche hors projet vise l'entité de rattachement de la personne (la Direction générale pour la DG) |
-| T-10 | Données de démo : Fiston est rattaché à Cartographie et SIG alors qu'il dirige l'Ingénierie territoriale. Même famille que A-3. | Moyenne (démo) | **Fait** (lot 1) : Fiston est rattaché à l'Ingénierie territoriale, qu'il dirige |
+| T-10 | Données de démo : Le chef de cellule Ingénierie territoriale est rattaché à Cartographie et SIG alors qu'il dirige l'Ingénierie territoriale. Même famille que A-3. | Moyenne (démo) | **Fait** (lot 1) : Le chef de cellule Ingénierie territoriale est rattaché à l'Ingénierie territoriale, qu'il dirige |
 | T-11 | Pas de recherche, de filtre par projet ou entité, ni de tri autre que par échéance. Pas d'export. | Basse | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : recherche et filtre par projet ou entité dans Mes tâches ; l'export reste à faire |
 | T-12 | Un responsable ne voit pas ici les tâches qu'il a confiées aux autres (« confiées par moi »). Vérifié au module 3 : « Suivi des agents » montre les tâches des agents de l'entité et des entités rattachées, mais pas une tâche confiée à une personne hors de cet arbre. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : « Tâches que j'ai confiées » dans Mes tâches : chargé, lieu, échéance, retard, report demandé, déclaration à valider |
 | T-13 | Tâches de démo de start-up (paiement, Apple Pay, tunnel de conversion, stores). Même famille que A-7. | Moyenne (démo) | **Fait** (lot 1) : tâches de l'Agence (couches foncières, relevés de terrain, formation des agents provinciaux) |
@@ -230,29 +230,29 @@ propriétaire ou administrateur de l'organisation est responsable de toutes les 
 
 | Personne | Entité par défaut | Ouvertes | Retards | Agents suivis | Projets de l'entité |
 |---|---|---|---|---|---|
-| Bernadette (DG) | ANAT (démonstration) parmi 12 | 27 | 5 | 5 | 5, dont 3 de start-up |
-| Esther (assistante) | **Ressources humaines** (responsable), pas la Direction générale où elle travaille | 0 | 0 | 0 | 3, dont « Campagne de lancement » et « Application mobile v2 » |
-| Fiston (chef d'entité) | Ingénierie territoriale parmi 5 | 12, dont 2 non attribuées | 3 | **1** (Gaston) | 3 : Plateforme de tests automatisés, Schéma national d'aménagement, Refonte du site web |
-| Didier (chef d'entité) | Direction de la Communication et des Partenariats | **0** | 0 | **0** | 4, dont 3 de start-up |
-| Clarisse (Agent) | Études et Prospective (responsable) | 0 | 0 | 0 | 3, toutes de start-up |
-| Gaston (Agent) | Suivi-évaluation (responsable) | 5 | 2 | 0 | 0 |
+| La DG | ANAT (démonstration) parmi 12 | 27 | 5 | 5 | 5, dont 3 de start-up |
+| L'assistante de direction (assistante) | **Ressources humaines** (responsable), pas la Direction générale où elle travaille | 0 | 0 | 0 | 3, dont « Campagne de lancement » et « Application mobile v2 » |
+| Le chef de cellule Ingénierie territoriale (chef d'entité) | Ingénierie territoriale parmi 5 | 12, dont 2 non attribuées | 3 | **1** (le chef de cellule Suivi-évaluation) | 3 : Plateforme de tests automatisés, Schéma national d'aménagement, Refonte du site web |
+| Le directeur Communication et Partenariats (chef d'entité) | Direction de la Communication et des Partenariats | **0** | 0 | **0** | 4, dont 3 de start-up |
+| L'agent Études et Prospective (Agent) | Études et Prospective (responsable) | 0 | 0 | 0 | 3, toutes de start-up |
+| Le chef de cellule Suivi-évaluation (Agent) | Suivi-évaluation (responsable) | 5 | 2 | 0 | 0 |
 
 ### Cas d'usage
 
-- **Fiston prépare sa réunion de département du lundi.** Il ouvre l'Ingénierie territoriale : 12
-  tâches ouvertes, 3 en retard, un taux d'achèvement de 29 %. Les 3 retards sont tous de Gaston, qui
-  dirige lui-même le service Suivi-évaluation. Fiston n'a qu'un « agent » à suivre ; ses propres 6
+- **Le chef de cellule Ingénierie territoriale prépare sa réunion de département du lundi.** Il ouvre l'Ingénierie territoriale : 12
+  tâches ouvertes, 3 en retard, un taux d'achèvement de 29 %. Les 3 retards sont tous du chef de cellule Suivi-évaluation, qui
+  dirige lui-même le service Suivi-évaluation. Le chef de cellule Ingénierie territoriale n'a qu'un « agent » à suivre ; ses propres 6
   tâches de projet ne figurent pas dans la charge de l'entité, alors que ses 3 tâches d'entité sont
   comptées dans les chiffres.
-- **Fiston regarde les projets de son département.** Il y trouve « Refonte du site web », portée par
-  Clarisse (Études et Prospective), et le « Schéma national d'aménagement », porté par la DG. Un projet
+- **Le chef de cellule Ingénierie territoriale regarde les projets de son département.** Il y trouve « Refonte du site web », portée par
+  L'agent Études et Prospective (Études et Prospective), et le « Schéma national d'aménagement », porté par la DG. Un projet
   est compté dans l'entité dès que le responsable ou un agent en est membre, même s'il ne le porte pas.
-- **Didier ouvre sa direction.** Tout est à 0, et « Aucun agent ». Ses 6 tâches, dont une en retard,
-  n'apparaissent pas : le responsable est exclu de son propre suivi. La DG, elle, voit bien Didier
+- **Le directeur Communication et Partenariats ouvre sa direction.** Tout est à 0, et « Aucun agent ». Ses 6 tâches, dont une en retard,
+  n'apparaissent pas : le responsable est exclu de son propre suivi. La DG, elle, voit bien le directeur Communication et Partenariats
   avec 6 tâches ouvertes et 1 retard.
-- **Esther ouvre Mon entité.** Elle tombe sur les Ressources humaines, entité vide, au lieu de la
+- **L'assistante de direction ouvre Mon entité.** Elle tombe sur les Ressources humaines, entité vide, au lieu de la
   Direction générale où elle travaille. Elle doit changer d'entité dans la liste.
-- **Réunions.** Pour Fiston, la « Réunion hebdomadaire de l'Ingénierie territoriale » qu'il préside
+- **Réunions.** Pour le chef de cellule Ingénierie territoriale, la « Réunion hebdomadaire de l'Ingénierie territoriale » qu'il préside
   apparaît deux fois (réunions de l'entité, et réunions où il est attendu), marquée « Pas encore
   convoquée ». Trois autres réunions s'appellent seulement « Réunion » (même constat que A-8).
 
@@ -262,13 +262,13 @@ propriétaire ou administrateur de l'organisation est responsable de toutes les 
 |---|---|---|---|
 | E-1 | Le responsable est exclu de la charge et du suivi de son entité. Ses tâches de projet ne comptent pas, ses tâches d'entité comptent : le périmètre des chiffres est incohérent. Un directeur seul dans sa direction voit « 0 » alors qu'il a un retard. | Haute | **Fait** (lot 10) : le responsable compte dans les chiffres et la charge de son entité, en tête, avec la mention « Responsable » |
 | E-2 | Les projets « de l'entité » incluent tout projet dont le responsable ou un agent est simple membre (Refonte du site web chez l'Ingénierie territoriale, Schéma national chez plusieurs entités). Les mêmes projets se retrouvent comptés dans plusieurs entités. | Haute | **Fait** (lot 10) : projets portés par l'entité et projets auxquels elle contribue, distingués et comptés à part |
-| E-3 | Le chef d'une entité rattachée apparaît comme simple « agent » dans le suivi de l'entité du dessus (Gaston, chef du Suivi-évaluation, dans le suivi de Fiston). | Moyenne | **Fait** (lot 11) : le chef d'une entité rattachée est présenté « Responsable · entité », après le responsable et avant les agents |
-| E-4 | L'entité ouverte par défaut est la première entité dirigée, pas l'entité de rattachement (Esther arrive aux RH, la DG à la racine « ANAT » et non à la Direction générale). | Moyenne | **Fait** (lot 11) : Mon entité s'ouvre sur l'entité de rattachement, même quand la personne en dirige d'autres |
+| E-3 | Le chef d'une entité rattachée apparaît comme simple « agent » dans le suivi de l'entité du dessus (le chef de cellule Suivi-évaluation, chef du Suivi-évaluation, dans le suivi du chef de cellule Ingénierie territoriale). | Moyenne | **Fait** (lot 11) : le chef d'une entité rattachée est présenté « Responsable · entité », après le responsable et avant les agents |
+| E-4 | L'entité ouverte par défaut est la première entité dirigée, pas l'entité de rattachement (l'assistante de direction arrive aux RH, la DG à la racine « ANAT » et non à la Direction générale). | Moyenne | **Fait** (lot 11) : Mon entité s'ouvre sur l'entité de rattachement, même quand la personne en dirige d'autres |
 | E-5 | Une réunion de l'entité que l'on préside apparaît deux fois dans la vue d'ensemble. | Basse | **Fait** (lot 12) : une réunion déjà listée pour l'entité ne se répète plus dans « Où vous êtes attendu·e » |
-| E-6 | La réunion hebdomadaire présidée par Fiston, dans 7 jours, est « Pas encore convoquée », sans rappel visible. | Basse | **Fait** (lot 12) : le rappel « réunion à convoquer » prévient aussi la présidence, même sans rédacteur désigné |
+| E-6 | La réunion hebdomadaire présidée par le chef de cellule Ingénierie territoriale, dans 7 jours, est « Pas encore convoquée », sans rappel visible. | Basse | **Fait** (lot 12) : le rappel « réunion à convoquer » prévient aussi la présidence, même sans rédacteur désigné |
 | E-7 | Le bouton « Projet » s'affiche pour tout le monde ; le serveur refuse ensuite si le profil n'a pas le droit de créer un projet. Même famille que A-6. | Moyenne | **Fait** (lot 3) : le bouton n'apparaît qu'avec le droit de créer un projet |
 | E-8 | Pas de vue « tâches que j'ai confiées » (voir T-12) : une tâche confiée hors de l'arbre de l'entité n'est suivie nulle part par celui qui l'a confiée. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : voir T-12 : une tâche confiée hors de l'arbre de l'entité est suivie par qui l'a confiée |
-| E-9 | Données de démo : départements vides ou presque (Fiston n'a qu'un agent, Didier et Clarisse aucun), Esther cheffe des RH, projets de start-up. Même famille que A-3 et A-7. | Haute (démo) | **Fait en partie** (lots 1 et 9) : un chef distinct par entité, des agents dans les services, projets de l'Agence ; certaines entités restent peu peuplées |
+| E-9 | Données de démo : départements vides ou presque (le chef de cellule Ingénierie territoriale n'a qu'un agent, le directeur Communication et Partenariats et l'agent Études et Prospective aucun), l'assistante de direction cheffe des RH, projets de start-up. Même famille que A-3 et A-7. | Haute (démo) | **Fait en partie** (lots 1 et 9) : un chef distinct par entité, des agents dans les services, projets de l'Agence ; certaines entités restent peu peuplées |
 | E-10 | Vers 800 px de large, les onglets débordent (« Suivi des agents » coupé) et défilent horizontalement. | Basse | **Fait** (lot 12) : les onglets passent à la ligne dès la tablette ; ils ne défilent que sur téléphone |
 
 ### Ce qui fonctionne bien
@@ -314,10 +314,10 @@ Sans dossier ouvert par les RH, la page affiche « Pas encore de dossier ».
 
 | Lecteur | Son dossier | Dossiers des autres |
 |---|---|---|
-| Bernadette (DG, propriétaire) | Oui | Les 5 autres |
-| Esther (assistante, cheffe des RH dans la démo) | Oui | Aucun |
-| Fiston (chef d'entité) | Oui | Gaston, qui dépend de lui |
-| Didier, Clarisse, Gaston | Oui | Aucun |
+| La DG (DG, propriétaire) | Oui | Les 5 autres |
+| L'assistante de direction (assistante, cheffe des RH dans la démo) | Oui | Aucun |
+| Le chef de cellule Ingénierie territoriale (chef d'entité) | Oui | Le chef de cellule Suivi-évaluation, qui dépend de lui |
+| Le directeur Communication et Partenariats, l'agent Études et Prospective, le chef de cellule Suivi-évaluation | Oui | Aucun |
 
 Un responsable d'entité lit le dossier complet de ses agents : identité, situation de famille, pièce
 d'identité, adresse personnelle, personnes à prévenir et observations du service RH.
@@ -326,16 +326,16 @@ d'identité, adresse personnelle, personnes à prévenir et observations du serv
 
 | Personne | Fonction affichée | Entité affichée | Constat |
 |---|---|---|---|
-| Bernadette | Directrice générale | Direction générale | Historique des affectations vide |
-| Esther | Assistante de direction | Direction générale | Correct |
-| Fiston | Chef du département Ingénierie territoriale | **Cartographie et SIG** | Fonction et entité se contredisent, jusque dans l'historique |
-| Didier | Directeur de la Communication et des Partenariats | **Communication** (service) | Rangé dans un service, pas dans sa direction |
-| Clarisse | Chargée d'études | Études et Prospective | Correct |
-| Gaston | Chef du service Suivi-évaluation | Suivi-évaluation | Correct (mais profil Agent, voir A-3) |
+| La DG | Directrice générale | Direction générale | Historique des affectations vide |
+| L'assistante de direction | Assistante de direction | Direction générale | Correct |
+| Le chef de cellule Ingénierie territoriale | Chef du département Ingénierie territoriale | **Cartographie et SIG** | Fonction et entité se contredisent, jusque dans l'historique |
+| Le directeur Communication et Partenariats | Directeur de la Communication et des Partenariats | **Communication** (service) | Rangé dans un service, pas dans sa direction |
+| L'agent Études et Prospective | Chargée d'études | Études et Prospective | Correct |
+| Le chef de cellule Suivi-évaluation | Chef du service Suivi-évaluation | Suivi-évaluation | Correct (mais profil Agent, voir A-3) |
 
 ### Cas d'usage
 
-- **Fiston veut vérifier sa situation avant une promotion.** Il lit son grade (Ingénieur en chef), sa
+- **Le chef de cellule Ingénierie territoriale veut vérifier sa situation avant une promotion.** Il lit son grade (Ingénieur en chef), sa
   catégorie (A), sa date d'entrée. Son entité affichée est « Cartographie et SIG » alors qu'il dirige
   le département : il doit écrire au service RH, hors de l'outil, pour le signaler.
 - **Un agent change de numéro de téléphone.** Il ne peut plus le corriger lui-même (décision du
@@ -353,10 +353,10 @@ d'identité, adresse personnelle, personnes à prévenir et observations du serv
 | D-2 | Un chef d'entité lit le dossier complet de ses agents, données personnelles comprises (famille, pièce d'identité, adresse, personnes à prévenir). | Haute | **Décidé et fait** (lot 7) : le chef lit la partie administrative (situation, affectations, diplômes) ; famille, pièce d'identité, coordonnées personnelles et personnes à prévenir restent à l'agent et aux RH |
 | D-3 | La consultation d'un dossier par quelqu'un d'autre que l'agent n'est pas journalisée. | Haute | **Fait** (lot 5) : chaque consultation par un tiers est journalisée (« Dossier d'agent consulté par un tiers », une fois par lecteur et par demi-heure) |
 | D-4 | L'agent ne peut rien corriger, mais aucun bouton ne lui permet de signaler une erreur ou de demander une mise à jour au service RH. | Moyenne | **Fait** (lot 8) : « Demander une correction » ; le service RH traite, l'agent est prévenu, la demande reste au dossier |
-| D-5 | Fonction et entité se contredisent dans les dossiers de démo (Fiston rangé dans Cartographie et SIG, Didier dans le service Communication). Même famille que A-3. | Moyenne (démo) | **Fait** (lot 1) : fonction et entité des dossiers alignées sur le rattachement |
+| D-5 | Fonction et entité se contredisent dans les dossiers de démo (le chef de cellule Ingénierie territoriale rangé dans Cartographie et SIG, le directeur Communication et Partenariats dans le service Communication). Même famille que A-3. | Moyenne (démo) | **Fait** (lot 1) : fonction et entité des dossiers alignées sur le rattachement |
 | D-6 | L'historique des affectations de la DG est vide. | Basse (démo) | **Fait** (lot 12) : chaque dossier de la démonstration a son affectation ; la DG garde aussi son poste précédent |
 | D-7 | Les adresses professionnelles sont en « @cadence.app » et la nationalité vaut « Fictivienne ». | Basse (démo) | **Fait** (lot 9) : adresses en « @anat.example » (domaine fictif réservé), domaine de l'institution assorti, nationalité « Congolaise » |
-| D-8 | Dans la démo, personne d'autre que la DG ne gère les dossiers RH : la cheffe des RH (Esther) n'en lit aucun. La DG ne pouvant pas modifier son propre dossier, il ne peut être tenu par personne. | Moyenne (démo) | **Fait** (lot 1) : la cheffe du service RH tient les dossiers (droit « gérer les RH ») |
+| D-8 | Dans la démo, personne d'autre que la DG ne gère les dossiers RH : la cheffe des RH (l'assistante de direction) n'en lit aucun. La DG ne pouvant pas modifier son propre dossier, il ne peut être tenu par personne. | Moyenne (démo) | **Fait** (lot 1) : la cheffe du service RH tient les dossiers (droit « gérer les RH ») |
 | D-9 | Le dossier ne contient ni congés, ni pièces (actes de nomination, contrats, arrêtés), ni formations, ni évaluations. | Moyenne | **Décidé et fait** (lot 8) : pièces du dossier (RH et agent), formations, évaluations (RH et agent), congés et absences |
 
 ### Ce qui fonctionne bien
@@ -392,26 +392,26 @@ mémoriser) qu'un humain accepte, retouche ou refuse.
 | En attente de votre accord | Les actions proposées, à accepter, retoucher ou refuser |
 | Journal des interventions | Chaque intervention, étape par étape |
 
-Droits dans la démo : la DG, Fiston et Didier peuvent confier du travail à l'IA et valider ses actions.
-Esther, Clarisse et Gaston peuvent seulement utiliser l'assistant. Seule la DG peut créer des règles
+Droits dans la démo : la DG, le chef de cellule Ingénierie territoriale et le directeur Communication et Partenariats peuvent confier du travail à l'IA et valider ses actions.
+L'assistante de direction, l'agent Études et Prospective et le chef de cellule Suivi-évaluation peuvent seulement utiliser l'assistant. Seule la DG peut créer des règles
 d'automatisation.
 
 ### Test réel sur la démo
 
-Fiston crée, dans « Application mobile v2 », la tâche « Préparer un point d'avancement » et la confie
+Le chef de cellule Ingénierie territoriale crée, dans « Application mobile v2 », la tâche « Préparer un point d'avancement » et la confie
 à Atlas. La tâche, ses propositions et le commentaire validé ont été supprimés après le test.
 
 1. **Deux coéquipiers démarrent au lieu d'un.** Atlas, à qui la tâche est confiée, et Nova, déclenchée
    par la règle « Triage du backlog » parce que la tâche est tombée dans la colonne Backlog.
 2. **Ils proposent exactement la même chose** : un commentaire de relance sur la tâche « Intégrer le
-   SDK de paiement », adressé à Fiston lui-même (« @Fiston petite relance… 4 j de retard »). Le rôle
+   SDK de paiement », adressé au chef de cellule Ingénierie territoriale lui-même (« @Chef petite relance… 4 j de retard »). Le rôle
    de Nova (triage qualité) n'a pas joué.
-3. **Qui est prévenu :** la DG et Fiston reçoivent une notification. Gaston et Clarisse ne sont pas
+3. **Qui est prévenu :** la DG et le chef de cellule Ingénierie territoriale reçoivent une notification. Le chef de cellule Suivi-évaluation et l'agent Études et Prospective ne sont pas
    prévenus, mais voient les deux propositions dans leur liste « en attente ».
 4. **Qui peut décider :**
-   - Gaston, éditeur du projet sans le droit de valider : refusé ;
-   - Didier, qui a le droit de valider mais seulement en lecture sur le projet : refusé ;
-   - Fiston, administrateur du projet : il retouche le texte et valide. Il a donc validé une relance
+   - Le chef de cellule Suivi-évaluation, éditeur du projet sans le droit de valider : refusé ;
+   - Le directeur Communication et Partenariats, qui a le droit de valider mais seulement en lecture sur le projet : refusé ;
+   - Le chef de cellule Ingénierie territoriale, administrateur du projet : il retouche le texte et valide. Il a donc validé une relance
      qui le visait lui-même.
 5. **Refuser n'arrête pas l'intervention.** Après les refus, les deux coéquipiers ont continué :
    commentaire sur « Tests de non-régression iOS », puis création de deux sous-tâches génériques
@@ -425,8 +425,8 @@ Fiston crée, dans « Application mobile v2 », la tâche « Préparer un point 
 | I-1 | Une règle d'automatisation peut être réglée en « validation automatique » pour créer une tâche, commenter ou mémoriser sans accord humain. Cela contredit la règle du projet « l'IA propose et un humain décide ». | Haute | **Décidé et fait** (lot 4) : validation automatique supprimée ; les règles existantes repassent en validation humaine |
 | I-2 | Refuser une proposition n'arrête pas l'intervention : le coéquipier enchaîne d'autres propositions. | Haute | **Fait** (lot 4) : un refus arrête l'intervention ; « Refuser, laisser continuer » permet au coéquipier de poursuivre |
 | I-3 | Deux coéquipiers peuvent travailler en même temps sur la même tâche (tâche confiée + règle) et proposer la même action. | Moyenne | **Fait** (lot 11) : une seule intervention de l'IA à la fois sur une tâche, quel que soit le coéquipier |
-| I-4 | La personne visée par une proposition peut la valider elle-même (Fiston valide la relance qui le concerne). | Moyenne | **Décidé et fait** (lot 4) : la personne visée (chargé de la tâche touchée, personne mentionnée) ne valide pas la proposition et n'est pas sollicitée |
-| I-5 | Les propositions sont visibles par des personnes qui ne peuvent pas les valider (Gaston, Clarisse) et absentes des notifications de ceux qui pourraient (autres éditeurs avec le droit). | Basse | **Fait** (lot 12) : seules les personnes qui peuvent décider (droit de valider l'IA et rôle d'éditeur) voient et reçoivent les propositions |
+| I-4 | La personne visée par une proposition peut la valider elle-même (le chef de cellule Ingénierie territoriale valide la relance qui le concerne). | Moyenne | **Décidé et fait** (lot 4) : la personne visée (chargé de la tâche touchée, personne mentionnée) ne valide pas la proposition et n'est pas sollicitée |
+| I-5 | Les propositions sont visibles par des personnes qui ne peuvent pas les valider (le chef de cellule Suivi-évaluation, l'agent Études et Prospective) et absentes des notifications de ceux qui pourraient (autres éditeurs avec le droit). | Basse | **Fait** (lot 12) : seules les personnes qui peuvent décider (droit de valider l'IA et rôle d'éditeur) voient et reçoivent les propositions |
 | I-6 | Les coéquipiers ne sont membres que des projets de start-up. Aucun projet de l'ANAT (Schéma national d'aménagement, RH) ne les utilise. | Moyenne (démo) | **Fait** (lot 1) : les coéquipiers travaillent dans les projets de l'Agence |
 | I-7 | Les rôles et consignes viennent d'une start-up (« chef de projet IA », « analyste QA et triage », bugs, étapes de reproduction). | Moyenne | **Fait** (lot 1) : rôles de chargé de suivi et d'analyste des données, règle de tri sans vocabulaire de start-up |
 | I-8 | Le ton de la page (« Des collègues qui ne dorment jamais ») et le message vide « Assignez une tâche à Atlas ou Nova » ne conviennent pas à un outil institutionnel. | Basse | **Fait** (lot 12) : ton institutionnel : « L'IA prépare le travail, une personne habilitée décide » |
@@ -489,7 +489,7 @@ assistante. Les chefs de direction et les agents reçoivent un refus.
   interministérielle, forum des villes durables…).
 - **Indicateurs** : plans de travail approuvés 5/8, provinces couvertes par un schéma 11/26,
   recommandations exécutées 62/90.
-- **Risques** : retard de décaissement du bailleur (20, Fiston), disponibilité des données
+- **Risques** : retard de décaissement du bailleur (20, le chef de cellule Ingénierie territoriale), disponibilité des données
   provinciales (9, la DG).
 
 ### Cas d'usage
@@ -506,7 +506,7 @@ assistante. Les chefs de direction et les agents reçoivent un refus.
   chiffres pour la même notion.
 - **Elle veut voir le détail des 10 retards.** La carte « Retards à résorber » n'est pas cliquable,
   contrairement aux trois autres chiffres.
-- **Fiston, chef de département, veut voir où en est sa direction.** Il n'a pas accès au tableau de
+- **Le chef de cellule Ingénierie territoriale, chef de département, veut voir où en est sa direction.** Il n'a pas accès au tableau de
   bord : seule sa page Mon entité lui donne ses chiffres, calculés autrement (voir E-1).
 
 ### Remarques
@@ -565,12 +565,12 @@ gestionnaire de l'agenda, et ne se supprime que par un gestionnaire. La suppress
 
 | Personne | Projets visibles | Activités visibles | Onglets de pilotage |
 |---|---|---|---|
-| Bernadette (DG) | 6 | 7, dont l'audience confidentielle avec le bailleur | Oui, et Contrats et paiements |
-| Esther (assistante) | **4** | 7, dont l'audience confidentielle | Oui, sans Contrats et paiements |
-| Fiston (chef d'entité) | 4 | 6 | Non, mais Contrats et paiements |
-| Didier (chef d'entité) | 4 | 6 | Non, mais Contrats et paiements |
-| Clarisse (Agent) | 3 | 6 | Non |
-| Gaston (Agent) | 2 | 6 | Non |
+| La DG | 6 | 7, dont l'audience confidentielle avec le bailleur | Oui, et Contrats et paiements |
+| L'assistante de direction (assistante) | **4** | 7, dont l'audience confidentielle | Oui, sans Contrats et paiements |
+| Le chef de cellule Ingénierie territoriale (chef d'entité) | 4 | 6 | Non, mais Contrats et paiements |
+| Le directeur Communication et Partenariats (chef d'entité) | 4 | 6 | Non, mais Contrats et paiements |
+| L'agent Études et Prospective (Agent) | 3 | 6 | Non |
+| Le chef de cellule Suivi-évaluation (Agent) | 2 | 6 | Non |
 
 ### Cas d'usage
 
@@ -583,7 +583,7 @@ gestionnaire de l'agenda, et ne se supprime que par un gestionnaire. La suppress
 - **L'assistante prépare le comité.** Elle voit le tableau de bord et la revue, mais seulement 4
   projets dans le portefeuille : la liste des projets ne montre que ceux dont on est membre. Deux
   projets suivis par la DG lui échappent.
-- **Un agent, Gaston, ouvre le Portefeuille.** Il voit toutes les commissions, conférences et
+- **Un agent, le chef de cellule Suivi-évaluation, ouvre le Portefeuille.** Il voit toutes les commissions, conférences et
   activités internes de la DG (« Commission interministérielle d'aménagement », « Inventaire du
   patrimoine immobilier » en difficulté). Seule l'audience marquée confidentielle lui est cachée.
 - **La DG compte ses décisions.** Le Tableau de bord annonce « 3 décisions attendues », la revue de
@@ -598,10 +598,10 @@ gestionnaire de l'agenda, et ne se supprime que par un gestionnaire. La suppress
 | F-2 | La liste des projets ne montre que les projets dont on est membre. Le portefeuille de l'assistante de la DG est incomplet (4 sur 6), alors qu'elle a accès au tableau de bord. | Haute | **Fait** (lot 10) : le droit de pilotage donne la lecture de tous les projets non privés de l'institution |
 | F-3 | « 3 décisions attendues » (tableau de bord) et « Arbitrages attendus : 0 » (revue) : deux notions proches, deux chiffres. | Moyenne | **Décidé et fait** (lot 6) : une seule notion, « décision attendue de la DG » : dossier marqué « décision attendue » ou arbitrage en attente, compté une fois ; la revue précise son périmètre (« sur ces projets ») |
 | F-4 | Tous les agents voient toutes les activités non confidentielles de la DG (commissions, conférences, activités internes, leur état). | Moyenne | **Décidé et fait** (lot 7) : un agent voit les activités dont il est responsable, dont il suit une suite, ou de son entité ; la direction voit tout le non-confidentiel |
-| F-5 | L'onglet « Contrats et paiements » est ouvert aux chefs d'entité (Fiston, Didier) mais pas à l'assistante de la DG. | Basse | **Fait** (lot 12) : le pilotage lit tous les contrats ; un gestionnaire ne lit que ceux de ses entités, de ses dossiers et de ses missions |
+| F-5 | L'onglet « Contrats et paiements » est ouvert aux chefs d'entité (le chef de cellule Ingénierie territoriale, le directeur Communication et Partenariats) mais pas à l'assistante de la DG. | Basse | **Fait** (lot 12) : le pilotage lit tous les contrats ; un gestionnaire ne lit que ceux de ses entités, de ses dossiers et de ses missions |
 | F-6 | Un responsable d'activité modifie lui-même l'état (santé) de son activité. L'état affiché est corrigé si des suites sont en retard, mais pas pour les autres signaux. | Basse | **Décidé (option prudente, en l'absence de l'utilisateur)** (lot 13) : même règle que F-1 : l'état déclaré reste, l'état calculé s'affiche à côté ; aucun changement de code |
 | F-7 | « Nouveau projet » apparaît dans l'onglet Projets sans vérifier le droit. Même famille que A-6 et E-7. | Basse | **Fait** (lot 3) : « Nouveau projet » ne s'affiche qu'avec le droit |
-| F-8 | Données de démo : « Campagne de lancement » a pour responsable Fiston, chef de l'Ingénierie territoriale ; projets de start-up. Même famille que A-7. | Moyenne (démo) | **Fait** (lot 1) : projets de l'Agence, confiés aux chefs concernés |
+| F-8 | Données de démo : « Campagne de lancement » a pour responsable le chef de cellule Ingénierie territoriale, chef de l'Ingénierie territoriale ; projets de start-up. Même famille que A-7. | Moyenne (démo) | **Fait** (lot 1) : projets de l'Agence, confiés aux chefs concernés |
 
 ### Ce qui fonctionne bien
 
@@ -644,7 +644,7 @@ validation du compte rendu. Aucun coéquipier IA ne peut inscrire de décision.
 
 ### Ce que la démo contient
 
-Deux décisions seulement, toutes deux confiées à Fiston et visibles par tous les profils :
+Deux décisions seulement, toutes deux confiées au chef de cellule Ingénierie territoriale et visibles par tous les profils :
 
 | Référence | Objet | État | Échéance |
 |---|---|---|---|
@@ -657,21 +657,21 @@ Aucune n'est rattachée à un dossier.
 
 | Action | Résultat |
 |---|---|
-| Gaston (agent) fait avancer la décision de Fiston | Refusé : « Seul le chargé d'exécution ou le secrétariat de la DG fait avancer une décision » |
-| Didier (chef d'une autre direction) la déclare exécutée | Refusé, même message |
-| Fiston repasse une décision « en cours » à l'état précédent | Refusé : « L'exécution d'une décision ne revient pas en arrière » |
-| Clarisse (agent) inscrit une décision | Refusé : pas le droit d'enregistrer les décisions de la DG |
+| Le chef de cellule Suivi-évaluation (agent) fait avancer la décision du chef de cellule Ingénierie territoriale | Refusé : « Seul le chargé d'exécution ou le secrétariat de la DG fait avancer une décision » |
+| Le directeur Communication et Partenariats (chef d'une autre direction) la déclare exécutée | Refusé, même message |
+| Le chef de cellule Ingénierie territoriale repasse une décision « en cours » à l'état précédent | Refusé : « L'exécution d'une décision ne revient pas en arrière » |
+| L'agent Études et Prospective (agent) inscrit une décision | Refusé : pas le droit d'enregistrer les décisions de la DG |
 | La DG inscrit une décision datée du mois prochain | Refusé : « La date de la décision ne peut pas être dans le futur » |
 
 ### Cas d'usage
 
 - **Après le comité, l'assistante inscrit trois décisions dictées par la DG.** Elle en a le droit. La
-  décision entre au registre, numérotée et figée, avec « Enregistrée par : Esther Mukendi ». La DG
+  décision entre au registre, numérotée et figée, avec « Enregistrée par : L'assistante de direction ». La DG
   n'a rien à confirmer : rien ne distingue une décision qu'elle a vue d'une décision saisie en son nom.
 - **L'assistante oublie le chargé d'exécution et l'échéance** (ils sont facultatifs). La décision est
   inscrite « à exécuter », sans responsable ni date : elle ne sera jamais en retard et n'apparaîtra
   dans le « À exécuter par moi » de personne.
-- **Fiston termine le rapport annuel de performance.** Il clique « Exécutée » et écrit le compte rendu
+- **Le chef de cellule Ingénierie territoriale termine le rapport annuel de performance.** Il clique « Exécutée » et écrit le compte rendu
   d'exécution. La décision est close ; l'auteur de l'inscription est prévenu. Personne ne vérifie que
   le rapport a bien été transmis.
 - **Une faute de frappe dans l'objet.** La décision ne se corrige pas : il faut la remplacer, ce qui
@@ -687,7 +687,7 @@ Aucune n'est rattachée à un dossier.
 | DEC-4 | Aucune correction possible, même d'une faute de frappe : il faut remplacer, ce qui crée un nouveau numéro. | Basse | **Décidé (option prudente, en l'absence de l'utilisateur)** (lot 13) : pas de correction d'une décision inscrite : on la remplace, ce qui garde la trace de la version première |
 | DEC-5 | Le formulaire « Inscrire une décision » de cette page ne propose pas de rattacher la décision à un dossier ; seule l'action « Arbitrer » depuis un dossier le fait. | Moyenne | **Fait** (lot 11) : le formulaire « Inscrire une décision » propose le dossier : projet, activité ou réunion |
 | DEC-6 | Tous les profils, agents compris, voient toutes les décisions non confidentielles. | Basse | **Décidé et fait** (lot 7) : un agent voit les décisions dont il est chargé ou dont le dossier le concerne (projet, activité, réunion) |
-| DEC-7 | Données de démo : deux décisions seulement, toutes deux pour Fiston, sans dossier d'origine. | Moyenne (démo) | **Fait** (lot 9) : onze décisions, issues de comités, de projets et d'activités, confiées à neuf personnes ; deux à confirmer par la DG, deux exécutées et confirmées |
+| DEC-7 | Données de démo : deux décisions seulement, toutes deux pour le chef de cellule Ingénierie territoriale, sans dossier d'origine. | Moyenne (démo) | **Fait** (lot 9) : onze décisions, issues de comités, de projets et d'activités, confiées à neuf personnes ; deux à confirmer par la DG, deux exécutées et confirmées |
 
 ### Ce qui fonctionne bien
 
@@ -739,24 +739,24 @@ Exports : compte rendu en PDF et en Word.
 
 - **Soumis à validation** : comité de direction du 09/11, soumis aujourd'hui, en attente de la DG
   (présidente). Il compte un point, une décision de séance (« recrutement d'un consultant pour le
-  diagnostic foncier ») et deux recommandations, avec seulement deux présents (la DG et Fiston).
+  diagnostic foncier ») et deux recommandations, avec seulement deux présents (la DG et le chef de cellule Ingénierie territoriale).
 - **Compte rendu à établir** : « Point d'étape des directions » du 13/11, sans ordre du jour.
 - **À venir** : 14 séances, dont le comité de direction d'aujourd'hui et le comité de pilotage du
   19/11 (convoqués), une série de 8 réunions hebdomadaires de l'Ingénierie territoriale et trois
   réunions avec les provinces (non convoquées).
-- **Recommandations** : « Transmettre le tableau de suivi budgétaire » (Fiston, en retard depuis le
+- **Recommandations** : « Transmettre le tableau de suivi budgétaire » (le chef de cellule Ingénierie territoriale, en retard depuis le
   14/11), « Préparer la note de conjoncture » (la DG, au 22/11).
 
-Fiston est rédacteur de 15 réunions sur 16, comité de direction compris.
+Le chef de cellule Ingénierie territoriale est rédacteur de 15 réunions sur 16, comité de direction compris.
 
 ### Tests réels
 
 | Action | Résultat |
 |---|---|
-| Fiston (rédacteur) valide son propre compte rendu | Refusé : « Le rédacteur ne peut pas valider son propre compte rendu » |
-| L'assistante, gestionnaire des réunions, valide le compte rendu | Refusé : « Seule la présidence de séance (Bernadette Mbuyi) valide ce compte rendu » |
-| Clarisse, non convoquée, répond à une convocation | Refusé : « Seuls les convoqués répondent à cette convocation » |
-| Fiston soumet le compte rendu vide de la réunion du 13/11 | Refusé : « Le compte rendu doit contenir au moins un point à l'ordre du jour » |
+| Le chef de cellule Ingénierie territoriale (rédacteur) valide son propre compte rendu | Refusé : « Le rédacteur ne peut pas valider son propre compte rendu » |
+| L'assistante, gestionnaire des réunions, valide le compte rendu | Refusé : « Seule la présidence de séance (la DG) valide ce compte rendu » |
+| L'agent Études et Prospective, non convoquée, répond à une convocation | Refusé : « Seuls les convoqués répondent à cette convocation » |
+| Le chef de cellule Ingénierie territoriale soumet le compte rendu vide de la réunion du 13/11 | Refusé : « Le compte rendu doit contenir au moins un point à l'ordre du jour » |
 
 ### Cas d'usage
 
@@ -789,7 +789,7 @@ Fiston est rédacteur de 15 réunions sur 16, comité de direction compris.
 | R-6 | Une réunion passée non tenue (13/11) reste « Compte rendu à établir » indéfiniment ; rien ne propose de la déclarer non tenue ou annulée. | Basse | **Fait** (lot 8) : une séance passée sans compte rendu se déclare non tenue, avec un motif ; rappel au rédacteur |
 | R-7 | Des réunions proches ne sont pas convoquées (revue avec le bailleur du 22/11, réunion avec les provinces du 24/11) et aucun rappel ne prévient le rédacteur. | Moyenne | **Fait** (lot 8) : rappel au rédacteur d'une séance non convoquée à 7 jours |
 | R-8 | Toutes les réunions non confidentielles sont visibles de tous, y compris le comité de direction et ses comptes rendus. | Moyenne | **Décidé et fait** (lot 7) : une réunion se voit de ses participants, de son entité, de son projet et de la direction ; le comité de direction reste à ses participants et à la direction |
-| R-9 | Données de démo : Fiston rédige 15 réunions sur 16, comité de direction compris ; le comité du 09/11 n'a que deux présents ; l'assistante n'est convoquée à rien. | Moyenne (démo) | **Fait** (lot 9) : l'assistante de la DG rédige les comités de direction et le point d'étape ; les sept membres du comité sont convoqués ; d'autres réunions ont leur propre rédacteur |
+| R-9 | Données de démo : Le chef de cellule Ingénierie territoriale rédige 15 réunions sur 16, comité de direction compris ; le comité du 09/11 n'a que deux présents ; l'assistante n'est convoquée à rien. | Moyenne (démo) | **Fait** (lot 9) : l'assistante de la DG rédige les comités de direction et le point d'étape ; les sept membres du comité sont convoqués ; d'autres réunions ont leur propre rédacteur |
 
 ### Ce qui fonctionne bien
 
@@ -826,13 +826,13 @@ Un projet affiche aussi ses propres risques dans son espace, pour son équipe.
 
 Droits : la page n'est ouverte qu'aux profils de pilotage (la DG et son assistante dans la démo).
 Créer ou modifier un risque ou un indicateur demande un autre droit, « gérer les risques », que
-possèdent la DG, Fiston et Didier. Chaque création et modification est journalisée.
+possèdent la DG, le chef de cellule Ingénierie territoriale et le directeur Communication et Partenariats. Chaque création et modification est journalisée.
 
 ### Ce que la démo contient
 
 | Risque | Score | Responsable | Mesures |
 |---|---|---|---|
-| Retard de décaissement du bailleur | 4 × 5 = 20 | Fiston | « Relance et plan de trésorerie » |
+| Retard de décaissement du bailleur | 4 × 5 = 20 | Le chef de cellule Ingénierie territoriale | « Relance et plan de trésorerie » |
 | Disponibilité des données provinciales | 3 × 3 = 9 | La DG | aucune |
 
 | Indicateur | Départ | Cible | Réalisé | Source |
@@ -849,12 +849,12 @@ Aucun risque n'est rattaché à un projet, aucun indicateur à une activité du 
 |---|---|---|
 | La DG | Oui | Oui |
 | L'assistante | Oui | **Non** |
-| Fiston, Didier (chefs) | **Non** (« accéder au poste de pilotage » refusé) | **Oui** : Fiston a pu enregistrer une modification de son risque par l'interface technique (sans rien changer) |
-| Clarisse, Gaston | Non | Non |
+| Le chef de cellule Ingénierie territoriale, le directeur Communication et Partenariats (chefs) | **Non** (« accéder au poste de pilotage » refusé) | **Oui** : Le chef de cellule Ingénierie territoriale a pu enregistrer une modification de son risque par l'interface technique (sans rien changer) |
+| L'agent Études et Prospective, le chef de cellule Suivi-évaluation | Non | Non |
 
 ### Cas d'usage
 
-- **Fiston est responsable du risque « Retard de décaissement du bailleur ».** Il ne peut pas ouvrir
+- **Le chef de cellule Ingénierie territoriale est responsable du risque « Retard de décaissement du bailleur ».** Il ne peut pas ouvrir
   la page Risques pour le voir, ni être prévenu d'un changement de score. Pourtant son profil peut
   créer et modifier n'importe quel risque, et même modifier les indicateurs stratégiques de la DG
   (résultat, cible), à condition de connaître l'identifiant.
@@ -925,22 +925,22 @@ Liste : plan, entité, année, nombre d'activités, avancement, retards, statut 
 | Plan de travail 2026 (exemple) | Direction de la Communication et des Partenariats | 2 | 45 % | 0 |
 | Plan de travail 2026 (exemple) | Direction technique | 3 | 67 % | 1 |
 
-Plan de l'Agence : « Rapport annuel de performance » (Fiston, fin le 13/11, 55 %, en retard),
+Plan de l'Agence : « Rapport annuel de performance » (le chef de cellule Ingénierie territoriale, fin le 13/11, 55 %, en retard),
 « Ateliers provinciaux de concertation » (5 ateliers sur 6, 80 %), « Révision du schéma
 d'aménagement » (réalisée par le projet « Schéma national d'aménagement »). Toutes les activités sont
-confiées à Fiston, sans date de début.
+confiées au chef de cellule Ingénierie territoriale, sans date de début.
 
-Droits dans la démo : tout le monde voit les plans, budgets compris ; Fiston et Didier peuvent les
+Droits dans la démo : tout le monde voit les plans, budgets compris ; le chef de cellule Ingénierie territoriale et le directeur Communication et Partenariats peuvent les
 préparer ; seule la DG les approuve.
 
 ### Cas d'usage
 
 - **Novembre : la Direction technique doit préparer son plan 2027.** Aucun plan 2027 n'est en
-  préparation, et rien ne le rappelle. Le jour où Didier, chef de la Communication, ouvre « Nouveau
+  préparation, et rien ne le rappelle. Le jour où le directeur Communication et Partenariats, chef de la Communication, ouvre « Nouveau
   plan », il peut choisir n'importe quelle entité, y compris la Direction technique : le droit
   « gérer les plans » n'est pas limité à sa propre direction. Il peut aussi modifier ou supprimer le
   brouillon d'une autre direction.
-- **Fiston met à jour l'avancement du « Rapport annuel de performance ».** Il saisit lui-même le
+- **Le chef de cellule Ingénierie territoriale met à jour l'avancement du « Rapport annuel de performance ».** Il saisit lui-même le
   pourcentage, sans pièce ni justification. Le même sujet existe au registre des décisions
   (DEC/2026/0002 « Transmission du rapport annuel de performance », en retard), mais les deux ne sont
   pas reliés.
@@ -960,7 +960,7 @@ préparer ; seule la DG les approuve.
 | PT-5 | Aucune campagne de préparation : pas de rappel pour le plan de l'année suivante, pas de vue « entités sans plan ». | Moyenne | **Fait** (lot 8) : campagne des plans (entités sans plan pour l'année) et relance de leurs chefs |
 | PT-6 | Tous les profils voient tous les plans, budgets prévus et dépensés compris. | Basse | **Décidé et fait** (lot 7) : budgets des plans réservés à la direction, aux chefs de l'entité et à qui prépare ou approuve les plans |
 | PT-7 | Les retards de la liste des plans sont calculés sur la date UTC du serveur (`CURRENT_DATE`), pas sur la date de Kinshasa : entre minuit et 1 h, un jour d'écart. | Basse | **Fait** (lot 12) : plus aucune requête ne compare à CURRENT_DATE (UTC) ; un test l'interdit |
-| PT-8 | Données de démo : 3 plans pour 12 entités, aucun pour la Direction générale ni l'Ingénierie territoriale ; toutes les activités de l'Agence confiées à Fiston. | Moyenne (démo) | **Fait** (lot 9) : plans de la Direction générale et de l'Ingénierie territoriale (en préparation) ; activités du plan de l'Agence réparties entre les directions |
+| PT-8 | Données de démo : 3 plans pour 12 entités, aucun pour la Direction générale ni l'Ingénierie territoriale ; toutes les activités de l'Agence confiées au chef de cellule Ingénierie territoriale. | Moyenne (démo) | **Fait** (lot 9) : plans de la Direction générale et de l'Ingénierie territoriale (en préparation) ; activités du plan de l'Agence réparties entre les directions |
 
 ### Ce qui fonctionne bien
 
@@ -1009,7 +1009,7 @@ Règles :
 
 | Partenaire | État | Point focal | Liens |
 |---|---|---|---|
-| Fonds fictif pour le développement territorial (FFDT) | Actif | Fiston | 2 contacts, 2 accords, 1 réunion, 2 notes |
+| Fonds fictif pour le développement territorial (FFDT) | Actif | Le chef de cellule Ingénierie territoriale | 2 contacts, 2 accords, 1 réunion, 2 notes |
 | Ministère fictif de l'Urbanisme et de l'Habitat (MFUH) | Actif | La DG | 1 contact, 3 accords, 1 courrier |
 | Université fictive des Grands Lacs (UFGL) | En discussion | aucun | 1 accord, 1 note |
 | Association fictive Terres et Villes | Suspendu | aucun | aucun |
@@ -1023,17 +1023,17 @@ présenté comme le bailleur du programme.
 
 | Action | Résultat |
 |---|---|
-| Gaston (agent) ajoute une note sur la fiche du ministère | Refusé : « Seuls les gestionnaires des partenariats et les points focaux modifient cette fiche » |
-| Didier, Directeur de la Communication **et des Partenariats**, crée un partenaire | **Refusé : « Votre profil ne vous autorise pas à : gérer les partenaires »** |
-| Fiston, point focal du FFDT, suspend la relation | Refusé : « Suspendre, clore ou rouvrir une relation est réservé aux gestionnaires des partenariats » |
+| Le chef de cellule Suivi-évaluation (agent) ajoute une note sur la fiche du ministère | Refusé : « Seuls les gestionnaires des partenariats et les points focaux modifient cette fiche » |
+| Le directeur Communication et Partenariats, Directeur de la Communication **et des Partenariats**, crée un partenaire | **Refusé : « Votre profil ne vous autorise pas à : gérer les partenaires »** |
+| Le chef de cellule Ingénierie territoriale, point focal du FFDT, suspend la relation | Refusé : « Suspendre, clore ou rouvrir une relation est réservé aux gestionnaires des partenariats » |
 | Les cinq autres comptes ouvrent l'annuaire | Ils voient 5 fiches ; la fiche confidentielle (AFCN) leur est cachée |
 
 ### Cas d'usage
 
-- **Didier, directeur des partenariats, rencontre un nouveau bailleur.** Il ne peut pas créer la
+- **Le directeur Communication et Partenariats, directeur des partenariats, rencontre un nouveau bailleur.** Il ne peut pas créer la
   fiche, ni la passer « en discussion », ni noter l'échange : seule la DG gère les partenaires dans
   la démo. Le directeur chargé des partenariats est simple lecteur de l'annuaire.
-- **Fiston, point focal du FFDT, apprend que le bailleur gèle ses décaissements.** Il peut noter
+- **Le chef de cellule Ingénierie territoriale, point focal du FFDT, apprend que le bailleur gèle ses décaissements.** Il peut noter
   l'échange mais pas suspendre la relation : il doit demander à un gestionnaire, hors de l'outil.
 - **Un agent consulte la fiche du FFDT** avant une réunion : il lit les notes d'échange (« calendrier
   des décaissements confirmé… »). Les notes d'échange sont visibles de tout profil qui voit
@@ -1046,7 +1046,7 @@ présenté comme le bailleur du programme.
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
 | PA-1 | Le Directeur de la Communication et des Partenariats n'a pas le droit de gérer les partenaires ; seule la DG l'a. | Haute (profils) | **Fait** (lot 3) : dans la démonstration, le directeur de la Communication et des Partenariats gère l'annuaire ; ailleurs, le droit se coche dans Profils et droits |
-| PA-2 | Un point focal ne peut pas suspendre une relation, même en urgence ; il n'a aucun moyen de le demander dans l'outil. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : le point focal demande la suspension, motif à l'appui ; les gestionnaires sont prévenus et décident |
+| PA-2 | Un point focal ne peut pas suspendre une relation, même en urgence ; il n'a aucun moyen du demander dans l'outil. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : le point focal demande la suspension, motif à l'appui ; les gestionnaires sont prévenus et décident |
 | PA-3 | Les notes d'échange sont lisibles par tous les profils qui voient l'annuaire. | Moyenne | **Fait** (lot 7) : notes d'échange réservées aux gestionnaires, aux points focaux et à la direction |
 | PA-4 | Rien ne signale un partenaire actif ou en discussion sans point focal (4 sur 6 dans la démo). | Moyenne | **Fait** (lot 11) : point focal obligatoire pour passer « En discussion » ou « Actif », et le dernier ne se retire pas ; une fiche ancienne sans point focal est signalée |
 | PA-5 | Rien ne signale une relation sans échange depuis longtemps (date de dernière note connue mais non exploitée). | Basse | **Fait** (lot 12) : une relation vivante sans échange noté depuis six mois est signalée (« sans contact ») |
@@ -1095,8 +1095,8 @@ officielle ne se supprime pas. L'IA ne pose aucun acte.
 
 | Référence | Objet | Parties | État | Période | Point focal |
 |---|---|---|---|---|---|
-| CONV/2025/0001 | Appui à l'élaboration des schémas provinciaux d'aménagement | FFDT, MFUH | En vigueur | 10/01/2025 → 10/01/2027 | Fiston |
-| — | Prolongation d'un an et extension à une quatrième province (avenant) | FFDT, MFUH | Préparation | — | Fiston |
+| CONV/2025/0001 | Appui à l'élaboration des schémas provinciaux d'aménagement | FFDT, MFUH | En vigueur | 10/01/2025 → 10/01/2027 | Le chef de cellule Ingénierie territoriale |
+| — | Prolongation d'un an et extension à une quatrième province (avenant) | FFDT, MFUH | Préparation | — | Le chef de cellule Ingénierie territoriale |
 | — | Partage des données cartographiques et formation des cadres provinciaux | UFGL | Au parapheur | → 20/11/2029, tacite | **aucun** |
 | — | Comité conjoint de suivi des plans d'urbanisme | MFUH | Préparation | — | La DG |
 
@@ -1104,7 +1104,7 @@ Les six comptes voient les quatre accords.
 
 ### Cas d'usage
 
-- **Fiston, point focal, envoie l'avenant au parapheur.** C'est lui qui compose le circuit : il peut
+- **Le chef de cellule Ingénierie territoriale, point focal, envoie l'avenant au parapheur.** C'est lui qui compose le circuit : il peut
   désigner comme signataire final n'importe quelle personne qui a accès au parapheur, c'est-à-dire
   tout le monde dans la démo, agents compris. L'outil vérifie seulement que la dernière étape est une
   signature et que l'auteur ne figure pas dans le circuit. À la signature, l'avenant entre en vigueur
@@ -1174,18 +1174,18 @@ Onglets : à signer, mes documents, tous, délégations ; export de la liste.
 
 | Référence | Document | Auteur | Circuit | État |
 |---|---|---|---|---|
-| PAR/2026/0001 | Note au ministère de tutelle | Fiston | Signature : la DG | En attente de la DG, échéance 18/11 |
-| PAR/2026/0002 | Convention de partenariat avec l'Université fictive des Grands Lacs | **La DG** | Signature : **Fiston** | En attente de Fiston |
+| PAR/2026/0001 | Note au ministère de tutelle | Le chef de cellule Ingénierie territoriale | Signature : la DG | En attente de la DG, échéance 18/11 |
+| PAR/2026/0002 | Convention de partenariat avec l'Université fictive des Grands Lacs | **La DG** | Signature : **le chef de cellule Ingénierie territoriale** | En attente du chef de cellule Ingénierie territoriale |
 
 Aucune délégation en cours.
 
 ### Cas d'usage
 
 - **La DG a préparé elle-même la convention avec l'université.** Comme l'auteur ne peut pas figurer
-  dans son circuit, elle ne peut pas la signer : le signataire désigné est Fiston, chef de
+  dans son circuit, elle ne peut pas la signer : le signataire désigné est le chef de cellule Ingénierie territoriale, chef de
   département. À sa signature, la convention entrera en vigueur au nom de l'Agence. C'est le cas
   CV-1 vécu dans la démo.
-- **Fiston doit faire signer une note au ministère, rédigée sous Word.** Le parapheur n'accepte pas
+- **Le chef de cellule Ingénierie territoriale doit faire signer une note au ministère, rédigée sous Word.** Le parapheur n'accepte pas
   de fichier : il faut recopier le texte dans le champ « texte ». La signature porte sur ce texte
   saisi, pas sur le document qui partira réellement. Rien n'est produit en sortie (document signé
   avec mention des visas et signatures).
@@ -1253,32 +1253,32 @@ et les personnes en copie voient le courrier qui les concerne, même confidentie
 
 | Référence | Objet | Correspondant | Reçu | État | Imputé à | Délai |
 |---|---|---|---|---|---|---|
-| ENT/2026/0001 | Demande de données foncières | Ministère de tutelle | 11/11 | Imputé | Fiston (entité : ANAT) | 15/11, **en retard** |
+| ENT/2026/0001 | Demande de données foncières | Ministère de tutelle | 11/11 | Imputé | Le chef de cellule Ingénierie territoriale (entité : ANAT) | 15/11, **en retard** |
 | ENT/2026/0003 | Demande d'appui pour la révision des plans d'urbanisme provinciaux | Ministère fictif de l'Urbanisme et de l'Habitat | 14/11 | À imputer | — | 24/11 |
 | ENT/2026/0002 | Invitation au forum régional | « Partenaire technique » | 15/11 | À imputer | — | 25/11 |
 
 Historique de ENT/2026/0001 : « Enregistré au bureau d'ordre », « **Imputé à Nova Mobile** »,
-« Imputé à Fiston Banza », tous par la DG.
+« Imputé au chef de cellule Ingénierie territoriale », tous par la DG.
 
 ### Tests réels
 
 | Lecteur | Droits courrier | Voit | Résumé |
 |---|---|---|---|
 | La DG, l'assistante | Enregistrer, imputer, consulter | 3 | 2 à imputer, 1 en cours, 1 en retard |
-| Fiston, Didier | Consulter le registre | 3 | Mêmes chiffres ; Fiston : 1 à traiter, en retard |
-| Clarisse, Gaston | Aucun | 0 | Tout à 0 |
+| Le chef de cellule Ingénierie territoriale, le directeur Communication et Partenariats | Consulter le registre | 3 | Mêmes chiffres ; le chef de cellule Ingénierie territoriale : 1 à traiter, en retard |
+| L'agent Études et Prospective, le chef de cellule Suivi-évaluation | Aucun | 0 | Tout à 0 |
 
 | Action | Résultat |
 |---|---|
-| Fiston impute un courrier qui ne lui est pas imputé | Refusé : pas le droit d'enregistrer et imputer le courrier |
-| Didier clôture le courrier imputé à Fiston | Refusé : « Seuls l'agent imputé, son chef et la direction clôturent ce courrier » |
-| Didier enregistre un courrier | Refusé |
-| Gaston annote un courrier qui ne le concerne pas | Le courrier n'existe pas pour lui |
+| Le chef de cellule Ingénierie territoriale impute un courrier qui ne lui est pas imputé | Refusé : pas le droit d'enregistrer et imputer le courrier |
+| Le directeur Communication et Partenariats clôture le courrier imputé au chef de cellule Ingénierie territoriale | Refusé : « Seuls l'agent imputé, son chef et la direction clôturent ce courrier » |
+| Le directeur Communication et Partenariats enregistre un courrier | Refusé |
+| Le chef de cellule Suivi-évaluation annote un courrier qui ne le concerne pas | Le courrier n'existe pas pour lui |
 
 ### Cas d'usage
 
 - **Lundi, l'assistante ouvre le courrier.** Deux courriers reçus jeudi et vendredi attendent
-  l'imputation de la DG ; un troisième, imputé à Fiston, est en retard depuis samedi. Le chef de
+  l'imputation de la DG ; un troisième, imputé au chef de cellule Ingénierie territoriale, est en retard depuis samedi. Le chef de
   l'entité imputée est prévenu une fois du retard, ici la DG elle-même, car le courrier est imputé à
   l'entité racine « ANAT ».
 - **Le ministère écrit à l'Agence.** Il est choisi dans l'annuaire des partenaires, ce qui relie le
@@ -1342,27 +1342,27 @@ de ses sous-entités) ; une entité ne se supprime que vide ; la racine ne se su
 
 | Entité | Type | Rattachée à | Chef |
 |---|---|---|---|
-| ANAT (démonstration) | Institution | — | Bernadette |
-| Direction technique | Direction | ANAT | Bernadette |
-| Études et Prospective | Département | Direction technique | Clarisse |
-| Ingénierie territoriale | Département | Direction technique | Fiston |
-| Cartographie et SIG | Service | Ingénierie territoriale | Fiston |
-| Suivi-évaluation | Service | Ingénierie territoriale | Gaston |
-| Direction de la Communication et des Partenariats | Direction | ANAT | Didier |
-| Communication | Service | Direction de la Communication et des Partenariats | Didier |
-| Direction générale | Direction | ANAT | Bernadette |
-| Ressources humaines | Service | Direction générale | Esther |
-| Représentation provinciale Nord (exemple) | Représentation provinciale | ANAT | Fiston |
-| Antenne Sud (exemple) | Antenne | ANAT | Fiston |
+| ANAT (démonstration) | Institution | — | La DG |
+| Direction technique | Direction | ANAT | La DG |
+| Études et Prospective | Département | Direction technique | L'agent Études et Prospective |
+| Ingénierie territoriale | Département | Direction technique | Le chef de cellule Ingénierie territoriale |
+| Cartographie et SIG | Service | Ingénierie territoriale | Le chef de cellule Ingénierie territoriale |
+| Suivi-évaluation | Service | Ingénierie territoriale | Le chef de cellule Suivi-évaluation |
+| Direction de la Communication et des Partenariats | Direction | ANAT | Le directeur Communication et Partenariats |
+| Communication | Service | Direction de la Communication et des Partenariats | Le directeur Communication et Partenariats |
+| Direction générale | Direction | ANAT | La DG |
+| Ressources humaines | Service | Direction générale | L'assistante de direction |
+| Représentation provinciale Nord (exemple) | Représentation provinciale | ANAT | Le chef de cellule Ingénierie territoriale |
+| Antenne Sud (exemple) | Antenne | ANAT | Le chef de cellule Ingénierie territoriale |
 
 12 entités pour 6 personnes. Deux fiches d'attributions approuvées (ANAT et Direction technique) sur
 12 entités. Deux écarts ouverts.
 
-La liste des profils comprend un profil **« DG »**, mais Bernadette a le profil « Propriétaire ».
+La liste des profils comprend un profil **« DG »**, mais la DG a le profil « Propriétaire ».
 
 ### Cas d'usage
 
-- **Fiston est nommé directeur technique.** Dans l'organigramme, la DG le désigne chef de la
+- **Le chef de cellule Ingénierie territoriale est nommé directeur technique.** Dans l'organigramme, la DG le désigne chef de la
   Direction technique. Le changement est immédiat, mais il n'est pas journalisé, son profil
   d'accès ne change pas (il reste « Chef d'entité », sans les droits d'un directeur), et son dossier
   RH ne reçoit aucune nouvelle affectation.
@@ -1370,7 +1370,7 @@ La liste des profils comprend un profil **« DG »**, mais Bernadette a le profi
   déroulante : l'effet est immédiat, sans confirmation ni trace au journal, et l'historique des
   affectations du dossier RH n'est pas mis à jour. Le même changement fait depuis Ressources humaines,
   lui, ouvre une nouvelle affectation datée. Deux portes pour un même fait, qui ne produisent pas la
-  même chose : c'est l'origine des écarts constatés en D-5 (Fiston rangé dans Cartographie et SIG
+  même chose : c'est l'origine des écarts constatés en D-5 (le chef de cellule Ingénierie territoriale rangé dans Cartographie et SIG
   alors qu'il dirige l'Ingénierie territoriale).
 - **La DG lance l'analyse des écarts.** Les deux écarts ouverts parlent encore de « Direction Produit
   & Technologie » et de « Nova Mobile » : le texte a été figé avant le renommage de la démo.
@@ -1428,18 +1428,18 @@ Règles : une équipe garde au moins un responsable ; un invité ne rejoint pas 
 
 | Équipe | Visibilité | Entité | Responsables | Projet |
 |---|---|---|---|---|
-| Marketing | Sur demande | Communication | Didier | Campagne de lancement |
-| Produit & Design | Publique | Études et Prospective | Clarisse | Refonte du site web |
-| RH | Privée | Ressources humaines | Esther, la DG | RH · Recrutements 2027 |
-| Équipe Mobile | Publique | Cartographie et SIG | Fiston | Application mobile v2 |
+| Marketing | Sur demande | Communication | Le directeur Communication et Partenariats | Campagne de lancement |
+| Produit & Design | Publique | Études et Prospective | L'agent Études et Prospective | Refonte du site web |
+| RH | Privée | Ressources humaines | L'assistante de direction, la DG | RH · Recrutements 2027 |
+| Équipe Mobile | Publique | Cartographie et SIG | Le chef de cellule Ingénierie territoriale | Application mobile v2 |
 
 Les entités ont été renommées pour l'ANAT, les équipes non : leurs noms restent ceux d'une start-up.
 
 ### Cas d'usage
 
-- **Clarisse est responsable de l'équipe « Produit & Design ».** Elle veut ajouter un collègue :
+- **L'agent Études et Prospective est responsable de l'équipe « Produit & Design ».** Elle veut ajouter un collègue :
   refusé. Son profil (Agent) n'a pas le droit « gérer les équipes », et ce droit est exigé même du
-  responsable de l'équipe. Même chose pour Esther, responsable de l'équipe RH avec un profil
+  responsable de l'équipe. Même chose pour l'assistante de direction, responsable de l'équipe RH avec un profil
   d'assistante.
 - **Un agent cherche où travailler.** Il a « Mon entité » (son service, ses tâches, ses projets) et
   « Équipes » (des groupes qui portent aussi des projets). Les deux notions se recouvrent : l'équipe
@@ -1452,7 +1452,7 @@ Les entités ont été renommées pour l'ANAT, les équipes non : leurs noms res
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| EQ-1 | Le responsable d'une équipe ne peut pas la gérer si son profil n'a pas le droit « gérer les équipes » (Clarisse, Esther). | Moyenne | **Fait** (lot 3) : être responsable d'une équipe suffit pour la gérer |
+| EQ-1 | Le responsable d'une équipe ne peut pas la gérer si son profil n'a pas le droit « gérer les équipes » (l'agent Études et Prospective, l'assistante de direction). | Moyenne | **Fait** (lot 3) : être responsable d'une équipe suffit pour la gérer |
 | EQ-2 | Équipes et entités se recouvrent : deux façons de regrouper les personnes et de porter des projets. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : les équipes restent pour les groupes transversaux (comités, groupes de travail) ; la page le dit ; rien n'est supprimé |
 | EQ-3 | Ajouts, retraits et changements de responsable d'une équipe ne sont pas journalisés, alors qu'ils ouvrent ou ferment l'accès à des projets. | Moyenne | **Fait** (lot 5) : création, modification, ajout, retrait, changement de rôle, adhésion et réponse à une demande sont journalisés |
 | EQ-4 | Données de démo : équipes de start-up (« Marketing », « Produit & Design », « Équipe Mobile »). Même famille que A-7. | Moyenne (démo) | **Fait** (lot 1) : Comité éditorial, Groupe de travail du site institutionnel, Comité de recrutement, Groupe projet SIG national |
@@ -1495,22 +1495,22 @@ l'acte ; toute écriture est journalisée.
 
 | Matricule | Agent | Statut | Grade | Fonction | Entité | Entrée |
 |---|---|---|---|---|---|---|
-| AG-2026-0001 | M. Fiston Banza | Fonctionnaire | Ingénieur en chef | Chef du département Ingénierie territoriale | **Cartographie et SIG** | 02/02/2015 |
-| AG-2026-0002 | Mme Clarisse Diala | **Contractuelle** | Attachée | Chargée d'études | Études et Prospective | 17/06/2019 |
-| AG-2026-0003 | M. Gaston Kalala | Fonctionnaire | Ingénieur des travaux | Chef du service Suivi-évaluation | Suivi-évaluation | 08/01/2018 |
-| AG-2026-0004 | M. Didier Lukusa | Fonctionnaire | Attaché principal | Directeur de la Communication et des Partenariats | **Communication** | 11/04/2016 |
-| AG-DEMO-0001 | Mme Bernadette Mbuyi | Fonctionnaire | Administrateur civil principal | Directrice générale | Direction générale | 03/09/2012 |
-| AG-2026-0005 | Mme Esther Mukendi | Fonctionnaire | Attachée principale | Assistante de direction | Direction générale | 01/10/2014 |
+| AG-2026-0001 | M. Le chef de cellule Ingénierie territoriale | Fonctionnaire | Ingénieur en chef | Chef du département Ingénierie territoriale | **Cartographie et SIG** | 02/02/2015 |
+| AG-2026-0002 | Mme l'agent Études et Prospective | **Contractuelle** | Attachée | Chargée d'études | Études et Prospective | 17/06/2019 |
+| AG-2026-0003 | M. Le chef de cellule Suivi-évaluation | Fonctionnaire | Ingénieur des travaux | Chef du service Suivi-évaluation | Suivi-évaluation | 08/01/2018 |
+| AG-2026-0004 | M. Le directeur Communication et Partenariats | Fonctionnaire | Attaché principal | Directeur de la Communication et des Partenariats | **Communication** | 11/04/2016 |
+| AG-DEMO-0001 | Mme la DG | Fonctionnaire | Administrateur civil principal | Directrice générale | Direction générale | 03/09/2012 |
+| AG-2026-0005 | Mme l'assistante de direction | Fonctionnaire | Attachée principale | Assistante de direction | Direction générale | 01/10/2014 |
 
 Personne n'est « à identifier ». Seule la DG accède au registre : les cinq autres comptes reçoivent
-« Réservé au service des ressources humaines », y compris Esther, présentée comme cheffe des RH.
+« Réservé au service des ressources humaines », y compris l'assistante de direction, présentée comme cheffe des RH.
 
 ### Cas d'usage
 
 - **Le service RH recrute un agent.** Il crée le dossier avec l'adresse électronique : le compte est
   ouvert d'office avec le profil « Agent », et le lien de mot de passe part. Le service RH ouvre donc
   aussi les accès informatiques, sans intervention de l'administrateur.
-- **Le contrat de Clarisse, contractuelle, arrive à échéance.** Son dossier n'a pas de date de fin de
+- **Le contrat de l'agent Études et Prospective, contractuelle, arrive à échéance.** Son dossier n'a pas de date de fin de
   contrat, et l'outil ne l'exige pas pour un contractuel. Quand une date est saisie, rien ne prévient
   à l'approche de l'échéance.
 - **Un agent quitte l'Agence (retraite, fin de contrat, mutation).** Il n'existe pas d'acte de
@@ -1531,7 +1531,7 @@ Personne n'est « à identifier ». Seule la DG accède au registre : les cinq a
 | RH-4 | La liste n'a ni filtre (entité, statut, grade), ni indicateurs (effectifs par entité, pyramide des âges, départs prévus). | Moyenne | **Fait** (lot 11) : filtres par entité et par grade ; effectifs par entité, pyramide des âges, départs des douze prochains mois |
 | RH-5 | Le matricule automatique suit l'année de saisie (AG-2026-…) et non l'année d'entrée ; le format diffère pour la DG (AG-DEMO-0001). | Basse | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : le matricule saisi par les RH fait foi ; le matricule provisoire suit l'année d'entrée |
 | RH-6 | Dans la démo, seule la DG accède au registre ; la cheffe des RH n'a pas le droit « gérer les RH ». Même famille que D-8. | Moyenne (démo) | **Fait** (lot 1) : la cheffe du service RH accède au registre et tient les dossiers |
-| RH-7 | Entité du dossier en contradiction avec la fonction (Fiston, Didier). Même famille que D-5 et S-2. | Moyenne (démo) | **Fait** (lot 1) : l'entité du dossier suit le rattachement ; depuis le lot 5, un changement d'entité ouvre une affectation datée (S-2) |
+| RH-7 | Entité du dossier en contradiction avec la fonction (le chef de cellule Ingénierie territoriale, le directeur Communication et Partenariats). Même famille que D-5 et S-2. | Moyenne (démo) | **Fait** (lot 1) : l'entité du dossier suit le rattachement ; depuis le lot 5, un changement d'entité ouvre une affectation datée (S-2) |
 | RH-8 | Le module ne couvre ni congés (lot reporté), ni carrière (avancements, promotions), ni formation, ni évaluation, ni pièces (actes, contrats). Même famille que D-9. | Moyenne | **Décidé (option prudente, en l'absence de l'utilisateur)** (lot 13) : pièces, formations, évaluations et congés sont faits (lot 8) ; le prochain volet est la carrière (avancements, promotions) |
 
 ### Ce qui fonctionne bien
@@ -1581,7 +1581,7 @@ La double authentification (application d'authentification) existe pour les comp
 | Organisations | **2** (l'ANAT et une organisation de démonstration restante) |
 | Volumes | 13 entités, 7 projets, 60 tâches dont 5 en retard, 16 réunions, 2 décisions, 3 courriers, 6 partenaires, 6 agents |
 
-L'administrateur de la plateforme est **la DG elle-même** (Bernadette). Aucun autre compte n'y a
+L'administrateur de la plateforme est **la DG elle-même**. Aucun autre compte n'y a
 accès ; le profil « Responsable informatique » existe mais n'est attribué à personne.
 
 ### Cas d'usage
@@ -1677,11 +1677,11 @@ inchangé. Code : `server/src/gov-demo-anat.ts` ; tests : `server/src/demo-anat.
 | Dossiers RH | Entité contraire à la fonction ; nationalité « Fictivienne » | Affectation alignée sur le rattachement ; nationalité congolaise |
 | Textes figés | « Imputé à Nova Mobile », écarts sur « Direction Produit & Technologie » | Noms ANAT |
 
-Personnes ajoutées (fictives) : Albert Mwamba (Directeur technique), Jean-Pierre Kabongo (Chef du
-département Études et Prospective), Patrick Ilunga (Chef du service Cartographie et SIG), Aimée Ngalula
-(Géomaticienne), Samuel Kalonji (Chargé de suivi-évaluation), Sylvie Kasongo (Cheffe du service des
-Ressources humaines), Rose Mbombo (Cheffe du service Communication), Joseph Tshibangu (Représentant
-provincial Nord), Prisca Kanku (Cheffe de l'Antenne Sud).
+Personnes ajoutées (fictives) : Le directeur technique (Directeur technique), le chef de cellule Études et Prospective (Chef du
+département Études et Prospective), le chef de cellule Cartographie et SIG (Chef du service Cartographie et SIG), l'agent Cartographie et SIG
+(Géomaticienne), l'agent Suivi-évaluation (Chargé de suivi-évaluation), le chef de cellule Ressources humaines (Cheffe du service des
+Ressources humaines), le chef de cellule Communication (Cheffe du service Communication), le représentant provincial Nord (Représentant
+provincial Nord), le chef d'antenne Sud (Cheffe de l'Antenne Sud).
 
 **Remarques traitées** : A-3 (données), A-4, A-7, A-8, T-10, T-13, E-9 (en partie), D-5, D-7 (nationalité),
 D-8, I-6, I-7, P-6, F-8, C-1, S-5, S-6, S-8, EQ-4, AD-5, RH-6, RH-7.
@@ -1747,7 +1747,7 @@ informatique administrateur, la DG relit**. I-4 tranché dans le sens de la règ
 | Compte rendu validé (R-3) | Tout valideur pouvait le rouvrir | Seuls la personne qui l'a validé et la DG le rouvrent, avec un motif inscrit au journal ; valideur et rédacteur prévenus |
 | Signataire d'un document qui engage l'Agence (CV-1, PH-2) | N'importe quel détenteur du parapheur pouvait signer une convention ; la DG ne pouvait pas signer ce qu'elle avait préparé | Convention, accord, avenant, contrat, protocole, acte : la signature finale revient à la DG (droit « Signer au nom de l'Agence ») ou à son délégataire. L'auteur peut signer en dernier si une autre personne a visé ou donné son avis avant |
 | Délégations (PH-3) | Sans limite de durée, de délégataire ni de portée ; retirée, elle disparaissait | 30 jours au plus ; portée « visa et avis » ou « visa et signature » ; la signature ne se délègue qu'à un responsable (profil de chef, DGA, DG) ; retirée, elle reste dans la liste avec sa date de retrait |
-| Administration (AD-1) | La DG était administratrice de la plateforme, sans contrôle du journal | Dans la démonstration, Cédric Ilunga, responsable informatique, est l'administrateur système ; la DG ne l'est plus. Page « Contrôle de l'administration » : la DG relit les actions de l'administrateur depuis la dernière relecture et vise le journal ; l'administrateur ne relit jamais ses propres actions |
+| Administration (AD-1) | La DG était administratrice de la plateforme, sans contrôle du journal | Dans la démonstration, le responsable informatique, responsable informatique, est l'administrateur système ; la DG ne l'est plus. Page « Contrôle de l'administration » : la DG relit les actions de l'administrateur depuis la dernière relecture et vise le journal ; l'administrateur ne relit jamais ses propres actions |
 
 Nouveaux droits, réservés à la DG : « Confirmer les décisions inscrites au nom de la DG », « Signer au nom de l'Agence »,
 « Relire et viser le journal des actions de l'administrateur système ». Migrations `045` à `049` : les bases en
@@ -1863,7 +1863,7 @@ recharge sans rien dupliquer.
 | DEC-7 | Onze décisions : issues du comité de direction, de projets (SIG national, recrutements, site, archives) et d'activités (commission foncière, forum, manuel) ; neuf chargés différents ; deux inscrites par l'assistante et à confirmer par la DG  ; deux exécutées, déclarées par leur chargé puis confirmées par le secrétariat |
 | C-6 | L'assistante enregistre et impute trois nouveaux courriers (bailleur, ministère, province) ; deux courriers sortants répondent à des entrants |
 | RI-8 | Trois risques rattachés à des projets (images satellites, recrutement, contestation du schéma), chacun avec son responsable et sa parade ; l'indicateur « Provinces couvertes par un schéma » est relié au plan |
-| PT-8 | Plans de la Direction générale et de l'Ingénierie territoriale, en préparation ; les activités du plan de l'Agence, toutes confiées à Fiston, sont réparties entre les directions |
+| PT-8 | Plans de la Direction générale et de l'Ingénierie territoriale, en préparation ; les activités du plan de l'Agence, toutes confiées au chef de cellule Ingénierie territoriale, sont réparties entre les directions |
 | PA-6 | Le FFDT commanditaire du schéma national et interlocuteur de l'audience avec le bailleur ; le ministère à la commission interministérielle ; un contact principal pour cinq partenaires |
 | S-7 | Une fiche d'attributions approuvée pour chaque entité qui n'en avait pas, rédigée par son chef et approuvée par la DG |
 
@@ -2047,3 +2047,11 @@ Extension du clic droit aux registres (même jour, branche `clic-droit-registres
 propose « Ouvrir » ; les décisions, réunions, documents du parapheur, courriers, conventions et dossiers d'agents
 proposent aussi « Copier le numéro » (ou le matricule) ; les fiches qui ont leur propre adresse (réunions, conventions,
 partenaires, plans, projets, dossiers d'agents) s'ouvrent dans un nouvel onglet et leur lien se copie.
+
+### Comptes désignés par leur fonction (20/11/2026)
+
+À la demande de l'utilisateur, la démonstration ne montre plus aucun nom de personne : chaque compte porte sa fonction
+(Directrice générale, Directeur technique, Chef de cellule Ingénierie territoriale, Agent Études et Prospective…). Les
+noms réels viendront plus tard. L'Agence est organisée en directions et en cellules (les départements et services de
+la démonstration deviennent des cellules). Le nom de la DG se règle sur l'ordinateur (fichier `.env`, jamais envoyé sur
+GitHub). Dans ce document, les anciennes mentions de personnes sont remplacées par leur fonction.

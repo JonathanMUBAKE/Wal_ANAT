@@ -4,7 +4,8 @@
 const fs = require("fs");
 const path = require("path");
 const ROOT = path.resolve(__dirname, "..");
-const SRC = path.resolve(ROOT, "docs/ANALYSE-MODULES.md");
+// Usage : node scripts/analyse-word.cjs [sortie.docx] [source.md]  (par défaut, l'analyse module par module)
+const SRC = path.resolve(ROOT, process.argv[3] ?? "docs/ANALYSE-MODULES.md");
 const OUT = process.argv[2] ?? path.resolve(ROOT, "docs/word/ANAT-Pilotage-analyse-modules.docx");
 const docx = require(path.resolve(ROOT, "node_modules/docx"));
 const {
@@ -149,7 +150,7 @@ const doc = new Document({
     {
       properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 } } },
       headers: {
-        default: new Header({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [t("ANAT Pilotage · analyse module par module", { size: 16, color: "888888" })] })] }),
+        default: new Header({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [t(`ANAT Pilotage · ${title.charAt(0).toLowerCase()}${title.slice(1)}`, { size: 16, color: "888888" })] })] }),
       },
       footers: {
         default: new Footer({

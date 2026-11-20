@@ -301,6 +301,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
 .grid-table tbody td:first-child { max-width: clamp(200px, 18vw, 320px); }
 .grid-table th:first-child, .grid-table td:first-child { padding-left: 20px; }
 .grid-table th:last-child, .grid-table td:last-child { padding-right: 20px; }
+/* Bandeau de chiffres de l'accueil : des cases séparées d'un filet, la case d'alerte teintée */
+.stat-cell { background: var(--panel); transition: background-color 180ms ease; }
+a.stat-cell:hover, button.stat-cell:not(:disabled):hover { background: color-mix(in oklab, var(--fg) 4%, var(--panel)); }
+.stat-cell.stat-alert { background: color-mix(in oklab, var(--danger) 10%, var(--panel)); }
+a.stat-alert:hover, button.stat-alert:not(:disabled):hover { background: color-mix(in oklab, var(--danger) 16%, var(--panel)); }
 /* Une ligne par cellule : la précision écrite sous un nom ne s'affiche plus dans le tableau, elle se lit dans la fiche */
 .grid-table tbody td:not(.wrap) > :is(span.block, p, div, small):not(:first-child) { display: none; }
 /* Plusieurs étiquettes dans une cellule : côte à côte, jamais empilées */

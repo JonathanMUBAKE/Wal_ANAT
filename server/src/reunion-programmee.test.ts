@@ -41,14 +41,15 @@ const held = async (body: Record<string, unknown> = {}) => {
 
 describe("programmer", () => {
   it("porte l'heure et le lieu de la séance dans l'agenda de l'accueil, les séances du jour dans l'ordre des heures", async () => {
-    await program({ meeting_type: "Séance de l'après-midi", meeting_date: day(2), start_time: "15:30", location: "Salle du conseil" });
+    await program({ meeting_type: "Séance de l'après-midi", meeting_date: day(2), start_time: "15:30", end_time: "17:00", location: "Salle du conseil" });
     await program({ meeting_type: "Séance du matin", meeting_date: day(2), start_time: "08:15" });
     const r = await g.api("u_alice", "GET", "/api/pilotage");
-    type Entry = { title: string; time: string | null; place: string | null };
+    type Entry = { title: string; time: string | null; end: string | null; place: string | null };
     const mine = (r.body.agenda as Entry[]).filter((e) => e.title.startsWith("Séance d"));
     expect(mine.map((e) => e.title)).toEqual(["Séance du matin", "Séance de l'après-midi"]);
     expect(mine[0].time).toBe("08:15");
-    expect(mine[1]).toMatchObject({ time: "15:30", place: "Salle du conseil" });
+    expect(mine[1]).toMatchObject({ time: "15:30", end: "17:00", place: "Salle du conseil" });
+    expect(mine[0].end).toBeNull();
   });
 
   it("enregistre présidence, visioconférence et convoqués, et développe une entité convoquée en ses membres", async () => {

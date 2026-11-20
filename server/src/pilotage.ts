@@ -155,6 +155,7 @@ export class Pilotage {
         title: a.title,
         date: a.start_on as string,
         time: null as string | null,
+        end: null as string | null,
         place: null as string | null,
         href: `/activites/${a.id}`,
       }));
@@ -163,9 +164,10 @@ export class Pilotage {
       meeting_type: string;
       meeting_date: string;
       start_time: string | null;
+      end_time: string | null;
       location: string;
     }>(
-      "SELECT id, meeting_type, meeting_date, start_time, location FROM meetings WHERE org_id = $1 AND status <> 'cancelled' AND NOT confidential AND meeting_date BETWEEN $2::date AND $3::date ORDER BY meeting_date, start_time NULLS LAST",
+      "SELECT id, meeting_type, meeting_date, start_time, end_time, location FROM meetings WHERE org_id = $1 AND status <> 'cancelled' AND NOT confidential AND meeting_date BETWEEN $2::date AND $3::date ORDER BY meeting_date, start_time NULLS LAST",
       [orgId, today, horizon],
     );
     const agenda = [
@@ -177,6 +179,7 @@ export class Pilotage {
         date: m.meeting_date,
         // L'heure et le lieu : sans eux, l'agenda de l'accueil oblige à ouvrir chaque séance
         time: m.start_time ? String(m.start_time).slice(0, 5) : null,
+        end: m.end_time ? String(m.end_time).slice(0, 5) : null,
         place: m.location || null,
         href: `/reunions/${m.id}`,
       })),

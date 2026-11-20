@@ -2,7 +2,7 @@ import { QuickEntryMenu } from "@/components/quick-entry";
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { format, parseISO } from "date-fns";
+import { addDays, format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   AlarmClock,
@@ -17,8 +17,8 @@ import {
   Scale,
   TrendingUp,
 } from "lucide-react";
-import { type AgendaEvent, type MatrixRisk, RiskMatrix, WeekAgenda } from "@/components/views";
-import { ViewSwitch, useLocalPref } from "@/components/collection";
+import { type MatrixRisk, RiskMatrix } from "@/components/views";
+import { type CalEvent, TimeGrid, ViewSwitch, useLocalPref } from "@/components/collection";
 import { useForms } from "@/lib/referentials";
 import { Button, Dialog, Empty, cn } from "@/components/ui";
 import { CountUp, LoadingRows, type Tone } from "@/components/gov";
@@ -60,6 +60,7 @@ interface Overview {
     title: string;
     date: string;
     time: string | null;
+    end: string | null;
     place: string | null;
     href: string;
   }[];
@@ -121,6 +122,9 @@ export const HEALTH: Record<
   off_track: { label: "En difficulté", tone: "danger", color: "var(--danger)" },
   done: { label: "Terminé", tone: "info", color: "var(--primary)" },
 };
+
+/** Teintes des séances dans l'agenda de l'accueil. */
+const MEETING_HUES = ["var(--primary)", "#8B7CF6", "#2BB3A3", "#E0699F", "#E0A23B"];
 
 export function PilotagePage() {
   const { data: me } = useMe();
@@ -186,7 +190,35 @@ export function PilotagePage() {
       ? [{ label: "Congés", value: leaves.to_decide, Icon: CalendarOff, tone: "info" as Tone2, to: "/conges" }]
       : []),
   ];
-  const events: AgendaEvent[] = o.agenda.map((a) => ({ ...a, color: form(a.form).color, kind: form(a.form).label }));
+  // Une même nature de séance garde toujours la même teinte : on distingue les rendez-vous d'un coup d'œil
+  const hueOf = (code: string, title = "") =>
+    code === "reunion"
+      ? MEETING_HUES[[...title].reduce((n, c) => n + c.charCodeAt(0), 0) % MEETING_HUES.length]
+      : form(code).color;
+  // L'agenda : les sept jours qui viennent, sur la grille horaire du calendrier des réunions
+  const days = Array.from({ length: 7 }, (_, n) => addDays(parseISO(o.today), n));
+  const hrefOf = new Map(o.agenda.map((a) => [a.id, a.href]));
+  const events: CalEvent[] = o.agenda.map((a) => ({
+    id: a.id,
+    date: a.date,
+    start: a.time,
+    end: a.end,
+    title: a.title,
+    subtitle: a.place ?? form(a.form).label,
+    hue: hueOf(a.form, a.title),
+    allDay: !a.time,
+  }));
+  const timed = o.agenda.filter((a) => a.time);
+  // De 8 h à 18 h, élargi si une séance commence plus tôt ou finit plus tard
+  const firstHour = Math.min(8, ...timed.map((a) => Number(a.time!.slice(0, 2))));
+  const lastHour = Math.max(
+    18,
+    ...timed.map((a) => (a.end ? Number(a.end.slice(0, 2)) + (a.end.slice(3, 5) > "00" ? 1 : 0) : Number(a.time!.slice(0, 2)) + 1)),
+  );
+  const sameMonth = days[0].getMonth() === days[6].getMonth();
+  const period = sameMonth
+    ? `${format(days[0], "d")} – ${format(days[6], "d MMMM", { locale: fr })}`
+    : `${format(days[0], "d MMM", { locale: fr })} – ${format(days[6], "d MMM", { locale: fr })}`;
   const openRisks = (allRisks ?? []).filter((r) => r.status === "open");
 
   return (
@@ -201,31 +233,31 @@ export function PilotagePage() {
         <QuickEntryMenu />
       </header>
 
-      {/* La situation du jour : une carte par chiffre, le libellé en haut, la flèche ouvre le détail */}
-      <section aria-label="Situation du jour" className="stagger grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+      {/* La situation du jour : un seul bandeau, une case par chiffre ; la pastille de couleur dit s'il faut agir */}
+      <section
+        aria-label="Situation du jour"
+        className="flex flex-wrap gap-px overflow-hidden rounded-2xl border border-line bg-[var(--line)] shadow-sm"
+      >
         {figures.map((f) => {
           const body = (
             <>
-              <span className="flex items-start justify-between gap-2">
-                <span className="text-[13px] font-medium leading-snug">{f.label}</span>
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-md border border-line text-muted transition-colors group-hover:border-line-strong group-hover:text-fg">
-                  <ArrowUpRight className="size-3.5" />
+              <span className="flex items-center justify-between gap-2">
+                <span className="truncate text-[12.5px] text-muted">{f.label}</span>
+                <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg", TILE[f.tone])}>
+                  <f.Icon className="size-3.5" strokeWidth={2} />
                 </span>
               </span>
-              <span className="mt-3.5 flex items-center gap-2.5">
-                <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", TILE[f.tone])}>
-                  <f.Icon className="size-4" strokeWidth={2} />
-                </span>
-                <span className={cn("text-[26px] font-medium leading-none tracking-[-0.02em] tabular", f.strong && "text-danger")}>
-                  {typeof f.value === "number" ? <CountUp value={f.value} duration={700} /> : f.value}
-                </span>
+              <span
+                className={cn(
+                  "mt-2.5 block text-[28px] font-semibold leading-none tracking-[-0.025em] tabular",
+                  f.strong && "text-danger",
+                )}
+              >
+                {typeof f.value === "number" ? <CountUp value={f.value} duration={700} /> : f.value}
               </span>
             </>
           );
-          const cls = cn(
-            "card-hover group block rounded-2xl border p-3.5 text-left shadow-sm",
-            f.strong ? "border-danger/40 bg-danger-soft hover:border-danger/70" : "border-line bg-panel hover:border-line-strong",
-          );
+          const cls = cn("stat-cell block min-w-[148px] flex-1 p-4 text-left", f.strong && "stat-alert");
           return f.to ? (
             <Link key={f.label} to={f.to} className={cls}>
               {body}
@@ -245,13 +277,72 @@ export function PilotagePage() {
       )}
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <ByDirection className="xl:col-span-2" />
+        <Card
+          title="Agenda"
+          note={period}
+          badge={
+            <span className="flex size-10 shrink-0 flex-col items-center justify-center rounded-lg border border-line bg-bg leading-none">
+              <span className="text-[10px] text-muted">{format(days[0], "MMM", { locale: fr }).replace(".", "")}</span>
+              <span className="mt-0.5 text-[15px] font-semibold tabular">{format(days[0], "d")}</span>
+            </span>
+          }
+          to="/reunions"
+          className="xl:col-span-2"
+          flush={agendaView === "semaine"}
+          swap={agendaView}
+          aside={
+            <ViewSwitch
+              value={agendaView}
+              onChange={setAgendaView}
+              size="sm"
+              items={[
+                { id: "semaine", label: "Semaine", Icon: CalendarDays },
+                { id: "liste", label: "Liste", Icon: List },
+              ]}
+            />
+          }
+        >
+          {agendaView === "semaine" ? (
+            <li className="border-t border-line">
+              <TimeGrid
+                days={days}
+                events={events}
+                from={firstHour}
+                to={lastHour}
+                rowHeight={52}
+                minColumn={92}
+                onSelect={(e) => nav(hrefOf.get(e.id) ?? "/reunions")}
+              />
+            </li>
+          ) : o.agenda.length ? (
+            o.agenda.slice(0, 8).map((a) => (
+              <Row key={a.id}>
+                <span className="size-2 shrink-0 rounded-[2px]" style={{ background: hueOf(a.form, a.title) }} title={form(a.form).label} />
+                <span className="w-[52px] shrink-0 whitespace-nowrap text-[12px] tabular text-muted">
+                  {format(parseISO(a.date), "d MMM", { locale: fr })}
+                </span>
+                <Link to={a.href} className="min-w-0 flex-1 truncate hover:underline" title={a.title}>
+                  {a.title}
+                </Link>
+                {a.time && (
+                  <span className="shrink-0 whitespace-nowrap text-[12.5px] tabular text-muted">
+                    {Number(a.time.slice(0, 2))} h {a.time.slice(3, 5)}
+                  </span>
+                )}
+              </Row>
+            ))
+          ) : (
+            <Nothing />
+          )}
+        </Card>
 
+        {/* À côté de l'agenda sur grand écran, en dessous sinon */}
+        <div className="grid gap-4 xl:content-start">
         <Card title="Décisions attendues" to="/decisions" count={o.decisions.length}>
           {o.decisions.length ? (
             o.decisions.slice(0, 5).map((d) => (
               <Row key={d.id}>
-                <Link to={d.href} className="min-w-0 flex-1 truncate hover:underline" title={d.decision_needed}>
+                <Link to={d.href} className="line-clamp-2 min-w-0 flex-1 hover:underline" title={d.decision_needed}>
                   {d.title}
                 </Link>
                 {d.unit_name && (
@@ -288,51 +379,6 @@ export function PilotagePage() {
                       Arbitrer
                     </button>
                   ))}
-              </Row>
-            ))
-          ) : (
-            <Nothing />
-          )}
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card
-          title="Agenda"
-          to="/reunions"
-          flush={agendaView === "semaine"}
-          swap={agendaView}
-          aside={
-            <ViewSwitch
-              value={agendaView}
-              onChange={setAgendaView}
-              size="sm"
-              items={[
-                { id: "semaine", label: "Semaine", Icon: CalendarDays },
-                { id: "liste", label: "Liste", Icon: List },
-              ]}
-            />
-          }
-        >
-          {agendaView === "semaine" ? (
-            <li>
-              <WeekAgenda start={o.today} events={events} />
-            </li>
-          ) : events.length ? (
-            events.slice(0, 6).map((a) => (
-              <Row key={a.id}>
-                <span className="size-2 shrink-0 rounded-[2px]" style={{ background: a.color }} title={a.kind} />
-                <span className="w-[52px] shrink-0 whitespace-nowrap text-[12px] tabular text-muted">
-                  {format(parseISO(a.date), "d MMM", { locale: fr })}
-                </span>
-                <Link to={a.href} className="min-w-0 flex-1 truncate hover:underline" title={a.title}>
-                  {a.title}
-                </Link>
-                {a.time && (
-                  <span className="shrink-0 whitespace-nowrap text-[12.5px] tabular text-muted">
-                    {Number(a.time.slice(0, 2))} h {a.time.slice(3, 5)}
-                  </span>
-                )}
               </Row>
             ))
           ) : (
@@ -382,7 +428,11 @@ export function PilotagePage() {
             <Nothing />
           )}
         </Card>
+        </div>
       </div>
+
+      <ByDirection />
+
       {arbitrating && <DecisionDialog source={arbitrating} onClose={() => setArbitrating(null)} />}
     </div>
   );
@@ -411,6 +461,9 @@ interface Figure {
 /** Une carte : un titre, une bascule de vue éventuelle, une flèche vers le registre complet. */
 function Card({
   title,
+  note,
+  badge,
+  className,
   to,
   count,
   aside,
@@ -419,6 +472,11 @@ function Card({
   children,
 }: {
   title: string;
+  /** Précision discrète à côté du titre (la période de l'agenda). */
+  note?: string;
+  /** Repère placé avant le titre ; la précision passe alors sous le titre. */
+  badge?: ReactNode;
+  className?: string;
   to: string;
   count?: number;
   aside?: ReactNode;
@@ -429,11 +487,15 @@ function Card({
   children: ReactNode;
 }) {
   return (
-    <section className="@container min-w-0 overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+    <section className={cn("@container min-w-0 overflow-hidden rounded-2xl border border-line bg-panel shadow-sm", className)}>
       <div className="flex items-center justify-between gap-2 px-4 pb-2.5 pt-3">
-        <h2 className="flex items-center gap-2 text-[14px] font-medium">
+        <h2 className={cn("flex gap-2 text-[14px] font-medium", badge ? "items-center gap-3" : "items-center")}>
+          {badge}
+          <span className={cn(badge ? "flex flex-col gap-0.5" : "contents")}>
           {title}
           {!!count && <span className="rounded-md border border-line px-1.5 text-[11px] font-medium tabular text-fg/80">{count}</span>}
+          {note && <span className="text-[12.5px] font-normal text-muted">{note}</span>}
+          </span>
         </h2>
         <span className="flex items-center gap-2">
           {aside}

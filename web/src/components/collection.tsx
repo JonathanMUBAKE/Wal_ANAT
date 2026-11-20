@@ -823,6 +823,8 @@ export interface CalEvent {
   subtitle?: string;
   hue: string;
   muted?: boolean;
+  /** Rendez-vous sans heure : il se range dans la bande « Journée », au-dessus des heures. */
+  allDay?: boolean;
 }
 const dkey = (d: Date) => format(d, "yyyy-MM-dd");
 const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
@@ -909,6 +911,8 @@ export function TimeGrid({
   onSelect,
   from = 7,
   to = 19,
+  rowHeight = 56,
+  minColumn = 128,
 }: {
   days: Date[];
   events: CalEvent[];
@@ -916,29 +920,41 @@ export function TimeGrid({
   onSelect: (e: CalEvent) => void;
   from?: number;
   to?: number;
+  /** Hauteur d'une heure, en pixels. */
+  rowHeight?: number;
+  /** Largeur minimale d'un jour avant de faire défiler. */
+  minColumn?: number;
 }) {
-  const H = 56;
+  const H = rowHeight;
+  // Bloc pastel : fond teinté et hachuré, contour fin, texte dans la couleur du rendez-vous
+  const tint = (hue: string) => ({
+    backgroundColor: `color-mix(in oklab, ${hue} 13%, var(--panel))`,
+    backgroundImage: `repeating-linear-gradient(135deg, color-mix(in oklab, ${hue} 10%, transparent) 0 1px, transparent 1px 7px)`,
+    border: `1px solid color-mix(in oklab, ${hue} 36%, transparent)`,
+    color: `color-mix(in oklab, ${hue} 60%, var(--fg))`,
+  });
+  const cols = { gridTemplateColumns: `56px repeat(${days.length}, minmax(0,1fr))` };
   const today = dkey(new Date());
-  const hours = Array.from({ length: to - from }, (_, i) => from + i);
-  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+  const hours = Array.from({ length: to - from }, (_, n) => from + n);
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const showNow = days.some((d) => dkey(d) === today) && nowMin > from * 60 && nowMin < to * 60;
+  const PAD = 10;
   return (
     <div className="overflow-x-auto">
-      <div style={{ minWidth: days.length > 1 ? days.length * 128 + 56 : undefined }}>
-        <div
-          className="grid border-b border-line pb-2.5"
-          style={{ gridTemplateColumns: `56px repeat(${days.length}, minmax(0,1fr))` }}
-        >
+      <div style={{ minWidth: days.length > 1 ? days.length * minColumn + 56 : undefined }}>
+        <div className="grid border-b border-line" style={cols}>
           <span />
           {days.map((d) => {
             const isT = dkey(d) === today;
             return (
-              <div key={dkey(d)} className="flex items-center justify-center gap-2">
-                <span className={cn("text-[12px] capitalize", isT ? "font-medium text-primary" : "text-muted")}>
+              <div key={dkey(d)} className="flex h-11 items-center justify-center gap-1.5 border-l border-line">
+                <span className={cn("text-[12.5px] capitalize", isT ? "font-medium text-fg" : "text-muted")}>
                   {format(d, "EEE", { locale: fr }).replace(".", "")}
                 </span>
                 <span
                   className={cn(
-                    "flex size-7 items-center justify-center rounded-full text-[13.5px] font-semibold tabular",
+                    "flex size-6 items-center justify-center rounded-full text-[12.5px] font-semibold tabular",
                     isT && "bg-primary text-on-primary",
                   )}
                 >
@@ -948,72 +964,103 @@ export function TimeGrid({
             );
           })}
         </div>
-        <div className="relative grid" style={{ gridTemplateColumns: `56px repeat(${days.length}, minmax(0,1fr))` }}>
+        {events.some((e) => e.allDay) && (
+          <div className="grid border-b border-line" style={cols}>
+            <span className="pr-2.5 pt-2.5 text-right text-[11px] text-muted">Journée</span>
+            {days.map((d) => {
+              const k = dkey(d);
+              return (
+                <div key={k} className="min-w-0 space-y-1 border-l border-line p-1">
+                  {events
+                    .filter((e) => e.allDay && e.date === k)
+                    .map((e) => (
+                      <button
+                        key={e.id}
+                        onClick={() => onSelect(e)}
+                        title={[e.title, e.subtitle].filter(Boolean).join(", ")}
+                        className={cn(
+                          "block w-full truncate rounded-md px-2 py-1 text-left text-[12px] font-medium transition-[filter] duration-200 hover:brightness-110",
+                          selected === e.id && "ring-2 ring-[var(--ring)]",
+                        )}
+                        style={tint(e.hue)}
+                      >
+                        {e.title}
+                      </button>
+                    ))}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div className="relative grid" style={{ ...cols, paddingTop: PAD }}>
           <div>
             {hours.map((h) => (
-              <div key={h} style={{ height: H }} className="pr-3 text-right text-[11px] tabular text-faint">
-                <span className="relative -top-2">{String(h).padStart(2, "0")}:00</span>
+              <div key={h} style={{ height: H }} className="pr-2.5 text-right text-[11px] tabular text-muted">
+                <span className="relative -top-2">{h} h</span>
               </div>
             ))}
           </div>
           {days.map((d) => {
             const k = dkey(d);
-            const list = events.filter((e) => e.date === k);
+            const list = events.filter((e) => e.date === k && !e.allDay);
             return (
-              <div
-                key={k}
-                className={cn("relative border-l border-line", k === today && "bg-brand-soft/50")}
-                style={{ height: hours.length * H }}
-              >
-                {hours.map((h, n) => (
-                  <div key={h} className={cn("border-line", n > 0 && "border-t")} style={{ height: H }} />
-                ))}
-                {k === today && nowMin > from * 60 && nowMin < to * 60 && (
-                  <div className="absolute inset-x-0 z-20 flex items-center" style={{ top: ((nowMin - from * 60) / 60) * H }}>
-                    <span className="-ml-[5px] size-2.5 rounded-full bg-danger ring-2 ring-panel" />
-                    <span className="h-[1.5px] flex-1 bg-danger" />
+              <div key={k} className="relative border-l border-line" style={{ height: hours.length * H }}>
+                {hours.map((h) => (
+                  <div key={h} className="border-t border-line" style={{ height: H }}>
+                    {/* La demi-heure : un filet plus discret */}
+                    <div className="h-1/2 border-b border-line/50" />
                   </div>
-                )}
-                {list.map((e, i) => {
+                ))}
+                {list.map((e, n) => {
                   const s = e.start ? toMin(e.start) : 9 * 60;
                   const en = e.end ? Math.max(toMin(e.end), s + 30) : s + 60;
                   const top = ((Math.max(s, from * 60) - from * 60) / 60) * H;
-                  const h = Math.max(((en - Math.max(s, from * 60)) / 60) * H - 4, 34);
+                  const h = Math.max(((en - Math.max(s, from * 60)) / 60) * H - 3, 26);
                   const overlap = list.filter((o) => (o.start ?? "09:00") === (e.start ?? "09:00")).length > 1;
-                  const sel = selected === e.id;
+                  const time = e.start ? `${hhmm(e.start)}${e.end ? ` – ${hhmm(e.end)}` : ""}` : "Horaire à préciser";
                   return (
                     <button
                       key={e.id}
                       onClick={() => onSelect(e)}
+                      title={[e.title, time, e.subtitle].filter(Boolean).join(", ")}
                       className={cn(
-                        "rise-in absolute z-10 overflow-hidden rounded-lg py-1.5 pl-3 pr-2 text-left transition-[transform,filter] duration-200 ease-out hover:-translate-y-px hover:brightness-110",
-                        sel && "ring-2 ring-[var(--ring)]",
+                        "rise-in absolute z-10 overflow-hidden rounded-lg px-2 text-left transition-[transform,filter] duration-200 ease-out hover:-translate-y-px hover:brightness-110",
+                        h < 44 ? "py-0.5" : "py-1.5",
+                        selected === e.id && "ring-2 ring-[var(--ring)]",
                         e.muted && "opacity-60",
                       )}
                       style={{
                         top: top + 2,
                         height: h,
-                        left: overlap ? `calc(${(i % 2) * 50}% + 4px)` : 4,
-                        right: overlap ? `calc(${(1 - (i % 2)) * 50}% + 4px)` : 4,
-                        background: `color-mix(in oklab, ${e.hue} 15%, var(--panel))`,
-                        boxShadow: `inset 3px 0 0 ${e.hue}, inset 0 0 0 1px color-mix(in oklab, ${e.hue} 26%, transparent)`,
+                        left: overlap ? `calc(${(n % 2) * 50}% + 3px)` : 3,
+                        right: overlap ? `calc(${(1 - (n % 2)) * 50}% + 3px)` : 3,
+                        ...tint(e.hue),
                       }}
                     >
-                      <p className={cn("line-clamp-2 text-[12.5px] font-medium leading-snug", e.muted && "line-through")}>
+                      <p className={cn("text-[12.5px] font-semibold leading-snug", h >= 76 ? "line-clamp-2" : "truncate", e.muted && "line-through")}>
                         {e.title}
                       </p>
-                      {h > 46 && (
-                        <p className="mt-0.5 truncate text-[11.5px] text-muted">
-                          {e.start ? `${hhmm(e.start)}${e.end ? ` – ${hhmm(e.end)}` : ""}` : "Horaire à préciser"}
-                        </p>
-                      )}
-                      {h > 70 && e.subtitle && <p className="truncate text-[11.5px] text-muted">{e.subtitle}</p>}
+                      {h >= 40 && <p className="truncate text-[11.5px] leading-snug opacity-85">{time}</p>}
+                      {h >= 92 && e.subtitle && <p className="truncate text-[11.5px] leading-snug opacity-70">{e.subtitle}</p>}
                     </button>
                   );
                 })}
               </div>
             );
           })}
+          {showNow && (
+            // L'heure courante : un pointillé rouge sur toute la semaine, son heure dans la marge
+            <div
+              className="pointer-events-none absolute inset-x-0 z-20 flex items-center"
+              style={{ top: PAD + ((nowMin - from * 60) / 60) * H - 8 }}
+            >
+              <span className="w-[56px] shrink-0 bg-panel pr-2 text-right text-[11px] font-medium leading-4 tabular text-danger">
+                {hhmm(format(now, "HH:mm"))}
+              </span>
+              <span className="-ml-[3px] size-1.5 shrink-0 rounded-full bg-danger" />
+              <span className="flex-1 border-t border-dotted border-danger" />
+            </div>
+          )}
         </div>
       </div>
     </div>

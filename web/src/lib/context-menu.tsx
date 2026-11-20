@@ -103,6 +103,34 @@ export function useTaskMenu() {
     ]);
 }
 
+/**
+ * Une ligne de registre (décision, réunion, courrier, convention, dossier d'agent…) : l'ouvrir, l'ouvrir à côté,
+ * copier son lien ou son numéro. Rien n'est proposé à une ligne qui ne mène nulle part.
+ */
+export function useRowMenu() {
+  const menu = useContextMenu();
+  const nav = useNavigate();
+  return (o: { open?: () => void; href?: string; reference?: string; label?: string }) => {
+    if (!o.open && !o.href && !o.reference) return undefined;
+    const url = o.href ? new URL(o.href, location.href).href : undefined;
+    return menu(() => [
+      ...(o.label ? [{ title: o.label }] : []),
+      ...(o.open || o.href
+        ? [{ label: "Ouvrir", icon: SquareArrowOutUpRight, onSelect: o.open ?? (() => nav(o.href!)) }]
+        : []),
+      ...(url
+        ? [
+            { label: "Ouvrir dans un nouvel onglet", icon: ExternalLink, onSelect: () => window.open(url, "_blank", "noopener") },
+            { label: "Copier le lien", icon: Link2, onSelect: () => copy(url, "Lien copié") },
+          ]
+        : []),
+      ...(o.reference
+        ? [{ label: "Copier le numéro", icon: Hash, onSelect: () => copy(o.reference!, `${o.reference} copié`) }]
+        : []),
+    ]);
+  };
+}
+
 /** Nettoie les séparateurs en trop (en tête, en fin, doublés) et les actions répétées. */
 function tidy(items: CtxItem[]) {
   const out: CtxItem[] = [];

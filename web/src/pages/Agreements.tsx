@@ -260,7 +260,7 @@ export function AgreementsPage() {
           ) : rows.length ? (
             <Table head={["Numéro", "Accord", "État", "Partenaires", "Échéance", "Point focal", ""]}>
               {rows.map((a) => (
-                <Tr key={a.id} onClick={() => nav(`/conventions/${a.id}`)}>
+                <Tr key={a.id} onClick={() => nav(`/conventions/${a.id}`)} href={`/conventions/${a.id}`} reference={a.reference ?? undefined}>
                   <Td className="whitespace-nowrap font-mono text-[12px] text-muted">{a.reference ?? "—"}</Td>
                   <Td className="min-w-[240px]">
                     <span className="flex items-center gap-1.5 font-medium">
@@ -1117,7 +1117,7 @@ export function PartnerAgreements({
       {agreements.length ? (
         <Table head={["Numéro", "Accord", "État", "Signé le", "Échéance", ""]}>
           {agreements.map((a) => (
-            <Tr key={a.id} onClick={() => nav(`/conventions/${a.id}`)}>
+            <Tr key={a.id} onClick={() => nav(`/conventions/${a.id}`)} href={`/conventions/${a.id}`} reference={a.reference ?? undefined}>
               <Td className="whitespace-nowrap font-mono text-[12px] text-muted">{a.reference ?? "—"}</Td>
               <Td className="min-w-[200px]">
                 <span className="block font-medium">

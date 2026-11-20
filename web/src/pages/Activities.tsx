@@ -216,7 +216,7 @@ export function ActivitiesPage() {
               <Table head={["Dossier", "Nature", "Responsable", "Date", "État", "Suites ouvertes", ""]}>
                 {/* Le portefeuille, ce sont les projets et les activités (I-13) */}
                 {dossierProjects.map((p) => (
-                  <Tr key={p.id} onClick={() => nav(`/projects/${p.id}/dashboard`)}>
+                  <Tr key={p.id} onClick={() => nav(`/projects/${p.id}/dashboard`)} href={`/projects/${p.id}/dashboard`}>
                     <Td className="font-medium">{p.name}</Td>
                     <Td>Projet</Td>
                     <Td>{(p.owner_id && users.get(p.owner_id)?.name) || "—"}</Td>
@@ -229,7 +229,7 @@ export function ActivitiesPage() {
                   </Tr>
                 ))}
                 {rows.map((a) => (
-                  <Tr key={a.id} onClick={() => nav(`/activites/${a.id}`)}>
+                  <Tr key={a.id} onClick={() => nav(`/activites/${a.id}`)} href={`/activites/${a.id}`}>
                     <Td className="font-medium">
                       {a.title}
                       {a.confidential && (
@@ -309,7 +309,7 @@ function ProjectsList({ projects }: { projects: ProjectSummary[] | undefined }) 
         {projects.map((p) => {
           const pct = p.task_count ? Math.round((p.done_count / p.task_count) * 100) : 0;
           return (
-            <Tr key={p.id} onClick={() => nav(`/projects/${p.id}`)}>
+            <Tr key={p.id} onClick={() => nav(`/projects/${p.id}`)} href={`/projects/${p.id}`}>
               <Td>
                 <span className="flex items-center gap-2.5">
                   <ProjectIcon icon={p.icon} color={p.color} size={22} />

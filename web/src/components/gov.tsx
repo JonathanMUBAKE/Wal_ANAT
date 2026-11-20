@@ -12,6 +12,7 @@ import { AlertTriangle, Check, ChevronRight, CircleDashed, Clock, type LucideIco
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Hint, cn } from "./ui";
+import { useRowMenu } from "@/lib/context-menu";
 
 // Composants de la version ANAT : libellé permanent, filet fin, halo à la saisie, erreur écrite sous le champ.
 const fieldBase =
@@ -250,19 +251,28 @@ export const Tr = ({
   children,
   onClick,
   onContextMenu,
+  href,
+  reference,
 }: {
   children: ReactNode;
   onClick?: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
-}) => (
-  <tr
-    onClick={onClick}
-    onContextMenu={onContextMenu}
-    className={cn("border-t border-line", onClick && "cursor-pointer transition-colors hover:bg-hover")}
-  >
-    {children}
-  </tr>
-);
+  /** Adresse de la fiche : « Ouvrir dans un nouvel onglet » et « Copier le lien » au clic droit. */
+  href?: string;
+  /** Numéro officiel : « Copier le numéro » au clic droit. */
+  reference?: string;
+}) => {
+  const rowMenu = useRowMenu();
+  return (
+    <tr
+      onClick={onClick}
+      onContextMenu={onContextMenu ?? rowMenu({ open: onClick, href, reference })}
+      className={cn("border-t border-line", onClick && "cursor-pointer transition-colors hover:bg-hover")}
+    >
+      {children}
+    </tr>
+  );
+};
 export const Td = ({ children, className }: { children?: ReactNode; className?: string }) => (
   <td className={cn("px-3 py-2.5 align-top", className)}>{children}</td>
 );

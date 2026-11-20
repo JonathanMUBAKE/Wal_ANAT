@@ -313,7 +313,7 @@ export function HrPage() {
               {rows.length ? (
                 <Table head={["Matricule", "Agent", "Entité", "Fonction", "Grade", "Statut", "Compte"]}>
                   {rows.map((a) => (
-                    <Tr key={a.user_id} onClick={() => nav(`/rh/${a.user_id}`)}>
+                    <Tr key={a.user_id} onClick={() => nav(`/rh/${a.user_id}`)} href={`/rh/${a.user_id}`} reference={a.matricule}>
                       <Td className="whitespace-nowrap font-mono text-[12px] text-muted">{a.matricule}</Td>
                       <Td className="min-w-[200px]">
                         <span className="block font-medium">{fullName(a)}</span>

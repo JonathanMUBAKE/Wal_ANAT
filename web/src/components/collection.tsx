@@ -25,6 +25,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "./ui";
+import { useRowMenu } from "@/lib/context-menu";
 
 /* Cadastre — briques des collections : en-tête, barre d'outils, filtres, tableau, kanban, calendrier.
    Voir docs/DESIGN-SYSTEM.md. */
@@ -163,6 +164,8 @@ export function GroupedTable<T>({
   columns,
   rowKey,
   onOpen,
+  rowHref,
+  rowRef,
   actions,
   bulk,
   empty,
@@ -172,11 +175,15 @@ export function GroupedTable<T>({
   columns: (Column<T> & { Icon?: LucideIcon; width?: string })[];
   rowKey: (r: T) => string;
   onOpen?: (r: T) => void;
+  /** Clic droit : adresse et numéro de la ligne. */
+  rowHref?: (r: T) => string | undefined;
+  rowRef?: (r: T) => string | undefined;
   actions?: (r: T) => ReactNode;
   bulk?: (selected: T[], clear: () => void) => ReactNode;
   empty: ReactNode;
   storageKey: string;
 }) {
+  const rowMenu = useRowMenu();
   const [closed, setClosedRaw] = useLocalPref<string>(storageKey, "");
   const shut = new Set(closed.split(",").filter(Boolean));
   const toggleGroup = (id: string) => {
@@ -298,6 +305,7 @@ export function GroupedTable<T>({
                           <tr
                             key={id}
                             onClick={() => onOpen?.(r)}
+                            onContextMenu={rowMenu({ open: onOpen && (() => onOpen(r)), href: rowHref?.(r), reference: rowRef?.(r) })}
                             className={cn(
                               "group border-t border-line transition-colors",
                               onOpen && "cursor-pointer",
@@ -566,6 +574,8 @@ export function DataTable<T>({
   columns,
   rowKey,
   onOpen,
+  rowHref,
+  rowRef,
   actions,
   bulk,
   empty,
@@ -575,11 +585,15 @@ export function DataTable<T>({
   columns: Column<T>[];
   rowKey: (r: T) => string;
   onOpen?: (r: T) => void;
+  /** Clic droit : adresse et numéro de la ligne. */
+  rowHref?: (r: T) => string | undefined;
+  rowRef?: (r: T) => string | undefined;
   actions?: (r: T) => ReactNode;
   bulk?: (selected: T[], clear: () => void) => ReactNode;
   empty: ReactNode;
   pageSizes?: number[];
 }) {
+  const rowMenu = useRowMenu();
   const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(0);
@@ -690,6 +704,7 @@ export function DataTable<T>({
                 <tr
                   key={id}
                   onClick={() => onOpen?.(r)}
+                  onContextMenu={rowMenu({ open: onOpen && (() => onOpen(r)), href: rowHref?.(r), reference: rowRef?.(r) })}
                   className={cn(
                     "group border-t border-line transition-colors",
                     onOpen && "cursor-pointer",

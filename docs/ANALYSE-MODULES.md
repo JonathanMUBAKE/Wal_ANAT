@@ -2042,3 +2042,8 @@ Demande de l'utilisateur : trop de texte à l'écran ; un clic droit qui propose
 | Clic droit sur un lien (projet, dossier, fiche) | Menu du navigateur | Ouvrir, ouvrir dans un nouvel onglet, copier le lien ; pour un projet, nouvelle tâche |
 | Clic droit ailleurs | Menu du navigateur | Rechercher, nouvelle tâche, assistant, retour, actualiser, copier le lien de la page, thème |
 | Champs de saisie, texte sélectionné, Maj + clic droit | Menu du navigateur | Inchangé (copier, coller, correcteur) |
+
+Extension du clic droit aux registres (même jour, branche `clic-droit-registres`) : toute ligne de tableau qui s'ouvre
+propose « Ouvrir » ; les décisions, réunions, documents du parapheur, courriers, conventions et dossiers d'agents
+proposent aussi « Copier le numéro » (ou le matricule) ; les fiches qui ont leur propre adresse (réunions, conventions,
+partenaires, plans, projets, dossiers d'agents) s'ouvrent dans un nouvel onglet et leur lien se copie.

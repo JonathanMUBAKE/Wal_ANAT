@@ -182,6 +182,7 @@ export function DecisionsPage() {
             }))}
             rowKey={(d) => d.id}
             onOpen={(d) => setOpen(d.id)}
+            rowRef={(d) => d.reference}
             columns={[
               {
                 key: "ref",

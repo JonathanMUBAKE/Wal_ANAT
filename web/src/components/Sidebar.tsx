@@ -55,7 +55,7 @@ export function Logo({ size = 26 }: { size?: number }) {
   );
 }
 
-/** Section de navigation titrée en petites capitales, repliable et mémorisée sur le poste. */
+/** Section de navigation titrée, repliable et mémorisée sur le poste. */
 function NavSection({
   title,
   children,
@@ -86,7 +86,7 @@ function NavSection({
             }
           }}
           aria-expanded={open}
-          className="flex flex-1 items-center justify-between text-[11px] font-medium uppercase tracking-[0.07em] text-faint hover:text-muted"
+          className="flex flex-1 items-center justify-between text-[11px] uppercase tracking-[0.04em] text-faint hover:text-muted"
         >
           {title}
           <ChevronDown className={cn("size-3.5 transition-transform", !open && "-rotate-90")} />
@@ -169,23 +169,25 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          "group flex h-9 items-center gap-3 rounded-[10px] px-2.5 text-[13.5px] transition-colors",
-          isActive ? "bg-brand-soft font-medium text-primary" : "text-fg/75 hover:bg-hover hover:text-fg",
+          "group relative flex h-[34px] items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] transition-colors",
+          isActive
+            ? "bg-hover font-medium text-fg before:absolute before:-left-3 before:bottom-2 before:top-2 before:w-[3px] before:rounded-r-full before:bg-fg"
+            : "text-fg/80 hover:bg-hover hover:text-fg",
         )
       }
     >
       {({ isActive }) => (
         <>
           <Icon
-            className={cn("size-[18px] shrink-0", ai && !isActive && "text-ai-fg", !isActive && !ai && "text-muted")}
-            strokeWidth={isActive ? 2.1 : 1.75}
+            className={cn("size-[16px] shrink-0", ai && !isActive ? "text-ai-fg" : !isActive && "text-muted")}
+            strokeWidth={1.75}
           />
           <span className="flex-1 truncate">{label}</span>
           {!!badge && (
             <span
               className={cn(
-                "min-w-[20px] rounded-md px-1.5 text-center text-[11px] font-semibold tabular",
-                ai ? "bg-ai-soft text-ai-fg" : "bg-brand-soft text-primary",
+                "min-w-[22px] rounded-md border border-line px-1.5 text-center text-[11px] font-medium tabular",
+                ai ? "bg-ai-soft text-ai-fg" : "bg-panel text-fg/80",
               )}
             >
               {badge}
@@ -199,7 +201,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       {/* Marque : logo officiel, nom du produit, organisation */}
-      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-line px-5">
+      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-line px-5">
         <Logo size={28} />
         <span className="min-w-0">
           <span className="block text-[15px] font-semibold leading-tight tracking-[-0.01em]">ANAT Pilotage</span>
@@ -262,17 +264,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="border-t border-line p-3">
         <button
           onClick={() => shell.openAssistant()}
-          className="flex w-full items-center gap-3 rounded-[10px] px-2.5 py-2 text-left transition-colors hover:bg-ai-soft"
+          className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-ai-soft"
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-[conic-gradient(from_200deg,var(--ai),#4FB3F0,var(--ai))] text-white">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[conic-gradient(from_200deg,var(--ai),#4FB3F0,var(--ai))] text-white">
             <Sparkles className="size-4" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-[13px] font-medium">Assistant IA</span>
-            <span className="block truncate text-[11.5px] text-muted">
-              Il propose, vous décidez
-              {aiStatus?.provider === "anthropic" ? "" : " · démo"}
-            </span>
+            {aiStatus?.provider !== "anthropic" && <span className="block truncate text-[11.5px] text-muted">Démonstration</span>}
           </span>
         </button>
       </div>
@@ -287,18 +286,18 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
   const { data: notifs } = useNotifications();
   const unread = notifs?.filter((n) => !n.read).length ?? 0;
   const box =
-    "relative flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-line-strong bg-panel text-muted transition-colors hover:bg-hover hover:text-fg";
+    "relative flex size-9 shrink-0 items-center justify-center rounded-lg border border-line text-fg/80 transition-colors hover:bg-hover hover:text-fg";
   return (
-    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-panel px-4 sm:px-6">
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-panel px-4 sm:px-8">
       <button aria-label="Menu" onClick={onMenu} className={cn(box, "lg:hidden")}>
         <MenuIcon className="size-[18px]" />
       </button>
       <button
         onClick={() => shell.setPalette(true)}
-        className="flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-[10px] border border-line-strong bg-panel px-3.5 text-[13px] text-faint transition-colors hover:border-faint/60 sm:max-w-[380px]"
+        className="flex h-9 min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-line px-3 text-[13px] text-faint transition-colors hover:border-line-strong sm:max-w-[300px]"
       >
         <Search className="size-4 shrink-0" />
-        <span className="flex-1 truncate text-left">Rechercher une réunion, un dossier, une personne…</span>
+        <span className="flex-1 truncate text-left">Rechercher</span>
         <span className="hidden gap-0.5 sm:flex">
           <Kbd>⌘</Kbd>
           <Kbd>K</Kbd>
@@ -347,7 +346,7 @@ function AccountMenu() {
     <>
       <Menu>
         <MenuTrigger asChild>
-          <button className="flex h-10 items-center gap-2.5 rounded-[10px] border border-line-strong bg-panel py-1 pl-1.5 pr-2.5 text-left transition-colors hover:bg-hover">
+          <button className="flex h-10 items-center gap-2.5 rounded-lg border border-line-strong bg-panel py-1 pl-1.5 pr-2.5 text-left transition-colors hover:bg-hover">
             <Avatar user={me} size={28} />
             <span className="hidden min-w-0 md:block">
               <span className="block max-w-[160px] truncate text-[13px] font-medium leading-tight">

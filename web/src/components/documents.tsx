@@ -356,7 +356,7 @@ function DocumentDialog({
             {doc && (
               <a
                 href={ends.item(doc.id)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line px-3 text-[13px] font-medium hover:bg-hover"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-[13px] font-medium hover:bg-hover"
               >
                 <Download className="size-4" /> Télécharger
               </a>
@@ -454,7 +454,7 @@ function DocumentDialog({
                 <input
                   {...x}
                   type="file"
-                  className="block w-full text-[13px] file:mr-3 file:h-9 file:rounded-[10px] file:border file:border-line file:bg-panel file:px-3 file:text-[13px]"
+                  className="block w-full text-[13px] file:mr-3 file:h-9 file:rounded-lg file:border file:border-line file:bg-panel file:px-3 file:text-[13px]"
                   onChange={(e) => {
                     const picked = e.target.files?.[0] ?? null;
                     setFile(picked);

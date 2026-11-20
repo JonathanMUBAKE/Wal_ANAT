@@ -614,13 +614,13 @@ function CalendarView({
                     setCursor(parseISO(next.meeting_date));
                     setPicked(next.id);
                   }}
-                  className="h-9 flex-1 rounded-[10px] border border-white/25 text-[12.5px] font-medium hover:bg-white/10"
+                  className="h-9 flex-1 rounded-lg border border-white/25 text-[12.5px] font-medium hover:bg-white/10"
                 >
                   Situer
                 </button>
                 <a
                   href={`/reunions/${next.id}`}
-                  className="flex h-9 flex-1 items-center justify-center rounded-[10px] bg-white text-[12.5px] font-semibold text-[#0B2A45]"
+                  className="flex h-9 flex-1 items-center justify-center rounded-lg bg-white text-[12.5px] font-semibold text-[#0B2A45]"
                 >
                   Ouvrir
                 </a>
@@ -788,7 +788,7 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
           )}
         </div>
         {total > 0 && (
-          <p className="rounded-[14px] bg-bg px-3 py-2 text-[12.5px] text-muted">
+          <p className="rounded-2xl bg-bg px-3 py-2 text-[12.5px] text-muted">
             <b className="font-semibold text-fg">{open}</b> recommandation{open > 1 ? "s" : ""} ouverte
             {open > 1 ? "s" : ""} sur {total}
           </p>
@@ -800,7 +800,7 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
         </span>
         <button
           onClick={() => nav(`/reunions/${m.id}`)}
-          className="flex h-9 flex-[1.4] items-center justify-center gap-1.5 rounded-[10px] bg-night text-[12.5px] font-semibold text-white dark:bg-primary dark:text-on-primary"
+          className="flex h-9 flex-[1.4] items-center justify-center gap-1.5 rounded-lg bg-night text-[12.5px] font-semibold text-white dark:bg-primary dark:text-on-primary"
         >
           Ouvrir le compte rendu
         </button>

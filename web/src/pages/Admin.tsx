@@ -317,7 +317,7 @@ function CreateAccount({ onClose, onDone }: { onClose: () => void; onDone: (r: I
         <Spinner />
       ) : (
         <div className="space-y-5">
-          <p className="rounded-[10px] bg-info-soft px-3 py-2 text-[13px] text-info">
+          <p className="rounded-lg bg-info-soft px-3 py-2 text-[13px] text-info">
             La personne reçoit un lien personnel pour choisir son mot de passe et finaliser son accès. Le compte reste «
             Invité » jusque-là ; vous pouvez renvoyer le lien depuis la liste, l'ancien cesse alors d'être valable.
           </p>
@@ -827,7 +827,7 @@ function UserJournal({ userId, onClose }: { userId: string; onClose: () => void 
                 ["Traces critiques", st.critical],
               ] as const
             ).map(([label, v]) => (
-              <div key={label} className="rounded-[10px] border border-line px-3 py-2">
+              <div key={label} className="rounded-lg border border-line px-3 py-2">
                 <p className="text-[12px] text-muted">{label}</p>
                 <p className="text-[18px] font-semibold tabular-nums">{v}</p>
               </div>
@@ -918,7 +918,7 @@ function AnalysisDrawer({
                 ["Personnes", data.stats.actors],
               ] as const
             ).map(([label, v]) => (
-              <div key={label} className="rounded-[10px] border border-line px-3 py-2">
+              <div key={label} className="rounded-lg border border-line px-3 py-2">
                 <p className="text-[12px] text-muted">{label}</p>
                 <p className="text-[18px] font-semibold tabular-nums">{v}</p>
               </div>
@@ -926,7 +926,7 @@ function AnalysisDrawer({
           </div>
           <DrawerSection title="Appréciation de l'IA">
             {data.ai ? (
-              <div className="space-y-3 rounded-[10px] border border-ai-line bg-ai-soft/40 p-3 text-[13.5px]">
+              <div className="space-y-3 rounded-lg border border-ai-line bg-ai-soft/40 p-3 text-[13.5px]">
                 <p className="leading-relaxed">{data.ai.summary}</p>
                 {data.ai.recommendations.length > 0 && (
                   <div>
@@ -944,7 +944,7 @@ function AnalysisDrawer({
                 </p>
               </div>
             ) : data.consent_required ? (
-              <div className="space-y-2 rounded-[10px] border border-line p-3 text-[13px]">
+              <div className="space-y-2 rounded-lg border border-line p-3 text-[13px]">
                 <p>
                   L'appréciation est rédigée par un service d'IA extérieur à l'Agence. Voici ce qui lui serait envoyé :
                   des chiffres et les signaux relevés, avec les noms des personnes concernées.
@@ -970,7 +970,7 @@ function AnalysisDrawer({
             ) : (
               <ul className="space-y-2">
                 {data.signals.map((s) => (
-                  <li key={`${s.code}-${s.title}-${s.detail}`} className="rounded-[10px] border border-line p-3">
+                  <li key={`${s.code}-${s.title}-${s.detail}`} className="rounded-lg border border-line p-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <Chip tone={SEVERITY[s.severity].tone}>{SEVERITY[s.severity].label}</Chip>
                       <span className="text-[13.5px] font-medium">{s.title}</span>

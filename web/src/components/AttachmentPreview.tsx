@@ -203,7 +203,7 @@ export function PreviewDrawer({ url, name, onClose }: { url: string; name: strin
           <a
             href={url}
             download={name}
-            className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line px-3 text-[13px] font-medium hover:bg-hover"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-[13px] font-medium hover:bg-hover"
           >
             <Download className="size-4" />
             Télécharger

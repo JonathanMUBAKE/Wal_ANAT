@@ -320,7 +320,7 @@ function NewUnitProject({ board, onClose }: { board: UnitBoard; onClose: () => v
       }
     >
       <div className="space-y-5">
-        <p className="rounded-[10px] bg-info-soft px-3 py-2 text-[13px] text-info">
+        <p className="rounded-lg bg-info-soft px-3 py-2 text-[13px] text-info">
           Le projet est porté par l'entité : il apparaît dans son espace et au portefeuille. Vous en êtes
           l'administrateur ; le responsable de l'entité le consulte.
         </p>
@@ -344,7 +344,7 @@ function NewUnitProject({ board, onClose }: { board: UnitBoard; onClose: () => v
                   rows={3}
                   value={f.description}
                   onChange={(e) => setF((x) => ({ ...x, description: e.target.value }))}
-                  className="field-ring w-full rounded-[10px] border border-field bg-panel px-3 py-2 text-[13.5px] outline-none"
+                  className="field-ring w-full rounded-lg border border-field bg-panel px-3 py-2 text-[13.5px] outline-none"
                 />
               )}
             </Field>
@@ -602,7 +602,7 @@ export function GiveTask({ board, onClose, self }: { board: UnitBoard; onClose: 
                   value={f.description}
                   onChange={set("description")}
                   rows={4}
-                  className="field-ring w-full rounded-[10px] border border-field bg-panel px-3 py-2 text-[13.5px] outline-none"
+                  className="field-ring w-full rounded-lg border border-field bg-panel px-3 py-2 text-[13.5px] outline-none"
                 />
               )}
             </Field>

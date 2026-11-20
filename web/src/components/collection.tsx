@@ -88,7 +88,7 @@ export function CollectionHeader({
       )}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-brand-soft text-primary">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-primary">
             <Icon className="size-[18px]" />
           </span>
           <div className="min-w-0">
@@ -224,7 +224,7 @@ export function GroupedTable<T>({
           return (
             <section key={g.id} className="rounded-2xl border border-line bg-panel p-1.5">
               <div
-                className="flex items-center gap-2 rounded-[10px] px-2.5 py-2"
+                className="flex items-center gap-2 rounded-lg px-2.5 py-2"
                 style={{ background: `color-mix(in oklab, ${g.hue} 8%, var(--panel))` }}
               >
                 <button
@@ -354,7 +354,7 @@ export function FilterToggle({ open, count, onClick }: { open: boolean; count: n
       onClick={onClick}
       aria-expanded={open}
       className={cn(
-        "inline-flex h-9 items-center gap-2 rounded-[10px] border px-3 text-[13px] font-medium transition-colors",
+        "inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-[13px] font-medium transition-colors",
         open ? "border-primary/40 bg-brand-soft text-primary" : "border-line-strong bg-panel text-fg hover:bg-hover",
       )}
     >
@@ -381,7 +381,7 @@ export function ViewSwitch<T extends string>({
   label?: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex h-9 items-center gap-0.5 rounded-[10px] bg-hover p-[3px]">
+    <div role="radiogroup" aria-label={label} className="inline-flex h-9 items-center gap-0.5 rounded-lg bg-hover p-[3px]">
       {items.map(({ id, label: l, Icon }) => {
         const on = value === id;
         return (
@@ -430,7 +430,7 @@ export function SearchField({
   return (
     <label
       className={cn(
-        "field-ring flex h-9 min-w-[180px] items-center gap-2 rounded-[10px] border border-line-strong bg-panel px-3 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--ring)]",
+        "field-ring flex h-9 min-w-[180px] items-center gap-2 rounded-lg border border-line-strong bg-panel px-3 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--ring)]",
         className,
       )}
     >
@@ -1004,7 +1004,7 @@ export function TimeGrid({
                       key={e.id}
                       onClick={() => onSelect(e)}
                       className={cn(
-                        "absolute z-10 overflow-hidden rounded-[12px] border-l-[3px] px-2.5 py-1.5 text-left transition-[box-shadow,transform] hover:-translate-y-px hover:shadow-md",
+                        "absolute z-10 overflow-hidden rounded-xl border-l-[3px] px-2.5 py-1.5 text-left transition-[box-shadow,transform] hover:-translate-y-px hover:shadow-md",
                         sel && "shadow-md ring-2 ring-[var(--ring)]",
                         e.muted && "opacity-60",
                       )}
@@ -1069,7 +1069,7 @@ export function MonthGrid({
             <div
               key={k}
               className={cn(
-                "min-h-[104px] rounded-[14px] p-1.5",
+                "min-h-[104px] rounded-2xl p-1.5",
                 isSameMonth(d, month) ? "bg-bg/80" : "bg-bg/30 opacity-60",
               )}
             >

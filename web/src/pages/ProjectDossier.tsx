@@ -566,7 +566,7 @@ export function ProjectContracts({ projectId }: { projectId: string }) {
             return (
               <section key={c.id} className="rounded-2xl border border-line bg-panel">
                 <header className="flex items-start gap-3 border-b border-line px-5 py-4">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-brand-soft text-primary">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-primary">
                     <FileSignature className="size-4" />
                   </span>
                   <span className="min-w-0 flex-1">

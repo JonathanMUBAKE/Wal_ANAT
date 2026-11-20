@@ -357,6 +357,39 @@ navigateur, en bureau et en téléphone, sous les profils DG, chef d'entité et 
   [Five ways to replace a table](https://uxdesign.cc/five-ways-to-replace-a-table-and-make-it-better-on-mobile-f9cc3daf8258) ;
   [Tableaux réactifs accessibles (Smashing Magazine)](https://shop.smashingmagazine.com/2022/12/accessible-front-end-patterns-responsive-tables-part2/).
 
+## Direction visuelle retenue (révision du 20/11/2026)
+
+L'utilisateur a jugé les premières retouches insuffisantes : l'outil doit être épuré, presque sans texte et très
+professionnel. Une première piste (barre latérale bleu nuit, angles durs) a été refusée. Les références qu'il a
+ensuite données convergent toutes vers la même famille :
+
+| Référence | Ce qu'elle apporte |
+|---|---|
+| « Project Management Dashboard » de Pickolab (Dribbble) | Le modèle visuel : fenêtre blanche sur fond gris pâle, barre latérale claire, encre noire, cartes à filet fin, petits carrés de couleur pour les statuts, barres d'avancement noires |
+| Catalogue designsystems.one (122 systèmes) | Le positionnement : la famille shadcn/ui, Linear, Geist pour l'apparence ; IBM Carbon, Siemens iX et SAP Fiori pour la rigueur des tableaux ; GOV.UK et le GC Design System pour l'accessibilité et la sobriété des mots |
+| Kobra Systems | Des composants de cette famille : tableau groupé dense, étiquettes à pastille, lignes fines |
+
+L'outil est déjà construit avec React, Tailwind et Radix, les mêmes briques que shadcn/ui : cette direction s'applique
+sans changer de technique.
+
+Règles retenues :
+
+| Sujet | Règle |
+|---|---|
+| Surfaces | Blanc partout ; l'application est une fenêtre arrondie posée sur un fond gris pâle ; aucune ombre |
+| Encre et couleur | Texte presque noir ; bouton principal noir ; la couleur n'apparaît que dans les statuts et les retards |
+| Barre latérale | Claire ; l'entrée active sur fond gris avec un trait noir au bord ; compteurs en petits carrés |
+| Cartes | Filet d'un pixel, rayon de 12 px ; titre en haut à gauche, flèche vers le détail en haut à droite |
+| Statuts | Étiquette teintée, petit carré de couleur, mot à l'encre |
+| Chiffres | Un libellé d'un ou deux mots, une icône discrète, un chiffre ; l'explication au survol |
+| Texte | Un titre par écran, pas de phrase dans une cellule, pas de sous-titre explicatif |
+| Police | Onest (grotesque ronde, proche de la référence) |
+
+Écran témoin livré : l'Accueil de la direction (six cartes de chiffres, les directions, trois cartes de listes). Les
+autres écrans ont reçu l'habillage (couleurs, filets, rayons, barre latérale, police) mais gardent leur structure : ils
+se traitent un par un après accord, dans l'ordre Décisions, Courrier et Parapheur, Réunions, Mon entité, Projet,
+Portefeuille, RH et Congés.
+
 ## Avancement
 
 | Date | Lot | Fait |

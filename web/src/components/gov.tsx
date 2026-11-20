@@ -16,7 +16,7 @@ import { useRowMenu } from "@/lib/context-menu";
 
 // Composants de la version ANAT : libellé permanent, filet fin, halo à la saisie, erreur écrite sous le champ.
 const fieldBase =
-  "field-ring w-full rounded-[10px] border border-field bg-panel px-3 text-[13.5px] text-fg outline-none transition-[box-shadow,border-color] duration-150 placeholder:text-faint disabled:bg-hover disabled:text-muted disabled:shadow-none aria-[invalid=true]:border-danger";
+  "field-ring w-full rounded-lg border border-field bg-panel px-3 text-[13.5px] text-fg outline-none transition-[box-shadow,border-color] duration-150 placeholder:text-faint disabled:bg-hover disabled:text-muted disabled:shadow-none aria-[invalid=true]:border-danger";
 
 export function Field({
   label,
@@ -99,7 +99,7 @@ export function PageHeader({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           {Icon && (
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-brand-soft text-primary">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-primary">
               <Icon className="size-[18px]" />
             </span>
           )}
@@ -150,15 +150,15 @@ const TONES: Record<Tone, { cls: string; Icon: LucideIcon }> = {
 };
 /** Statut toujours écrit, avec couleur et icône : jamais la couleur seule. */
 export function Status({ label, tone = "neutral" }: { label: string; tone?: Tone }) {
-  const { cls, Icon } = TONES[tone];
+  const { cls } = TONES[tone];
   return (
     <span
       className={cn(
-        "inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-full px-2 text-[11.5px] font-medium",
-        cls,
+        "inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-md px-1.5 text-[12px] font-medium text-fg",
+        cls.split(" ").find((c) => c.startsWith("bg-")),
       )}
     >
-      <Icon className="size-3" strokeWidth={2.25} />
+      <span aria-hidden className={cn("size-2 rounded-[2px] bg-current", cls.split(" ").find((c) => c.startsWith("text-")))} />
       {label}
     </span>
   );

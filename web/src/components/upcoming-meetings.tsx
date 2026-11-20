@@ -17,7 +17,7 @@ function When({ date }: { date: string }) {
   return (
     <span
       className={cn(
-        "flex w-12 shrink-0 flex-col items-center rounded-[10px] border py-1",
+        "flex w-12 shrink-0 flex-col items-center rounded-lg border py-1",
         date === today ? "border-primary bg-brand-soft text-primary" : "border-line text-fg",
       )}
     >

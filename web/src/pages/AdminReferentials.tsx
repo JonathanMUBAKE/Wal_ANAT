@@ -146,7 +146,7 @@ function Referentials() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div
           role="tablist"
-          className="inline-flex max-w-full flex-wrap rounded-[10px] border border-line bg-panel p-0.5"
+          className="inline-flex max-w-full flex-wrap rounded-lg border border-line bg-panel p-0.5"
         >
           {LISTS.map((l) => (
             <button
@@ -188,7 +188,7 @@ function Referentials() {
                   )}
                 >
                   <span
-                    className="flex size-9 shrink-0 items-center justify-center rounded-[10px]"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-lg"
                     style={{ color: hue, background: `color-mix(in oklab, ${hue} 12%, transparent)` }}
                   >
                     <Icon className="size-4" />
@@ -408,7 +408,7 @@ export function ValueDialog({
       <div className="space-y-4">
         <div className="flex items-center gap-3 rounded-xl border border-line px-3 py-2.5">
           <span
-            className="flex size-9 items-center justify-center rounded-[10px]"
+            className="flex size-9 items-center justify-center rounded-lg"
             style={{ color: hue, background: `color-mix(in oklab, ${hue} 12%, transparent)` }}
           >
             <Preview className="size-4" />

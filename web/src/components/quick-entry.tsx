@@ -136,7 +136,7 @@ export function QuickEntry({ className, wide, noSign }: { className?: string; wi
             to={i.to}
             className="flex items-center gap-3 rounded-xl border border-line px-3 py-2.5 transition-colors hover:border-line-strong hover:bg-hover"
           >
-            <span className="relative flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-brand-soft text-primary">
+            <span className="relative flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-primary">
               <i.Icon className="size-4" />
               {!!i.count && (
                 <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white">

@@ -44,8 +44,8 @@ export const Button = forwardRef<HTMLButtonElement, BtnProps>(function Button(
       className={cn(
         "inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-medium transition-[background,color,box-shadow,border-color,transform] duration-150 active:scale-[0.985] disabled:pointer-events-none disabled:opacity-50 select-none",
         size === "sm" && "h-8 rounded-lg px-2.5 text-[12.5px]",
-        size === "md" && "h-9 rounded-[10px] px-3.5 text-[13px]",
-        size === "lg" && "h-10 rounded-[10px] px-4 text-sm",
+        size === "md" && "h-9 rounded-lg px-3.5 text-[13px]",
+        size === "lg" && "h-10 rounded-lg px-4 text-sm",
         variant === "primary" && "btn-brand text-on-primary",
         variant === "secondary" && "border border-line-strong bg-raised text-fg hover:bg-hover",
         variant === "ghost" && "text-muted hover:bg-hover hover:text-fg",

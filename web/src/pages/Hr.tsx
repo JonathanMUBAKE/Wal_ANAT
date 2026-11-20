@@ -537,7 +537,7 @@ function AgentForm({
     >
       <div className="space-y-6">
         {needsEmail && (
-          <p className="rounded-[10px] bg-info-soft px-3 py-2 text-[13px] text-info">
+          <p className="rounded-lg bg-info-soft px-3 py-2 text-[13px] text-info">
             Créer un agent ouvre son compte : il reçoit à cette adresse un lien personnel pour choisir son mot de passe
             et accède à la vue Agent (stagiaire et consultant reçoivent leur profil propre).
           </p>
@@ -647,7 +647,7 @@ function AgentForm({
             rows={3}
             value={f.notes}
             onChange={set("notes")}
-            className="field-ring w-full rounded-[10px] border border-field bg-panel px-3 py-2 text-[13.5px] outline-none"
+            className="field-ring w-full rounded-lg border border-field bg-panel px-3 py-2 text-[13.5px] outline-none"
           />
         </DrawerSection>
       </div>

@@ -1610,7 +1610,7 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
               rows={3}
               value={f.annotation}
               onChange={(e) => setF({ ...f, annotation: e.target.value })}
-              className="field-ring w-full rounded-[10px] border border-field bg-panel px-3 py-2 text-[13.5px] outline-none"
+              className="field-ring w-full rounded-lg border border-field bg-panel px-3 py-2 text-[13.5px] outline-none"
             />
           )}
         </Field>
@@ -1817,7 +1817,7 @@ function MailDialog({
           </Fact>
         </Facts>
         {m.status === "classe" && m.filed_reason && (
-          <p className="rounded-[10px] bg-hover px-3 py-2 text-[13px]">
+          <p className="rounded-lg bg-hover px-3 py-2 text-[13px]">
             Classé sans suite : {m.filed_reason}
           </p>
         )}

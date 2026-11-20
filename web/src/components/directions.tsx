@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { AlertTriangle, ChevronRight, CircleCheck, Siren } from "lucide-react";
+import { AlertTriangle, CircleCheck, Siren } from "lucide-react";
 import { cn } from "@/components/ui";
 
 /*
@@ -60,11 +60,11 @@ export function Assessment({ value }: { value: DirectionStats["assessment"] }) {
   return (
     <span
       className={cn(
-        "inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-full px-2 text-[11.5px] font-medium",
-        a.cls,
+        "inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-md px-1.5 text-[12px] font-medium text-fg",
+        a.cls.split(" ").find((c) => c.startsWith("bg-")),
       )}
     >
-      <a.Icon className="size-3" strokeWidth={2.25} />
+      <span aria-hidden className={cn("size-2 rounded-[2px] bg-current", a.cls.split(" ").find((c) => c.startsWith("text-")))} />
       {a.label}
     </span>
   );
@@ -79,43 +79,35 @@ export function PlanBar({
   expected: number | null;
 }) {
   if (progress === null)
-    return <span className="text-[12px] text-faint">Pas de plan approuvé</span>;
+    return <span className="text-faint">—</span>;
   const behind = expected !== null && expected - progress >= 15;
   return (
-    <span className="block min-w-[120px]">
+    <span className="flex min-w-[150px] items-center gap-3" title={expected !== null ? `Attendu à date : ${expected} %` : undefined}>
       <span
-        className="relative block h-1.5 rounded-full bg-hover"
+        className="relative block h-1.5 flex-1 rounded-full bg-hover"
         role="img"
         aria-label={`Réalisé ${progress} %${expected !== null ? `, attendu à date ${expected} %` : ""}`}
       >
         <span
-          className="absolute inset-y-0 left-0 rounded-full bg-primary"
+          className="absolute inset-y-0 left-0 rounded-full bg-fg"
           style={{ width: `${progress}%` }}
         />
         {expected !== null && (
           <span
-            className="absolute -top-1 h-3.5 w-0.5 rounded-full bg-fg"
+            className="absolute -top-1 h-3.5 w-0.5 rounded-full bg-danger"
             style={{ left: `calc(${Math.min(expected, 100)}% - 1px)` }}
           />
         )}
       </span>
-      <span className="mt-1 block text-[12px] tabular-nums text-muted">
+      <span className="w-10 text-right text-[12.5px] tabular-nums">
         <span className={cn("font-medium text-fg", behind && "text-danger")}>
           {progress} %
         </span>
-        {expected !== null && <> · attendu {expected} %</>}
       </span>
     </span>
   );
 }
 
-const Late = ({ n, label }: { n: number; label: string }) =>
-  n ? (
-    <span className="whitespace-nowrap">
-      <span className="font-semibold tabular-nums text-danger">{n}</span>{" "}
-      <span className="text-muted">{label}</span>
-    </span>
-  ) : null;
 
 /** La carte « Par direction » du tableau de bord DG. */
 export function ByDirection({ className }: { className?: string }) {
@@ -128,31 +120,9 @@ export function ByDirection({ className }: { className?: string }) {
         directions: DirectionRow[];
       }>("/api/pilotage/directions"),
   });
-  const alerts =
-    data?.directions.filter((d) => d.assessment === "alerte").length ?? 0;
   return (
-    <section
-      id="par-direction"
-      className={cn(
-        "flex min-w-0 scroll-mt-4 flex-col rounded-2xl border border-line bg-panel",
-        className,
-      )}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-3 pt-4">
-        <h2 className="text-[14.5px] font-semibold tracking-[-0.01em]">
-          Par direction
-        </h2>
-        {data && (
-          <span className="text-[12px] text-muted">
-            {data.directions.length} direction
-            {data.directions.length > 1 ? "s" : ""}
-            {alerts ? ` · ${alerts} en alerte` : ""}
-            {/* La ligne « Agence » n'est pas une direction : son alerte se dit à part (P-7) */}
-            {data.agency?.assessment === "alerte" ? " · l'Agence aussi" : ""} ·
-            le trait marque l'avancement attendu à date
-          </span>
-        )}
-      </div>
+    <section id="par-direction" className={cn("min-w-0 scroll-mt-4 rounded-2xl border border-line", className)}>
+      <h2 className="px-4 pb-1 pt-3.5 text-[14px] font-medium">Directions</h2>
       {error ? (
         <p className="px-5 pb-5 text-[13px] text-danger">
           {(error as Error).message}
@@ -167,7 +137,7 @@ export function ByDirection({ className }: { className?: string }) {
               ? [
                   {
                     ...data.agency,
-                    name: `${data.agency.name} · niveau de l'Agence`,
+                    name: "Agence",
                   },
                 ]
               : []),
@@ -196,104 +166,39 @@ export function DirectionTable({
     );
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[860px] text-[13px]">
+      <table className="w-full min-w-[640px] text-[13.5px]">
         <thead>
-          <tr className="border-b border-line text-left text-[12px] text-muted">
-            <th className="px-5 py-2 font-medium">Entité</th>
-            <th className="px-3 py-2 font-medium">Appréciation</th>
-            <th className="px-3 py-2 font-medium">Projets</th>
-            <th className="px-3 py-2 font-medium">Plan de travail</th>
-            <th className="px-3 py-2 font-medium">Retards</th>
-            <th className="w-8" />
+          <tr className="text-left text-[12px] text-muted">
+            <th className="py-2.5 pl-4 pr-3 font-normal">Entité</th>
+            <th className="px-3 py-2.5 font-normal">État</th>
+            <th className="px-3 py-2.5 text-right font-normal">Projets</th>
+            <th className="px-3 py-2.5 font-normal">Plan de travail</th>
+            <th className="py-2.5 pl-3 pr-4 text-right font-normal">Retards</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((d) => (
-            <tr
-              key={d.id}
-              className="group border-b border-line last:border-0 hover:bg-hover"
-            >
-              <td className="px-5 py-3 align-top">
-                <Link
-                  to={`/pilotage/directions/${d.id}`}
-                  className="block font-medium hover:underline"
-                >
-                  {d.name}
-                </Link>
-                <span className="block text-[12px] text-muted">
-                  {d.manager_name ?? "Sans chef désigné"} · {d.agents} agent
-                  {d.agents > 1 ? "s" : ""}
-                  {d.services
-                    ? ` · ${d.services} cellule${d.services > 1 ? "s" : ""}`
-                    : ""}
-                </span>
-              </td>
-              <td className="max-w-[260px] px-3 py-3 align-top">
-                <Assessment value={d.assessment} />
-                {d.alerts.length > 0 && (
-                  <span className="mt-1 block text-[12px] leading-snug text-muted">
-                    {d.alerts.slice(0, 2).join(" · ")}
-                  </span>
-                )}
-              </td>
-              <td className="px-3 py-3 align-top">
-                <span className="block font-medium tabular-nums">
-                  {d.projects.total}
-                </span>
-                {d.projects.total > 0 && (
-                  <span className="block text-[12px] text-muted">
-                    {[
-                      d.projects.off_track &&
-                        `${d.projects.off_track} en difficulté`,
-                      d.projects.at_risk &&
-                        `${d.projects.at_risk} à surveiller`,
-                      d.projects.on_track &&
-                        `${d.projects.on_track} dans les temps`,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                )}
-              </td>
-              <td className="px-3 py-3 align-top">
-                <PlanBar
-                  progress={d.plan.progress}
-                  expected={d.plan.expected}
-                />
-              </td>
-              <td className="px-3 py-3 align-top text-[12.5px]">
-                <span className="flex flex-col gap-0.5">
-                  <Late
-                    n={d.tasks.overdue}
-                    label={`tâche${d.tasks.overdue > 1 ? "s" : ""}`}
-                  />
-                  <Late
-                    n={d.decisions.late}
-                    label={`décision${d.decisions.late > 1 ? "s" : ""}`}
-                  />
-                  <Late n={d.mail.late} label="courrier" />
-                  <Late
-                    n={d.recommendations.late}
-                    label={`recommandation${d.recommendations.late > 1 ? "s" : ""}`}
-                  />
-                  {!d.tasks.overdue &&
-                    !d.decisions.late &&
-                    !d.mail.late &&
-                    !d.recommendations.late && (
-                      <span className="text-muted">Aucun</span>
-                    )}
-                </span>
-              </td>
-              <td className="pr-4 align-middle">
-                <Link
-                  to={`/pilotage/directions/${d.id}`}
-                  aria-label={`Ouvrir ${d.name}`}
-                >
-                  <ChevronRight className="size-4 text-faint group-hover:text-fg" />
-                </Link>
-              </td>
-            </tr>
-          ))}
+          {rows.map((d) => {
+            const late = d.tasks.overdue + d.decisions.late + d.mail.late + d.recommendations.late;
+            return (
+              <tr key={d.id} className="border-t border-line hover:bg-hover">
+                <td className="py-3 pl-4 pr-3">
+                  <Link to={`/pilotage/directions/${d.id}`} className="hover:underline">
+                    {d.name}
+                  </Link>
+                </td>
+                <td className="px-3 py-3" title={d.alerts.slice(0, 3).join(" · ") || undefined}>
+                  <Assessment value={d.assessment} />
+                </td>
+                <td className="px-3 py-3 text-right tabular-nums">{d.projects.total || <span className="text-faint">—</span>}</td>
+                <td className="px-3 py-3">
+                  <PlanBar progress={d.plan.progress} expected={d.plan.expected} />
+                </td>
+                <td className="py-3 pl-3 pr-4 text-right tabular-nums">
+                  {late ? <span className="font-semibold text-danger">{late}</span> : <span className="text-faint">—</span>}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

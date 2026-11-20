@@ -2,25 +2,28 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ANAT Pilotage — graphite froid et filets nets, relevés du bleu de l'Agence (#007BC4) et d'un bleu nuit.
-   L'iris reste réservé à l'IA. Les documents officiels gardent Montserrat. */
+/* ANAT Pilotage — direction du 20/11/2026, d'après la référence retenue par l'utilisateur (famille shadcn/ui, Geist,
+   Linear) : une fenêtre blanche posée sur un fond gris pâle, encre presque noire, filets fins, aucune ombre sur les
+   surfaces, couleur réservée aux statuts. Le bleu de l'Agence (#007BC4) sert aux liens et au focus. L'iris reste
+   réservé à l'IA. Les documents officiels gardent Montserrat. */
 :root {
-  --bg: #F5F6F8;
+  --canvas: #EDEDEE;
+  --bg: #FFFFFF;
   --panel: #FFFFFF;
-  --sidebar: #F5F6F8;
+  --sidebar: #FFFFFF;
   --raised: #FFFFFF;
-  --hover: rgba(17, 24, 39, 0.04);
+  --hover: rgba(17, 18, 20, 0.045);
   --active: rgba(0, 123, 196, 0.08);
-  --line: rgba(17, 24, 39, 0.075);
-  --line-strong: rgba(17, 24, 39, 0.13);
+  --line: rgba(17, 18, 20, 0.085);
+  --line-strong: rgba(17, 18, 20, 0.14);
   --field: rgba(15, 30, 50, 0.17);
   --table-head: transparent;
-  --fg: #111A27;
-  --muted: #5B6677;
-  --faint: #8D97A6;
+  --fg: #111214;
+  --muted: #62666D;
+  --faint: #9A9DA3;
   --primary: #007BC4;
   --primary-hover: #006BAB;
-  --night: #0B2A45;
+  --night: #111214;
   --ring: rgba(0, 123, 196, 0.2);
   --brand-soft: rgba(0, 123, 196, 0.08);
   --on-primary: #FFFFFF;
@@ -36,8 +39,8 @@
   --danger-soft: rgba(209, 59, 59, 0.09);
   --info: #2F6FEB;
   --info-soft: rgba(47, 111, 235, 0.09);
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
-  --shadow-md: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px -8px rgba(16, 24, 40, 0.12);
+  --shadow-sm: 0 0 #0000;
+  --shadow-md: 0 4px 16px -6px rgba(16, 24, 40, 0.14);
   --shadow-lg: 0 2px 4px rgba(16, 16, 30, 0.04), 0 24px 60px -16px rgba(16, 16, 30, 0.28);
   /* Une teinte par forme d'activité, toujours accompagnée de son icône et de son nom */
   --form-projet_interne: #007BC4;
@@ -62,6 +65,7 @@
 }
 
 .dark {
+  --canvas: #050608;
   --viz-1: #3987E5;
   --viz-2: #D95926;
   --night: #0E3556;
@@ -95,7 +99,7 @@
   --danger-soft: rgba(255, 99, 105, 0.11);
   --info: #70B8FF;
   --info-soft: rgba(112, 184, 255, 0.11);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 0 #0000;
   --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -8px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 64px -12px rgba(0, 0, 0, 0.75);
   --form-projet_interne: #4FB0EC;
@@ -116,6 +120,7 @@
 }
 
 @theme inline {
+  --color-canvas: var(--canvas);
   --color-bg: var(--bg);
   --color-panel: var(--panel);
   --color-sidebar: var(--sidebar);
@@ -146,27 +151,30 @@
   --color-danger-soft: var(--danger-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
-  --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Onest Variable", "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   /* Les chiffres « font-serif » passent en Geist demi-gras, plus net et plus moderne */
-  --font-serif: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Onest Variable", "Geist Variable", ui-sans-serif, system-ui, sans-serif;
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
-  --radius-xl: 14px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 18px;
 }
 
 @layer base {
 html, body, #root { height: 100%; }
 body {
-  background: var(--bg);
+  background: var(--canvas);
   color: var(--fg);
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: "cv11", "ss01";
 }
 ::selection { background: var(--ring); }
 h1, h2, h3 { text-wrap: balance; letter-spacing: -0.015em; }
@@ -222,12 +230,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
 /* Halo de saisie, relief du bouton principal, carte signature */
 .field-ring:focus { box-shadow: 0 0 0 3px var(--ring); border-color: var(--primary); }
 /* Action principale à l'encre de l'Agence (bleu nuit) ; le bleu vif reste pour la sélection et les liens */
-.btn-brand {
-  background: linear-gradient(180deg, #143A5C, #0B2A45);
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 2px rgba(11, 42, 69, 0.3);
-}
-.btn-brand:hover { background: linear-gradient(180deg, #0F3150, #082136); }
+.btn-brand { background: var(--night); color: #fff; }
+.btn-brand:hover { background: #2B2D31; }
 .dark .btn-brand { background: var(--primary); color: var(--on-primary); box-shadow: none; }
 .dark .btn-brand:hover { background: var(--primary-hover); }
 .hero-night {

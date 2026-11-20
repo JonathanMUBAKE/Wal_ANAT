@@ -339,7 +339,7 @@ export function NewMeeting({
               aria-checked={timing === v}
               onClick={() => setTiming(v)}
               className={cn(
-                "rounded-[10px] border px-3 py-2.5 text-left transition-colors",
+                "rounded-lg border px-3 py-2.5 text-left transition-colors",
                 timing === v ? "border-primary bg-brand-soft" : "border-line hover:bg-hover",
               )}
             >

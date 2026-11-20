@@ -430,9 +430,9 @@ function Card({
       <motion.ul
         key={swap}
         className={flush ? "" : "px-4 pb-2"}
-        initial={swap ? { opacity: 0, y: 6, filter: "blur(4px)" } : false}
-        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        initial={swap ? { opacity: 0, y: 6 } : false}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
       >
         {children}
       </motion.ul>

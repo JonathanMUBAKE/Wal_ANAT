@@ -516,7 +516,7 @@ function People({
     "h-8 max-w-[220px] rounded-md border border-line bg-bg/60 px-2 text-[12.5px] outline-none disabled:border-transparent disabled:bg-transparent";
   return (
     <div className="overflow-x-auto rounded-2xl border border-line bg-panel shadow-sm">
-      <table className="w-full min-w-[640px] text-left text-[13px]">
+      <table className="grid-table min-w-[640px] text-left">
         <thead className="border-b border-line text-[12px] text-muted">
           <tr>
             <th className="px-4 py-2.5 font-medium">Personne</th>

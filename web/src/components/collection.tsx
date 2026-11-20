@@ -1,4 +1,5 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from "react";
+import { motion } from "motion/react";
 import {
   addDays,
   addMonths,
@@ -251,8 +252,8 @@ export function GroupedTable<T>({
                 </span>
               </div>
               {open && (
-                <div className="relative overflow-x-auto">
-                  <table className="w-full table-fixed border-collapse text-[13px]" style={{ minWidth: 760 }}>
+                <div className="grid-scroll relative">
+                  <table className="grid-table table-fixed" style={{ minWidth: 760 }}>
                     <colgroup>
                       {bulk && <col style={{ width: 40 }} />}
                       {columns.map((c) => (
@@ -380,6 +381,7 @@ export function ViewSwitch<T extends string>({
   items: { id: T; label: string; Icon?: LucideIcon }[];
   label?: string;
 }) {
+  const group = useId();
   return (
     <div role="radiogroup" aria-label={label} className="inline-flex h-9 items-center gap-0.5 rounded-lg bg-hover p-[3px]">
       {items.map(({ id, label: l, Icon }) => {
@@ -391,12 +393,21 @@ export function ViewSwitch<T extends string>({
             aria-checked={on}
             onClick={() => onChange(id)}
             className={cn(
-              "inline-flex h-full items-center gap-1.5 rounded-[8px] px-3 text-[12.5px] font-medium transition-all duration-200",
-              on ? "bg-panel text-fg shadow-sm ring-1 ring-line" : "text-muted hover:text-fg",
+              "relative inline-flex h-full items-center rounded-[8px] px-3 text-[12.5px] font-medium transition-colors duration-200",
+              on ? "text-fg" : "text-muted hover:text-fg",
             )}
           >
-            {Icon && <Icon className="size-3.5" />}
-            {l}
+            {on && (
+              <motion.span
+                layoutId={`switch-${group}`}
+                className="absolute inset-0 rounded-[8px] bg-panel shadow-sm ring-1 ring-line"
+                transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.7 }}
+              />
+            )}
+            <span className="relative inline-flex items-center gap-1.5">
+              {Icon && <Icon className="size-3.5" />}
+              {l}
+            </span>
           </button>
         );
       })}
@@ -638,8 +649,8 @@ export function DataTable<T>({
           </button>
         </div>
       )}
-      <div className="relative overflow-x-auto px-3 pt-3">
-        <table className="w-full border-collapse text-[13px]">
+      <div className="grid-scroll relative">
+        <table className="grid-table">
           <thead>
             <tr className="text-left">
               {bulk && (
@@ -943,29 +954,33 @@ export function TimeGrid({
   from?: number;
   to?: number;
 }) {
-  const H = 64;
+  const H = 56;
   const today = dkey(new Date());
   const hours = Array.from({ length: to - from }, (_, i) => from + i);
   const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
   return (
     <div className="overflow-x-auto">
       <div style={{ minWidth: days.length > 1 ? days.length * 128 + 56 : undefined }}>
-        <div className="grid gap-2 pb-3" style={{ gridTemplateColumns: `56px repeat(${days.length}, minmax(0,1fr))` }}>
+        <div
+          className="grid border-b border-line pb-2.5"
+          style={{ gridTemplateColumns: `56px repeat(${days.length}, minmax(0,1fr))` }}
+        >
           <span />
           {days.map((d) => {
             const isT = dkey(d) === today;
             return (
-              <div
-                key={dkey(d)}
-                className={cn(
-                  "rounded-xl px-2 py-2.5 text-center",
-                  isT ? "bg-night text-white shadow-md dark:bg-primary dark:text-on-primary" : "bg-bg",
-                )}
-              >
-                <p className={cn("text-[11.5px] capitalize", isT ? "text-white/70" : "text-muted")}>
-                  {format(d, "EEEE", { locale: fr })}
-                </p>
-                <p className="text-[24px] font-semibold leading-tight tracking-[-0.03em]">{format(d, "d")}</p>
+              <div key={dkey(d)} className="flex items-center justify-center gap-2">
+                <span className={cn("text-[12px] capitalize", isT ? "font-medium text-primary" : "text-muted")}>
+                  {format(d, "EEE", { locale: fr }).replace(".", "")}
+                </span>
+                <span
+                  className={cn(
+                    "flex size-7 items-center justify-center rounded-full text-[13.5px] font-semibold tabular",
+                    isT && "bg-primary text-on-primary",
+                  )}
+                >
+                  {format(d, "d")}
+                </span>
               </div>
             );
           })}
@@ -973,8 +988,8 @@ export function TimeGrid({
         <div className="relative grid" style={{ gridTemplateColumns: `56px repeat(${days.length}, minmax(0,1fr))` }}>
           <div>
             {hours.map((h) => (
-              <div key={h} style={{ height: H }} className="pr-2 text-right text-[11px] tabular text-faint">
-                <span className="relative -top-2">{h} h</span>
+              <div key={h} style={{ height: H }} className="pr-3 text-right text-[11px] tabular text-faint">
+                <span className="relative -top-2">{String(h).padStart(2, "0")}:00</span>
               </div>
             ))}
           </div>
@@ -982,14 +997,18 @@ export function TimeGrid({
             const k = dkey(d);
             const list = events.filter((e) => e.date === k);
             return (
-              <div key={k} className="relative border-l border-line" style={{ height: hours.length * H }}>
-                {hours.map((h) => (
-                  <div key={h} className="border-t border-dashed border-line" style={{ height: H }} />
+              <div
+                key={k}
+                className={cn("relative border-l border-line", k === today && "bg-brand-soft/50")}
+                style={{ height: hours.length * H }}
+              >
+                {hours.map((h, n) => (
+                  <div key={h} className={cn("border-line", n > 0 && "border-t")} style={{ height: H }} />
                 ))}
                 {k === today && nowMin > from * 60 && nowMin < to * 60 && (
                   <div className="absolute inset-x-0 z-20 flex items-center" style={{ top: ((nowMin - from * 60) / 60) * H }}>
-                    <span className="-ml-1 size-2 rounded-full bg-danger" />
-                    <span className="h-px flex-1 bg-danger" />
+                    <span className="-ml-[5px] size-2.5 rounded-full bg-danger ring-2 ring-panel" />
+                    <span className="h-[1.5px] flex-1 bg-danger" />
                   </div>
                 )}
                 {list.map((e, i) => {
@@ -1004,20 +1023,20 @@ export function TimeGrid({
                       key={e.id}
                       onClick={() => onSelect(e)}
                       className={cn(
-                        "absolute z-10 overflow-hidden rounded-xl border-l-[3px] px-2.5 py-1.5 text-left transition-[box-shadow,transform] hover:-translate-y-px hover:shadow-md",
-                        sel && "shadow-md ring-2 ring-[var(--ring)]",
+                        "rise-in absolute z-10 overflow-hidden rounded-lg py-1.5 pl-3 pr-2 text-left transition-[transform,filter] duration-200 ease-out hover:-translate-y-px hover:brightness-110",
+                        sel && "ring-2 ring-[var(--ring)]",
                         e.muted && "opacity-60",
                       )}
                       style={{
                         top: top + 2,
                         height: h,
-                        left: overlap ? `calc(${(i % 2) * 50}% + 3px)` : 3,
-                        right: overlap ? `calc(${(1 - (i % 2)) * 50}% + 3px)` : 3,
-                        borderLeftColor: e.hue,
-                        background: `color-mix(in oklab, ${e.hue} 13%, var(--panel))`,
+                        left: overlap ? `calc(${(i % 2) * 50}% + 4px)` : 4,
+                        right: overlap ? `calc(${(1 - (i % 2)) * 50}% + 4px)` : 4,
+                        background: `color-mix(in oklab, ${e.hue} 15%, var(--panel))`,
+                        boxShadow: `inset 3px 0 0 ${e.hue}, inset 0 0 0 1px color-mix(in oklab, ${e.hue} 26%, transparent)`,
                       }}
                     >
-                      <p className={cn("line-clamp-2 text-[12.5px] font-semibold leading-snug", e.muted && "line-through")}>
+                      <p className={cn("line-clamp-2 text-[12.5px] font-medium leading-snug", e.muted && "line-through")}>
                         {e.title}
                       </p>
                       {h > 46 && (
@@ -1056,45 +1075,47 @@ export function MonthGrid({
   const today = dkey(new Date());
   return (
     <div className="overflow-x-auto">
-      <div className="grid min-w-[640px] grid-cols-7 gap-1.5">
-        {["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"].map((w) => (
-          <p key={w} className="pb-1 text-center text-[11.5px] capitalize text-muted">
+      <div className="grid min-w-[640px] grid-cols-7 overflow-hidden rounded-xl border border-line [&>*:nth-child(7n)]:border-r-0">
+        {["lun", "mar", "mer", "jeu", "ven", "sam", "dim"].map((w) => (
+          <p key={w} className="border-b border-r border-line py-2 text-center text-[11.5px] capitalize text-muted">
             {w}
           </p>
         ))}
-        {days.map((d) => {
+        {days.map((d, n) => {
           const k = dkey(d);
           const list = events.filter((e) => e.date === k);
           return (
             <div
               key={k}
               className={cn(
-                "min-h-[104px] rounded-2xl p-1.5",
-                isSameMonth(d, month) ? "bg-bg/80" : "bg-bg/30 opacity-60",
+                "min-h-[104px] border-r border-line p-1.5",
+                n < days.length - 7 && "border-b",
+                !isSameMonth(d, month) && "bg-bg/60",
+                k === today && "bg-brand-soft/50",
               )}
             >
               <span
                 className={cn(
                   "mb-1 flex size-6 items-center justify-center rounded-full text-[12px] font-medium tabular",
-                  k === today && "bg-night text-white dark:bg-primary dark:text-on-primary",
+                  k === today ? "bg-primary text-on-primary" : !isSameMonth(d, month) && "text-faint",
                 )}
               >
                 {format(d, "d")}
               </span>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {list.slice(0, 3).map((e) => (
                   <button
                     key={e.id}
                     onClick={() => onSelect(e)}
+                    title={e.start ? `${e.start.slice(0, 5)} · ${e.title}` : e.title}
                     className={cn(
-                      "block w-full truncate rounded-md border-l-2 px-1.5 py-0.5 text-left text-[11.5px] font-medium",
-                      selected === e.id && "ring-2 ring-[var(--ring)]",
+                      "flex w-full items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left text-[11.5px] transition-colors hover:bg-hover",
+                      selected === e.id && "bg-hover ring-1 ring-[var(--ring)]",
                       e.muted && "line-through opacity-60",
                     )}
-                    style={{ borderLeftColor: e.hue, background: `color-mix(in oklab, ${e.hue} 13%, var(--panel))` }}
                   >
-                    {e.start && <span className="tabular text-muted">{e.start.slice(0, 5)} </span>}
-                    {e.title}
+                    <span className="size-1.5 shrink-0 rounded-full" style={{ background: e.hue }} />
+                    <span className="truncate font-medium">{e.title}</span>
                   </button>
                 ))}
                 {list.length > 3 && <p className="px-1 text-[11px] text-faint">+{list.length - 3} autres</p>}

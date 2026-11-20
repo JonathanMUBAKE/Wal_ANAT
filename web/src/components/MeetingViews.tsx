@@ -736,16 +736,25 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
         </div>
       </div>
       <div className="space-y-4 p-5">
-        <div className="grid grid-cols-2 gap-3">
-          <Prop label="Lieu" Icon={MapPin}>
-            {m.location || "—"}
-          </Prop>
-          <Prop label="Rédacteur" Icon={UserRound}>
-            {m.writer_name || "—"}
-          </Prop>
-          <Prop label="Convoquée par">{m.convened_by || "—"}</Prop>
-          <Prop label="Animateur">{m.facilitator || "—"}</Prop>
-        </div>
+        <dl className="text-[12.5px]">
+          {(
+            [
+              ["Lieu", m.location],
+              ["Rédaction", m.writer_name],
+              ["Convoquée par", m.convened_by],
+              ["Animation", m.facilitator],
+            ] as [string, string | null | undefined][]
+          )
+            .filter(([, v]) => !!v)
+            .map(([l, v]) => (
+              <div key={l} className="flex items-baseline justify-between gap-4 border-t border-line py-2 first:border-t-0 first:pt-0">
+                <dt className="shrink-0 text-muted">{l}</dt>
+                <dd className="min-w-0 truncate text-right font-medium" title={v ?? undefined}>
+                  {v}
+                </dd>
+              </div>
+            ))}
+        </dl>
         <div>
           <p className="mb-1.5 text-[12px] font-medium text-faint">Participants · {m.attendees.length}</p>
           {m.attendees.length ? (

@@ -264,18 +264,18 @@ export const Stamp = ({ children }: { children: ReactNode }) => (
   </span>
 );
 
-/** Tableau institutionnel : en-tête discret sur un filet, défilement horizontal sur téléphone. */
+/** Tableau institutionnel : libellés discrets sur un filet, une ligne par enregistrement, défilement horizontal sur téléphone. */
 export function Table({ head, children }: { head: ReactNode[]; children: ReactNode }) {
   return (
-    <div className="relative overflow-x-auto px-3 pt-2">
-      <table className="w-full border-collapse text-[13px]">
+    <div className="grid-scroll relative">
+      <table className="grid-table">
         <thead>
           <tr className="text-left">
             {head.map((h, i) => (
               <th
                 key={i}
                 scope="col"
-                className="whitespace-nowrap bg-bg px-3 py-2.5 text-[12px] font-medium text-muted first:rounded-l-lg last:rounded-r-lg"
+                className="text-left"
               >
                 {h}
               </th>
@@ -307,14 +307,23 @@ export const Tr = ({
     <tr
       onClick={onClick}
       onContextMenu={onContextMenu ?? rowMenu({ open: onClick, href, reference })}
-      className={cn("border-t border-line", onClick && "cursor-pointer transition-colors hover:bg-hover")}
+      className={cn(onClick && "cursor-pointer")}
     >
       {children}
     </tr>
   );
 };
-export const Td = ({ children, className }: { children?: ReactNode; className?: string }) => (
-  <td className={cn("px-3 py-2.5 align-top", className)}>{children}</td>
+/**
+ * Cellule : une seule ligne ; un texte trop long se coupe (le texte entier se lit au survol et dans la fiche).
+ * `wrap` laisse le contenu aller à la ligne quand il le faut vraiment.
+ */
+export const Td = ({ children, className, wrap }: { children?: ReactNode; className?: string; wrap?: boolean }) => (
+  <td
+    className={cn(wrap && "wrap", className)}
+    title={!wrap && typeof children === "string" && children.length > 40 ? children : undefined}
+  >
+    {children}
+  </td>
 );
 
 export function Tabs<T extends string>({

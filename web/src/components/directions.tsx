@@ -168,8 +168,8 @@ export function DirectionTable({
       </p>
     );
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[640px] text-[13.5px]">
+    <div className="grid-scroll">
+      <table className="grid-table min-w-[640px]">
         <thead>
           <tr className="text-left text-[12px] text-muted">
             <th className="py-2.5 pl-4 pr-3 font-normal">Entité</th>

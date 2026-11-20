@@ -75,17 +75,19 @@ export function WeekAgenda({ start, events }: { start: string; events: AgendaEve
     <div className="overflow-x-auto">
       <div className="grid min-w-[560px] grid-cols-7 border-t border-line">
         {days.map((day, n) => (
-          <div key={day.key} className={cn("min-h-[148px] border-line px-1.5 pb-2 pt-2", n > 0 && "border-l", n === 0 && "bg-brand-soft/60")}>
-            <p className="flex items-baseline gap-1.5 px-1 pb-2">
+          <div key={day.key} className={cn("min-h-[148px] border-line px-1.5 pb-2 pt-2.5", n > 0 && "border-l", n === 0 && "bg-brand-soft/50")}>
+            <p className="flex items-center gap-1.5 px-1 pb-2.5">
               <span
                 className={cn(
-                  "flex size-6 items-center justify-center rounded-md text-[12.5px] font-semibold tabular",
-                  n === 0 ? "bg-primary text-on-primary" : "text-fg",
+                  "flex size-6 items-center justify-center rounded-full text-[12.5px] font-semibold tabular",
+                  n === 0 && "bg-primary text-on-primary",
                 )}
               >
                 {format(day.d, "d")}
               </span>
-              <span className="text-[11.5px] text-muted">{format(day.d, "EEE", { locale: fr }).replace(".", "")}</span>
+              <span className={cn("text-[11.5px] capitalize", n === 0 ? "font-medium text-primary" : "text-muted")}>
+                {format(day.d, "EEE", { locale: fr }).replace(".", "")}
+              </span>
             </p>
             <ul className="space-y-1">
               {day.events.map((e) => (
@@ -93,13 +95,13 @@ export function WeekAgenda({ start, events }: { start: string; events: AgendaEve
                   <Link
                     to={e.href}
                     title={e.kind ? `${e.title} · ${e.kind}` : e.title}
-                    className="block rounded-md border-l-[3px] px-1.5 py-1 text-[11.5px] font-medium leading-snug transition-transform duration-200 ease-out hover:-translate-y-0.5"
+                    className="block rounded-lg py-1 pl-2.5 pr-1.5 text-[11.5px] font-medium leading-snug transition-[transform,filter] duration-200 ease-out hover:-translate-y-0.5 hover:brightness-110"
                     style={{
-                      borderColor: e.color ?? "var(--primary)",
-                      background: `color-mix(in oklab, ${e.color ?? "var(--primary)"} 11%, transparent)`,
+                      background: `color-mix(in oklab, ${e.color ?? "var(--primary)"} 15%, var(--panel))`,
+                      boxShadow: `inset 3px 0 0 ${e.color ?? "var(--primary)"}, inset 0 0 0 1px color-mix(in oklab, ${e.color ?? "var(--primary)"} 26%, transparent)`,
                     }}
                   >
-                    <span className="line-clamp-3 hyphens-auto break-words" lang="fr">{e.title}</span>
+                    <span className="line-clamp-2 hyphens-auto break-words" lang="fr">{e.title}</span>
                   </Link>
                 </li>
               ))}

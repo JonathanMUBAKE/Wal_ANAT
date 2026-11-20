@@ -171,7 +171,7 @@ function Users({ meId }: { meId?: string }) {
             }}
           />
         )}
-        <table className="w-full min-w-[820px] text-left text-[13px]">
+        <table className="grid-table min-w-[820px] text-left">
           <thead className="border-b border-line text-[12px] text-muted">
             <tr>
               <th className="px-4 py-2.5 font-medium">Compte</th>
@@ -669,7 +669,7 @@ function AuditTable({
     );
   return (
     <div className="overflow-x-auto rounded-2xl border border-line bg-panel shadow-sm">
-      <table className="w-full min-w-[860px] text-left text-[13px]">
+      <table className="grid-table min-w-[860px] text-left">
         <thead className="border-b border-line text-[12px] text-muted">
           <tr>
             <th className="px-4 py-2.5 font-medium">Date</th>

@@ -1,5 +1,6 @@
 import { QuickEntryMenu } from "@/components/quick-entry";
-import { useState } from "react";
+import { RoleFocus } from "@/components/role-focus";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { addDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
@@ -10,14 +11,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   ArrowUpRight,
-  Briefcase,
   ChevronRight,
-  FileSignature,
-  Gauge,
-  Scale,
   Sparkles,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { Button, Dialog, Empty, cn } from "@/components/ui";
 import {
   CountUp,
@@ -27,7 +23,6 @@ import {
   type Tone,
 } from "@/components/gov";
 import { HealthRing } from "@/components/territory";
-import { CollectionHeader } from "@/components/collection";
 import { ByDirection } from "@/components/directions";
 
 import { api } from "@/lib/api";
@@ -35,7 +30,7 @@ import { useCan, useMe } from "@/lib/hooks";
 import { useForms } from "@/lib/referentials";
 import { DecisionDialog, type DecisionSource } from "./Decisions";
 import { useShell } from "@/lib/shell";
-import { firstName, greeting } from "@/lib/format";
+import { pl, salutation } from "@/lib/format";
 
 /** « projet_interne », « projet_confie » ou le code d'un type d'activité du référentiel. */
 type Form = string;
@@ -161,7 +156,6 @@ export function PilotagePage() {
   const total = Object.values(o.health).reduce((s, n) => s + n, 0);
   const healthy = (o.health.on_track ?? 0) + (o.health.done ?? 0);
   const score = total ? Math.round((healthy / total) * 100) : 0;
-  const lateItems = o.items.filter((i) => i.overdue > 0).length;
   // Semaine glissante : nombre de rendez-vous par jour
   const week = Array.from({ length: 7 }, (_, n) => {
     const d = addDays(parseISO(o.today), n);
@@ -176,57 +170,31 @@ export function PilotagePage() {
 
   return (
     <div className="mx-auto max-w-[1480px] space-y-5 p-4 sm:px-8 sm:py-6">
-      <CollectionHeader
-        Icon={Gauge}
-        crumbs={["Pilotage", "Tableau de bord DG"]}
-        title="Où en est l'Agence"
-        subtitle={`${greeting()}, ${firstName(me?.name ?? "")} · ${format(parseISO(o.today), "EEEE d MMMM yyyy", { locale: fr })}`}
-        actions={<QuickEntryMenu />}
-      />
+      {/* Le point du jour : la note que le cabinet remettrait à la DG, chaque chiffre mène à son détail (UX-2) */}
+      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 pt-2">
+        <div className="min-w-0 max-w-[68ch]">
+          <p className="text-[13px] text-muted first-letter:uppercase">
+            {format(parseISO(o.today), "EEEE d MMMM yyyy", { locale: fr })}
+          </p>
+          <h1 className="mt-1 text-[34px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[40px]">
+            {salutation(me?.name)}.
+          </h1>
+          <Brief
+            total={total}
+            score={score}
+            late={o.counters.retards}
+            decisions={o.counters.decisions}
+            onLate={() => setLateOpen(true)}
+          />
+        </div>
+        <QuickEntryMenu />
+      </header>
+
+      {/* Ce qui attend la personne elle-même, selon sa fonction (courrier, parapheur, entité, congés) */}
+      <RoleFocus className="lg:grid-cols-4" />
 
       {/* Grille bento : 12 colonnes, chaque carte occupe la place que mérite son importance */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-6 xl:grid-cols-12 xl:grid-flow-row-dense">
-        {/* 1. Quatre chiffres qui appellent une action */}
-        <Stat
-          className="md:col-span-3 xl:col-span-3"
-          Icon={Briefcase}
-          tile="bg-brand-soft text-primary"
-          label="Activités suivies"
-          value={total}
-          foot={`${score} % en bonne voie`}
-          tone={score >= 70 ? "good" : "warn"}
-          to="/activites"
-        />
-        <Stat
-          className="md:col-span-3 xl:col-span-3"
-          Icon={Scale}
-          tile="bg-ai-soft text-ai-fg"
-          label="Décisions attendues"
-          value={o.counters.decisions}
-          foot={
-            o.counters.decisions_a_executer
-              ? `${o.counters.decisions_a_executer} décidée${o.counters.decisions_a_executer > 1 ? "s" : ""}, en exécution`
-              : "à arbitrer par la DG"
-          }
-          to="/decisions"
-        />
-        <Stat
-          className="md:col-span-3 xl:col-span-3"
-          Icon={AlarmClock}
-          tile="bg-danger-soft text-danger"
-          label="Retards à résorber"
-          value={o.counters.retards}
-          foot={lateFoot(
-            (
-              o.counters as unknown as {
-                retards_detail?: Record<string, number>;
-              }
-            ).retards_detail,
-            lateItems,
-          )}
-          tone={o.counters.retards ? "bad" : "good"}
-          onClick={o.counters.retards ? () => setLateOpen(true) : undefined}
-        />
         {lateOpen && (
           <LateDetail
             detail={
@@ -239,16 +207,6 @@ export function PilotagePage() {
             onClose={() => setLateOpen(false)}
           />
         )}
-        <Stat
-          className="md:col-span-3 xl:col-span-3"
-          Icon={FileSignature}
-          tile="bg-warning-soft text-warning"
-          label="À signer"
-          value={o.to_sign}
-          foot={o.to_sign ? "au parapheur" : "parapheur à jour"}
-          tone={o.to_sign ? undefined : "good"}
-          to="/parapheur"
-        />
 
         {/* 1 bis. Par direction : où en est chaque direction, et pourquoi */}
         <ByDirection className="md:col-span-6 xl:col-span-12" />
@@ -828,17 +786,6 @@ function LateDetail({
     </Dialog>
   );
 }
-const lateFoot = (
-  detail: Record<string, number> | undefined,
-  items: number,
-) => {
-  const parts = Object.entries(detail ?? {})
-    .filter(([, n]) => n > 0)
-    .map(([k, n]) => `${n} ${LATE_LABEL[k]?.[n > 1 ? 1 : 0] ?? k}`);
-  return parts.length
-    ? parts.slice(0, 2).join(", ") + (parts.length > 2 ? "…" : "")
-    : `${items} activité concernée`;
-};
 const rate = (r: { open: number; done: number }) =>
   r.open + r.done ? Math.round((r.done / (r.open + r.done)) * 100) : 0;
 
@@ -852,6 +799,67 @@ function CircleAction({ to, label }: { to: string; label: string }) {
     >
       <ArrowUpRight className="size-4" />
     </Link>
+  );
+}
+
+/**
+ * La note du jour : deux phrases, au plus, qui disent où en est l'Agence. Les mots restent discrets, les chiffres
+ * ressortent et s'ouvrent sur leur détail ; un retard se lit en rouge.
+ */
+function Brief({
+  total,
+  score,
+  late,
+  decisions,
+  onLate,
+}: {
+  total: number;
+  score: number;
+  late: number;
+  decisions: number;
+  onLate: () => void;
+}) {
+  const figure = "font-semibold underline decoration-line-strong decoration-1 underline-offset-[5px] hover:decoration-primary focus-visible:outline-2 focus-visible:outline-primary";
+  const tail: ReactNode[] = [];
+  if (late)
+    tail.push(
+      <span key="late">
+        <button type="button" onClick={onLate} className={cn(figure, "text-danger")}>
+          {late} {pl(late, "retard(s)")}
+        </button>{" "}
+        {late > 1 ? "sont" : "est"} à résorber
+      </span>,
+    );
+  if (decisions)
+    tail.push(
+      <span key="dec">
+        <Link to="/decisions" className={cn(figure, "text-fg")}>
+          {decisions} {pl(decisions, "décision(s)")}
+        </Link>{" "}
+        {decisions > 1 ? "sont attendues" : "est attendue"}
+      </span>,
+    );
+  return (
+    <p className="mt-3 text-[18px] leading-[1.5] text-muted sm:text-[21px]">
+      L'Agence suit{" "}
+      <Link to="/activites" className={cn(figure, "text-fg")}>
+        {total} {pl(total, "activité(s)")}
+      </Link>
+      , dont {score} % en bonne voie.{" "}
+      {tail.length ? (
+        <>
+          {tail.map((t, i) => (
+            <span key={i}>
+              {i === 0 ? "" : i === tail.length - 1 ? " et " : ", "}
+              {t}
+            </span>
+          ))}
+          .
+        </>
+      ) : (
+        "Aucun retard, aucune décision en attente."
+      )}
+    </p>
   );
 }
 
@@ -885,87 +893,3 @@ function Bento({
   );
 }
 
-/** Chiffre qui appelle une action : carré d'icône pastel, chiffre, pastille d'état (modèles Pivot, VantaRisk). */
-function Stat({
-  Icon,
-  tile,
-  label,
-  value,
-  foot,
-  tone,
-  to,
-  onClick,
-  className,
-}: {
-  Icon: LucideIcon;
-  tile: string;
-  label: string;
-  value: number;
-  foot: string;
-  tone?: "good" | "warn" | "bad";
-  to?: string;
-  onClick?: () => void;
-  className?: string;
-}) {
-  const body = (
-    <>
-      <span
-        className={cn(
-          "flex size-12 shrink-0 items-center justify-center rounded-xl",
-          tile,
-        )}
-      >
-        <Icon className="size-5" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[12.5px] text-muted">{label}</span>
-        <span className="mt-0.5 flex items-baseline gap-2">
-          <span className="text-[26px] font-semibold leading-none tracking-[-0.03em] tabular">
-            <CountUp value={value} />
-          </span>
-        </span>
-        <span
-          className={cn(
-            "mt-2 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium",
-            tone === "good" && "bg-success-soft text-success",
-            tone === "warn" && "bg-warning-soft text-warning",
-            tone === "bad" && "bg-danger-soft text-danger",
-            !tone && "bg-hover text-muted",
-          )}
-        >
-          {tone === "bad" && (
-            <span className="pulse-dot size-1.5 rounded-full bg-current" />
-          )}
-          {foot}
-        </span>
-      </span>
-      {(to || onClick) && (
-        <ArrowUpRight className="size-4 shrink-0 self-start text-faint transition-colors group-hover:text-fg" />
-      )}
-    </>
-  );
-  const cls = cn(
-    "group flex min-w-0 items-center gap-4 rounded-2xl border border-line bg-panel p-4",
-    className,
-  );
-  return to ? (
-    <Link
-      to={to}
-      className={cn(cls, "transition-colors hover:border-line-strong")}
-    >
-      {body}
-    </Link>
-  ) : onClick ? (
-    <button
-      onClick={onClick}
-      className={cn(
-        cls,
-        "text-left transition-colors hover:border-line-strong",
-      )}
-    >
-      {body}
-    </button>
-  ) : (
-    <div className={cls}>{body}</div>
-  );
-}

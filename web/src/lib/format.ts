@@ -57,4 +57,14 @@ export const greeting = () => {
  */
 export const pl = (n: number | null | undefined, phrase: string) => phrase.replace(/\((s|x)\)/g, (n ?? 0) > 1 ? "$1" : "");
 
+/**
+ * Le salut d'en-tête : « Bonjour, Carine » quand le compte porte un nom de personne, « Bonjour » quand il porte une
+ * fonction (comptes de démonstration désignés par leur fonction : « Chef de cellule… », « Agent… »).
+ */
+const FUNCTION_WORDS = /^(directeur|directrice|chef|cheffe|agent|assistant|assistante|responsable|représentant|représentante|gestionnaire|secrétaire)/i;
+export const salutation = (name?: string | null) => {
+  const first = (name ?? "").trim().split(" ")[0];
+  return !first || FUNCTION_WORDS.test(name!.trim()) ? greeting() : `${greeting()}, ${first}`;
+};
+
 export const firstName = (n: string) => n.split(" ")[0];

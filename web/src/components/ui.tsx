@@ -363,7 +363,7 @@ export function MenuContent({
         sideOffset={6}
         collisionPadding={12}
         className={cn(
-          "z-50 min-w-[200px] overflow-hidden rounded-xl border border-line bg-raised p-1 shadow-lg data-[state=open]:animate-in",
+          "z-50 min-w-[200px] overflow-hidden rounded-xl border border-line bg-raised p-1 pop shadow-lg",
           className,
         )}
       >
@@ -389,7 +389,7 @@ export function MenuItem({
     <DM.Item
       onSelect={onSelect}
       className={cn(
-        "flex h-8 cursor-default select-none items-center gap-2 rounded-md px-2 text-[13px] outline-none data-[highlighted]:bg-hover",
+        "flex h-8 cursor-default select-none items-center gap-2 rounded-md px-2 text-[13px] outline-none transition-colors duration-100 data-[highlighted]:bg-hover",
         danger ? "text-danger" : "text-fg",
       )}
     >
@@ -412,7 +412,7 @@ export function MenuSub({ label, icon, children }: { label: ReactNode; icon?: Re
         <DM.SubContent
           sideOffset={6}
           collisionPadding={12}
-          className="z-50 max-h-[320px] min-w-[220px] overflow-y-auto rounded-xl border border-line bg-raised p-1 shadow-lg"
+          className="pop z-50 max-h-[320px] min-w-[220px] overflow-y-auto rounded-xl border border-line bg-raised p-1 shadow-lg"
         >
           {children}
         </DM.SubContent>
@@ -443,7 +443,7 @@ export function PopoverContent({
         align={align}
         sideOffset={6}
         collisionPadding={12}
-        className={cn("z-50 rounded-xl border border-line bg-raised p-1 shadow-lg outline-none", className)}
+        className={cn("pop z-50 rounded-xl border border-line bg-raised p-1 shadow-lg outline-none", className)}
       >
         {children}
       </PO.Content>
@@ -586,7 +586,7 @@ export function Tip({
         <TT.Content
           side={side}
           sideOffset={6}
-          className="z-[60] max-w-xs rounded-md bg-fg px-2 py-1 text-[12px] text-bg shadow-md"
+          className="pop z-[60] max-w-xs rounded-md bg-fg px-2 py-1 text-[12px] text-bg shadow-md"
         >
           {label}
         </TT.Content>

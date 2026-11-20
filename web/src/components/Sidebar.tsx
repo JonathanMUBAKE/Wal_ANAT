@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useId, useState } from "react";
+import { motion } from "motion/react";
 import { NavLink, useNavigate } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -162,6 +163,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       !!myUnits?.some((u) => u.role === "responsable"),
   };
 
+  const navId = useId();
   const link = (to: string, Icon: typeof House, label: string, badge?: number, ai?: boolean) => (
     <NavLink
       to={to}
@@ -169,22 +171,29 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          "group flex h-9 items-center gap-3 rounded-[10px] px-2.5 text-[13.5px] transition-colors",
-          isActive ? "bg-brand-soft font-medium text-primary" : "text-fg/75 hover:bg-hover hover:text-fg",
+          "group relative flex h-9 items-center gap-3 rounded-[10px] px-2.5 text-[13.5px] transition-colors duration-200",
+          isActive ? "font-medium text-primary" : "text-fg/75 hover:bg-hover hover:text-fg",
         )
       }
     >
       {({ isActive }) => (
         <>
+          {isActive && (
+            <motion.span
+              layoutId={`nav-${navId}`}
+              className="absolute inset-0 rounded-[10px] bg-brand-soft"
+              transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.7 }}
+            />
+          )}
           <Icon
-            className={cn("size-[18px] shrink-0", ai && !isActive && "text-ai-fg", !isActive && !ai && "text-muted")}
+            className={cn("relative size-[18px] shrink-0", ai && !isActive && "text-ai-fg", !isActive && !ai && "text-muted")}
             strokeWidth={isActive ? 2.1 : 1.75}
           />
-          <span className="flex-1 truncate">{label}</span>
+          <span className="relative flex-1 truncate">{label}</span>
           {!!badge && (
             <span
               className={cn(
-                "min-w-[20px] rounded-md px-1.5 text-center text-[11px] font-semibold tabular",
+                "relative min-w-[20px] rounded-md px-1.5 text-center text-[11px] font-semibold tabular",
                 ai ? "bg-ai-soft text-ai-fg" : "bg-brand-soft text-primary",
               )}
             >

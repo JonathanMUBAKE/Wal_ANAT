@@ -95,7 +95,7 @@
   --danger-soft: rgba(255, 99, 105, 0.11);
   --info: #70B8FF;
   --info-soft: rgba(112, 184, 255, 0.11);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -8px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 64px -12px rgba(0, 0, 0, 0.75);
   --form-projet_interne: #4FB0EC;
@@ -276,40 +276,63 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
 @keyframes bar-rise { from { transform: scaleY(0); } }
 .bar-rise { transform-origin: bottom; animation: bar-rise 700ms cubic-bezier(.2, .8, .2, 1) backwards; }
 
-.card-hover { transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease; }
+.card-hover { transition: box-shadow 260ms var(--ease-out), border-color 200ms ease, transform 260ms var(--ease-out); }
 .card-hover:hover { box-shadow: var(--shadow-md); border-color: var(--line-strong); transform: translateY(-1px); }
+
+/* Fluidité (20/11/2026) : une seule courbe de sortie, douce en fin de course, pour tout ce qui s'ouvre ou se déplace */
+:root { --ease-out: cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* Menus, bulles et listes déroulantes : ils sortent de leur point d'attache et y retournent */
+@keyframes pop-in { from { opacity: 0; transform: scale(0.96) translateY(-2px); } }
+@keyframes pop-out { to { opacity: 0; transform: scale(0.97); } }
+.pop { transform-origin: var(--radix-dropdown-menu-content-transform-origin, var(--radix-popover-content-transform-origin, var(--radix-tooltip-content-transform-origin, center))); }
+.pop[data-state="open"], .pop[data-state="delayed-open"], .pop[data-state="instant-open"] { animation: pop-in 180ms var(--ease-out); }
+.pop[data-state="closed"] { animation: pop-out 110ms ease-in forwards; }
+
+/* Fermetures : le tiroir repart vers la droite, le dialogue et le voile s'effacent */
+@keyframes fade-out { to { opacity: 0; } }
+@keyframes drawer-out { to { opacity: 0; transform: translateX(32px); } }
+@keyframes dialog-out { to { opacity: 0; transform: translate(-50%, 4px) scale(0.985); } }
+.overlay-in[data-state="closed"] { animation: fade-out 160ms ease-in forwards; }
+.drawer-in[data-state="closed"] { animation: drawer-out 180ms ease-in forwards; }
+.dialog-in[data-state="closed"] { animation: dialog-out 140ms ease-in forwards; }
+
+/* Changement de thème : les couleurs fondent au lieu de sauter */
+.theme-fade, .theme-fade *, .theme-fade *::before, .theme-fade *::after {
+  transition: background-color 260ms ease, border-color 260ms ease, color 260ms ease, fill 260ms ease, stroke 260ms ease !important;
+}
 
 /* Animations brèves, sur l'opacité et la position, jamais en boucle hors chargement */
 @keyframes fade-in { from { opacity: 0; } }
-@keyframes rise-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes rise-in { from { opacity: 0; transform: translateY(8px); filter: blur(3px); } }
 @keyframes dialog-in { from { opacity: 0; transform: translate(-50%, 6px) scale(0.985); } }
 @keyframes stamp-in { 0% { opacity: 0; transform: rotate(-4deg) scale(1.6); } 70% { opacity: 1; transform: rotate(-4deg) scale(0.96); } 100% { opacity: 1; transform: rotate(-4deg) scale(1); } }
 @keyframes pulse-once { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
 @keyframes skeleton { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 @keyframes bar-fill { from { transform: scaleX(0); } }
 .overlay-in { animation: fade-in 180ms ease-out; }
-.rise-in { animation: rise-in 220ms ease-out; }
-.dialog-in { animation: dialog-in 180ms cubic-bezier(.2, .8, .2, 1); }
+.rise-in { animation: rise-in 320ms var(--ease-out); }
+.dialog-in { animation: dialog-in 260ms var(--ease-out); }
 /* Tiroir de consultation : glisse depuis la droite, sans rebond */
-@keyframes drawer-in { from { opacity: 0.6; transform: translateX(24px); } }
-.drawer-in { animation: drawer-in 200ms cubic-bezier(.2, .8, .2, 1); }
+@keyframes drawer-in { from { opacity: 0; transform: translateX(48px); } }
+.drawer-in { animation: drawer-in 380ms var(--ease-out); }
 .stamp-in { animation: stamp-in 280ms cubic-bezier(.2, .8, .2, 1); }
 .pulse-once { animation: pulse-once 400ms ease-out; }
 .skeleton { animation: skeleton 1.4s ease-in-out infinite; background: var(--hover); }
-.bar-fill { transform-origin: left; animation: bar-fill 600ms cubic-bezier(.2, .8, .2, 1); }
+.bar-fill { transform-origin: left; animation: bar-fill 900ms var(--ease-out) backwards; animation-delay: 120ms; }
 /* Cascade limitée aux 12 premières lignes, pour ne jamais retarder une longue liste */
-.stagger > * { animation: rise-in 200ms ease-out backwards; }
-.stagger > *:nth-child(2) { animation-delay: 20ms; }
-.stagger > *:nth-child(3) { animation-delay: 40ms; }
-.stagger > *:nth-child(4) { animation-delay: 60ms; }
-.stagger > *:nth-child(5) { animation-delay: 80ms; }
-.stagger > *:nth-child(6) { animation-delay: 100ms; }
-.stagger > *:nth-child(7) { animation-delay: 120ms; }
-.stagger > *:nth-child(8) { animation-delay: 140ms; }
-.stagger > *:nth-child(9) { animation-delay: 160ms; }
-.stagger > *:nth-child(10) { animation-delay: 180ms; }
-.stagger > *:nth-child(11) { animation-delay: 200ms; }
-.stagger > *:nth-child(12) { animation-delay: 220ms; }
+.stagger > * { animation: rise-in 420ms var(--ease-out) backwards; }
+.stagger > *:nth-child(2) { animation-delay: 35ms; }
+.stagger > *:nth-child(3) { animation-delay: 70ms; }
+.stagger > *:nth-child(4) { animation-delay: 105ms; }
+.stagger > *:nth-child(5) { animation-delay: 140ms; }
+.stagger > *:nth-child(6) { animation-delay: 175ms; }
+.stagger > *:nth-child(7) { animation-delay: 210ms; }
+.stagger > *:nth-child(8) { animation-delay: 245ms; }
+.stagger > *:nth-child(9) { animation-delay: 280ms; }
+.stagger > *:nth-child(10) { animation-delay: 315ms; }
+.stagger > *:nth-child(11) { animation-delay: 350ms; }
+.stagger > *:nth-child(12) { animation-delay: 385ms; }
 .stagger > *:nth-child(n+13) { animation: none; }
 
 @media (prefers-reduced-motion: reduce) {

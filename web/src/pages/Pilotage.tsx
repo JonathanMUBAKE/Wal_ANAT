@@ -21,7 +21,8 @@ import { type AgendaEvent, type MatrixRisk, RiskMatrix, ViewSwitch, WeekAgenda }
 import { useLocalPref } from "@/components/collection";
 import { useForms } from "@/lib/referentials";
 import { Button, Dialog, Empty, cn } from "@/components/ui";
-import { LoadingRows, type Tone } from "@/components/gov";
+import { CountUp, LoadingRows, type Tone } from "@/components/gov";
+import { motion } from "motion/react";
 import { ByDirection } from "@/components/directions";
 
 import { api } from "@/lib/api";
@@ -198,7 +199,7 @@ export function PilotagePage() {
       </header>
 
       {/* La situation du jour : une carte par chiffre, le libellé en haut, la flèche ouvre le détail */}
-      <section aria-label="Situation du jour" className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+      <section aria-label="Situation du jour" className="stagger grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         {figures.map((f) => {
           const body = (
             <>
@@ -213,13 +214,13 @@ export function PilotagePage() {
                   <f.Icon className="size-4" strokeWidth={2} />
                 </span>
                 <span className={cn("text-[26px] font-medium leading-none tracking-[-0.02em] tabular", f.strong && "text-danger")}>
-                  {f.value}
+                  {typeof f.value === "number" ? <CountUp value={f.value} duration={700} /> : f.value}
                 </span>
               </span>
             </>
           );
           const cls = cn(
-            "group block rounded-2xl border p-3.5 text-left shadow-sm transition-colors",
+            "card-hover group block rounded-2xl border p-3.5 text-left shadow-sm",
             f.strong ? "border-danger/40 bg-danger-soft hover:border-danger/70" : "border-line bg-panel hover:border-line-strong",
           );
           return f.to ? (
@@ -287,6 +288,7 @@ export function PilotagePage() {
           title="Agenda"
           to="/reunions"
           flush={agendaView === "semaine"}
+          swap={agendaView}
           aside={
             <ViewSwitch
               value={agendaView}
@@ -323,6 +325,7 @@ export function PilotagePage() {
           title="Risques"
           to="/risques"
           count={openRisks.length || undefined}
+          swap={riskView}
           aside={
             <ViewSwitch
               value={riskView}
@@ -392,6 +395,7 @@ function Card({
   count,
   aside,
   flush,
+  swap,
   children,
 }: {
   title: string;
@@ -400,6 +404,8 @@ function Card({
   aside?: ReactNode;
   /** Le contenu va d'un bord à l'autre (agenda). */
   flush?: boolean;
+  /** Clé de la vue affichée : quand elle change, le contenu se fond. */
+  swap?: string;
   children: ReactNode;
 }) {
   return (
@@ -421,7 +427,15 @@ function Card({
           </Link>
         </span>
       </div>
-      <ul className={flush ? "" : "px-4 pb-2"}>{children}</ul>
+      <motion.ul
+        key={swap}
+        className={flush ? "" : "px-4 pb-2"}
+        initial={swap ? { opacity: 0, y: 6, filter: "blur(4px)" } : false}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {children}
+      </motion.ul>
     </section>
   );
 }

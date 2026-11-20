@@ -1,3 +1,4 @@
+import { motion } from "motion/react";
 import { todayIso } from "@/lib/format";
 import {
   type InputHTMLAttributes,
@@ -190,12 +191,12 @@ export function StatCard({
   strong?: boolean;
 }) {
   return (
-    <div className={cn("min-w-0 rounded-2xl border p-3.5 shadow-sm", strong ? "border-danger/40 bg-danger-soft" : "border-line bg-panel")}>
+    <div className={cn("card-hover min-w-0 rounded-2xl border p-3.5 shadow-sm", strong ? "border-danger/40 bg-danger-soft" : "border-line bg-panel")}>
       <p className="truncate text-[13px] font-medium">{label}</p>
       <p className="mt-3 flex items-center gap-2.5">
         {icon && <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4", STAT_TILE[tone])}>{icon}</span>}
         <span className={cn("text-[26px] font-medium leading-none tracking-[-0.02em] tabular", (strong || tone === "danger") && "text-danger")}>
-          {value}
+          {typeof value === "number" ? <CountUp value={value} duration={700} /> : value}
         </span>
       </p>
       {hint && <p className="mt-2 truncate text-[12px] text-muted">{hint}</p>}
@@ -325,6 +326,7 @@ export function Tabs<T extends string>({
   onChange: (v: T) => void;
   items: { id: T; label: string; badge?: number }[];
 }) {
+  const group = useId();
   return (
     <div className="mx-auto w-full max-w-[1480px] px-4 sm:px-8">
       {/* Les onglets passent à la ligne dès la tablette ; ils ne défilent que sur téléphone (E-10) */}
@@ -338,11 +340,17 @@ export function Tabs<T extends string>({
               aria-selected={on}
               onClick={() => onChange(t.id)}
               className={cn(
-                "relative inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 text-[13px] font-medium transition-colors first:pl-0",
-                "after:absolute after:bottom-0 after:left-3 after:right-3 after:h-[2px] after:rounded-full first:after:left-0",
-                on ? "text-fg after:bg-primary" : "text-muted hover:text-fg",
+                "group/tab relative inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap px-3 text-[13px] font-medium transition-colors duration-200 first:pl-0",
+                on ? "text-fg" : "text-muted hover:text-fg",
               )}
             >
+              {on && (
+                <motion.span
+                  layoutId={`tab-${group}`}
+                  className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-primary group-first/tab:left-0"
+                  transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.7 }}
+                />
+              )}
               {t.label}
               {!!t.badge && (
                 <span className="rounded-md bg-brand-soft px-1.5 text-[11px] font-semibold tabular text-primary">

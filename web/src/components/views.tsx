@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useId } from "react";
+import { motion } from "motion/react";
 import { Link } from "react-router";
 import { addDays, format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -22,6 +23,7 @@ export function ViewSwitch<T extends string>({
   options: { id: T; label: string; Icon?: LucideIcon }[];
   label?: string;
 }) {
+  const group = useId();
   return (
     <div role="tablist" aria-label={label} className="inline-flex rounded-lg bg-hover p-0.5">
       {options.map((o) => (
@@ -32,12 +34,21 @@ export function ViewSwitch<T extends string>({
           aria-selected={value === o.id}
           onClick={() => onChange(o.id)}
           className={cn(
-            "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[12px] transition-colors",
-            value === o.id ? "border border-line bg-panel font-medium text-fg" : "border border-transparent text-muted hover:text-fg",
+            "relative inline-flex h-6 items-center gap-1 rounded-md px-2 text-[12px] transition-colors duration-200",
+            value === o.id ? "font-medium text-fg" : "text-muted hover:text-fg",
           )}
         >
-          {o.Icon && <o.Icon className="size-3.5" />}
-          {o.label}
+          {value === o.id && (
+            <motion.span
+              layoutId={`view-${group}`}
+              className="absolute inset-0 rounded-md border border-line bg-panel shadow-sm"
+              transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.7 }}
+            />
+          )}
+          <span className="relative inline-flex items-center gap-1">
+            {o.Icon && <o.Icon className="size-3.5" />}
+            {o.label}
+          </span>
         </button>
       ))}
     </div>
@@ -82,7 +93,7 @@ export function WeekAgenda({ start, events }: { start: string; events: AgendaEve
                   <Link
                     to={e.href}
                     title={e.kind ? `${e.title} · ${e.kind}` : e.title}
-                    className="block rounded-md border-l-[3px] px-1.5 py-1 text-[11.5px] font-medium leading-snug hover:brightness-95"
+                    className="block rounded-md border-l-[3px] px-1.5 py-1 text-[11.5px] font-medium leading-snug transition-transform duration-200 ease-out hover:-translate-y-0.5"
                     style={{
                       borderColor: e.color ?? "var(--primary)",
                       background: `color-mix(in oklab, ${e.color ?? "var(--primary)"} 11%, transparent)`,

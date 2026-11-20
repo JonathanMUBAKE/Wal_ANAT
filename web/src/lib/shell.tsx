@@ -89,7 +89,13 @@ export function ShellProvider({ children }: { children: ReactNode }) {
       openQuickAdd: (projectId) => setQuickAdd({ open: true, projectId }),
       closeQuickAdd: () => setQuickAdd({ open: false, projectId: null }),
       theme,
-      toggleTheme: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
+      toggleTheme: () => {
+        // Les couleurs fondent d'un thème à l'autre, puis la transition se retire pour ne pas ralentir l'usage
+        const root = document.documentElement;
+        root.classList.add("theme-fade");
+        window.setTimeout(() => root.classList.remove("theme-fade"), 320);
+        setTheme((t) => (t === "dark" ? "light" : "dark"));
+      },
     }),
     [openTask, closeTask, taskId, assistant, palette, newProject, quickAdd, theme],
   );

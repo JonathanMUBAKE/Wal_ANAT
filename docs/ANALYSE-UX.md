@@ -409,6 +409,20 @@ bonne ; ce qui gênait, c'était la disposition des contenus (à l'horizontal). 
 | Composants | À la manière de shadcn/ui (mêmes briques : React, Tailwind, Radix) : carte titrée, lignes libellé-valeur, bascule de vue |
 | Abandonné | La fenêtre blanche sur fond gris, la barre latérale claire à trait noir, la police Onest, la barre latérale bleu nuit |
 
+### Fluidité (référence : HeroSpace, de l'équipe HeroUI)
+
+| Geste | Ce qui bouge |
+|---|---|
+| Changer d'onglet, de vue ou de page du menu | L'indicateur glisse d'un élément à l'autre, sur ressort |
+| Changer de page ou de vue | Le contenu se fond avec un léger flou |
+| Ouvrir un menu, une bulle, une fiche | Le panneau sort de son point d'attache ; le tiroir glisse sur une courbe douce, le fond se floute |
+| Arriver sur l'Accueil | Les chiffres entrent en cascade et montent jusqu'à leur valeur ; les barres se remplissent |
+| Survoler une carte | Elle se soulève d'un pixel |
+| Changer de thème | Les couleurs fondent au lieu de sauter |
+
+Tout repose sur la bibliothèque Motion, déjà présente. Le réglage système « réduire les animations » est respecté.
+Adopter les composants HeroUI eux-mêmes reste possible, comme chantier séparé.
+
 ## Avancement
 
 | Date | Lot | Fait |

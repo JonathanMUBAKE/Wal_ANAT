@@ -90,7 +90,7 @@ export function PlanBar({
       >
         <span
           className={cn(
-            "absolute inset-y-0 left-0 rounded-full",
+            "bar-fill absolute inset-y-0 left-0 rounded-full",
             behind ? "bg-danger" : expected !== null && progress >= expected ? "bg-success" : "bg-warning",
           )}
           style={{ width: `${progress}%` }}

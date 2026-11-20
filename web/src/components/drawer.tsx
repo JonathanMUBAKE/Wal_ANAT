@@ -41,7 +41,7 @@ export function Drawer({
     <>
       <DI.Root open={open} onOpenChange={(v) => !v && request()}>
         <DI.Portal>
-          <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-black/20 dark:bg-black/50" />
+          <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-black/25 backdrop-blur-[2px] dark:bg-black/55" />
           <DI.Content
             className="drawer-in fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-hidden border-line bg-panel shadow-lg outline-none sm:inset-y-2.5 sm:right-2.5 sm:w-[calc(100vw-48px)] sm:rounded-3xl sm:border"
             style={{ maxWidth: width }}

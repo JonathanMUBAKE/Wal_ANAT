@@ -1,8 +1,9 @@
+import { pl } from "@/lib/format";
 import { useEffect } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarPlus, FilePlus2, FileSignature, Gavel, MailPlus, Scale } from "lucide-react";
-import { cn } from "@/components/ui";
+import { CalendarPlus, ChevronDown, FilePlus2, FileSignature, Gavel, MailPlus, Plus, Scale } from "lucide-react";
+import { Button, Menu, MenuContent, MenuItem, MenuTrigger, cn } from "@/components/ui";
 import { useCan } from "@/lib/hooks";
 import { api } from "@/lib/api";
 
@@ -25,7 +26,8 @@ export function useOpenFromUrl(open: () => void) {
 }
 
 /** noSign : la page affiche déjà le parapheur dans « Ce qui vous attend » ; viser n'est pas une saisie (A-5). */
-export function QuickEntry({ className, wide, noSign }: { className?: string; wide?: boolean; noSign?: boolean }) {
+/** Les saisies offertes à la personne, selon ses droits. */
+function useQuickItems(noSign?: boolean) {
   const can = useCan();
   const { data: pending } = useQuery({
     queryKey: ["arbitrations", "en_attente"],
@@ -74,10 +76,55 @@ export function QuickEntry({ className, wide, noSign }: { className?: string; wi
       to: "/parapheur",
       Icon: FileSignature,
       label: "Viser ou signer",
-      hint: toSign?.length ? `${toSign.length} document(s) en attente` : "parapheur à jour",
+      hint: toSign?.length ? `${toSign.length} ${pl(toSign.length, "document(s)")} en attente` : "parapheur à jour",
       count: toSign?.length,
     },
   ].filter(Boolean) as { to: string; Icon: typeof Scale; label: string; hint: string; count?: number }[];
+  return items;
+}
+
+/**
+ * « Saisir » en bouton-menu, dans l'en-tête d'une page : les mêmes saisies, à un clic, sans occuper le haut de
+ * l'écran (écrans sobres : l'information d'abord, l'action ensuite).
+ */
+export function QuickEntryMenu({ noSign }: { noSign?: boolean }) {
+  const items = useQuickItems(noSign);
+  const nav = useNavigate();
+  if (!items.length) return null;
+  const waiting = items.reduce((n, i) => n + (i.count ?? 0), 0);
+  return (
+    <Menu>
+      <MenuTrigger asChild>
+        <Button variant="primary" icon={<Plus className="size-4" />}>
+          Saisir
+          {!!waiting && (
+            <span className="ml-1 rounded-full bg-on-primary/20 px-1.5 text-[11px] font-semibold tabular">{waiting}</span>
+          )}
+          <ChevronDown className="size-3.5 opacity-80" />
+        </Button>
+      </MenuTrigger>
+      <MenuContent align="end" className="min-w-[260px]">
+        {items.map((i) => (
+          <MenuItem
+            key={i.label}
+            icon={<i.Icon className="size-3.5" />}
+            right={
+              i.count ? (
+                <span className="rounded-full bg-danger px-1.5 text-[10.5px] font-semibold text-white">{i.count}</span>
+              ) : undefined
+            }
+            onSelect={() => nav(i.to)}
+          >
+            {i.label}
+          </MenuItem>
+        ))}
+      </MenuContent>
+    </Menu>
+  );
+}
+
+export function QuickEntry({ className, wide, noSign }: { className?: string; wide?: boolean; noSign?: boolean }) {
+  const items = useQuickItems(noSign);
   if (!items.length) return null;
   return (
     <section aria-label="Saisir" className={cn("rounded-2xl border border-line bg-panel p-4 shadow-sm", className)}>

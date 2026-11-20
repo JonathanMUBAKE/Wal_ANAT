@@ -1,3 +1,4 @@
+import { pl } from "@/lib/format";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -128,7 +129,7 @@ export function SectionMenu({
         width={440}
         description={
           taskCount
-            ? `Ses ${taskCount} tâche(s) seront déplacées dans « ${target?.name} ». Rien n'est perdu.`
+            ? `Ses ${taskCount} ${pl(taskCount, "tâche(s)")} seront déplacées dans « ${target?.name} ». Rien n'est perdu.`
             : "La section est vide."
         }
         footer={

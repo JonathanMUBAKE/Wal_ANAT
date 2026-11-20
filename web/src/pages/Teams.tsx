@@ -20,7 +20,7 @@ import {
 import { AssigneePicker } from "@/components/pickers";
 import { useCan, useMe, useServiceAddress, useTeam, useTeams, useUnits, useUserMap, useUsers } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
-import { STATUS } from "@/lib/format";
+import { STATUS, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { Team, TeamVisibility } from "@/lib/types";
 
@@ -125,7 +125,7 @@ export function TeamsPage() {
                     {V.label}
                   </span>
                   <span className="tabular">
-                    · {t.member_count} membre(s) · {t.project_count} projet(s)
+                    · {t.member_count} {pl(t.member_count, "membre(s)")} · {t.project_count} {pl(t.project_count, "projet(s)")}
                   </span>
                   <span className="ml-auto">
                     <JoinButton t={t} />

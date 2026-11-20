@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { AlertTriangle, Check, Info, Megaphone, MonitorSmartphone, ShieldAlert, X } from "lucide-react";
 import { Button, Chip, Empty, Spinner, cn, Hint } from "@/components/ui";
 import { Field, Input, Section, Select, Table, Td, Tr } from "@/components/gov";
-import { ago } from "@/lib/format";
+import { ago, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 
 /*
@@ -109,12 +109,12 @@ export function SystemHealth() {
         <Tile
           label="Sessions ouvertes"
           value={h.sessions.active}
-          hint={`${h.sessions.users} personne(s) connectée(s)`}
+          hint={`${h.sessions.users} ${pl(h.sessions.users, "personne(s) connectée(s)")}`}
         />
         <Tile
           label="Messagerie"
           value={h.mail.configured ? "Configurée" : "Absente"}
-          hint={`${h.mail.sent_7d} envoyé(s) · ${h.mail.failed_7d} échec(s) en 7 jours`}
+          hint={`${h.mail.sent_7d} ${pl(h.mail.sent_7d, "envoyé(s)")} · ${h.mail.failed_7d} ${pl(h.mail.failed_7d, "échec(s)")} en 7 jours`}
           alert={!h.mail.configured || h.mail.failed_7d > 0}
         />
         <Tile label="Documents stockés" value={h.storage.files} hint={size(h.storage.bytes)} />

@@ -10,7 +10,7 @@ import { Field, Input, Section, Status, Table, Td, Textarea, Tr, frDate, type To
 import { Fact, Facts } from "@/components/record";
 import { PlanBar } from "@/components/directions";
 import { useCan, useMe } from "@/lib/hooks";
-import { todayIso } from "@/lib/format";
+import { todayIso, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 
 /*
@@ -103,7 +103,7 @@ export function PortfolioReview() {
   const s = data.summary;
   const exportDoc = (): ExportDoc => ({
     title: "Revue de portefeuille",
-    subtitle: `${s.total} projets · ${s.divergent} en écart avec le déclaré · ${s.decisions_expected} décision(s) attendue(s)`,
+    subtitle: `${s.total} projets · ${s.divergent} en écart avec le déclaré · ${s.decisions_expected} ${pl(s.decisions_expected, "décision(s) attendue(s)")}`,
     filename: "revue-de-portefeuille",
     landscape: true,
     sections: [

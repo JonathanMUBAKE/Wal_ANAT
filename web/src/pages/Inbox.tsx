@@ -23,7 +23,7 @@ import { Avatar, Button, Empty, cn, Hint } from "@/components/ui";
 import { ApprovalCard } from "@/components/ai";
 import { useApprovals, useMe, useNotifications, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
-import { ago } from "@/lib/format";
+import { ago, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { Notification, NotificationPrefs } from "@/lib/types";
 
@@ -92,7 +92,7 @@ export function InboxPage() {
       <header className="mb-6 flex flex-wrap items-end gap-3">
         <div>
           <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Boîte de réception</h1>
-          <p className="mt-1 text-[13px] text-muted">{unread ? `${unread} non lue(s)` : "Tout est lu."}</p>
+          <p className="mt-1 text-[13px] text-muted">{unread ? `${unread} ${pl(unread, "non lue(s)")}` : "Tout est lu."}</p>
         </div>
         <span className="ml-auto flex gap-2">
           {unread > 0 && (

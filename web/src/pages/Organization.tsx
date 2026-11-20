@@ -1,3 +1,4 @@
+import { pl } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { PageHeader, Status, Tabs } from "@/components/gov";
@@ -159,7 +160,7 @@ function Tree({ units, isAdmin }: { units: OrgUnit[]; isAdmin: boolean }) {
                     </span>
                     <span className="block truncate text-[11.5px] text-faint">
                       <UnitKind code={u.kind} />
-                      {u.team_count ? ` · ${u.team_count} équipe(s)` : ""}
+                      {u.team_count ? ` · ${u.team_count} ${pl(u.team_count, "équipe(s)")}` : ""}
                       {u.member_count ? ` · ${u.member_count} pers.` : ""}
                     </span>
                   </span>
@@ -345,7 +346,7 @@ function UnitDetail({
               )}
               {(approved ?? draft) && (
                 <span className="text-[12px] tabular text-muted">
-                  {(approved ?? draft)!.domain_count} domaine(s) · {(approved ?? draft)!.relation_count} rapport(s)
+                  {(approved ?? draft)!.domain_count} {pl((approved ?? draft)!.domain_count, "domaine(s)")} · {(approved ?? draft)!.relation_count} {pl((approved ?? draft)!.relation_count, "rapport(s)")}
                 </span>
               )}
             </div>
@@ -405,7 +406,7 @@ function UnitDetail({
           >
             <span className="size-2.5 rounded-sm" style={{ background: t.color }} />
             {t.name}
-            <span className="ml-auto text-[11.5px] text-faint">{t.member_count} membre(s)</span>
+            <span className="ml-auto text-[11.5px] text-faint">{t.member_count} {pl(t.member_count, "membre(s)")}</span>
           </Link>
         ))}
         {!unitTeams.length && <p className="px-2 text-[12.5px] text-faint">Aucune équipe rattachée.</p>}

@@ -1,3 +1,4 @@
+import { pl } from "@/lib/format";
 import { ExportMenu, tableDoc } from "@/components/export-menu";
 import { useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router";
@@ -123,7 +124,10 @@ function HrIndicators({ rows }: { rows: AgentRow[] }) {
   const today = new Date().toISOString().slice(0, 10);
   const inYear = new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10);
   const byUnit = Object.entries(
-    rows.reduce<Record<string, number>>((m, a) => ({ ...m, [a.unit_name ?? "Non rattaché"]: (m[a.unit_name ?? "Non rattaché"] ?? 0) + 1 }), {}),
+    rows.reduce<Record<string, number>>(
+      (m, a) => ({ ...m, [a.unit_name ?? "Non rattaché"]: (m[a.unit_name ?? "Non rattaché"] ?? 0) + 1 }),
+      {},
+    ),
   ).sort((a, b) => b[1] - a[1]);
   const ages = AGE_BANDS.map((b) => [b, rows.filter((a) => a.age_band === b).length] as const);
   const maxAge = Math.max(1, ...ages.map(([, n]) => n));
@@ -149,20 +153,28 @@ function HrIndicators({ rows }: { rows: AgentRow[] }) {
       </section>
       <section className={box}>
         <h3 className="mb-2 text-[13px] font-semibold">Pyramide des âges</h3>
-        <ul className="space-y-1.5 text-[12.5px]">
-          {ages.map(([b, n]) => (
-            <li key={b} className="grid grid-cols-[110px_1fr_24px] items-center gap-2">
-              <span className="text-muted">{b}</span>
-              <span className="h-2 rounded-full bg-hover">
-                <span className="block h-2 rounded-full bg-primary" style={{ width: `${(100 * n) / maxAge}%` }} />
-              </span>
-              <span className="text-right tabular">{n}</span>
-            </li>
-          ))}
-        </ul>
-        {rows.some((a) => !a.age_band) && (
+        {/* Un graphique sans données n'apprend rien : il laisse la place à ce qui manque (écrans sobres) */}
+        {!rows.some((a) => a.age_band) ? (
+          <p className="text-[12.5px] text-muted">
+            Aucune date de naissance n'est renseignée : la pyramide apparaîtra dès que les dossiers seront complétés.
+          </p>
+        ) : (
+          <ul className="space-y-1.5 text-[12.5px]">
+            {ages.map(([b, n]) => (
+              <li key={b} className="grid grid-cols-[110px_1fr_24px] items-center gap-2">
+                <span className="text-muted">{b}</span>
+                <span className="h-2 rounded-full bg-hover">
+                  <span className="block h-2 rounded-full bg-primary" style={{ width: `${(100 * n) / maxAge}%` }} />
+                </span>
+                <span className="text-right tabular">{n}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {rows.some((a) => a.age_band) && rows.some((a) => !a.age_band) && (
           <p className="mt-2 text-[11.5px] text-faint">
-            {rows.filter((a) => !a.age_band).length} dossier(s) sans date de naissance
+            {rows.filter((a) => !a.age_band).length} {pl(rows.filter((a) => !a.age_band).length, "dossier(s)")} sans
+            date de naissance
           </p>
         )}
       </section>
@@ -313,7 +325,12 @@ export function HrPage() {
               {rows.length ? (
                 <Table head={["Matricule", "Agent", "Entité", "Fonction", "Grade", "Statut", "Compte"]}>
                   {rows.map((a) => (
-                    <Tr key={a.user_id} onClick={() => nav(`/rh/${a.user_id}`)} href={`/rh/${a.user_id}`} reference={a.matricule}>
+                    <Tr
+                      key={a.user_id}
+                      onClick={() => nav(`/rh/${a.user_id}`)}
+                      href={`/rh/${a.user_id}`}
+                      reference={a.matricule}
+                    >
                       <Td className="whitespace-nowrap font-mono text-[12px] text-muted">{a.matricule}</Td>
                       <Td className="min-w-[200px]">
                         <span className="block font-medium">{fullName(a)}</span>
@@ -1071,7 +1088,9 @@ function ExitDialog({ agent, onClose }: { agent: AgentDetail; onClose: () => voi
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Date de sortie" required>
-          {(a) => <Input {...a} type="date" value={f.exit_on} onChange={(e) => setF({ ...f, exit_on: e.target.value })} />}
+          {(a) => (
+            <Input {...a} type="date" value={f.exit_on} onChange={(e) => setF({ ...f, exit_on: e.target.value })} />
+          )}
         </Field>
         <Field label="Motif" required>
           {(a) => (
@@ -1119,7 +1138,11 @@ function CorrectionDialog({ onClose }: { onClose: () => void }) {
         </>
       }
     >
-      <Field label="Ce qui doit être corrigé" required hint="Le service des ressources humaines vérifie et vous répond.">
+      <Field
+        label="Ce qui doit être corrigé"
+        required
+        hint="Le service des ressources humaines vérifie et vous répond."
+      >
         {(a) => <Textarea {...a} rows={5} value={message} onChange={(e) => setMessage(e.target.value)} />}
       </Field>
     </Drawer>
@@ -1160,7 +1183,10 @@ function HrInbox() {
           <ul className="divide-y divide-line px-5 pb-3">
             {due.map((d) => (
               <li key={`${d.user_id}-${d.kind}`} className="flex items-center gap-3 py-2 text-[13px]">
-                <button className="min-w-0 flex-1 truncate text-left font-medium hover:underline" onClick={() => nav(`/rh/${d.user_id}`)}>
+                <button
+                  className="min-w-0 flex-1 truncate text-left font-medium hover:underline"
+                  onClick={() => nav(`/rh/${d.user_id}`)}
+                >
                   {d.name}
                 </button>
                 <span className="text-muted">{d.kind === "fin_contrat" ? "Fin de contrat" : "Retraite"}</span>

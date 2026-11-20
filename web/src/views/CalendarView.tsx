@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Avatar, Button, IconButton, cn } from "@/components/ui";
 import { useCreateTask, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
-import { priorityMeta, todayIso } from "@/lib/format";
+import { priorityMeta, todayIso, pl } from "@/lib/format";
 import type { ViewProps } from "@/pages/Project";
 
 export function CalendarView({ project, tasks, canEdit }: ViewProps) {
@@ -42,7 +42,7 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
         <Button size="sm" onClick={() => setMonth(startOfMonth(new Date()))}>
           Aujourd'hui
         </Button>
-        {noDate > 0 && <span className="ml-auto text-[12.5px] text-faint">{noDate} tâche(s) sans échéance</span>}
+        {noDate > 0 && <span className="ml-auto text-[12.5px] text-faint">{noDate} {pl(noDate, "tâche(s)")} sans échéance</span>}
       </div>
       <div className="overflow-x-auto">
         <div className="grid min-w-[760px] grid-cols-7 overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
@@ -109,7 +109,7 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
                       {t.assignee_id && <Avatar user={users.get(t.assignee_id)} size={14} />}
                     </button>
                   ))}
-                  {items.length > 4 && <p className="px-1.5 text-[11.5px] text-faint">+{items.length - 4} autre(s)</p>}
+                  {items.length > 4 && <p className="px-1.5 text-[11.5px] text-faint">+{items.length - 4} {pl(items.length - 4, "autre(s)")}</p>}
                 </div>
               </div>
             );

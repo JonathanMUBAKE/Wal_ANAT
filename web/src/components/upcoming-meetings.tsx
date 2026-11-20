@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { CalendarDays, MapPin, Repeat, Video } from "lucide-react";
 import { cn } from "@/components/ui";
 import { api } from "@/lib/api";
-import { todayIso } from "@/lib/format";
+import { todayIso, pl } from "@/lib/format";
 import type { UpcomingMeeting } from "@/lib/types";
 
 /*
@@ -112,7 +112,7 @@ export function MyMeetingsCard() {
       </div>
       {waiting > 0 && (
         <p className="mb-2 rounded-lg bg-warning-soft px-2.5 py-1.5 text-[12.5px] text-warning">
-          {waiting} convocation(s) attendent votre réponse.
+          {waiting} {pl(waiting, "convocation(s)")} attendent votre réponse.
         </p>
       )}
       {data ? (

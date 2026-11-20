@@ -51,4 +51,10 @@ export const greeting = () => {
   const h = new Date().getHours();
   return h < 5 ? "Bonsoir" : h < 18 ? "Bonjour" : "Bonsoir";
 };
+/**
+ * Accord en nombre d'un libellé écrit avec « (s) » : pl(1, "tâche(s) créée(s)") → « tâche créée »,
+ * pl(3, …) → « tâches créées ». Zéro reste au singulier, comme en français.
+ */
+export const pl = (n: number | null | undefined, phrase: string) => phrase.replace(/\((s|x)\)/g, (n ?? 0) > 1 ? "$1" : "");
+
 export const firstName = (n: string) => n.split(" ")[0];

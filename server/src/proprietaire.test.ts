@@ -114,6 +114,56 @@ describe("propriété technique et fonction de DG", () => {
   });
 });
 
+describe("équipes privées : réservées à leurs membres (test de la DG, 20/11/2026)", () => {
+  let ctx: Awaited<ReturnType<typeof buildApp>>;
+  let org: string;
+  let team: { id: string; name: string };
+  const cookies: Record<string, string> = {};
+  const api = async (who: string, method: "GET" | "PATCH" | "POST", url: string, payload?: unknown) => {
+    if (!cookies[who]) {
+      const res = await ctx.app.inject({ method: "POST", url: "/api/auth/login", payload: { user_id: who } });
+      cookies[who] = ([] as unknown[])
+        .concat(res.headers["set-cookie"] ?? [])
+        .map((c) => String(c).split(";")[0])
+        .filter((c) => !/=$/.test(c))
+        .join("; ");
+    }
+    const res = await ctx.app.inject({ method, url, payload: payload as never, headers: { cookie: cookies[who] } });
+    return { status: res.statusCode, body: res.body ? JSON.parse(res.body) : null };
+  };
+
+  beforeAll(async () => {
+    ctx = await buildApp({ provider: "demo", demoDelayMs: 0, limits: NO_LIMITS });
+    await seedGovDemo(ctx.svc);
+    org = (await ctx.db.one<{ id: string }>("SELECT id FROM organizations WHERE name = 'ANAT (démonstration)'"))!.id;
+    team = (await ctx.db.one<{ id: string; name: string }>(
+      "SELECT t.id, t.name FROM teams t WHERE t.org_id = $1 AND t.visibility = 'private' LIMIT 1",
+      [org],
+    ))!;
+    // Ni la DG ni l'informatique n'y siègent : seuls ses membres la connaissent
+    await ctx.db.query("DELETE FROM team_members WHERE team_id = $1 AND user_id IN ('u_alice', 'u_cedric')", [team.id]);
+  }, 120_000);
+
+  it("ni la DG ni le propriétaire technique ne voient une équipe privée dont ils ne sont pas membres", async () => {
+    for (const who of ["u_alice", "u_cedric"]) {
+      const list = (await api(who, "GET", "/api/teams")).body as { id: string }[];
+      expect(list.map((t) => t.id), who).not.toContain(team.id);
+      expect((await api(who, "GET", `/api/teams/${team.id}`)).status, who).toBeGreaterThanOrEqual(403);
+    }
+  });
+
+  it("ni la DG ni le propriétaire technique ne la modifient, même avec le droit de gérer les équipes", async () => {
+    for (const who of ["u_alice", "u_cedric"])
+      expect((await api(who, "PATCH", `/api/teams/${team.id}`, { name: "Renommée" })).status, who).toBeGreaterThanOrEqual(403);
+    expect((await ctx.db.one<{ name: string }>("SELECT name FROM teams WHERE id = $1", [team.id]))!.name).toBe(team.name);
+  });
+
+  it("ses membres la voient toujours", async () => {
+    const m = (await ctx.db.one<{ user_id: string }>("SELECT user_id FROM team_members WHERE team_id = $1 LIMIT 1", [team.id]))!;
+    expect((await api(m.user_id, "GET", `/api/teams/${team.id}`)).status).toBe(200);
+  });
+});
+
 describe("organisation ordinaire : le propriétaire garde tous les droits", () => {
   it("le profil système « Propriétaire » ouvre toujours tout", async () => {
     const ctx = await buildApp({ provider: "demo", demoDelayMs: 0, limits: NO_LIMITS });

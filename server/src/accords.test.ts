@@ -312,11 +312,16 @@ describe("accords : vie de l'accord", () => {
     const open = await partner();
     const c = (await create({ partner_ids: [secret.id] })).body;
     expect(c.confidential).toBe(true);
-    expect((await get(c.id, "u_hugo")).status).toBe(404);
+    // La direction lit l'accord confidentiel (décision du 20/11/2026) ; un agent, non
+    expect((await get(c.id, "u_hugo")).status).toBe(200);
+    await g.login("u_chloe");
+    expect((await get(c.id, "u_chloe")).status).toBe(404);
     const o = (await create({ partner_ids: [open.id] })).body;
     await activate(o.id);
+    // Le registre de la direction comprend l'accord confidentiel ; celui d'un agent, non
     const reg = (await g.api("u_hugo", "GET", "/api/agreements")).body as Any[];
-    expect(reg.map((x) => x.id)).toEqual([o.id]);
+    expect(reg.map((x) => x.id).sort()).toEqual([c.id, o.id].sort());
+    expect(((await g.api("u_chloe", "GET", "/api/agreements")).body as Any[]).map((x) => x.id)).not.toContain(c.id);
     expect(
       (await g.api("u_alice", "GET", `/api/agreements?state=preparation&partner_id=${secret.id}`)).body.length,
     ).toBe(1);
@@ -368,7 +373,10 @@ describe("pièces de collaboration", () => {
   it("une pièce d'un partenaire confidentiel ou d'une autre organisation reste inaccessible", async () => {
     const p = await partner({ confidential: true });
     const d = await up("u_alice", p.id, "name=note.txt&nature=autre&other_label=Note");
-    expect((await g.api("u_hugo", "GET", `/api/partner-documents/${d.body.id}`)).status).toBe(404);
+    // La direction lit les pièces d'un partenaire confidentiel (décision du 20/11/2026) ; un agent, non
+    expect((await g.api("u_hugo", "GET", `/api/partner-documents/${d.body.id}`)).status).toBe(200);
+    await g.login("u_chloe");
+    expect((await g.api("u_chloe", "GET", `/api/partner-documents/${d.body.id}`)).status).toBe(404);
     const b = await g.foreignOrg();
     expect((await g.api(b.who, "GET", `/api/partner-documents/${d.body.id}`)).status).toBe(404);
   });

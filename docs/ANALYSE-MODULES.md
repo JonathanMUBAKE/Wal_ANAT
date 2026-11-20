@@ -2027,4 +2027,4 @@ Passe de contrôle sur les 17 comptes de la démonstration (environ 40 écrans e
 | « Gérer les équipes » valait aussi pour les équipes privées | Ce droit ne s'applique plus qu'aux équipes non privées |
 | Le menu Parapheur paraissait au responsable informatique, sans document à traiter | Il paraît à qui y a un document, ou dirige réellement une entité |
 | Comité de recrutement dirigé par la DG, sans la cheffe RH | Dirigé par la cheffe RH, la gestionnaire RH y siège, la DG reste membre |
-| Le cabinet ne voit pas le partenaire confidentiel que voit la DG | À trancher par l'utilisateur |
+| Le cabinet ne voit pas le partenaire confidentiel que voit la DG | Décision : « comme la DG ». La direction (DG, DGA, cabinet) lit partenaires, accords et pièces confidentiels, sans les modifier |

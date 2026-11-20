@@ -164,6 +164,53 @@ describe("équipes privées : réservées à leurs membres (test de la DG, 20/11
   });
 });
 
+describe("le cabinet lit comme la DG, partenaires confidentiels compris (décision du 20/11/2026)", () => {
+  let ctx: Awaited<ReturnType<typeof buildApp>>;
+  let org: string;
+  let secret: { id: string; name: string };
+  const cookies: Record<string, string> = {};
+  const api = async (who: string, method: "GET" | "PATCH", url: string, payload?: unknown) => {
+    if (!cookies[who]) {
+      const res = await ctx.app.inject({ method: "POST", url: "/api/auth/login", payload: { user_id: who } });
+      cookies[who] = ([] as unknown[])
+        .concat(res.headers["set-cookie"] ?? [])
+        .map((c) => String(c).split(";")[0])
+        .filter((c) => !/=$/.test(c))
+        .join("; ");
+    }
+    const res = await ctx.app.inject({ method, url, payload: payload as never, headers: { cookie: cookies[who] } });
+    return { status: res.statusCode, body: res.body ? JSON.parse(res.body) : null };
+  };
+  const ids = (b: unknown) => ((Array.isArray(b) ? b : Object.values(b as object).find(Array.isArray)) as { id: string }[]).map((x) => x.id);
+
+  beforeAll(async () => {
+    ctx = await buildApp({ provider: "demo", demoDelayMs: 0, limits: NO_LIMITS });
+    await seedGovDemo(ctx.svc);
+    org = (await ctx.db.one<{ id: string }>("SELECT id FROM organizations WHERE name = 'ANAT (démonstration)'"))!.id;
+    secret = (await ctx.db.one<{ id: string; name: string }>(
+      "SELECT id, name FROM partners WHERE org_id = $1 AND confidential AND merged_into IS NULL LIMIT 1",
+      [org],
+    ))!;
+    // Le cabinet n'en est ni le point focal ni l'auteur : seule sa fonction lui ouvre la fiche
+    await ctx.db.query("UPDATE partners SET focal_id = NULL, created_by = 'u_hugo' WHERE id = $1", [secret.id]);
+    await ctx.db.query("DELETE FROM partner_focals WHERE partner_id = $1 AND user_id = 'u_ines'", [secret.id]);
+  }, 120_000);
+
+  it("le cabinet voit le partenaire confidentiel dans l'annuaire et ouvre sa fiche", async () => {
+    expect(ids((await api("u_ines", "GET", "/api/partners")).body)).toContain(secret.id);
+    expect((await api("u_ines", "GET", `/api/partners/${secret.id}`)).status).toBe(200);
+  });
+
+  it("il le lit sans pouvoir le modifier", async () => {
+    expect((await api("u_ines", "PATCH", `/api/partners/${secret.id}`, { name: "Renommé" })).status).toBeGreaterThanOrEqual(403);
+  });
+
+  it("un agent ne le connaît toujours pas", async () => {
+    expect(ids((await api("u_chloe", "GET", "/api/partners")).body)).not.toContain(secret.id);
+    expect((await api("u_chloe", "GET", `/api/partners/${secret.id}`)).status).toBe(404);
+  });
+});
+
 describe("organisation ordinaire : le propriétaire garde tous les droits", () => {
   it("le profil système « Propriétaire » ouvre toujours tout", async () => {
     const ctx = await buildApp({ provider: "demo", demoDelayMs: 0, limits: NO_LIMITS });

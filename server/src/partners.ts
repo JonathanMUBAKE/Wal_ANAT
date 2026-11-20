@@ -189,7 +189,10 @@ const SELECT = `SELECT p.id, p.org_id, p.name, p.acronym, p.official_id, p.type_
   LEFT JOIN org_units u ON u.id = p.unit_id
   LEFT JOIN users f ON f.id = p.focal_id
   LEFT JOIN partners m ON m.id = p.merged_into`;
-/** Une fiche confidentielle n'est visible que des gestionnaires, de ses points focaux et de son auteur. */
+/**
+ * Une fiche confidentielle n'est visible que des gestionnaires, de la direction (DG, DGA, cabinet : décision du
+ * 20/11/2026, en lecture seule), de ses points focaux et de son auteur.
+ */
 const VISIBLE = (manager: string, actor: string) =>
   `(NOT p.confidential OR ${manager} OR p.focal_id = ${actor} OR p.created_by = ${actor}
     OR EXISTS (SELECT 1 FROM partner_focals pf WHERE pf.partner_id = p.id AND pf.user_id = ${actor}))`;
@@ -223,9 +226,10 @@ export class Partners {
     const mine = this.focal(p, actorId) || p.created_by === actorId;
     if (!manager && !mine) {
       await this.svc.requirePerm(actorId, p.org_id, "partners.view");
-      if (p.confidential) throw notFound("Partenaire introuvable");
-      // Ce qui concerne la personne (lot S) : la direction lit l'annuaire ; les autres, les partenaires de leurs entités
+      // Ce qui concerne la personne (lot S) : la direction lit l'annuaire, fiches confidentielles comprises ; les
+      // autres, les partenaires non confidentiels de leurs entités
       const scope = await this.svc.scopeOf(actorId, p.org_id);
+      if (p.confidential && !scope.wide) throw notFound("Partenaire introuvable");
       if (!scope.wide && !(p.unit_id && scope.units.includes(p.unit_id))) throw notFound("Partenaire introuvable");
     }
     return { p, manager };
@@ -280,7 +284,7 @@ export class Partners {
        ORDER BY p.name_key`,
       [
         orgId,
-        manager,
+        manager || scope.wide,
         actorId,
         f.state ?? null,
         f.type ?? null,
@@ -343,7 +347,7 @@ export class Partners {
         `SELECT a.id, a.type_code, a.title, a.state, a.year, a.seq, a.signed_on::text AS signed_on, a.end_on::text AS end_on,
           a.tacit_renewal, a.parent_id, a.amendment_no, a.confidential, ap.lead
          FROM agreements a JOIN agreement_parties ap ON ap.agreement_id = a.id
-         WHERE ap.partner_id = $1 AND (NOT a.confidential OR $2 OR $3 OR a.focal_id = $4 OR a.created_by = $4)
+         WHERE ap.partner_id = $1 AND (NOT a.confidential OR $2 OR $3 OR $5 OR a.focal_id = $4 OR a.created_by = $4)
            -- Les accords du périmètre seulement, comme la liste des accords (lot S)
            AND ($2 OR $3 OR $5 OR a.focal_id = $4 OR a.created_by = $4 OR a.unit_id = ANY($6::text[]))
          ORDER BY a.year DESC NULLS FIRST, a.seq DESC NULLS FIRST, a.created_at DESC`,
@@ -428,7 +432,11 @@ export class Partners {
       [orgId, except ?? "", k.name, k.acronym, k.official],
     );
     if (!d) return;
-    const seen = !d.confidential || d.focal_id === actorId || (await this.manager(actorId, orgId));
+    const seen =
+      !d.confidential ||
+      d.focal_id === actorId ||
+      (await this.manager(actorId, orgId)) ||
+      (await this.svc.scopeOf(actorId, orgId)).wide;
     throw new HttpError(
       409,
       seen ? `Ce partenaire existe déjà : « ${d.name} »` : "Ce partenaire existe déjà dans l'annuaire",

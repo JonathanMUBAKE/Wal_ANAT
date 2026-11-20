@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronDown, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { cn } from "@/components/ui";
-import { TaskRow } from "@/components/TaskRow";
+import type { Task } from "@/lib/types";
+import { TaskGroupHeader, TaskRow } from "@/components/TaskRow";
 import { SectionMenu } from "@/components/SectionMenu";
 import { useCreateTask, useUpdateTask, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
@@ -41,19 +42,13 @@ export function ListView({ project, tasks, aiActive, canEdit }: ViewProps) {
           .sort((a, b) => a.position - b.position);
         return (
           <section key={s.id}>
-            <div className="group sticky top-0 z-10 flex h-11 items-center gap-2 border-b border-line bg-bg/90 px-4 backdrop-blur sm:px-8">
-              <button
-                onClick={() => setCollapsed({ ...collapsed, [s.id]: !collapsed[s.id] })}
-                className="flex items-center gap-2"
-              >
-                <ChevronDown
-                  className={cn("size-4 text-faint transition-transform", collapsed[s.id] && "-rotate-90")}
-                />
-                <span className="text-[13.5px] font-semibold">{s.name}</span>
-              </button>
-              <span className="text-[12px] tabular text-faint">{items.length}</span>
-              {canEdit && (
-                <span className="ml-auto opacity-60 transition-opacity group-hover:opacity-100">
+            <TaskGroupHeader
+              label={s.name}
+              count={items.length}
+              open={!collapsed[s.id]}
+              onToggle={() => setCollapsed({ ...collapsed, [s.id]: !collapsed[s.id] })}
+              aside={
+                canEdit ? (
                   <SectionMenu
                     section={s}
                     sections={project.sections}
@@ -61,9 +56,9 @@ export function ListView({ project, tasks, aiActive, canEdit }: ViewProps) {
                     taskCount={tasks.filter((t) => t.section_id === s.id).length}
                     canDelete={project.role === "admin"}
                   />
-                </span>
-              )}
-            </div>
+                ) : undefined
+              }
+            />
             {!collapsed[s.id] && (
               <div className="sm:px-4">
                 {items.map((t) => (
@@ -111,16 +106,19 @@ export function InlineAdd({
   projectId,
   sectionId,
   compact,
+  extra,
 }: {
   projectId: string;
-  sectionId: string;
+  sectionId?: string;
   compact?: boolean;
+  /** Ce que la tâche reçoit d'office là où on l'ajoute (personne chargée, échéance). */
+  extra?: Partial<Task>;
 }) {
   const create = useCreateTask();
   const [v, setV] = useState("");
   const add = () => {
     if (!v.trim()) return;
-    create.mutate({ project_id: projectId, section_id: sectionId, title: v.trim() });
+    create.mutate({ ...extra, project_id: projectId, ...(sectionId ? { section_id: sectionId } : {}), title: v.trim() });
     setV("");
   };
   return (

@@ -1,5 +1,5 @@
 import { memo, type MouseEvent, type ReactNode } from "react";
-import { CornerDownRight, Sparkles } from "lucide-react";
+import { ChevronDown, CornerDownRight, Sparkles } from "lucide-react";
 import { Avatar, Checkbox, ProjectIcon, cn } from "./ui";
 import { DueChip, PriorityFlag } from "./pickers";
 import { TaskMetaRow } from "./TaskDrawer";
@@ -80,6 +80,39 @@ export function TaskLine({
       <span className="flex w-5 shrink-0 justify-center">{flag}</span>
       <span className="w-[92px] shrink-0 text-right">{due}</span>
       <span className="flex w-6 shrink-0 justify-end">{person}</span>
+    </div>
+  );
+}
+
+/** En-tête repliable d'un groupe de tâches : section d'un projet, échéance de Mes tâches, tâches confiées. */
+export function TaskGroupHeader({
+  label,
+  count,
+  note,
+  danger,
+  open,
+  onToggle,
+  aside,
+}: {
+  label: string;
+  count: number;
+  /** Précision d'alerte à la suite du compteur (« 2 en retard »). */
+  note?: string;
+  danger?: boolean;
+  open: boolean;
+  onToggle: () => void;
+  /** Actions de la section, à droite. */
+  aside?: ReactNode;
+}) {
+  return (
+    <div className="group sticky top-0 z-10 flex h-11 items-center gap-2 border-b border-line bg-bg/90 px-4 backdrop-blur sm:px-8">
+      <button type="button" onClick={onToggle} aria-expanded={open} className="flex items-center gap-2 text-left">
+        <ChevronDown className={cn("size-4 text-faint transition-transform duration-200", !open && "-rotate-90")} />
+        <span className={cn("text-[13.5px] font-semibold", danger && "text-danger")}>{label}</span>
+      </button>
+      <span className="text-[12px] tabular text-faint">{count}</span>
+      {note && <span className="text-[12px] text-danger">{note}</span>}
+      {aside && <span className="ml-auto opacity-60 transition-opacity group-hover:opacity-100">{aside}</span>}
     </div>
   );
 }

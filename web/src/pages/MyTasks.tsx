@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays,
   CheckCircle2,
-  ChevronDown,
   Circle,
   CircleCheck,
   CircleDot,
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 import { useLocalPref } from "@/components/collection";
 import { TaskBoard } from "@/views/BoardView";
+import { InlineAdd } from "@/views/ListView";
 import { TabBar, type TabItem } from "@/components/tabs";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -21,7 +21,7 @@ import { CalendarView } from "@/views/CalendarView";
 import type { ProjectDetail } from "@/lib/types";
 import { toast } from "sonner";
 import { Avatar, Button, Empty, cn, Hint } from "@/components/ui";
-import { LineBadge, TaskLine, TaskRow } from "@/components/TaskRow";
+import { LineBadge, TaskGroupHeader, TaskLine, TaskRow } from "@/components/TaskRow";
 import { DueChip } from "@/components/pickers";
 import { useMe, useMyTasks, useMyUnits, useProjects, useUpdateTask, useUserMap } from "@/lib/hooks";
 import { api } from "@/lib/api";
@@ -48,36 +48,6 @@ interface Confided {
   overdue: boolean;
   postpone_pending: boolean;
 }
-/** En-tête d'un groupe de lignes : le même pour les échéances, les tâches confiées et les terminées. */
-function GroupHeader({
-  label,
-  count,
-  note,
-  danger,
-  open,
-  onToggle,
-}: {
-  label: string;
-  count: number;
-  note?: string;
-  danger?: boolean;
-  open: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      aria-expanded={open}
-      className="sticky top-0 z-10 flex h-11 w-full items-center gap-2 border-b border-line bg-bg/90 px-4 text-left backdrop-blur sm:px-8"
-    >
-      <ChevronDown className={cn("size-4 text-faint transition-transform duration-200", !open && "-rotate-90")} />
-      <span className={cn("text-[13.5px] font-semibold", danger && "text-danger")}>{label}</span>
-      <span className="text-[12px] tabular text-faint">{count}</span>
-      {note && <span className="text-[12px] text-danger">{note}</span>}
-    </button>
-  );
-}
-
 function ConfidedTasks({ onOpen }: { onOpen: (id: string) => void }) {
   const { data } = useQuery({
     queryKey: ["tasks", "confided"],
@@ -90,7 +60,7 @@ function ConfidedTasks({ onOpen }: { onOpen: (id: string) => void }) {
   const late = pending.filter((t) => t.overdue).length;
   return (
     <section>
-      <GroupHeader
+      <TaskGroupHeader
         label="Tâches que j'ai confiées"
         count={pending.length}
         note={late ? `${late} en retard` : undefined}
@@ -184,6 +154,11 @@ export function MyTasksPage() {
   // Les livrables à produire en retard comptent avec les retards (T-6)
   const lateDeliverables = useLateDeliverables(me?.id);
   const [board, setBoard] = useState<UnitBoard | null>(null);
+  const { data: register } = useQuery({
+    queryKey: ["unit-board", home?.id],
+    queryFn: () => api.get<UnitBoard>(`/api/units/${home!.id}/board`),
+    enabled: !!home,
+  });
   const newTask = () =>
     home && api.get<UnitBoard>(`/api/units/${home.id}/board`).then(setBoard, (e: Error) => toast.error(e.message));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -220,6 +195,7 @@ export function MyTasksPage() {
         completed: false,
         due_on: t.due_on,
         assignee_id: t.assignee_id,
+        done_declared_at: t.done_declared_at,
         priority: "none",
         tags: [],
         subtask_count: 0,
@@ -231,6 +207,8 @@ export function MyTasksPage() {
     .filter((t) => t.completed)
     .sort((a, b) => ((b.completed_at ?? "") < (a.completed_at ?? "") ? -1 : 1));
 
+  const confidedIds = new Set(givenTasks.map((t) => t.id));
+  const onBoard = [...open, ...givenTasks].sort((a, b) => ((a.due_on ?? "9") < (b.due_on ?? "9") ? -1 : 1));
   return (
     <div className="flex min-h-full flex-col">
       {/* Même en-tête que la page d'un projet : titre et actions, puis les vues en onglets soulignés */}
@@ -301,16 +279,23 @@ export function MyTasksPage() {
         <div className="min-h-0 flex-1">
           <TaskBoard
             canEdit
-            columns={[
-              // Les retards ne s'affichent que s'il y en a, et l'on n'y dépose rien ; les autres échéances restent des cibles
-              ...BUCKETS.filter((b) => b.id !== "overdue" || open.some(b.test)).map((b) => ({
-                id: b.id,
-                name: b.label,
-                tasks: open.filter(b.test),
-                noDrop: b.id === "overdue",
-              })),
-              ...(givenTasks.length ? [{ id: "confiees", name: "Confiées", tasks: givenTasks, locked: true }] : []),
-            ]}
+            // Mes tâches et celles que j'ai confiées, rangées par échéance : toutes se déplacent de la même façon
+            columns={BUCKETS.filter((b) => b.id !== "overdue" || onBoard.some(b.test)).map((b) => ({
+              id: b.id,
+              name: b.label,
+              tasks: onBoard.filter(b.test),
+              // On ne remet pas une tâche en retard
+              noDrop: b.id === "overdue",
+              footer:
+                b.id !== "overdue" && register && me ? (
+                  <InlineAdd
+                    compact
+                    projectId={register.project_id}
+                    extra={{ assignee_id: me.id, due_on: DUE_FOR[b.id]() }}
+                  />
+                ) : undefined,
+            }))}
+            readOnly={(t) => confidedIds.has(t.id)}
             // Déposer une carte dans une échéance, c'est lui donner cette échéance
             onMove={({ task, from, to, revert }) => {
               if (from === to || !(to in DUE_FOR)) return revert();
@@ -363,7 +348,7 @@ export function MyTasksPage() {
           );
           return (
             <section key={b.id}>
-              <GroupHeader
+              <TaskGroupHeader
                 label={b.label}
                 count={items.length}
                 danger={b.id === "overdue"}
@@ -376,7 +361,12 @@ export function MyTasksPage() {
                 onToggle={() => setCollapsed({ ...collapsed, [b.id]: !collapsed[b.id] })}
               />
               {!collapsed[b.id] && (
-                <div className="sm:px-4">{items.flatMap((t) => [row(t), ...childrenOf(t.id).map((c) => row(c, true))])}</div>
+                <div className="sm:px-4">
+                  {items.flatMap((t) => [row(t), ...childrenOf(t.id).map((c) => row(c, true))])}
+                  {b.id !== "overdue" && register && me && (
+                    <InlineAdd projectId={register.project_id} extra={{ assignee_id: me.id, due_on: DUE_FOR[b.id]() }} />
+                  )}
+                </div>
               )}
             </section>
           );
@@ -384,7 +374,7 @@ export function MyTasksPage() {
         <ConfidedTasks onOpen={(id) => shell.openTask(id)} />
         {showDone && done.length > 0 && (
           <section>
-            <GroupHeader
+            <TaskGroupHeader
               label="Terminées"
               count={done.length}
               open={!collapsed.done}

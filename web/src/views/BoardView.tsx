@@ -24,7 +24,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Sparkles } from "lucide-react";
+import { Circle, CircleDot, Sparkles } from "lucide-react";
 import { Avatar, Checkbox, Chip, cn } from "@/components/ui";
 import { DueChip, PriorityFlag } from "@/components/pickers";
 import { SubtaskProgress } from "@/components/TaskDrawer";
@@ -49,8 +49,6 @@ export interface BoardColumn {
   footer?: React.ReactNode;
   /** On peut en sortir une carte, pas en déposer (les retards). */
   noDrop?: boolean;
-  /** Colonne en lecture : rien n'y entre, rien n'en sort (les tâches confiées). */
-  locked?: boolean;
 }
 
 /**
@@ -63,10 +61,13 @@ export function TaskBoard({
   canEdit,
   aiActive,
   onMove,
+  readOnly,
 }: {
   columns: BoardColumn[];
   canEdit: boolean;
   aiActive?: Set<string>;
+  /** Tâche dont la personne suit l'état sans la cocher elle-même (tâche confiée à quelqu'un). */
+  readOnly?: (t: Task) => boolean;
   onMove: (m: {
     task: Task;
     from: string;
@@ -81,8 +82,7 @@ export function TaskBoard({
   const update = useUpdateTask();
   const byId = useMemo(() => new Map(columns.flatMap((c) => c.tasks).map((t) => [t.id, t])), [columns]);
   const derive = () => Object.fromEntries(columns.map((c) => [c.id, c.tasks.map((t) => t.id)])) as Columns;
-  const closed = new Set(columns.filter((c) => c.noDrop || c.locked).map((c) => c.id));
-  const locked = new Set(columns.filter((c) => c.locked).map((c) => c.id));
+  const closed = new Set(columns.filter((c) => c.noDrop).map((c) => c.id));
   const [cols, setCols] = useState<Columns>(derive);
   const [dragging, setDragging] = useState<string | null>(null);
   const lastOver = useRef<Collision[]>([]);
@@ -173,7 +173,7 @@ export function TaskBoard({
         setCols(derive());
       }}
     >
-      <div className="flex h-full gap-3 overflow-x-auto px-4 py-5 sm:px-8">
+      <div className="flex h-full min-h-[60vh] gap-3 overflow-x-auto px-4 py-5 sm:px-8">
         {columns.map((c) => {
           const ids = cols[c.id] ?? [];
           return (
@@ -193,11 +193,12 @@ export function TaskBoard({
                     <SortableCard
                       key={id}
                       t={t}
-                      disabled={!canEdit || locked.has(c.id)}
+                      disabled={!canEdit}
+                      readOnly={readOnly?.(t)}
                       assignee={t.assignee_id ? users.get(t.assignee_id) : null}
                       ai={!!aiActive?.has(id)}
                       onOpen={() => shell.openTask(id)}
-                      onToggle={locked.has(c.id) ? undefined : (v) => update.mutate({ id, completed: v })}
+                      onToggle={(v) => update.mutate({ id, completed: v })}
                     />
                   );
                 })}
@@ -213,6 +214,7 @@ export function TaskBoard({
             t={active}
             assignee={active.assignee_id ? users.get(active.assignee_id) : null}
             ai={!!aiActive?.has(active.id)}
+            readOnly={readOnly?.(active)}
             overlay
           />
         )}
@@ -288,24 +290,26 @@ function ColumnShell({
   children: React.ReactNode;
 }) {
   return (
-    <section
-      ref={innerRef}
-      className={cn(
-        "flex w-[288px] shrink-0 flex-col rounded-2xl border bg-sidebar/60 transition-colors",
-        over ? "border-line-strong" : "border-transparent",
-      )}
-    >
-      <header className="flex h-11 items-center gap-2 px-3">
-        <span className="text-[13px] font-semibold">{name}</span>
-        <span className="text-[12px] tabular text-faint">{count}</span>
-        {count > 0 && done !== undefined && (
-          <span className="ml-auto h-1 w-12 overflow-hidden rounded-full bg-active">
-            <span className="block h-full rounded-full bg-success" style={{ width: `${(done / count) * 100}%` }} />
-          </span>
+    // La zone de dépôt prend toute la hauteur du tableau ; le fond, lui, s'arrête à la dernière tâche
+    <section ref={innerRef} className="flex w-[288px] shrink-0 flex-col">
+      <div
+        className={cn(
+          "flex flex-col rounded-2xl border bg-sidebar/60 transition-colors",
+          over ? "border-line-strong" : "border-transparent",
         )}
-        <span className={count > 0 && done !== undefined ? "" : "ml-auto"}>{menu}</span>
-      </header>
-      <div className="flex min-h-[60px] flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">{children}</div>
+      >
+        <header className="flex h-11 items-center gap-2 px-3">
+          <span className="text-[13px] font-semibold">{name}</span>
+          <span className="text-[12px] tabular text-faint">{count}</span>
+          {count > 0 && done !== undefined && (
+            <span className="ml-auto h-1 w-12 overflow-hidden rounded-full bg-active">
+              <span className="block h-full rounded-full bg-success" style={{ width: `${(done / count) * 100}%` }} />
+            </span>
+          )}
+          <span className={count > 0 && done !== undefined ? "" : "ml-auto"}>{menu}</span>
+        </header>
+        <div className="flex flex-col gap-2 px-2 pb-2">{children}</div>
+      </div>
     </section>
   );
 }
@@ -316,6 +320,7 @@ function SortableCard(props: {
   ai: boolean;
   onOpen: () => void;
   onToggle?: (v: boolean) => void;
+  readOnly?: boolean;
   disabled: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -341,6 +346,7 @@ function Card({
   ai,
   onOpen,
   onToggle,
+  readOnly,
   overlay,
 }: {
   t: Task;
@@ -348,6 +354,7 @@ function Card({
   ai: boolean;
   onOpen?: () => void;
   onToggle?: (v: boolean) => void;
+  readOnly?: boolean;
   overlay?: boolean;
 }) {
   const taskMenu = useTaskMenu();
@@ -363,7 +370,16 @@ function Card({
     >
       <div className="flex items-start gap-2">
         <span className="pt-[1px]">
-          <Checkbox checked={t.completed} size={16} onChange={(v) => onToggle?.(v)} />
+          {readOnly ? (
+            // Même repère que dans la liste : la personne qui a confié lit l'état, elle ne coche pas
+            t.done_declared_at ? (
+              <CircleDot className="size-4 text-info" aria-label="Déclarée faite" />
+            ) : (
+              <Circle className="size-4 text-faint" aria-label="En cours" />
+            )
+          ) : (
+            <Checkbox checked={t.completed} size={16} onChange={(v) => onToggle?.(v)} />
+          )}
         </span>
         <p
           className={cn(

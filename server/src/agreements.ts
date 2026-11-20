@@ -119,9 +119,9 @@ export class Agreements {
     const mine = this.follows(a, actorId) || a.created_by === actorId;
     if (!manager && !mine) {
       await this.svc.requirePerm(actorId, a.org_id, "partners.view");
-      if (a.confidential) throw notFound("Accord introuvable");
-      // Un agent voit les accords de son périmètre (CV-3)
+      // Un agent voit les accords de son périmètre (CV-3) ; la direction lit tout, accords confidentiels compris
       const s = await this.svc.scopeOf(actorId, a.org_id);
+      if (a.confidential && !s.wide) throw notFound("Accord introuvable");
       if (!s.wide && !(a.unit_id && s.units.includes(a.unit_id))) throw notFound("Accord introuvable");
     }
     return { a, manager, edit: manager || this.follows(a, actorId) };
@@ -193,7 +193,7 @@ export class Agreements {
     const scope = await this.svc.scopeOf(actorId, orgId);
     const rows = await this.svc.db.query<Row>(
       `${SELECT("$3")} WHERE a.org_id = $1
-       AND (NOT a.confidential OR $2 OR a.focal_id = $3 OR a.created_by = $3 OR EXISTS (
+       AND (NOT a.confidential OR $2 OR $7 OR a.focal_id = $3 OR a.created_by = $3 OR EXISTS (
          SELECT 1 FROM agreement_parties ap JOIN partners p ON p.id = ap.partner_id WHERE ap.agreement_id = a.id
          AND (p.focal_id = $3 OR EXISTS (SELECT 1 FROM partner_focals pf WHERE pf.partner_id = p.id AND pf.user_id = $3))))
        AND ($2 OR $7 OR a.unit_id = ANY($8::text[]) OR a.focal_id = $3 OR a.created_by = $3 OR EXISTS (

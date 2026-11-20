@@ -2016,3 +2016,15 @@ complétée par la protection européenne des données personnelles et par le r�
 | Droit sensible accordé | Visible à la relecture périodique | Signalé aussitôt à qui relit le journal de l'administration |
 
 Tests : `server/src/proprietaire.test.ts` (9 tests) ; deux attentes de la démonstration ajustées.
+
+### Test des profils du 20/11/2026 (branche `equipes-privees`)
+
+Passe de contrôle sur les 17 comptes de la démonstration (environ 40 écrans et données par compte, menus comparés).
+
+| Constat | Correction |
+|---|---|
+| La DG et l'informatique lisaient et renommaient une équipe privée dont elles n'étaient pas membres | Une équipe privée se connaît et se gère par ses membres, ses responsables et les administrateurs généralistes |
+| « Gérer les équipes » valait aussi pour les équipes privées | Ce droit ne s'applique plus qu'aux équipes non privées |
+| Le menu Parapheur paraissait au responsable informatique, sans document à traiter | Il paraît à qui y a un document, ou dirige réellement une entité |
+| Comité de recrutement dirigé par la DG, sans la cheffe RH | Dirigé par la cheffe RH, la gestionnaire RH y siège, la DG reste membre |
+| Le cabinet ne voit pas le partenaire confidentiel que voit la DG | À trancher par l'utilisateur |

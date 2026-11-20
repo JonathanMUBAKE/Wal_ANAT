@@ -152,7 +152,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     partners: wide || can("partners.manage") || hasPartners,
     agreements: wide || can("partners.manage") || hasAgreements,
     mail: wide || can("correspondence.manage") || can("correspondence.view") || hasMail,
-    signature: wide || can("units.lead") || hasSignature,
+    // Le parapheur paraît pour qui y a un document, ou qui dirige réellement une entité (et peut y présenter une pièce)
+    signature: wide || (can("units.lead") && !!myUnits?.some((u) => u.role === "responsable")) || hasSignature,
     teams: can("teams.create") || hasTeams,
     structure:
       wide ||

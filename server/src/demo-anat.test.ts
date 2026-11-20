@@ -178,6 +178,15 @@ describe("démonstration ANAT", () => {
     expect(await ctx.svc.permissionsOf("u_alice", org)).toContain("audit.review");
   });
 
+  it("confie le comité de recrutement au service RH", async () => {
+    const rows = await q<{ user_id: string; role: string }>(
+      "SELECT m.user_id, m.role FROM team_members m JOIN teams t ON t.id = m.team_id WHERE t.org_id = $1 AND t.name = 'Comité de recrutement'",
+      [org],
+    );
+    expect(rows.filter((r) => r.role === "lead").map((r) => r.user_id)).toEqual(["u_sylvie"]);
+    expect(rows.map((r) => r.user_id)).toContain("u_mireille");
+  });
+
   it("aligne le dossier RH de chacun sur son entité", async () => {
     const rows = await q<{ user_id: string; member: string | null; assigned: string | null }>(
       `SELECT om.user_id, om.unit_id AS member,

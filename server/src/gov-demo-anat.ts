@@ -573,4 +573,15 @@ async function people(svc: Services, org: string) {
     "UPDATE agent_records SET nationality = 'Congolaise' WHERE org_id = $1 AND nationality = 'Fictivienne'",
     [org],
   );
+  // Le comité de recrutement est tenu par le service RH (test du 20/11/2026) : sa cheffe le dirige, la gestionnaire y
+  // siège ; la DG y reste membre, sans le diriger
+  const recruit = await db.one<{ id: string }>("SELECT id FROM teams WHERE org_id = $1 AND name = 'Comité de recrutement'", [org]);
+  if (recruit) {
+    await db.query("UPDATE team_members SET role = 'member' WHERE team_id = $1", [recruit.id]);
+    for (const [user, role] of [["u_sylvie", "lead"], ["u_mireille", "member"]])
+      await db.query(
+        "INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, $3) ON CONFLICT (team_id, user_id) DO UPDATE SET role = EXCLUDED.role",
+        [recruit.id, user, role],
+      );
+  }
 }

@@ -1006,7 +1006,8 @@ export class Services {
   // ================================================================ équipes
   async teams(actorId: string, orgId: string): Promise<Team[]> {
     const role = await this.requireOrg(actorId, orgId);
-    const admin = role === "owner" || role === "admin";
+    // Une équipe privée n'est connue que de ses membres et des administrateurs généralistes (lot S, test du 20/11/2026)
+    const admin = await this.administersAll(actorId, orgId);
     return (
       await this.db.query<Team>(
         `SELECT t.*,
@@ -1036,10 +1037,11 @@ export class Services {
   }
   private async requireTeamManager(actorId: string, teamId: string) {
     const t = await this.teamRow(teamId);
-    const org = await this.requireOrg(actorId, t.org_id);
-    // Le responsable d'une équipe la gère (EQ-1) ; « gérer les équipes » vaut pour toutes celles de l'institution
-    if (org === "owner" || org === "admin" || (await this.teamRole(actorId, teamId)) === "lead") return t;
-    if ((await this.permissionsOf(actorId, t.org_id)).includes("teams.manage")) return t;
+    await this.requireOrg(actorId, t.org_id);
+    // Le responsable d'une équipe la gère (EQ-1) ; « gérer les équipes » vaut pour celles de l'institution qui ne sont
+    // pas privées : une équipe privée se gère par ses responsables et les administrateurs généralistes (lot S)
+    if ((await this.administersAll(actorId, t.org_id)) || (await this.teamRole(actorId, teamId)) === "lead") return t;
+    if (t.visibility !== "private" && (await this.permissionsOf(actorId, t.org_id)).includes("teams.manage")) return t;
     throw forbidden("Réservé aux responsables de l'équipe");
   }
   async team(actorId: string, teamId: string) {
@@ -1055,7 +1057,7 @@ export class Services {
       (p) => p.team_id === teamId && readable.has(p.id),
     );
     const requests =
-      visible.my_role === "lead" || ["owner", "admin"].includes((await this.orgRole(actorId, t.org_id)) ?? "")
+      visible.my_role === "lead" || (await this.administersAll(actorId, t.org_id))
         ? await this.db.query(
             "SELECT id, user_id, created_at FROM team_requests WHERE team_id = $1 AND status = 'pending'",
             [teamId],
@@ -1159,7 +1161,7 @@ export class Services {
     const orgRole = await this.requireOrg(actorId, t.org_id, "member");
     await this.requirePerm(actorId, t.org_id, "teams.join");
     if (await this.teamRole(actorId, teamId)) return "joined";
-    if (t.visibility === "public" || orgRole === "owner" || orgRole === "admin") {
+    if (t.visibility === "public" || (await this.administersAll(actorId, t.org_id))) {
       await this.db.query("INSERT INTO team_members (team_id, user_id, role) VALUES ($1,$2,'member')", [
         teamId,
         actorId,
@@ -1395,7 +1397,7 @@ export class Services {
     if (input.team_id) {
       const t = await this.teamRow(input.team_id);
       if (t.org_id !== orgId) throw badRequest("Équipe invalide");
-      if (!(await this.teamRole(actorId, t.id)) && orgRole !== "owner" && orgRole !== "admin")
+      if (!(await this.teamRole(actorId, t.id)) && !(await this.administersAll(actorId, orgId)))
         throw forbidden("Vous devez être membre de l'équipe pour y créer un projet");
     }
     const key = input.key ? input.key.trim().toUpperCase() : await this.suggestKey(orgId, name);

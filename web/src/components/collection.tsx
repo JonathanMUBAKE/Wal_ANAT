@@ -911,8 +911,8 @@ export function MiniMonth({
 type Density = "compacte" | "normale" | "detaillee";
 const ROW: Record<Density, number> = { compacte: 38, normale: 56, detaillee: 84 };
 const DENSITIES: Density[] = ["compacte", "normale", "detaillee"];
-/** Hauteur d'une heure repliée : la journée reste lisible sans dérouler les heures creuses. */
-const FOLDED = 16;
+/** Hauteur d'une bande d'heures repliées : assez pour son libellé, sans gêner celui de l'heure suivante. */
+const FOLDED = 24;
 
 /**
  * La semaine (ou la journée) heure par heure : le même composant pour l'agenda de l'accueil et le calendrier des
@@ -1202,13 +1202,30 @@ export function MonthGrid({
     end: endOfWeek(endOfMonth(month), { weekStartsOn: 1 }),
   });
   const today = dkey(new Date());
+  // Sur téléphone, le mois tient dans la largeur : une pastille par rendez-vous, le jour touché se déroule dessous
+  const [picked, setPicked] = useState<string | null>(null);
+  const line = (e: CalEvent) => (
+    <button
+      key={e.id}
+      onClick={() => onSelect(e)}
+      title={e.start ? `${e.start.slice(0, 5)} · ${e.title}` : e.title}
+      className={cn(
+        "flex w-full items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left text-[11.5px] transition-colors hover:bg-hover",
+        selected === e.id && "bg-hover ring-1 ring-[var(--ring)]",
+        e.muted && "line-through opacity-60",
+      )}
+    >
+      <span className="size-1.5 shrink-0 rounded-full" style={{ background: e.hue }} />
+      <span className="truncate font-medium">{e.title}</span>
+    </button>
+  );
   return (
     <div className="overflow-x-auto">
-      <div className="grid min-w-[640px] grid-cols-7 overflow-hidden rounded-xl border border-line [&>*:nth-child(7n)]:border-r-0">
+      <div className="grid grid-cols-7 sm:min-w-[640px] overflow-hidden rounded-xl border border-line [&>*:nth-child(7n)]:border-r-0">
         {["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."].map((w) => (
           <p
             key={w}
-            className="border-b border-r border-line px-2 py-2 text-[11.5px] font-medium uppercase tracking-wider text-faint"
+            className="border-b border-r border-line px-1 py-2 text-center text-[10.5px] font-medium uppercase tracking-wider text-faint sm:px-2 sm:text-left sm:text-[11.5px]"
           >
             {w}
           </p>
@@ -1219,8 +1236,9 @@ export function MonthGrid({
           return (
             <div
               key={k}
+              onClick={() => setPicked(list.length ? k : null)}
               className={cn(
-                "min-h-[104px] border-r border-line p-2",
+                "min-h-[58px] border-r border-line p-1 sm:min-h-[104px] sm:p-2",
                 n < days.length - 7 && "border-b",
                 !isSameMonth(d, month) && "bg-bg/60",
                 k === today && "bg-brand-soft/50",
@@ -1237,28 +1255,27 @@ export function MonthGrid({
                   {format(d, "d")}
                 </span>
               </div>
-              <div className="space-y-0.5">
-                {list.slice(0, 3).map((e) => (
-                  <button
-                    key={e.id}
-                    onClick={() => onSelect(e)}
-                    title={e.start ? `${e.start.slice(0, 5)} · ${e.title}` : e.title}
-                    className={cn(
-                      "flex w-full items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left text-[11.5px] transition-colors hover:bg-hover",
-                      selected === e.id && "bg-hover ring-1 ring-[var(--ring)]",
-                      e.muted && "line-through opacity-60",
-                    )}
-                  >
-                    <span className="size-1.5 shrink-0 rounded-full" style={{ background: e.hue }} />
-                    <span className="truncate font-medium">{e.title}</span>
-                  </button>
+              <div className="flex flex-wrap gap-1 pl-0.5 sm:hidden">
+                {list.slice(0, 4).map((e) => (
+                  <span key={e.id} className="size-1.5 rounded-full" style={{ background: e.hue }} />
                 ))}
+              </div>
+              <div className="hidden space-y-0.5 sm:block">
+                {list.slice(0, 3).map(line)}
                 {list.length > 3 && <p className="pl-1.5 pt-0.5 text-[11px] text-faint">+{list.length - 3} autres</p>}
               </div>
             </div>
           );
         })}
       </div>
+      {picked && (
+        <section className="mt-3 space-y-0.5 sm:hidden">
+          <p className="mb-1 text-[12.5px] font-medium first-letter:uppercase">
+            {format(parseISO(picked), "EEEE d MMMM", { locale: fr })}
+          </p>
+          {events.filter((e) => e.date === picked).map(line)}
+        </section>
+      )}
     </div>
   );
 }

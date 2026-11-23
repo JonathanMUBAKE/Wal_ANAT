@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { addDays, addMonths, endOfMonth, endOfWeek, format, isSameMonth, startOfMonth, startOfWeek } from "date-fns";
+import { addDays, addMonths, endOfMonth, endOfWeek, format, isSameMonth, parseISO, startOfMonth, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Avatar, Button, IconButton, cn } from "@/components/ui";
@@ -26,10 +26,28 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
     return m;
   }, [tasks]);
   const noDate = tasks.filter((t) => !t.due_on && !t.completed).length;
+  // Sur téléphone, la grille montre des pastilles : le jour touché déroule ses tâches sous le mois
+  const [picked, setPicked] = useState<string | null>(null);
+  const hue = (t: (typeof tasks)[number]) =>
+    t.priority === "none" ? "var(--line-strong)" : priorityMeta(t.priority).color;
+  const row = (t: (typeof tasks)[number]) => (
+    <button
+      key={t.id}
+      onClick={() => shell.openTask(t.id)}
+      className={cn(
+        "flex w-full items-center gap-1.5 rounded-md border-l-2 bg-hover px-1.5 py-1 text-left text-[12px] leading-tight hover:bg-active",
+        t.completed && "opacity-50",
+      )}
+      style={{ borderLeftColor: hue(t) }}
+    >
+      <span className={cn("min-w-0 flex-1 truncate", t.completed && "line-through")}>{t.title}</span>
+      {t.assignee_id && <Avatar user={users.get(t.assignee_id)} size={14} />}
+    </button>
+  );
 
   return (
     <div className="px-4 py-5 sm:px-8">
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <h2 className="min-w-[160px] text-[18px] font-semibold first-letter:uppercase">
           {format(month, "MMMM yyyy", { locale: fr })}
         </h2>
@@ -42,14 +60,18 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
         <Button size="sm" onClick={() => setMonth(startOfMonth(new Date()))}>
           Aujourd'hui
         </Button>
-        {noDate > 0 && <span className="ml-auto text-[12.5px] text-faint">{noDate} {pl(noDate, "tâche(s)")} sans échéance</span>}
+        {noDate > 0 && (
+          <span className="order-last w-full text-[12.5px] text-faint sm:order-none sm:ml-auto sm:w-auto">
+            {noDate} {pl(noDate, "tâche(s)")} sans échéance
+          </span>
+        )}
       </div>
       <div className="overflow-x-auto">
-        <div className="grid min-w-[760px] grid-cols-7 overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+        <div className="grid grid-cols-7 sm:min-w-[760px] overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
           {["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."].map((d) => (
             <div
               key={d}
-              className="border-b border-line px-2 py-2 text-[11.5px] font-medium uppercase tracking-wider text-faint"
+              className="border-b border-line px-1 py-2 text-center text-[10.5px] font-medium uppercase tracking-wider text-faint sm:px-2 sm:text-left sm:text-[11.5px]"
             >
               {d}
             </div>
@@ -61,19 +83,21 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
             return (
               <div
                 key={iso}
+                onClick={() => setPicked(items.length ? iso : null)}
                 className={cn(
-                  "group relative min-h-[118px] border-line p-2",
+                  "group relative min-h-[62px] border-line p-1 sm:min-h-[118px] sm:p-2",
                   i % 7 !== 6 && "border-r",
                   i < days.length - 7 && "border-b",
                   !isSameMonth(d, month) && "bg-sidebar/50",
                 )}
               >
-                <div className="mb-1 flex items-center justify-between">
+                <div className="mb-1 flex items-center justify-between sm:justify-between">
                   {/* Le quantième part de la même verticale que le nom du jour : sa pastille déborde dans la marge */}
                   <span
                     className={cn(
                       "-ml-1.5 inline-flex h-[22px] items-center rounded-md px-1.5 text-[12px] tabular",
                       isToday ? "bg-fg font-semibold text-bg" : isSameMonth(d, month) ? "text-muted" : "text-faint",
+                      picked === iso && !isToday && "bg-hover text-fg",
                     )}
                   >
                     {format(d, "d")}
@@ -93,23 +117,14 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
                     </button>
                   )}
                 </div>
-                <div className="space-y-1">
+                {/* Téléphone : une pastille par tâche ; à partir de la tablette, les intitulés */}
+                <div className="flex flex-wrap gap-1 pl-0.5 sm:hidden">
                   {items.slice(0, 4).map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => shell.openTask(t.id)}
-                      className={cn(
-                        "flex w-full items-center gap-1.5 rounded-md border-l-2 bg-hover px-1.5 py-1 text-left text-[12px] leading-tight hover:bg-active",
-                        t.completed && "opacity-50",
-                      )}
-                      style={{
-                        borderLeftColor: t.priority === "none" ? "var(--line-strong)" : priorityMeta(t.priority).color,
-                      }}
-                    >
-                      <span className={cn("min-w-0 flex-1 truncate", t.completed && "line-through")}>{t.title}</span>
-                      {t.assignee_id && <Avatar user={users.get(t.assignee_id)} size={14} />}
-                    </button>
+                    <span key={t.id} className="size-1.5 rounded-full" style={{ background: hue(t) }} />
                   ))}
+                </div>
+                <div className="hidden space-y-1 sm:block">
+                  {items.slice(0, 4).map(row)}
                   {items.length > 4 && <p className="pl-2 pt-0.5 text-[11.5px] text-faint">+{items.length - 4} {pl(items.length - 4, "autre(s)")}</p>}
                 </div>
               </div>
@@ -117,6 +132,15 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
           })}
         </div>
       </div>
+      {/* Le jour touché sur téléphone : ses tâches, en entier, sous le mois */}
+      {picked && (
+        <section className="mt-3 space-y-1 sm:hidden">
+          <p className="text-[12.5px] font-medium first-letter:uppercase">
+            {format(parseISO(picked), "EEEE d MMMM", { locale: fr })}
+          </p>
+          {(byDay.get(picked) ?? []).map(row)}
+        </section>
+      )}
     </div>
   );
 }

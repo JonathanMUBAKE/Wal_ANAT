@@ -284,7 +284,7 @@ export function PilotagePage() {
           title="Agenda"
           note={period}
           badge={
-            <span className="flex size-10 shrink-0 flex-col items-center justify-center rounded-lg border border-line bg-bg leading-none">
+            <span className="hidden size-10 shrink-0 flex-col items-center justify-center rounded-lg border border-line bg-bg leading-none sm:flex">
               <span className="text-[10px] text-muted">{format(days[0], "MMM", { locale: fr }).replace(".", "")}</span>
               <span className="mt-0.5 text-[15px] font-semibold tabular">{format(days[0], "d")}</span>
             </span>

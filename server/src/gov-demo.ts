@@ -19,6 +19,12 @@ import type { Services } from "./services.js";
 
 /** Données d'illustration, entièrement fictives, pour présenter la version ANAT (ANAT_DEMO=1 uniquement). */
 const day = (offset: number) => localDate(new Date(Date.now() + offset * 864e5));
+/**
+ * Le jeu de démonstration se cale sur le jour où on le sème : une date d'activité qui déborderait de l'année du
+ * plan se ramène à ses bornes, sans quoi la démonstration refuse de se semer en fin d'année (règle PT-2).
+ */
+const inYear = (year: number, iso: string) =>
+  iso < `${year}-01-01` ? `${year}-01-01` : iso > `${year}-12-31` ? `${year}-12-31` : iso;
 
 export async function seedGovDemo(svc: Services) {
   const db = svc.db;
@@ -267,8 +273,8 @@ export async function seedGovDemo(svc: Services) {
       target_value: target,
       unit_label,
       // La date de début fonde l'avancement attendu à date (PT-4)
-      start_on: day(offset - 150),
-      end_on: day(offset),
+      start_on: inYear(year, day(offset - 150)),
+      end_on: inYear(year, day(offset)),
       objective: "Objectif fixé au plan",
       budget_planned: 50000,
     });
@@ -306,8 +312,8 @@ export async function seedGovDemo(svc: Services) {
       await plans.addActivity(me, dp.id, {
         title,
         responsible_id: owner,
-        start_on: day(start) < `${year}-01-01` ? `${year}-01-01` : day(start),
-        end_on: day(end) > `${year}-12-31` ? `${year}-12-31` : day(end),
+        start_on: inYear(year, day(start)),
+        end_on: inYear(year, day(end)),
         objective: "Objectif fixé au plan (exemple fictif)",
         target_value: 1,
         unit_label: "livrable",

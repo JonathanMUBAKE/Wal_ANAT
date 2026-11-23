@@ -305,6 +305,19 @@ describe("démonstration ANAT", () => {
     expect((await q("SELECT 1 FROM indicators WHERE org_id = $1 AND plan_activity_id IS NOT NULL", [org])).length).toBeGreaterThanOrEqual(1);
   });
 
+  it("garde chaque activité de plan dans l'année de son plan, quel que soit le jour où la démonstration est semée", async () => {
+    const rows = await q<{ title: string; year: number; start_on: string | null; end_on: string | null }>(
+      `SELECT a.title, w.year, to_char(a.start_on, 'YYYY-MM-DD') AS start_on, to_char(a.end_on, 'YYYY-MM-DD') AS end_on
+         FROM plan_activities a JOIN work_plans w ON w.id = a.plan_id`,
+      [],
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    const dehors = rows.filter((a) =>
+      [a.start_on, a.end_on].some((d) => d && Number(d.slice(0, 4)) !== Number(a.year)),
+    );
+    expect(dehors.map((a) => `${a.title} : ${a.start_on} → ${a.end_on} (plan ${a.year})`)).toEqual([]);
+  });
+
   it("PT-8 : des plans pour la Direction générale et l'Ingénierie territoriale, des activités réparties", async () => {
     const plans = await q<{ name: string }>(
       "SELECT u.name FROM work_plans w JOIN org_units u ON u.id = w.unit_id WHERE w.org_id = $1",

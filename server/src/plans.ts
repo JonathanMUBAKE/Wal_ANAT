@@ -344,7 +344,7 @@ export class Plans {
       throw badRequest("Le responsable d'une activité est une personne");
     for (const d of [i.start_on, i.end_on])
       if (d && Number(d.slice(0, 4)) !== Number(p.year))
-        throw badRequest(`Une activité du plan ${p.year} se déroule en ${p.year}`);
+        throw badRequest(`Une activité du plan ${p.year} se déroule en ${p.year} : ${d} est hors de cette année`);
     if (
       i.domain_id &&
       !(await this.svc.db.one("SELECT 1 FROM activity_domains WHERE org_id = $1 AND id = $2", [p.org_id, i.domain_id]))

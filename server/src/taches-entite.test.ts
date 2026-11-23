@@ -199,7 +199,9 @@ describe("espace de l'entité : projets et tableau de bord", () => {
         due_on: day(2),
       })
     ).body;
+    // Chloé, chargée, déclare la tâche réalisée ; Fiston, qui la lui a confiée, confirme la clôture (T-3)
     await g.api("u_chloe", "PATCH", `/api/tasks/${soon.id}`, { completed: true });
+    await g.api("u_karim", "PATCH", `/api/tasks/${soon.id}`, { completed: true });
     await g.api("u_hugo", "POST", `/api/units/${unit}/projects`, { name: "Projet de l'entité", open_to_unit: true });
     const d = await g.api("u_karim", "GET", `/api/units/${unit}/dashboard`);
     expect(d.status).toBe(200);

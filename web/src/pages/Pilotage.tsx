@@ -20,11 +20,12 @@ import {
 import { type MatrixRisk, RiskMatrix } from "@/components/views";
 import { type CalEvent, TimeGrid, ViewSwitch, useLocalPref } from "@/components/collection";
 import { useForms } from "@/lib/referentials";
-import { Button, Dialog, Empty, cn } from "@/components/ui";
+import { Button, Empty, cn } from "@/components/ui";
 import { CountUp, LoadingRows, type Tone } from "@/components/gov";
 import { motion } from "motion/react";
 import { ByDirection } from "@/components/directions";
 import { MeetingPeek } from "@/components/MeetingViews";
+import { Drawer } from "@/components/drawer";
 
 import { api } from "@/lib/api";
 import { useCan, useMe } from "@/lib/hooks";
@@ -442,11 +443,11 @@ export function PilotagePage() {
       {/* Un rendez-vous de l'agenda s'ouvre d'abord ici : l'essentiel sans quitter l'accueil, le dossier à un clic */}
       <MeetingPeek id={peek?.form === "reunion" ? peek.id : null} onClose={() => setPeek(null)} />
       {peek && peek.form !== "reunion" && (
-        <Dialog
+        <Drawer
           open
-          onOpenChange={(v) => !v && setPeek(null)}
+          onClose={() => setPeek(null)}
           title={peek.title}
-          description={`${form(peek.form).label} · ${format(parseISO(peek.date), "EEEE d MMMM", { locale: fr })}`}
+          subtitle={`${form(peek.form).label} · ${format(parseISO(peek.date), "EEEE d MMMM", { locale: fr })}`}
           width={460}
           footer={
             <Button variant="primary" onClick={() => nav(peek.href)}>
@@ -469,7 +470,7 @@ export function PilotagePage() {
                 </div>
               ))}
           </dl>
-        </Dialog>
+        </Drawer>
       )}
       {arbitrating && <DecisionDialog source={arbitrating} onClose={() => setArbitrating(null)} />}
     </div>
@@ -594,11 +595,12 @@ function LateDetail({
 }) {
   const rows = Object.entries(detail).filter(([, n]) => n > 0);
   return (
-    <Dialog
+    <Drawer
       open
-      onOpenChange={onClose}
+      onClose={onClose}
       title="Retards à résorber"
-      description="Tout ce qui a dépassé son échéance, par nature. Ouvrez une ligne pour traiter les retards concernés."
+      subtitle="Tout ce qui a dépassé son échéance, par nature"
+      width={460}
       footer={<Button onClick={onClose}>Fermer</Button>}
     >
       <ul className="divide-y divide-line rounded-xl border border-line">
@@ -618,7 +620,7 @@ function LateDetail({
               }}
               className="flex items-center gap-3 px-3 py-2.5 text-[13.5px] hover:bg-hover"
             >
-              <span className="flex-1">
+              <span className="flex-1 first-letter:uppercase">
                 {LATE_LABEL[k]?.[n > 1 ? 1 : 0] ?? k}
               </span>
               <span className="font-semibold tabular text-danger">{n}</span>
@@ -627,7 +629,7 @@ function LateDetail({
           </li>
         ))}
       </ul>
-    </Dialog>
+    </Drawer>
   );
 }
 

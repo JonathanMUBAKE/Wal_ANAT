@@ -26,7 +26,8 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { Dialog, Empty, cn } from "./ui";
+import { Empty, cn } from "./ui";
+import { Drawer } from "./drawer";
 import { TabBar } from "./tabs";
 import { LoadingRows } from "./gov";
 import {
@@ -838,16 +839,17 @@ export function MeetingPeek({ id, onClose }: { id: string | null; onClose: () =>
     enabled: !!id,
   });
   return (
-    <Dialog
+    <Drawer
       open={!!id}
-      onOpenChange={(v) => !v && onClose()}
+      onClose={onClose}
       title={m?.meeting_type ?? "Réunion"}
-      description={m ? `${fmt(m.meeting_date, "EEEE d MMMM")} · ${span(m)}` : "Chargement…"}
+      subtitle={m ? `${fmt(m.meeting_date, "EEEE d MMMM")} · ${span(m)}` : "Chargement…"}
+      badges={m && <><Badge tone={STAGE[stageOf(m)].tone} label={STAGE[stageOf(m)].label} /><Seal>{m.reference}</Seal></>}
       width={520}
-      footer={m ? <MeetingActions m={m} /> : undefined}
+      footer={m ? <span className="flex w-full gap-2">{<MeetingActions m={m} />}</span> : undefined}
     >
-      {/* Le dialogue pose déjà ses marges : la fiche s'y insère sans les siennes */}
+      {/* Le panneau pose déjà ses marges : la fiche s'y insère sans les siennes */}
       <div className="-mx-5 -my-4">{m ? <MeetingSummary m={m} /> : <LoadingRows rows={5} />}</div>
-    </Dialog>
+    </Drawer>
   );
 }

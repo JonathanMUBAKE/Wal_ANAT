@@ -49,7 +49,7 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
           {["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."].map((d) => (
             <div
               key={d}
-              className="border-b border-line px-3 py-2 text-[11.5px] font-medium uppercase tracking-wider text-faint"
+              className="border-b border-line px-2 py-2 text-[11.5px] font-medium uppercase tracking-wider text-faint"
             >
               {d}
             </div>
@@ -62,16 +62,17 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
               <div
                 key={iso}
                 className={cn(
-                  "group relative min-h-[118px] border-line p-1.5",
+                  "group relative min-h-[118px] border-line p-2",
                   i % 7 !== 6 && "border-r",
                   i < days.length - 7 && "border-b",
                   !isSameMonth(d, month) && "bg-sidebar/50",
                 )}
               >
-                <div className="mb-1 flex items-center justify-between px-1">
+                <div className="mb-1 flex items-center justify-between">
+                  {/* Le quantième part de la même verticale que le nom du jour : sa pastille déborde dans la marge */}
                   <span
                     className={cn(
-                      "flex size-6 items-center justify-center rounded-full text-[12px] tabular",
+                      "-ml-1.5 inline-flex h-[22px] items-center rounded-md px-1.5 text-[12px] tabular",
                       isToday ? "bg-fg font-semibold text-bg" : isSameMonth(d, month) ? "text-muted" : "text-faint",
                     )}
                   >
@@ -109,7 +110,7 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
                       {t.assignee_id && <Avatar user={users.get(t.assignee_id)} size={14} />}
                     </button>
                   ))}
-                  {items.length > 4 && <p className="px-1.5 text-[11.5px] text-faint">+{items.length - 4} {pl(items.length - 4, "autre(s)")}</p>}
+                  {items.length > 4 && <p className="pl-2 pt-0.5 text-[11.5px] text-faint">+{items.length - 4} {pl(items.length - 4, "autre(s)")}</p>}
                 </div>
               </div>
             );

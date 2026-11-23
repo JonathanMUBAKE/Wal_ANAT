@@ -944,7 +944,6 @@ export function TimeGrid({
   const [folding, setFolding] = useLocalPref<"oui" | "non">("anat.calendrier.heures-creuses", "oui");
   const density = fixedDensity ?? chosen;
   const H = ROW[density];
-  const fold = folding === "oui";
   const tint = (hue: string) => ({
     backgroundColor: `color-mix(in oklab, ${hue} 13%, var(--panel))`,
     backgroundImage: `repeating-linear-gradient(135deg, color-mix(in oklab, ${hue} 10%, transparent) 0 1px, transparent 1px 7px)`,
@@ -952,44 +951,54 @@ export function TimeGrid({
     color: `color-mix(in oklab, ${hue} 60%, var(--fg))`,
   });
   const cols = { gridTemplateColumns: `56px repeat(${days.length}, minmax(0,1fr))` };
-  const today = dkey(new Date());
+  const now = new Date();
+  const today = dkey(now);
   const shown = days.map(dkey);
+  // L'heure en cours reste dépliée : c'est le repère du jour
+  const nowHour = shown.includes(today) ? now.getHours() : -1;
   const timed = events.filter((e) => !e.allDay && shown.includes(e.date));
+  // Rien à replier quand la période n'a aucun rendez-vous à l'heure : la journée reste lisible
+  const fold = folding === "oui" && timed.length > 0;
   const span = (e: CalEvent) => {
     const s = e.start ? toMin(e.start) : 9 * 60;
     return [s, e.end ? Math.max(toMin(e.end), s + 30) : s + 60] as const;
   };
-  // Une heure se replie si aucun rendez-vous de la période ne la traverse
-  const rows = Array.from({ length: to - from }, (_, n) => {
-    const h = from + n;
+  // Une heure se replie si aucun rendez-vous de la période ne la traverse ; les heures creuses qui se
+  // suivent ne font qu'une bande, pour ne pas empiler des libellés dans la marge
+  const bands: { from: number; to: number; folded: boolean }[] = [];
+  for (let h = from; h < to; h++) {
     const busy = timed.some((e) => {
       const [s, en] = span(e);
       return s < (h + 1) * 60 && en > h * 60;
     });
-    return { h, folded: fold && !busy };
-  });
-  const heightOf = (r: { folded: boolean }) => (r.folded ? FOLDED : H);
-  const total = rows.reduce((n, r) => n + heightOf(r), 0);
-  // La position d'une minute, en tenant compte des heures repliées
+    const folded = fold && !busy && h !== nowHour;
+    const last = bands.at(-1);
+    if (folded && last?.folded) last.to = h + 1;
+    else bands.push({ from: h, to: h + 1, folded });
+  }
+  const heightOf = (b: { from: number; to: number; folded: boolean }) => (b.folded ? FOLDED : (b.to - b.from) * H);
+  const total = bands.reduce((n, b) => n + heightOf(b), 0);
+  const bandLabel = (b: { from: number; to: number; folded: boolean }) =>
+    b.to - b.from > 1 ? `${b.from} – ${b.to - 1} h` : `${b.from} h`;
+  // La position d'une minute, en tenant compte des bandes repliées
   const yOf = (min: number) => {
     let y = 0;
-    for (const r of rows) {
-      const start = r.h * 60;
-      if (min >= start + 60) {
-        y += heightOf(r);
+    for (const b of bands) {
+      const [start, end] = [b.from * 60, b.to * 60];
+      if (min >= end) {
+        y += heightOf(b);
         continue;
       }
-      return y + ((Math.max(min, start) - start) / 60) * heightOf(r);
+      return y + ((Math.max(min, start) - start) / (end - start)) * heightOf(b);
     }
     return y;
   };
-  const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const showNow = days.some((d) => dkey(d) === today) && nowMin > from * 60 && nowMin < to * 60;
   const PAD = 10;
   const level = DENSITIES.indexOf(density);
   const zoom = (step: number) => setChosen(DENSITIES[Math.min(DENSITIES.length - 1, Math.max(0, level + step))]);
-  const foldable = rows.some((r) => r.folded) || timed.length > 0;
+  const foldable = timed.length > 0;
   return (
     <div>
       {/* Dérouler la journée ou la replier : le réglage vaut pour tous les calendriers */}
@@ -1087,13 +1096,16 @@ export function TimeGrid({
           )}
           <div className="relative grid" style={{ ...cols, paddingTop: PAD }}>
             <div>
-              {rows.map((r) => (
+              {bands.map((b) => (
                 <div
-                  key={r.h}
-                  style={{ height: heightOf(r) }}
-                  className={cn("pr-2.5 text-right tabular", r.folded ? "text-[10px] text-faint" : "text-[11px] text-muted")}
+                  key={b.from}
+                  style={{ height: heightOf(b) }}
+                  className={cn(
+                    "pr-2.5 text-right tabular",
+                    b.folded ? "flex items-center justify-end text-[10.5px] text-faint" : "text-[11px] text-muted",
+                  )}
                 >
-                  <span className="relative -top-2">{r.h} h</span>
+                  {b.folded ? bandLabel(b) : <span className="relative -top-2">{b.from} h</span>}
                 </div>
               ))}
             </div>
@@ -1102,14 +1114,14 @@ export function TimeGrid({
               const list = timed.filter((e) => e.date === k);
               return (
                 <div key={k} className="relative border-l border-line" style={{ height: total }}>
-                  {rows.map((r) => (
+                  {bands.map((b) => (
                     <div
-                      key={r.h}
-                      className={cn("border-t border-line", r.folded && "bg-[color-mix(in_oklab,var(--fg)_3%,transparent)]")}
-                      style={{ height: heightOf(r) }}
+                      key={b.from}
+                      className={cn("border-t border-line", b.folded && "bg-[color-mix(in_oklab,var(--fg)_3%,transparent)]")}
+                      style={{ height: heightOf(b) }}
                     >
-                      {/* La demi-heure : un filet plus discret, inutile sur une heure repliée */}
-                      {!r.folded && <div className="h-1/2 border-b border-line/50" />}
+                      {/* La demi-heure : un filet plus discret, inutile sur une bande repliée */}
+                      {!b.folded && <div className="h-1/2 border-b border-line/50" />}
                     </div>
                   ))}
                   {list.map((e, n) => {
@@ -1193,8 +1205,11 @@ export function MonthGrid({
   return (
     <div className="overflow-x-auto">
       <div className="grid min-w-[640px] grid-cols-7 overflow-hidden rounded-xl border border-line [&>*:nth-child(7n)]:border-r-0">
-        {["lun", "mar", "mer", "jeu", "ven", "sam", "dim"].map((w) => (
-          <p key={w} className="border-b border-r border-line py-2 text-center text-[11.5px] capitalize text-muted">
+        {["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."].map((w) => (
+          <p
+            key={w}
+            className="border-b border-r border-line px-2 py-2 text-[11.5px] font-medium uppercase tracking-wider text-faint"
+          >
             {w}
           </p>
         ))}
@@ -1205,20 +1220,23 @@ export function MonthGrid({
             <div
               key={k}
               className={cn(
-                "min-h-[104px] border-r border-line p-1.5",
+                "min-h-[104px] border-r border-line p-2",
                 n < days.length - 7 && "border-b",
                 !isSameMonth(d, month) && "bg-bg/60",
                 k === today && "bg-brand-soft/50",
               )}
             >
-              <span
-                className={cn(
-                  "mb-1 flex size-6 items-center justify-center rounded-full text-[12px] font-medium tabular",
-                  k === today ? "bg-primary text-on-primary" : !isSameMonth(d, month) && "text-faint",
-                )}
-              >
-                {format(d, "d")}
-              </span>
+              {/* Le quantième part de la même verticale que le nom du jour et que les rendez-vous */}
+              <div className="mb-1 flex items-center">
+                <span
+                  className={cn(
+                    "-ml-1.5 inline-flex h-[22px] items-center rounded-md px-1.5 text-[12px] font-medium tabular",
+                    k === today ? "bg-primary text-on-primary" : !isSameMonth(d, month) ? "text-faint" : "text-muted",
+                  )}
+                >
+                  {format(d, "d")}
+                </span>
+              </div>
               <div className="space-y-0.5">
                 {list.slice(0, 3).map((e) => (
                   <button
@@ -1235,7 +1253,7 @@ export function MonthGrid({
                     <span className="truncate font-medium">{e.title}</span>
                   </button>
                 ))}
-                {list.length > 3 && <p className="px-1 text-[11px] text-faint">+{list.length - 3} autres</p>}
+                {list.length > 3 && <p className="pl-1.5 pt-0.5 text-[11px] text-faint">+{list.length - 3} autres</p>}
               </div>
             </div>
           );

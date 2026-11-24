@@ -107,6 +107,16 @@ function Users({ meId }: { meId?: string }) {
   const [creating, setCreating] = useState(false);
   const [journal, setJournal] = useState<string | null>(null);
   const [link, setLink] = useState<InviteResult | null>(null);
+  /**
+   * Le serveur dit s'il a pu envoyer (`sent`) : on n'annonce jamais un envoi qui n'a pas eu lieu. Sans messagerie
+   * configurée, la réponse est `{ sent: false }` et l'écran affichait pourtant « Lien envoyé par e-mail »
+   * (constat d'un testeur). Même traitement qu'en « Profils et droits » (OrgAccess.tsx).
+   */
+  const annonce = (r: InviteResult, succes: string, echec: string) => {
+    if (r.link) setLink(r);
+    else if (r.sent) toast.success(succes);
+    else toast.error(echec);
+  };
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin-users"] });
   const act = (id: string, action: string, ok: string, body: unknown = {}) =>
     api.post(`/api/admin/users/${id}/${action}`, body).then(() => {
@@ -115,8 +125,11 @@ function Users({ meId }: { meId?: string }) {
     }, failure);
   const reset = (u: AdminUser, clear_mfa: boolean) =>
     api.post<InviteResult>(`/api/admin/users/${u.id}/reset`, { clear_mfa }).then((r) => {
-      if (r.link) setLink(r);
-      else toast.success("Lien envoyé par e-mail");
+      annonce(
+        r,
+        "Lien envoyé par e-mail",
+        "L'e-mail n'a pas pu partir : aucun lien n'est arrivé. Configurez la messagerie, puis renvoyez-le.",
+      );
       refresh();
     }, failure);
   const setRole = (u: AdminUser, on: boolean) =>
@@ -126,8 +139,11 @@ function Users({ meId }: { meId?: string }) {
     }, failure);
   const resend = (u: AdminUser) =>
     api.post<InviteResult>(`/api/admin/users/${u.id}/resend-invitation`).then((r) => {
-      if (r.link) setLink(r);
-      else toast.success("Nouveau lien envoyé par e-mail ; le précédent n'est plus valable");
+      annonce(
+        r,
+        "Nouveau lien envoyé par e-mail ; le précédent n'est plus valable",
+        "L'e-mail n'a pas pu partir, et le lien précédent n'est plus valable : renvoyez l'invitation une fois la messagerie configurée.",
+      );
       refresh();
     }, failure);
   if (!users) return <Spinner />;
@@ -152,8 +168,11 @@ function Users({ meId }: { meId?: string }) {
           onDone={(r) => {
             setCreating(false);
             refresh();
-            if (r.link) setLink(r);
-            else toast.success("Compte créé : le lien de finalisation est parti par e-mail");
+            annonce(
+              r,
+              "Compte créé : le lien de finalisation est parti par e-mail",
+              "Compte créé, mais l'e-mail n'a pas pu partir : le lien de finalisation n'est pas arrivé. Renvoyez-le depuis la fiche du compte.",
+            );
           }}
         />
       )}
@@ -166,8 +185,11 @@ function Users({ meId }: { meId?: string }) {
             onDone={(r) => {
               setApproving(null);
               refresh();
-              if (r.link) setLink(r);
-              else toast.success("Invitation envoyée");
+              annonce(
+                r,
+                "Invitation envoyée",
+                "L'e-mail n'a pas pu partir : l'invitation reste en attente, renvoyez-la plus tard.",
+              );
             }}
           />
         )}

@@ -1468,8 +1468,11 @@ function NewMail({
 }
 function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
   const qc = useQueryClient();
+  const can = useCan();
   const { data: units } = useUnits();
   const { data: users } = useUsers();
+  // Imputer à l'entité racine fait remonter le courrier à la DG : elle seule le décide (registers.ts, C-5).
+  const imputables = units?.filter((u) => u.parent_id !== null || can("signature.institution"));
   const [f, setF] = useState({
     unit_id: "",
     assignee_id: "",
@@ -1536,7 +1539,7 @@ function Assign({ m, onClose }: { m: MailRow; onClose: () => void }) {
               onChange={(e) => setF({ ...f, unit_id: e.target.value })}
             >
               <option value="">—</option>
-              {units?.map((u) => (
+              {imputables?.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name}
                 </option>

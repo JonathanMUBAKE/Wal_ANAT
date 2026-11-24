@@ -630,10 +630,13 @@ export class Meetings {
     );
     const t = today();
     const writes = can.manage || m.writer_id === actorId;
+    // Le drapeau doit dire exactement ce qu'`assertDecider` acceptera : une présidence de séance valide le compte
+    // rendu parce qu'elle détient le droit, pas parce qu'elle préside. Le chemin est fermé aujourd'hui (on ne
+    // désigne pas une présidence non habilitée) ; il se rouvrirait si le droit lui était retiré en cours de route.
     const decides =
       m.writer_id !== actorId &&
       (m.chair_id
-        ? m.chair_id === actorId || (await this.delegateOf(m.chair_id, actorId, m.org_id))
+        ? (m.chair_id === actorId && can.validate) || (await this.delegateOf(m.chair_id, actorId, m.org_id))
         : can.validate);
     const invited = attendees.find((a) => a.invited && a.user_id === actorId);
     // Rouvrir un compte rendu validé : la personne qui l'a validé, ou la DG (R-3)

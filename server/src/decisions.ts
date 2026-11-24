@@ -157,6 +157,15 @@ export class Decisions {
       ...this.view(d),
       can: {
         execute: open && !declared && (manager || d.owner_id === actorId),
+        // Deux pas distincts : le secrétariat met en route, le chargé déclare l'exécution faite (DEC-3). Les
+        // confondre faisait proposer au secrétariat une déclaration que le serveur refuse (execute, ci-dessous).
+        start: open && !declared && (manager || d.owner_id === actorId) && d.status === "a_executer",
+        declare:
+          open &&
+          !declared &&
+          (manager || d.owner_id === actorId) &&
+          (!d.owner_id || d.owner_id === actorId) &&
+          !!d.confirmed_at,
         confirm_execution: open && declared && manager && d.execution_declared_by !== actorId,
         confirm: !d.confirmed_at && d.status !== "remplacee" && (await this.confirmer(actorId, d.org_id)),
         replace: manager && d.status !== "remplacee",

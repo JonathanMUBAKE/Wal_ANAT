@@ -68,7 +68,7 @@ interface Decision {
   execution_confirmed_by: string | null;
 }
 interface Detail extends Decision {
-  can: { execute: boolean; replace: boolean; confirm: boolean; confirm_execution: boolean };
+  can: { execute: boolean; start: boolean; declare: boolean; replace: boolean; confirm: boolean; confirm_execution: boolean };
 }
 /** Dossier dont la décision est attendue : il est prérempli quand on arbitre depuis le tableau de bord. */
 export interface DecisionSource {
@@ -448,20 +448,24 @@ function DecisionPanel({ id, onClose }: { id: string; onClose: () => void }) {
             {d.executed_at && <p className="mt-1 text-[12px] text-muted">Le {frDate(d.executed_at.slice(0, 10))}</p>}
           </div>
         )}
-        {d.can.execute && (
+        {/* Pas de bloc sans geste : le compte rendu ne se saisit que si l'un des deux pas est ouvert */}
+        {(d.can.start || d.can.declare) && (
           <div className="space-y-2 border-t border-line pt-3">
             <Field label="Compte rendu d'exécution" hint="Ce qui a été fait, la référence de l'acte…">
               {(a) => <Textarea {...a} value={note} onChange={(e) => setNote(e.target.value)} />}
             </Field>
             <div className="flex flex-wrap gap-2">
-              {d.status === "a_executer" && (
+              {d.can.start && (
                 <Button loading={move.isPending} onClick={() => move.mutate("en_cours")}>
                   Passer en cours
                 </Button>
               )}
-              <Button variant="primary" loading={move.isPending} onClick={() => move.mutate("executee")}>
-                Déclarer exécutée
-              </Button>
+              {/* Déclarer l'exécution revient au chargé ; le secrétariat la confirme ensuite (decisions.ts, DEC-3) */}
+              {d.can.declare && (
+                <Button variant="primary" loading={move.isPending} onClick={() => move.mutate("executee")}>
+                  Déclarer exécutée
+                </Button>
+              )}
             </div>
           </div>
         )}

@@ -328,7 +328,7 @@ function ArbitrationDrawer({ id, list, onClose }: { id: string; list: Arbitratio
   const [due, setDue] = useState("");
   const [busy, setBusy] = useState(false);
   if (!a) return null;
-  const canDecide = a.status === "en_attente" && can("decisions.record") && a.requested_by !== me?.id;
+  const canDecide = a.status === "en_attente" && can("decisions.confirm") && a.requested_by !== me?.id;
   const act = async (path: string, body: unknown, msg: string) => {
     setBusy(true);
     try {

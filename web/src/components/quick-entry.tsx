@@ -46,7 +46,7 @@ function useQuickItems(noSign?: boolean) {
       label: "Inscrire une décision",
       hint: "au registre de la DG",
     },
-    can("decisions.record") && {
+    can("decisions.confirm") && {
       to: "/activites?onglet=arbitrages",
       Icon: Gavel,
       label: "Trancher un arbitrage",

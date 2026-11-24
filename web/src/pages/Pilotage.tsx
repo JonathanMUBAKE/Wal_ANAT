@@ -362,7 +362,9 @@ export function PilotagePage() {
                     <DueChip due={d.next_due} />
                   </span>
                 )}
-                {can("decisions.record") &&
+                {/* Deux gestes distincts : trancher un arbitrage revient à la DG (decisions.confirm, portfolio.ts),
+                    inscrire une décision au registre revient au secrétariat (decisions.record). */}
+                {(d.arbitration_id ? can("decisions.confirm") : can("decisions.record")) &&
                   (d.arbitration_id ? (
                     <Link
                       to={`/activites?onglet=arbitrages&arbitrage=${d.arbitration_id}`}

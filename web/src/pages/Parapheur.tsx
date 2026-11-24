@@ -390,9 +390,9 @@ function DocDialog({ id, onClose }: { id: string; onClose: () => void }) {
                   className={cn(
                     "flex size-7 items-center justify-center rounded-full border",
                     s.status === "approved" &&
-                      "border-success bg-success text-white",
+                      "border-success bg-success text-on-success",
                     s.status === "rejected" &&
-                      "border-danger bg-danger text-white",
+                      "border-danger bg-danger text-on-danger",
                     s.status === "pending" &&
                       "border-primary bg-brand-soft text-primary",
                     s.status === "waiting" && "border-line-strong text-faint",

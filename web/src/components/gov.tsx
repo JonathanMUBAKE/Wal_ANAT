@@ -164,7 +164,7 @@ export function Status({ label, tone = "neutral" }: { label: string; tone?: Tone
 
 export type StatTone = "danger" | "warning" | "success" | "info" | "neutral";
 const STAT_TILE: Record<StatTone, string> = {
-  danger: "bg-danger text-white",
+  danger: "bg-danger text-on-danger",
   warning: "bg-warning-soft text-warning",
   success: "bg-success-soft text-success",
   info: "bg-info-soft text-info",
@@ -217,15 +217,20 @@ export const LoadingRows = ({ rows = 5 }: { rows?: number }) => (
 export function ProgressBar({
   value,
   tone = "info",
+  label,
 }: {
   value: number;
   tone?: "info" | "success" | "warning" | "danger";
+  /** Ce dont la barre mesure l'avancement : sans lui, un lecteur d'écran annonce « 62 % » de rien. */
+  label: string;
 }) {
   const v = Math.max(0, Math.min(100, value));
   return (
     <div
       role="progressbar"
+      aria-label={label}
       aria-valuenow={Math.round(v)}
+      aria-valuetext={`${Math.round(v)} %`}
       aria-valuemin={0}
       aria-valuemax={100}
       className="h-1.5 w-full overflow-hidden rounded-sm bg-hover"
@@ -270,7 +275,7 @@ export function Table({ head, children }: { head: ReactNode[]; children: ReactNo
   // La colonne du titre : la première qui n'est pas un simple numéro ; elle reçoit la place libre
   const main = head.findIndex((h) => typeof h !== "string" || !REFERENCE_HEAD.test(h.trim())) + 1;
   return (
-    <div className="grid-scroll relative">
+    <div className="grid-scroll relative" tabIndex={0} role="group" aria-label="Tableau défilant">
       <table className="grid-table" data-main={main || 1}>
         <thead>
           <tr className="text-left">

@@ -244,7 +244,7 @@ export function RisksPage() {
                     </span>
                   </Td>
                   <Td className="min-w-[140px]">
-                    <ProgressBar value={pct(i)} tone={pct(i) >= 100 ? "success" : "info"} />
+                    <ProgressBar value={pct(i)} tone={pct(i) >= 100 ? "success" : "info"} label={`Atteinte de ${i.name}`} />
                     <span className="text-[12px] tabular-nums text-muted">{pct(i)} %</span>
                   </Td>
                   <Td className="text-muted">{i.source || "—"}</Td>

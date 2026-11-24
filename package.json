@@ -18,12 +18,15 @@
     "lint": "biome check",
     "format": "biome format --write",
     "e2e": "node scripts/e2e.mjs",
+    "audit:a11y": "node scripts/audit-accessibilite.mjs",
     "migrate": "npm run migrate -w server"
   },
   "engines": {
     "node": ">=22.5"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.6"
+    "@biomejs/biome": "2.6.6",
+    "axe-core": "^4.14.1",
+    "playwright": "^1.65.1"
   }
 }

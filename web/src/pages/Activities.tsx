@@ -319,7 +319,7 @@ function ProjectsList({ projects }: { projects: ProjectSummary[] | undefined }) 
               <Td className="text-muted">{p.team_name ?? "—"}</Td>
               <Td className="min-w-[130px]">
                 <span className="flex items-center gap-2">
-                  <ProgressBar value={pct} />
+                  <ProgressBar value={pct} label={`Avancement de ${p.name}`} />
                   <span className="w-9 text-right text-[12px] tabular text-muted">{pct}%</span>
                 </span>
               </Td>
@@ -933,7 +933,7 @@ function ComputedHealth({ p, health }: { p: ProjectSummary; health: Map<string, 
       {/* Un seul statut visible ; l'écart avec le déclaré se signale par une icône, expliquée au survol (écrans sobres) */}
       {h?.divergent && (
         <Tip label={`Le responsable déclare « ${HEALTH[h.health_declared].label} » ; le calcul dit « ${HEALTH[state].label} »${h.reasons.length ? ` : ${h.reasons.join(" · ")}` : ""}`}>
-          <span aria-label={`Écart avec le statut déclaré : ${HEALTH[h.health_declared].label}`} className="text-warning">
+          <span role="img" aria-label={`Écart avec le statut déclaré : ${HEALTH[h.health_declared].label}`} className="text-warning">
             <GitCompareArrows className="size-3.5" />
           </span>
         </Tip>

@@ -20,9 +20,9 @@ const CELL = {
   success: "bg-success-soft",
 } as const;
 const DOT = {
-  danger: "bg-danger text-white",
-  warning: "bg-warning text-white",
-  success: "bg-success text-white",
+  danger: "bg-danger text-on-danger",
+  warning: "bg-warning text-on-warning",
+  success: "bg-success text-on-success",
 } as const;
 
 /**
@@ -58,7 +58,9 @@ export function RiskMatrix({
       <div className="mx-auto w-full max-w-[236px] @lg:max-w-none">
         <div className="flex gap-1.5">
           <span className="flex rotate-180 items-center justify-center text-[12px] text-muted [writing-mode:vertical-rl]">Probabilité</span>
-          <div className="grid flex-1 grid-cols-5 gap-1" role="img" aria-label="Matrice probabilité × impact">
+          {/* La matrice contient des boutons : elle ne peut pas se déclarer image, sans quoi le clavier entre
+                dans un contenu annoncé comme non interactif. Un groupe nommé en tient le rôle. */}
+          <div className="grid flex-1 grid-cols-5 gap-1" role="group" aria-label="Matrice probabilité × impact">
             {[5, 4, 3, 2, 1].flatMap((p) =>
               [1, 2, 3, 4, 5].map((i) => {
                 const here = ranked.filter((r) => r.probability === p && r.impact === i);
@@ -69,7 +71,14 @@ export function RiskMatrix({
                   >
                     {here.map((r) =>
                       onOpen ? (
-                        <button key={r.id} type="button" title={r.title} aria-label={r.title} onClick={() => onOpen(r.id)}>
+                        <button
+                          key={r.id}
+                          type="button"
+                          title={r.title}
+                          /* Le numéro est seul visible dans la case : le nom accessible le reprend, puis nomme le risque. */
+                          aria-label={`Risque ${no.get(r.id)} : ${r.title}`}
+                          onClick={() => onOpen(r.id)}
+                        >
                           {dot(r, "ring-2 ring-panel hover:scale-110 transition-transform")}
                         </button>
                       ) : (

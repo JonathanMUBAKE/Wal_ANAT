@@ -207,13 +207,19 @@ export function GroupedTable<T>({
                 ) : (
                   <span className="size-2.5 rounded-full" style={{ background: g.hue }} />
                 )}
-                <h3 className="text-[13.5px] font-medium" title={g.hint}>
+                {/* Premier niveau sous le titre de page : un h2, sans saut de niveau. */}
+                <h2 className="text-[13.5px] font-medium" title={g.hint}>
                   {g.label}
-                </h3>
+                </h2>
                 <span className="text-[12.5px] tabular text-faint">{g.rows.length}</span>
               </div>
               {open && (
-                <div className="grid-scroll relative">
+                <div
+                  className="grid-scroll relative"
+                  tabIndex={0}
+                  role="group"
+                  aria-label="Tableau défilant"
+                >
                   <table className="grid-table table-fixed" style={{ minWidth: 760 }}>
                     <colgroup>
                       {bulk && <col style={{ width: 40 }} />}
@@ -615,7 +621,7 @@ export function DataTable<T>({
           </button>
         </div>
       )}
-      <div className="grid-scroll relative">
+      <div className="grid-scroll relative" tabIndex={0} role="group" aria-label="Tableau défilant">
         <table className="grid-table">
           <thead>
             <tr className="text-left">

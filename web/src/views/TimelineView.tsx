@@ -56,7 +56,7 @@ export function TimelineView({ project, tasks, aiActive }: ViewProps) {
             className="pointer-events-none absolute bottom-0 top-0 z-[5] w-px bg-danger"
             style={{ left: 240 + todayX + DAY / 2 }}
           >
-            <span className="absolute -top-0 left-1 rounded bg-danger px-1 text-[10px] font-medium text-white">
+            <span className="absolute -top-0 left-1 rounded bg-danger px-1 text-[10px] font-medium text-on-danger">
               Auj.
             </span>
           </div>

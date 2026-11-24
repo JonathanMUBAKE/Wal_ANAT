@@ -589,7 +589,7 @@ export function ProjectContracts({ projectId }: { projectId: string }) {
                   </div>
                   {c.amount ? (
                     <span className="flex items-center gap-2">
-                      <ProgressBar value={paidPct} />
+                      <ProgressBar value={paidPct} label="Part payée de la convention" />
                       <span className="w-24 text-right text-[12px] tabular text-muted">{paidPct} % payé</span>
                     </span>
                   ) : null}

@@ -30,8 +30,15 @@ Ce document fait foi pour tout nouvel écran. Le code de référence se trouve d
 | `--line` / `--line-strong` | 6 % / 12 % d'encre | Filets ; jamais d'ombre lourde |
 
 ### Couleurs de marque et d'état
-- Action : `--primary` `#007BC4` (bleu ANAT), survol `#006BAB`.
+- Action : `--primary` `#006BAB`, survol `#005E96`. Le bleu ANAT `#007BC4` reste la couleur d'identité : il
+  signe les documents exportés, les séries de graphiques (`--viz-1`) et les référentiels (`--hue-blue`,
+  `--form-projet_interne`). L'interface en prend une nuance d'un cran plus profonde, parce qu'un texte en
+  `#007BC4` posé sur `--brand-soft` n'atteint pas 4,5:1.
 - États : `--success` (validé, dans les temps), `--warning` (à surveiller, à valider), `--danger` (retard, refus), `--info` (en cours).
+- Encres posées sur un aplat d'état : `--on-success`, `--on-warning`, `--on-danger`. En thème clair elles sont
+  blanches ; en thème sombre, où l'aplat reste vif, elles deviennent foncées. Ne jamais écrire `text-white`
+  sur `bg-danger`, `bg-warning` ou `bg-success`.
+- Tout couple texte/fond tient 4,5:1 dans les deux thèmes, vérifié par `npm run audit:a11y` (axe-core).
 - Formes d'activité : `--form-projet_interne`, `--form-projet_confie`, `--form-commission`, `--form-conference`, `--form-rendez_vous`, `--form-interne`.
 - IA : `--ai` violet, réservé.
 - Chaque couleur existe en version « douce » (`*-soft`) pour les fonds de pastilles et d'événements.

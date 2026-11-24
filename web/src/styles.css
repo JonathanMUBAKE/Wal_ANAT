@@ -3,7 +3,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ANAT Pilotage — graphite froid et filets nets, relevés du bleu de l'Agence (#007BC4) et d'un bleu nuit.
-   L'iris reste réservé à l'IA. Les documents officiels gardent Montserrat. */
+   L'iris reste réservé à l'IA. Les documents officiels gardent Montserrat.
+   Chaque couple texte/fond tient 4,5:1 dans les deux thèmes (audit axe-core : npm run audit:a11y). Les
+   valeurs ci-dessous sont mesurées, non choisies à l'œil : les modifier demande de relancer l'audit. */
 :root {
   --bg: #F5F6F8;
   --panel: #FFFFFF;
@@ -16,10 +18,10 @@
   --field: rgba(15, 30, 50, 0.17);
   --table-head: transparent;
   --fg: #111A27;
-  --muted: #5B6677;
-  --faint: #8D97A6;
-  --primary: #007BC4;
-  --primary-hover: #006BAB;
+  --muted: #4D5765;
+  --faint: #676E79;
+  --primary: #006BAB;
+  --primary-hover: #005E96;
   --night: #0B2A45;
   --ring: rgba(0, 123, 196, 0.2);
   --brand-soft: rgba(0, 123, 196, 0.08);
@@ -28,13 +30,16 @@
   --ai-soft: rgba(110, 86, 207, 0.09);
   --ai-line: rgba(110, 86, 207, 0.28);
   --ai-fg: #5B45B8;
-  --success: #1F8A5B;
+  --success: #19764D;
   --success-soft: rgba(31, 138, 91, 0.1);
-  --warning: #B4690E;
+  --on-success: #FFFFFF;
+  --warning: #98580A;
   --warning-soft: rgba(214, 140, 31, 0.13);
-  --danger: #D13B3B;
+  --on-warning: #FFFFFF;
+  --danger: #BD3434;
   --danger-soft: rgba(209, 59, 59, 0.09);
-  --info: #2F6FEB;
+  --on-danger: #FFFFFF;
+  --info: #2962D1;
   --info-soft: rgba(47, 111, 235, 0.09);
   --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
   --shadow-md: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px -8px rgba(16, 24, 40, 0.12);
@@ -77,7 +82,7 @@
   --line-strong: rgba(255, 255, 255, 0.15);
   --fg: #EDEDF2;
   --muted: #A6A8B8;
-  --faint: #828497;
+  --faint: #8D8FA4;
   --field: rgba(255, 255, 255, 0.15);
   --table-head: transparent;
   --primary: #4FB0EC;
@@ -89,10 +94,15 @@
   --ai-fg: #B9ABFF;
   --success: #3DD68C;
   --success-soft: rgba(61, 214, 140, 0.11);
+  --on-success: #06281A;
   --warning: #F1A10D;
   --warning-soft: rgba(241, 161, 13, 0.13);
+  --on-warning: #2A1A02;
   --danger: #FF6369;
   --danger-soft: rgba(255, 99, 105, 0.11);
+  /* En thème sombre le rouge d'alerte doit rester vif sur le fond noir : c'est l'encre posée dessus
+     qui devient foncée, sans quoi un texte blanc n'atteint jamais le contraste exigé. */
+  --on-danger: #2A0A0C;
   --info: #70B8FF;
   --info-soft: rgba(112, 184, 255, 0.11);
   --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -139,10 +149,13 @@
   --color-ai-line: var(--ai-line);
   --color-ai-fg: var(--ai-fg);
   --color-success: var(--success);
+  --color-on-success: var(--on-success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
+  --color-on-warning: var(--on-warning);
   --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
+  --color-on-danger: var(--on-danger);
   --color-danger-soft: var(--danger-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);

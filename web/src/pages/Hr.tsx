@@ -140,7 +140,7 @@ function HrIndicators({ rows }: { rows: AgentRow[] }) {
   return (
     <div className="grid gap-3 md:grid-cols-3">
       <section className={box}>
-        <h3 className="mb-2 text-[13px] font-semibold">Effectifs par entité · {rows.length}</h3>
+        <h2 className="mb-2 text-[13px] font-semibold">Effectifs par entité · {rows.length}</h2>
         <ul className="space-y-1 text-[12.5px]">
           {byUnit.slice(0, 6).map(([u, n]) => (
             <li key={u} className="flex justify-between gap-2">
@@ -152,7 +152,7 @@ function HrIndicators({ rows }: { rows: AgentRow[] }) {
         </ul>
       </section>
       <section className={box}>
-        <h3 className="mb-2 text-[13px] font-semibold">Pyramide des âges</h3>
+        <h2 className="mb-2 text-[13px] font-semibold">Pyramide des âges</h2>
         {/* Un graphique sans données n'apprend rien : il laisse la place à ce qui manque (écrans sobres) */}
         {!rows.some((a) => a.age_band) ? (
           <p className="text-[12.5px] text-muted">
@@ -179,7 +179,7 @@ function HrIndicators({ rows }: { rows: AgentRow[] }) {
         )}
       </section>
       <section className={box}>
-        <h3 className="mb-2 text-[13px] font-semibold">Départs prévus sous 12 mois · {leaving.length}</h3>
+        <h2 className="mb-2 text-[13px] font-semibold">Départs prévus sous 12 mois · {leaving.length}</h2>
         <ul className="space-y-1 text-[12.5px]">
           {leaving.slice(0, 6).map((a) => (
             <li key={a.user_id} className="flex justify-between gap-2">

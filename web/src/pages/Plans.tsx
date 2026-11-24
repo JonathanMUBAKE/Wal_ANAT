@@ -152,7 +152,7 @@ export function PlansPage() {
                   <Td className="tabular">{p.activity_count}</Td>
                   <Td className="min-w-[130px]">
                     <span className="flex items-center gap-2">
-                      <ProgressBar value={p.progress} />
+                      <ProgressBar value={p.progress} label={`Avancement de ${p.title}`} />
                       <span className="tabular shrink-0 whitespace-nowrap text-[12px] text-muted">{p.progress} %</span>
                     </span>
                   </Td>
@@ -392,7 +392,7 @@ export function PlanPage() {
                       className="flex items-center gap-2"
                       title={a.dossiers.length ? "Avancement remonté des dossiers" : undefined}
                     >
-                      <ProgressBar value={a.progress_effective} />
+                      <ProgressBar value={a.progress_effective} label={`Avancement de ${a.title}`} />
                       <span className="tabular shrink-0 whitespace-nowrap text-[12px] text-muted">
                         {a.progress_effective} %
                       </span>

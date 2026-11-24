@@ -420,7 +420,7 @@ export function PilotagePage() {
                 <span
                   className={cn(
                     "flex h-[22px] w-8 shrink-0 items-center justify-center rounded-md text-[11.5px] font-semibold tabular",
-                    r.score >= 15 ? "bg-danger text-white" : r.score >= 8 ? "bg-warning text-white" : "bg-success-soft text-success",
+                    r.score >= 15 ? "bg-danger text-on-danger" : r.score >= 8 ? "bg-warning text-on-warning" : "bg-success-soft text-success",
                   )}
                   title="Probabilité × impact"
                 >
@@ -480,7 +480,7 @@ export function PilotagePage() {
 type Tone2 = "danger" | "warning" | "success" | "info" | "neutral";
 /** La pastille d'icône d'un chiffre : sa couleur dit s'il faut agir. */
 const TILE: Record<Tone2, string> = {
-  danger: "bg-danger text-white",
+  danger: "bg-danger text-on-danger",
   warning: "bg-warning-soft text-warning",
   success: "bg-success-soft text-success",
   info: "bg-info-soft text-info",

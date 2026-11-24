@@ -94,7 +94,12 @@ function NavSection({
         </button>
         {action}
       </div>
-      {open && <nav className="space-y-0.5 px-3">{children}</nav>}
+      {/* Chaque groupe est un point de repère distinct : sans nom, l'assistance ne sait pas les départager. */}
+      {open && (
+        <nav aria-label={title} className="space-y-0.5 px-3">
+          {children}
+        </nav>
+      )}
     </div>
   );
 }
@@ -217,7 +222,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-4 pt-3">
-        <nav className="space-y-0.5 px-3">
+        <nav aria-label="Mon espace" className="space-y-0.5 px-3">
           {link("/", House, "Accueil")}
           {link("/my-tasks", CheckCircle2, "Mes tâches")}
           {!!myUnits?.length && link("/entite", Users, "Mon entité")}
@@ -330,10 +335,18 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
         >
           <Inbox className="size-[18px]" />
         </button>
-        <button aria-label="Notifications" title="Notifications" onClick={() => nav("/inbox")} className={box}>
+        <button
+          aria-label={unread > 0 ? `Notifications : ${unread} non lues` : "Notifications"}
+          title={unread > 0 ? `Notifications : ${unread} non lues` : "Notifications"}
+          onClick={() => nav("/inbox")}
+          className={box}
+        >
           <Bell className="size-[18px]" />
           {unread > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white ring-2 ring-panel">
+            <span
+              aria-hidden
+              className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-on-danger ring-2 ring-panel"
+            >
               {unread}
             </span>
           )}

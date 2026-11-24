@@ -313,7 +313,7 @@ export function Checkbox({
       className={cn(
         "group/cb inline-flex shrink-0 items-center justify-center rounded-full border transition-all duration-200",
         checked
-          ? "border-success bg-success text-white"
+          ? "border-success bg-success text-on-success"
           : "border-line-strong text-transparent hover:border-success hover:text-success",
       )}
       style={{ width: size, height: size }}
@@ -554,7 +554,9 @@ export function Hint({ children, className, iconOnly }: { children: ReactNode; c
       <PO.Trigger asChild>
         <button
           type="button"
-          aria-label="Afficher l'explication"
+          /* Quand la première ligne est visible, c'est elle qui nomme le bouton : un libellé posé par-dessus la
+             masquerait à l'assistance. Il ne sert donc qu'à l'icône seule. */
+          aria-label={iconOnly ? "Afficher l'explication" : undefined}
           className={cn(
             "flex max-w-full min-w-0 items-center gap-1.5 text-left text-[12.5px] text-faint transition-colors hover:text-muted",
             className,

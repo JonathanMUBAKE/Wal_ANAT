@@ -167,7 +167,7 @@ export function DirectionTable({
       </p>
     );
   return (
-    <div className="grid-scroll">
+    <div className="grid-scroll" tabIndex={0} role="group" aria-label="Tableau défilant">
       <table className="grid-table min-w-[640px]">
         <thead>
           <tr className="text-left text-[12px] text-muted">

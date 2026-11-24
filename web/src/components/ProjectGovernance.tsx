@@ -111,7 +111,7 @@ export function ProjectGovernance({ projectId, canEdit }: { projectId: string; c
               <>
                 <p className="mt-2 font-serif text-[30px] leading-none">{spent} %</p>
                 <div className="mt-2">
-                  <ProgressBar value={spent} tone={spent > 100 ? "danger" : "info"} />
+                  <ProgressBar value={spent} tone={spent > 100 ? "danger" : "info"} label="Budget dépensé" />
                 </div>
                 <p className="mt-1.5 text-[12px] text-muted tabular">
                   {money(g.budget_spent ?? 0)} dépensés sur {money(g.budget_planned)}

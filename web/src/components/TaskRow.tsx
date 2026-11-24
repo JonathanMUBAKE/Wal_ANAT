@@ -54,12 +54,12 @@ export function TaskLine({
   onContextMenu?: (e: MouseEvent) => void;
 }) {
   return (
+    // La ligne porte ses propres commandes — case à cocher, drapeau, personne. Elle ne peut donc pas se déclarer
+    // bouton : le clavier s'arrêterait sur un bouton contenant d'autres boutons. C'est le titre qui ouvre la tâche,
+    // et le clic sur la ligne reste un raccourci de confort pour la souris.
     <div
-      role="button"
-      tabIndex={0}
       onClick={onOpen}
       onContextMenu={onContextMenu}
-      onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={cn(
         "group flex cursor-default items-center gap-3 border-b border-line px-3 transition-colors hover:bg-hover sm:px-4",
         dense ? "h-10" : "h-11",
@@ -69,7 +69,16 @@ export function TaskLine({
       <span className="flex size-5 shrink-0 items-center justify-center">{leading}</span>
       <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[13.5px]">
         {sub && <CornerDownRight className="size-3.5 shrink-0 text-faint" aria-label="Sous-tâche" />}
-        <span className={cn("truncate", done && "text-faint line-through decoration-1")}>{title}</span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen();
+          }}
+          className={cn("min-w-0 truncate text-left", done && "text-faint line-through decoration-1")}
+        >
+          {title}
+        </button>
         {detail && <span className="hidden min-w-0 shrink truncate text-[12px] text-faint sm:inline">{detail}</span>}
       </span>
       {badges}

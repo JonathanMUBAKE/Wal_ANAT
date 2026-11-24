@@ -22,27 +22,40 @@ describe("Le brouillon d'un compte rendu ne se perd pas", () => {
     // Le garde-fou doit s'armer sur `dirty` : toujours actif, il gênerait sans rien protéger de plus.
     const pose = editeur.indexOf('addEventListener("beforeunload"');
     expect(pose, "beforeunload n'est jamais posé").toBeGreaterThan(-1);
-    const bloc = editeur.slice(Math.max(0, pose - 400), pose + 200);
+    const bloc = editeur.slice(Math.max(0, pose - 1800), pose + 400);
     expect(bloc, "le garde-fou ne dépend pas du drapeau `dirty`").toContain("dirty");
-    expect(bloc, "le garde-fou n'est jamais retiré").toContain("removeEventListener");
+    expect(editeur, "le garde-fou n'est jamais retiré").toContain('removeEventListener("beforeunload"');
+  });
+
+  it("retient un clic sur un lien interne tant que le brouillon est modifié", () => {
+    // `useBlocker` exigerait un routeur de données (l'application est sur <BrowserRouter>) : on retient le clic
+    // lui-même, en phase de capture, avant que le lien n'agisse.
+    const pose = editeur.indexOf('addEventListener("click"');
+    expect(pose, "aucune interception du clic sur un lien").toBeGreaterThan(-1);
+    expect(editeur.slice(pose, pose + 80), "l'interception doit être en phase de capture").toContain("true");
+    const bloc = editeur.slice(Math.max(0, pose - 1200), pose + 300);
+    expect(bloc, "l'interception ne dépend pas du drapeau `dirty`").toContain("dirty");
+    expect(bloc, "elle doit viser les liens").toContain('closest?.("a[href]")');
+    expect(bloc, "un clic du milieu ou avec modificateur doit rester libre").toContain("metaKey");
+    expect(bloc, "une ouverture dans un nouvel onglet doit rester libre").toContain('target === "_blank"');
+    expect(editeur, "l'interception n'est jamais retirée").toContain('removeEventListener("click"');
+  });
+
+  it("reprend mot pour mot la phrase du tiroir, au lieu d'en inventer une autre", () => {
+    const phrase = "Les modifications saisies n'ont pas été enregistrées. Si vous fermez, elles seront perdues.";
+    expect(lire("components/drawer.tsx"), "la phrase de référence a changé dans drawer.tsx").toContain(phrase);
+    expect(editeur, "l'éditeur doit reprendre la phrase du tiroir").toContain(phrase);
+    expect(editeur, "l'éditeur doit reprendre le titre du tiroir").toContain("Abandonner les modifications ?");
   });
 
   /*
-   * La navigation interne — cliquer dans la barre latérale — n'est PAS couverte, et ce test le dit plutôt que de
-   * laisser croire le contraire. `useBlocker` de react-router exige un routeur de données ; l'application est
-   * montée sur `<BrowserRouter>` (web/src/main.tsx), et le convertir touche tous les écrans : c'est un lot à
-   * part, laissé à l'arbitrage. Le jour où il sera converti, ce test est l'endroit où exiger le garde-fou.
+   * Ce qui reste hors de portée, et qu'on écrit pour ne pas le croire couvert : les boutons Précédent et Suivant
+   * du navigateur. Les retenir demanderait un routeur de données (`createBrowserRouter`), donc une conversion qui
+   * touche tous les écrans — lot à part, laissé à l'arbitrage. Ce test échouera ce jour-là, pour le rappeler.
    */
-  it("reste monté sur BrowserRouter, donc la navigation interne n'est pas encore couverte", () => {
-    expect(lire("main.tsx"), "le routeur a changé : il est temps d'armer un garde-fou de navigation").toContain(
+  it("signale le jour où le routeur changera, pour couvrir aussi Précédent et Suivant", () => {
+    expect(lire("main.tsx"), "le routeur a changé : un useBlocker couvrirait enfin Précédent/Suivant").toContain(
       "<BrowserRouter>",
-    );
-    expect(editeur, "un blocage de route ne peut pas fonctionner sous BrowserRouter").not.toContain("useBlocker(");
-  });
-
-  it("garde intacte la phrase de référence du tiroir, pour le jour où la navigation sera couverte", () => {
-    expect(lire("components/drawer.tsx")).toContain(
-      "Les modifications saisies n'ont pas été enregistrées. Si vous fermez, elles seront perdues.",
     );
   });
 });

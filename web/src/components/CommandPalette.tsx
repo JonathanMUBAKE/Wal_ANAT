@@ -58,7 +58,10 @@ export function CommandPalette() {
       label="Palette de commandes"
       shouldFilter={!results}
       overlayClassName="fixed inset-0 z-50 bg-black/25 backdrop-blur-[2px] dark:bg-black/60"
-      contentClassName={cn(MODAL, "fixed left-1/2 top-[12vh] z-50 w-[calc(100vw-24px)] max-w-[620px] -translate-x-1/2 overflow-hidden")}
+      contentClassName={cn(
+        MODAL,
+        "fixed left-1/2 top-[12vh] z-50 w-[calc(100vw-24px)] max-w-[620px] -translate-x-1/2 overflow-hidden",
+      )}
     >
       <div className="flex items-center gap-2.5 border-b border-line px-4">
         <Search className="size-4 text-faint" />

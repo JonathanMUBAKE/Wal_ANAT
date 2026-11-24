@@ -14,3 +14,6 @@ desktop/release/
 
 # Fichiers de verrou laissés par Word quand un document est ouvert
 ~$*
+
+# Copies de travail créées pour les sessions parallèles : Biome y voyait une seconde configuration racine
+.claude/worktrees/

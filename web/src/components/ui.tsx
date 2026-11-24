@@ -487,7 +487,10 @@ export function Dialog({
       <DI.Portal>
         <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-night/35 backdrop-blur-[3px] dark:bg-black/60" />
         <DI.Content
-          className={cn(MODAL, "dialog-in fixed left-1/2 top-[8vh] z-50 flex max-h-[84vh] w-[calc(100vw-24px)] -translate-x-1/2 flex-col overflow-hidden outline-none")}
+          className={cn(
+            MODAL,
+            "dialog-in fixed left-1/2 top-[8vh] z-50 flex max-h-[84vh] w-[calc(100vw-24px)] -translate-x-1/2 flex-col overflow-hidden outline-none",
+          )}
           style={{ maxWidth: width }}
         >
           <div className="flex items-start gap-3 border-b border-line px-5 pb-3.5 pt-4">
@@ -561,7 +564,15 @@ export function ConfirmDialog({
  * Explication repliée (écrans sobres, 20/11/2026) : une seule ligne discrète précédée d'une icône ; un clic ou une
  * pression du doigt affiche le texte entier. L'explication reste disponible sans encombrer l'écran.
  */
-export function Hint({ children, className, iconOnly }: { children: ReactNode; className?: string; iconOnly?: boolean }) {
+export function Hint({
+  children,
+  className,
+  iconOnly,
+}: {
+  children: ReactNode;
+  className?: string;
+  iconOnly?: boolean;
+}) {
   return (
     <PO.Root>
       <PO.Trigger asChild>

@@ -191,7 +191,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             />
           )}
           <Icon
-            className={cn("relative size-[18px] shrink-0", ai && !isActive && "text-ai-fg", !isActive && !ai && "text-muted")}
+            className={cn(
+              "relative size-[18px] shrink-0",
+              ai && !isActive && "text-ai-fg",
+              !isActive && !ai && "text-muted",
+            )}
             strokeWidth={isActive ? 2.1 : 1.75}
           />
           <span className="relative flex-1 truncate">{label}</span>
@@ -232,7 +236,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
         {/* Architecture : voir docs/ARCHITECTURE-INFORMATION.md — une information, un seul domicile */}
         <NavSection title="Pilotage">
-          
           {(can("agenda.view") || can("projects.create")) && link("/activites", Briefcase, "Portefeuille")}
           {(can("decisions.view") || can("decisions.record")) &&
             show.decisions &&

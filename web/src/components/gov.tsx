@@ -152,10 +152,7 @@ export function Status({ label, tone = "neutral" }: { label: string; tone?: Tone
   const { cls } = TONES[tone];
   return (
     <span
-      className={cn(
-        "inline-flex h-6 items-center whitespace-nowrap rounded-md px-2 text-[12.5px] font-medium",
-        cls,
-      )}
+      className={cn("inline-flex h-6 items-center whitespace-nowrap rounded-md px-2 text-[12.5px] font-medium", cls)}
     >
       {label}
     </span>
@@ -190,11 +187,30 @@ export function StatCard({
   strong?: boolean;
 }) {
   return (
-    <div className={cn("card-hover min-w-0 p-3.5", strong ? "rounded-2xl border border-danger/40 bg-danger-soft shadow-sm" : CARD)}>
+    <div
+      className={cn(
+        "card-hover min-w-0 p-3.5",
+        strong ? "rounded-2xl border border-danger/40 bg-danger-soft shadow-sm" : CARD,
+      )}
+    >
       <p className="truncate text-[13px] font-medium">{label}</p>
       <p className="mt-3 flex items-center gap-2.5">
-        {icon && <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4", STAT_TILE[tone])}>{icon}</span>}
-        <span className={cn("text-[22px] font-medium leading-none tracking-[-0.02em] tabular", (strong || tone === "danger") && "text-danger")}>
+        {icon && (
+          <span
+            className={cn(
+              "flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4",
+              STAT_TILE[tone],
+            )}
+          >
+            {icon}
+          </span>
+        )}
+        <span
+          className={cn(
+            "text-[22px] font-medium leading-none tracking-[-0.02em] tabular",
+            (strong || tone === "danger") && "text-danger",
+          )}
+        >
           {typeof value === "number" ? <CountUp value={value} duration={700} /> : value}
         </span>
       </p>
@@ -280,11 +296,7 @@ export function Table({ head, children }: { head: ReactNode[]; children: ReactNo
         <thead>
           <tr className="text-left">
             {head.map((h, i) => (
-              <th
-                key={i}
-                scope="col"
-                className="text-left"
-              >
+              <th key={i} scope="col" className="text-left">
                 {h}
               </th>
             ))}
@@ -346,7 +358,12 @@ export function Tabs<T extends string>({
   return (
     <div className="mx-auto w-full max-w-[1480px] px-4 sm:px-8">
       {/* Les onglets passent à la ligne dès la tablette ; ils ne défilent que sur téléphone (E-10) */}
-      <TabBar value={value} onChange={onChange} items={items} className="border-b border-line sm:flex-wrap sm:overflow-visible" />
+      <TabBar
+        value={value}
+        onChange={onChange}
+        items={items}
+        className="border-b border-line sm:flex-wrap sm:overflow-visible"
+      />
     </div>
   );
 }

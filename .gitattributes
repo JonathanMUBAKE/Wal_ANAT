@@ -1,0 +1,16 @@
+# Le dépôt stocke déjà tout en LF. Sans cette règle, Git recrée des CRLF à la sortie sur Windows
+# (core.autocrlf), et `npm run lint` déclare alors les 204 fichiers du dépôt mal formatés : Biome lit
+# le répertoire de travail, où il attend des LF. Les fins de ligne sont donc fixées ici, pour tout le monde.
+* text=auto eol=lf
+
+# Fichiers binaires : jamais convertis.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.docx binary
+*.xlsx binary

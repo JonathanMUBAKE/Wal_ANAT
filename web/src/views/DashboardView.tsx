@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Sparkles } from "lucide-react";
-import { Avatar, Button, Markdown, Spinner, cn } from "@/components/ui";
+import { Avatar, Button, CARD, Markdown, Spinner, cn } from "@/components/ui";
 import { useProjectActivity, useProjectUpdates, useStats, useUserMap } from "@/lib/hooks";
 import { STATUS, ago, priorityMeta } from "@/lib/format";
 import type { ProjectStatus } from "@/lib/types";
@@ -217,7 +217,7 @@ function Kpi({
   bar?: number;
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-panel p-4 shadow-sm">
+    <div className={cn(CARD, "p-4")}>
       <p className="text-[12px] font-medium text-muted">{label}</p>
       <p
         className={cn(
@@ -250,7 +250,7 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-line bg-panel p-4 shadow-sm sm:p-5">
+    <section className={cn(CARD, "p-5")}>
       <div className="mb-4 flex items-start gap-2">
         <div className="flex-1">
           <h3 className="text-[13.5px] font-semibold">{title}</h3>

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { KeyRound, Laptop, ShieldCheck } from "lucide-react";
-import { Button, Chip, Spinner } from "@/components/ui";
+import { Button, CARD, Chip, Spinner, cn } from "@/components/ui";
 import { useMe } from "@/lib/hooks";
 import { ago } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -15,7 +15,7 @@ const failure = (e: unknown) => toast.error((e as Error).message);
 
 function Card({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-line bg-panel p-5 shadow-sm">
+    <section className={cn(CARD, "p-5")}>
       <h2 className="mb-3 flex items-center gap-2 text-[15px] font-semibold">
         {icon}
         {title}

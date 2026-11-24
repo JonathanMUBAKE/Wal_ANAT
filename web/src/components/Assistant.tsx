@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUp, RotateCcw, Sparkles, X } from "lucide-react";
-import { IconButton, Markdown, ProjectIcon, cn, Hint } from "./ui";
+import { Hint, IconButton, Markdown, PANEL, ProjectIcon, cn } from "./ui";
 import { RunTimeline } from "./ai";
 import { onAiDelta, useAiStatus, useProjects, useRun } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
@@ -92,7 +92,7 @@ export function Assistant() {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 32, opacity: 0 }}
           transition={{ type: "spring", stiffness: 420, damping: 38 }}
-          className="fixed inset-y-0 right-0 z-[45] flex w-full flex-col border-l border-line bg-panel shadow-lg sm:inset-y-3 sm:right-3 sm:w-[440px] sm:rounded-2xl sm:border"
+          className={cn(PANEL, "fixed inset-y-0 right-0 z-[45] flex w-full flex-col border-l sm:inset-y-3 sm:right-3 sm:w-[440px]")}
         >
           <header className="flex h-14 shrink-0 items-center gap-2.5 border-b border-line px-4">
             <span className="flex size-8 items-center justify-center rounded-xl bg-[conic-gradient(from_200deg,var(--ai),var(--highlight),var(--ai))] text-white shadow-sm">

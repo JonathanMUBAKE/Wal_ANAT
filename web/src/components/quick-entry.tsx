@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarPlus, ChevronDown, FilePlus2, FileSignature, Gavel, MailPlus, Plus, Scale } from "lucide-react";
-import { Button, Menu, MenuContent, MenuItem, MenuTrigger, cn } from "@/components/ui";
+import { Button, CARD, Menu, MenuContent, MenuItem, MenuTrigger, cn } from "@/components/ui";
 import { useCan } from "@/lib/hooks";
 import { api } from "@/lib/api";
 
@@ -127,7 +127,7 @@ export function QuickEntry({ className, wide, noSign }: { className?: string; wi
   const items = useQuickItems(noSign);
   if (!items.length) return null;
   return (
-    <section aria-label="Saisir" className={cn("rounded-2xl border border-line bg-panel p-4 shadow-sm", className)}>
+    <section aria-label="Saisir" className={cn(CARD, "p-4", className)}>
       <h2 className="mb-3 text-[15px] font-semibold tracking-[-0.01em]">Saisir</h2>
       <div className={cn("grid gap-2 sm:grid-cols-2", wide && "lg:grid-cols-3")}>
         {items.map((i) => (

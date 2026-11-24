@@ -26,7 +26,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { Empty, cn } from "./ui";
+import { CARD, Empty, cn } from "./ui";
 import { Drawer } from "./drawer";
 import { TabBar } from "./tabs";
 import { LoadingRows } from "./gov";
@@ -627,7 +627,7 @@ function CalendarView({
             </p>
           )}
         </div>
-        <div className="rounded-2xl border border-line bg-panel p-3 shadow-sm">
+        <div className={cn(CARD, "p-3")}>
           <p className="px-2 pb-1 pt-1 text-[15px] font-semibold">Étapes affichées</p>
           {STAGES.map((s) => (
             <CheckOption
@@ -642,7 +642,7 @@ function CalendarView({
         </div>
       </div>
 
-      <section className="min-w-0 rounded-2xl border border-line bg-panel p-4 shadow-sm sm:p-5">
+      <section className={cn(CARD, "min-w-0 p-5")}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1">
             <RoundBtn label="Période précédente" onClick={() => step(-1)}>
@@ -690,19 +690,19 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
   });
   if (!id)
     return (
-      <aside className="rounded-2xl border border-line bg-panel p-5 text-[13px] text-muted shadow-sm">
+      <aside className={cn(CARD, "p-5 text-[13px] text-muted")}>
         Choisissez une réunion dans le calendrier pour voir son détail.
       </aside>
     );
   if (isLoading || !m)
     return (
-      <aside className="rounded-2xl border border-line bg-panel shadow-sm">
+      <aside className={CARD}>
         <LoadingRows rows={6} />
       </aside>
     );
   const st = stageOf(m);
   return (
-    <aside className="rise-in flex flex-col self-start rounded-2xl border border-line bg-panel shadow-sm lg:sticky lg:top-4">
+    <aside className={cn(CARD, "rise-in flex flex-col self-start lg:sticky lg:top-4")}>
       <div className="space-y-3 border-b border-line p-5">
         <p className="text-[12px] font-medium text-faint">Réunion sélectionnée</p>
         <div className="flex items-start gap-3">

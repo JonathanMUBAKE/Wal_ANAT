@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from "react";
 import * as DI from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import { ConfirmDialog, IconButton } from "./ui";
+import { ConfirmDialog, IconButton, PANEL, cn } from "./ui";
 
 /*
  * Tiroir de consultation (docs/DESIGN-SYSTEM.md § 4, « Tiroir »). Toute fiche secondaire — contact, document,
@@ -43,7 +43,7 @@ export function Drawer({
         <DI.Portal>
           <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-black/25 backdrop-blur-[2px] dark:bg-black/55" />
           <DI.Content
-            className="drawer-in fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-hidden border-line bg-panel shadow-lg outline-none sm:inset-y-2.5 sm:right-2.5 sm:w-[calc(100vw-48px)] sm:rounded-2xl sm:border"
+            className={cn(PANEL, "drawer-in fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-hidden outline-none sm:inset-y-2.5 sm:right-2.5 sm:w-[calc(100vw-48px)]")}
             style={{ maxWidth: width }}
           >
             <header className="flex items-start gap-3 border-b border-line px-5 pb-3.5 pt-4">

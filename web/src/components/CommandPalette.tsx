@@ -3,7 +3,7 @@ import { Command } from "cmdk";
 import { useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, FolderPlus, House, Inbox, Moon, Search, Sparkles, Wand2 } from "lucide-react";
-import { ProjectIcon } from "./ui";
+import { MODAL, ProjectIcon, cn } from "./ui";
 import { useCan, useProjects } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { api } from "@/lib/api";
@@ -58,7 +58,7 @@ export function CommandPalette() {
       label="Palette de commandes"
       shouldFilter={!results}
       overlayClassName="fixed inset-0 z-50 bg-black/25 backdrop-blur-[2px] dark:bg-black/60"
-      contentClassName="fixed left-1/2 top-[12vh] z-50 w-[calc(100vw-24px)] max-w-[620px] -translate-x-1/2 overflow-hidden rounded-2xl border border-line bg-panel shadow-lg"
+      contentClassName={cn(MODAL, "fixed left-1/2 top-[12vh] z-50 w-[calc(100vw-24px)] max-w-[620px] -translate-x-1/2 overflow-hidden")}
     >
       <div className="flex items-center gap-2.5 border-b border-line px-4">
         <Search className="size-4 text-faint" />

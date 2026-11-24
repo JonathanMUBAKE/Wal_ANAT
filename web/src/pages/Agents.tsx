@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { ShieldCheck, Sparkles, Eye, Hand, ScrollText } from "lucide-react";
-import { Avatar, Chip, Empty, ProjectIcon, cn, Hint } from "@/components/ui";
+import { Avatar, CARD, Chip, Empty, Hint, ProjectIcon, cn } from "@/components/ui";
 import {
   ApprovalCard,
   RUN_STATUS,
@@ -82,7 +82,7 @@ export function AgentsPage() {
         ].map((c) => (
           <div
             key={c.title}
-            className="rounded-2xl border border-line bg-panel p-4 shadow-sm"
+            className={cn(CARD, "p-4")}
           >
             <c.icon className="size-4 text-ai-fg" />
             <p className="mt-2 text-[15px] font-semibold">{c.title}</p>
@@ -189,14 +189,14 @@ export function AgentsPage() {
           Journal des interventions
         </h2>
         {!runs?.length ? (
-          <div className="rounded-2xl border border-line bg-panel shadow-sm">
+          <div className={CARD}>
             <Empty title="Aucune intervention">
               Confiez une tâche à un coéquipier IA depuis la tâche, ou
               mentionnez-le dans un commentaire.
             </Empty>
           </div>
         ) : (
-          <div className="grid overflow-hidden rounded-2xl border border-line bg-panel shadow-sm md:grid-cols-[minmax(0,380px)_1fr]">
+          <div className={cn(CARD, "grid overflow-hidden md:grid-cols-[minmax(0,380px)_1fr]")}>
             <ul className="max-h-[560px] overflow-y-auto border-b border-line md:border-b-0 md:border-r">
               {runs.map((r) => (
                 <li key={r.id}>

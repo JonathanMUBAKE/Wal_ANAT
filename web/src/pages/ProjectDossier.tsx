@@ -19,7 +19,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Empty, cn, Hint } from "@/components/ui";
+import { Button, CARD, Dialog, Empty, Hint, cn } from "@/components/ui";
 import { Badge, GroupedTable, Seal } from "@/components/collection";
 import { STAGE, stageOf } from "@/components/MeetingViews";
 import { type MeetingRow, NewMeeting } from "./Meetings";
@@ -564,7 +564,7 @@ export function ProjectContracts({ projectId }: { projectId: string }) {
             const mine = (items ?? []).filter((d) => d.contract_id === c.id);
             const paidPct = c.amount ? Math.round((c.paid_amount / c.amount) * 100) : 0;
             return (
-              <section key={c.id} className="rounded-2xl border border-line bg-panel shadow-sm">
+              <section key={c.id} className={CARD}>
                 <header className="flex items-start gap-3 border-b border-line px-5 py-4">
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-primary">
                     <FileSignature className="size-4" />

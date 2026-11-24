@@ -3,20 +3,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AtSign, Check, Globe2, Lock, LogIn, Plus, UserPlus, Users, X } from "lucide-react";
-import {
-  Avatar,
-  AvatarStack,
-  Button,
-  Chip,
-  Dialog,
-  Empty,
-  IconButton,
-  ProgressRing,
-  ProjectIcon,
-  Spinner,
-  cn,
-  Hint,
-} from "@/components/ui";
+import { Avatar, AvatarStack, Button, CARD, Chip, Dialog, Empty, Hint, IconButton, ProgressRing, ProjectIcon, Spinner, cn } from "@/components/ui";
 import { AssigneePicker } from "@/components/pickers";
 import { useCan, useMe, useServiceAddress, useTeam, useTeams, useUnits, useUserMap, useUsers } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
@@ -102,7 +89,7 @@ export function TeamsPage() {
               <Link
                 key={t.id}
                 to={`/teams/${t.id}`}
-                className="group flex flex-col gap-3 rounded-2xl border border-line bg-panel p-4 shadow-sm transition-[border-color,transform] hover:-translate-y-px hover:border-line-strong"
+                className={cn(CARD, "group flex flex-col gap-3 p-4 transition-[border-color,transform] hover:-translate-y-px hover:border-line-strong")}
               >
                 <div className="flex items-start gap-3">
                   <span
@@ -342,7 +329,7 @@ export function TeamPage() {
                 <Link
                   key={p.id}
                   to={`/projects/${p.id}`}
-                  className="flex items-center gap-3.5 rounded-2xl border border-line bg-panel p-4 shadow-sm hover:border-line-strong"
+                  className={cn(CARD, "flex items-center gap-3.5 p-4 hover:border-line-strong")}
                 >
                   <div className="relative">
                     <ProgressRing value={p.task_count ? p.done_count / p.task_count : 0} size={44} color={p.color} />
@@ -390,7 +377,7 @@ export function TeamPage() {
               ))}
             </section>
           )}
-          <section className="rounded-2xl border border-line bg-panel p-4 shadow-sm">
+          <section className={cn(CARD, "p-4")}>
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-[13px] font-semibold">Membres · {t.members.length}</h2>
               {manager && candidates.length > 0 && (

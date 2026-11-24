@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { AlertTriangle, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Button, Chip, Dialog, Empty, Menu, MenuContent, MenuItem, MenuTrigger, Spinner, cn } from "@/components/ui";
+import { Button, CARD, Chip, Dialog, Empty, Menu, MenuContent, MenuItem, MenuTrigger, Spinner, cn } from "@/components/ui";
 import { Drawer, DrawerSection } from "@/components/drawer";
 import { useMe, usePrimaryDomain } from "@/lib/hooks";
 import { ago, pl } from "@/lib/format";
@@ -157,7 +157,7 @@ function Users({ meId }: { meId?: string }) {
           }}
         />
       )}
-      <div className="overflow-x-auto rounded-2xl border border-line bg-panel shadow-sm">
+      <div className={cn(CARD, "overflow-x-auto")}>
         {link && <LinkResult result={link} onClose={() => setLink(null)} />}
         {approving && (
           <Approve
@@ -573,7 +573,7 @@ function AuditJournal() {
   const filtered = Object.values(f).some((v) => v.trim());
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 rounded-2xl border border-line bg-panel p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-6 xl:items-end">
+      <div className={cn(CARD, "grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-6 xl:items-end")}>
         <Field label="Rechercher" className="sm:col-span-2">
           {(a) => <Input {...a} type="search" value={f.q} onChange={set("q")} placeholder="Action, objet, auteur…" />}
         </Field>
@@ -663,12 +663,12 @@ function AuditTable({
 }) {
   if (!entries.length)
     return (
-      <div className="rounded-2xl border border-line bg-panel shadow-sm">
+      <div className={CARD}>
         <Empty title="Aucune trace">Aucune action ne correspond à ces critères.</Empty>
       </div>
     );
   return (
-    <div className="overflow-x-auto rounded-2xl border border-line bg-panel shadow-sm">
+    <div className={cn(CARD, "overflow-x-auto")}>
       <table className="grid-table min-w-[860px] text-left">
         <thead className="border-b border-line text-[12px] text-muted">
           <tr>

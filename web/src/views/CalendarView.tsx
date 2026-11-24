@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { addDays, addMonths, endOfMonth, endOfWeek, format, isSameMonth, parseISO, startOfMonth, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { Avatar, Button, IconButton, cn } from "@/components/ui";
+import { Avatar, Button, CARD, IconButton, cn } from "@/components/ui";
 import { useCreateTask, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { priorityMeta, todayIso, pl } from "@/lib/format";
@@ -67,7 +67,7 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
         )}
       </div>
       <div className="overflow-x-auto">
-        <div className="grid grid-cols-7 sm:min-w-[760px] overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+        <div className={cn(CARD, "grid grid-cols-7 sm:min-w-[760px] overflow-hidden")}>
           {["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."].map((d) => (
             <div
               key={d}

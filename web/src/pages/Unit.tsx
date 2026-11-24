@@ -16,9 +16,9 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
-import { Button, Empty, Spinner, cn, Hint } from "@/components/ui";
+import { Button, Empty, Hint, Spinner, cn } from "@/components/ui";
 import { Drawer, DrawerSection } from "@/components/drawer";
-import { Field, Input, PageHeader, Section, Select, Status, Table, Td, Tr, frDate } from "@/components/gov";
+import { Field, Input, PageHeader, Section, Select, StatCard, Status, Table, Td, Tr, frDate } from "@/components/gov";
 import { UnitDashboardView, UnitProjects } from "@/components/unit-dashboard";
 import { MeetingsBrowser } from "@/components/MeetingViews";
 import { NewMeeting, type MeetingRow } from "./Meetings";
@@ -405,14 +405,7 @@ function FollowUp({ unitId }: { unitId: string }) {
             ["Terminées (30 j)", total("done_30")],
           ] as const
         ).map(([label, v]) => (
-          <div key={label} className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm">
-            <p className="text-[12px] text-muted">{label}</p>
-            <p
-              className={cn("text-[22px] font-semibold tabular-nums", label === "En retard" && v > 0 && "text-danger")}
-            >
-              {v}
-            </p>
-          </div>
+          <StatCard key={label} label={label} value={v} strong={label === "En retard" && v > 0} />
         ))}
       </div>
       <Section

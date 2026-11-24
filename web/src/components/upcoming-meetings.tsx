@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { CalendarDays, MapPin, Repeat, Video } from "lucide-react";
-import { cn } from "@/components/ui";
+import { CARD, cn } from "@/components/ui";
 import { api } from "@/lib/api";
 import { todayIso, pl } from "@/lib/format";
 import type { UpcomingMeeting } from "@/lib/types";
@@ -102,7 +102,7 @@ export function MyMeetingsCard() {
   });
   const waiting = (data ?? []).filter((m) => m.convened && m.my_response === "pending").length;
   return (
-    <section className="rounded-2xl border border-line bg-panel p-5 shadow-sm">
+    <section className={cn(CARD, "p-5")}>
       <div className="mb-3 flex items-center gap-2">
         <CalendarDays className="size-4 text-faint" />
         <h2 className="text-[15px] font-semibold">Mes prochaines réunions</h2>

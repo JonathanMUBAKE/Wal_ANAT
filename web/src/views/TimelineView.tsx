@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { addDays, differenceInCalendarDays, format, parseISO, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Avatar, cn, Hint } from "@/components/ui";
+import { Avatar, CARD, Hint, cn } from "@/components/ui";
 import { useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import type { ViewProps } from "@/pages/Project";
@@ -28,7 +28,7 @@ export function TimelineView({ project, tasks, aiActive }: ViewProps) {
 
   return (
     <div className="py-5">
-      <div className="mx-4 overflow-x-auto rounded-2xl border border-line bg-panel shadow-sm sm:mx-8">
+      <div className={cn(CARD, "mx-4 overflow-x-auto sm:mx-8")}>
         <div className="relative" style={{ width: 240 + days * DAY }}>
           {/* En-tête des semaines */}
           <div className="sticky top-0 z-10 flex border-b border-line bg-panel">

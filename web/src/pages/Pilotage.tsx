@@ -20,7 +20,7 @@ import {
 import { type MatrixRisk, RiskMatrix } from "@/components/views";
 import { type CalEvent, TimeGrid, ViewSwitch, useLocalPref } from "@/components/collection";
 import { useForms } from "@/lib/referentials";
-import { Button, Empty, cn } from "@/components/ui";
+import { Button, CARD, Empty, cn } from "@/components/ui";
 import { CountUp, LoadingRows, type Tone } from "@/components/gov";
 import { motion } from "motion/react";
 import { ByDirection } from "@/components/directions";
@@ -526,7 +526,7 @@ function Card({
   children: ReactNode;
 }) {
   return (
-    <section className={cn("@container min-w-0 overflow-hidden rounded-2xl border border-line bg-panel shadow-sm", className)}>
+    <section className={cn(CARD, "@container min-w-0 overflow-hidden", className)}>
       <div className="flex items-center justify-between gap-2 px-4 pb-2.5 pt-3">
         <h2 className={cn("flex gap-2 text-[15px] font-medium", badge ? "items-center gap-3" : "items-center")}>
           {badge}

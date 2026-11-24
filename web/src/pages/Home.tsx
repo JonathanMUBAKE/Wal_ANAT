@@ -3,14 +3,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { Archive, ArrowRight, Sparkles, Wand2 } from "lucide-react";
-import {
-  Avatar,
-  Button,
-  Empty,
-  ProgressRing,
-  ProjectIcon,
-  cn,
-} from "@/components/ui";
+import { Avatar, Button, CARD, Empty, ProgressRing, ProjectIcon, cn } from "@/components/ui";
 import { ApprovalCard, RUN_STATUS, isActive } from "@/components/ai";
 import { TaskRow } from "@/components/TaskRow";
 import { MyMeetingsCard } from "@/components/upcoming-meetings";
@@ -138,7 +131,7 @@ function PersonalHome() {
           {/* La direction saisit depuis son tableau de bord : le bloc n'est pas répété ici (P-8) */}
           {!can("pilotage.view") && <QuickEntry noSign />}
           <RoleFocus />
-          <section className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+          <section className={cn(CARD, "overflow-hidden")}>
             <div className="flex items-center gap-1 overflow-x-auto border-b border-line px-4 pt-3">
               <h2 className="mr-3 hidden shrink-0 pb-2.5 text-[15px] font-semibold sm:block">
                 Mes tâches
@@ -269,7 +262,7 @@ function PersonalHome() {
                   <Link
                     key={p.id}
                     to={`/projects/${p.id}`}
-                    className="group flex items-center gap-3.5 rounded-2xl border border-line bg-panel p-4 shadow-sm transition-[border-color,transform] hover:-translate-y-px hover:border-line-strong"
+                    className={cn(CARD, "group flex items-center gap-3.5 p-4 transition-[border-color,transform] hover:-translate-y-px hover:border-line-strong")}
                   >
                     <div className="relative">
                       <ProgressRing
@@ -383,7 +376,7 @@ function PersonalHome() {
                   Tout voir
                 </Link>
               </div>
-              <div className="rounded-2xl border border-line bg-panel p-1.5 shadow-sm">
+              <div className={cn(CARD, "p-1.5")}>
                 {(runs ?? []).slice(0, 6).map((r) => (
                   <button
                     key={r.id}

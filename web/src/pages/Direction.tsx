@@ -2,7 +2,7 @@ import { Link, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useCan } from "@/lib/hooks";
 import { Building2, ChevronRight } from "lucide-react";
-import { Empty, Spinner, cn } from "@/components/ui";
+import { CARD, Empty, Spinner, cn } from "@/components/ui";
 import { PageHeader, Section, Status, Table, Td, Tr, frDate, type Tone, StatCard } from "@/components/gov";
 import { Assessment, DirectionTable, PlanBar, type DirectionRow, type DirectionStats } from "@/components/directions";
 import { api } from "@/lib/api";
@@ -96,7 +96,7 @@ export function DirectionPage() {
         <section
           aria-label="Appréciation"
           className={cn(
-            "rounded-2xl border border-line bg-panel p-5 shadow-sm",
+            cn(CARD, "p-5"),
             d.stats.assessment === "alerte" && "border-danger/40",
           )}
         >

@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, GraduationCap, IdCard, Pencil, Phone, Plus, Trash2, UserPlus, Users } from "lucide-react";
-import { Button, Chip, Empty, IconButton, Spinner, Hint } from "@/components/ui";
+import { Button, CARD, Chip, Empty, Hint, IconButton, Spinner, cn } from "@/components/ui";
 import { DossierDocuments } from "@/components/documents";
 import { Textarea } from "@/components/gov";
 import { Drawer, DrawerSection } from "@/components/drawer";
@@ -136,7 +136,7 @@ function HrIndicators({ rows }: { rows: AgentRow[] }) {
       (a.contract_end_on && a.contract_end_on >= today && a.contract_end_on <= inYear) ||
       (a.retire_on && a.retire_on >= today && a.retire_on <= inYear),
   );
-  const box = "rounded-2xl border border-line bg-panel p-4 shadow-sm";
+  const box = cn(CARD, "p-4");
   return (
     <div className="grid gap-3 md:grid-cols-3">
       <section className={box}>

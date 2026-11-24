@@ -15,7 +15,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { Button, Chip, Spinner, cn, Hint } from "@/components/ui";
+import { Button, CARD, Chip, Hint, Spinner, cn } from "@/components/ui";
 import { useMailConfig, useMailLog, useServiceAddresses } from "@/lib/hooks";
 import { api } from "@/lib/api";
 import type { MailConfig, ServiceAddress, SmtpSecurity } from "@/lib/types";
@@ -109,7 +109,7 @@ function SmtpForm({ cfg, orgName, primary }: { cfg: MailConfig | null; orgName: 
 
   return (
     <section
-      className="space-y-4 rounded-2xl border border-line bg-panel p-5 shadow-sm lg:sticky lg:top-4 lg:self-start"
+      className={cn(CARD, "space-y-4 p-5 lg:sticky lg:top-4 lg:self-start")}
       aria-label="Serveur d'envoi"
     >
       <div className="flex items-start justify-between gap-3">
@@ -307,7 +307,7 @@ function Addresses({ domain }: { domain: string }) {
   ];
   return (
     <section
-      className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm"
+      className={cn(CARD, "overflow-hidden")}
       aria-label="Adresses de service"
     >
       <header className="border-b border-line px-5 py-4">
@@ -434,7 +434,7 @@ function SendLog() {
   const { data } = useMailLog();
   if (!data?.length) return null;
   return (
-    <section className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm" aria-label="Derniers envois">
+    <section className={cn(CARD, "overflow-hidden")} aria-label="Derniers envois">
       <h2 className="border-b border-line px-5 py-3 text-[15px] font-semibold">Derniers envois</h2>
       <ul>
         {data.slice(0, 12).map((l) => (

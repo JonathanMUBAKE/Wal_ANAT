@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { AlertTriangle, CircleCheck, Siren } from "lucide-react";
-import { cn } from "@/components/ui";
+import { CARD, cn } from "@/components/ui";
 
 /*
  * Tableau de bord DG — vue par direction (docs/GUIDE-FONCTIONNEL.md § 5.15). Une ligne par direction : appréciation
@@ -123,7 +123,7 @@ export function ByDirection({ className }: { className?: string }) {
       }>("/api/pilotage/directions"),
   });
   return (
-    <section id="par-direction" className={cn("min-w-0 scroll-mt-4 overflow-hidden rounded-2xl border border-line bg-panel shadow-sm", className)}>
+    <section id="par-direction" className={cn(CARD, "min-w-0 scroll-mt-4 overflow-hidden", className)}>
       <h2 className="px-4 pb-1 pt-3.5 text-[15px] font-medium">Directions</h2>
       {error ? (
         <p className="px-5 pb-5 text-[13px] text-danger">

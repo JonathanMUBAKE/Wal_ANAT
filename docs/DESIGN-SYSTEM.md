@@ -90,9 +90,14 @@ déjà. L'écriture reste `text-[13px]` — une seule graphie par taille, repér
 ### Retenue (la règle d'Asana)
 - Une seule action principale bleue par écran, en haut à droite.
 - Les actions de ligne restent discrètes (60 % d'opacité) et se révèlent au survol.
-- Une carte s'écrit partout `rounded-2xl border border-line bg-panel shadow-sm` : filet net et ombre à peine
-  posée (en thème sombre, `--shadow-sm` ajoute le filet de lumière au sommet). Les ombres franches
-  (`--shadow-md`, `--shadow-lg`) restent au survol, au menu et au dialogue.
+- **Trois surfaces, trois jetons** dans `components/ui.tsx`, et aucune ne s'écrit à la main :
+  `CARD` (la carte posée dans la page : filet net, ombre à peine perceptible — en thème sombre,
+  `--shadow-sm` ajoute le filet de lumière au sommet), `MODAL` (le dialogue centré : même parcelle,
+  détachée par `--shadow-lg`) et `PANEL` (le panneau latéral : plein écran sur téléphone, parcelle
+  détachée à partir de la tablette). Elles se complètent au point d'appel : `cn(CARD, "p-5")`.
+- **Marges d'une carte** : `p-5` (20 px) pour une carte de page ou de section, `p-4` (16 px) pour une tuile
+  d'une grille, aucune marge quand la carte est découpée en en-tête et en corps — ce sont alors eux qui la
+  portent. Une tuile de chiffre s'écrit `StatCard`, jamais à la main.
 - Les couleurs vives ne servent qu'aux statuts et aux formes d'activité ; le reste est en encre et en gris.
 - Une page n'a qu'une rangée d'onglets. Pas de tuiles de chiffres sur une page de liste : les compteurs vivent dans les en-têtes de groupe.
 

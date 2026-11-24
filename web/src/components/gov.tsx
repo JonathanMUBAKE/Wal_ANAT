@@ -11,7 +11,7 @@ import {
 import { AlertTriangle, Check, ChevronRight, CircleDashed, Clock, type LucideIcon, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Hint, cn } from "./ui";
+import { CARD, Hint, cn } from "./ui";
 import { TabBar } from "./tabs";
 import { useRowMenu } from "@/lib/context-menu";
 
@@ -128,7 +128,7 @@ export const Section = ({
   children: ReactNode;
   className?: string;
 }) => (
-  <section className={cn("rounded-2xl border border-line bg-panel shadow-sm", className)}>
+  <section className={cn(CARD, className)}>
     {title && (
       <div className="flex items-center justify-between gap-2 px-5 pb-1 pt-4">
         <h2 className="text-[15px] font-medium tracking-[-0.01em]">{title}</h2>
@@ -190,7 +190,7 @@ export function StatCard({
   strong?: boolean;
 }) {
   return (
-    <div className={cn("card-hover min-w-0 rounded-2xl border p-3.5 shadow-sm", strong ? "border-danger/40 bg-danger-soft" : "border-line bg-panel")}>
+    <div className={cn("card-hover min-w-0 p-3.5", strong ? "rounded-2xl border border-danger/40 bg-danger-soft shadow-sm" : CARD)}>
       <p className="truncate text-[13px] font-medium">{label}</p>
       <p className="mt-3 flex items-center gap-2.5">
         {icon && <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4", STAT_TILE[tone])}>{icon}</span>}

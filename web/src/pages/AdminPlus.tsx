@@ -2,7 +2,7 @@ import { Fragment, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, Check, Info, Megaphone, MonitorSmartphone, ShieldAlert, X } from "lucide-react";
-import { Button, Chip, Empty, Spinner, cn, Hint } from "@/components/ui";
+import { Button, CARD, Chip, Empty, Hint, Spinner, cn } from "@/components/ui";
 import { Field, Input, Section, Select, Table, Td, Tr, StatCard } from "@/components/gov";
 import { ago, pl } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -322,7 +322,7 @@ export function RolesMatrix() {
           </Select>
         )}
       </div>
-      <div className="overflow-x-auto rounded-2xl border border-line bg-panel shadow-sm">
+      <div className={cn(CARD, "overflow-x-auto")}>
         <table className="w-full min-w-[900px] border-collapse text-[12.5px]">
           <thead className="sticky top-0 bg-panel">
             <tr className="border-b border-line">

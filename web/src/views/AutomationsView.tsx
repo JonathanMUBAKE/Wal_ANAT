@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowRight, Pencil, Plus, Trash2, Zap } from "lucide-react";
-import { Avatar, Button, ConfirmDialog, Dialog, Empty, IconButton, cn, Hint } from "@/components/ui";
+import { Avatar, Button, CARD, ConfirmDialog, Dialog, Empty, Hint, IconButton, cn } from "@/components/ui";
 import { RUN_STATUS, RunTimeline } from "@/components/ai";
 import { useAgents, useRules, useRuns, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
@@ -72,7 +72,7 @@ export function AutomationsView({ project }: ViewProps) {
               <div
                 key={r.id}
                 className={cn(
-                  "flex flex-wrap items-start gap-4 rounded-2xl border border-line bg-panel p-4 shadow-sm",
+                  cn(CARD, "flex flex-wrap items-start gap-4 p-4"),
                   !r.enabled && "opacity-60",
                 )}
               >
@@ -139,7 +139,7 @@ export function AutomationsView({ project }: ViewProps) {
         {!runs?.length ? (
           <p className="text-[13px] text-muted">Aucune pour l'instant.</p>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+          <div className={cn(CARD, "overflow-hidden")}>
             {runs.map((r) => (
               <div key={r.id} className="border-b border-line last:border-b-0">
                 <button

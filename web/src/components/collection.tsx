@@ -28,7 +28,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { cn } from "./ui";
+import { CARD, cn } from "./ui";
 import { useRowMenu } from "@/lib/context-menu";
 
 /* Cadastre — briques des collections : en-tête, barre d'outils, filtres, tableau, kanban, calendrier.
@@ -171,7 +171,7 @@ export function GroupedTable<T>({
     else s.add(id);
     setSelected(s);
   };
-  if (!all.length) return <div className="rounded-2xl border border-line bg-panel shadow-sm">{empty}</div>;
+  if (!all.length) return <div className={CARD}>{empty}</div>;
   return (
     <div className="space-y-3">
       {bulk && chosen.length > 0 && (
@@ -192,7 +192,7 @@ export function GroupedTable<T>({
           const ids = g.rows.map(rowKey);
           const allOn = ids.every((i) => selected.has(i));
           return (
-            <section key={g.id} className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+            <section key={g.id} className={cn(CARD, "overflow-hidden")}>
               <div className={cn("grid-group", !open && "border-b-0")}>
                 <button
                   onClick={() => toggleGroup(g.id)}
@@ -440,7 +440,7 @@ export function SearchField({
 // ------------------------------------------------------------------ filtres
 export function FilterPanel({ children, onClear, active }: { children: ReactNode; onClear: () => void; active: number }) {
   return (
-    <aside className="rise-in w-full shrink-0 self-start rounded-2xl border border-line bg-panel p-3 shadow-sm lg:w-[236px]">
+    <aside className={cn(CARD, "rise-in w-full shrink-0 self-start p-3 lg:w-[236px]")}>
       <div className="flex items-center justify-between px-2 pb-2 pt-1">
         <p className="text-[15px] font-semibold">Filtres</p>
         {active > 0 && (
@@ -607,9 +607,9 @@ export function DataTable<T>({
     setSelected(s);
   };
 
-  if (!rows.length) return <div className="rounded-2xl border border-line bg-panel shadow-sm">{empty}</div>;
+  if (!rows.length) return <div className={CARD}>{empty}</div>;
   return (
-    <div className="relative min-w-0 rounded-2xl border border-line bg-panel shadow-sm">
+    <div className={cn(CARD, "relative min-w-0")}>
       {bulk && chosen.length > 0 && (
         <div className="rise-in flex flex-wrap items-center gap-3 border-b border-line bg-brand-soft px-4 py-2.5 text-[13px] first:rounded-t-2xl">
           <span className="font-semibold text-primary">
@@ -798,7 +798,7 @@ export function BoardColumn({
   children: ReactNode;
 }) {
   return (
-    <section className="flex w-[290px] shrink-0 flex-col rounded-2xl border border-line bg-panel/60 p-2 shadow-sm">
+    <section className={"flex w-[290px] shrink-0 flex-col rounded-2xl border border-line bg-panel/60 p-2 shadow-sm"}>
       <header className="flex items-center justify-between px-2 pb-2 pt-1.5" title={hint}>
         <Badge tone={tone} label={title} />
         <span className="flex size-6 items-center justify-center rounded-full bg-hover text-[11.5px] font-semibold tabular text-muted">
@@ -859,7 +859,7 @@ export function MiniMonth({
   const today = dkey(new Date());
   const inRange = (d: Date) => range && d >= range[0] && d <= range[1];
   return (
-    <div className="rounded-2xl border border-line bg-panel p-4 shadow-sm">
+    <div className={cn(CARD, "p-4")}>
       <div className="mb-2 flex items-center justify-between">
         <p className="text-[15px] font-semibold capitalize tracking-[-0.02em]">{format(month, "MMMM yyyy", { locale: fr })}</p>
         <span className="flex">

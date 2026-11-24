@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AtSign, ChevronRight, MapPin, Network, Plus, Trash2, Users } from "lucide-react";
 import { useReferentials, useUnitTypes } from "@/lib/referentials";
-import { Avatar, Button, ConfirmDialog, Dialog, Empty, Spinner, cn, Hint } from "@/components/ui";
+import { Avatar, Button, CARD, ConfirmDialog, Dialog, Empty, Hint, Spinner, cn } from "@/components/ui";
 import { AssigneePicker } from "@/components/pickers";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { ORG_ROLE } from "@/components/Sidebar";
@@ -116,7 +116,7 @@ function Tree({ units, isAdmin }: { units: OrgUnit[]; isAdmin: boolean }) {
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
-      <section className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm" aria-label="Organigramme">
+      <section className={cn(CARD, "overflow-hidden")} aria-label="Organigramme">
         {units
           .filter((u) => !hidden.has(u.id))
           .map((u) => {
@@ -257,7 +257,7 @@ function UnitDetail({
     "h-9 w-full rounded-lg border border-line bg-bg/60 px-2.5 text-[13.5px] outline-none focus:border-line-strong disabled:opacity-70";
 
   return (
-    <aside className="space-y-5 rounded-2xl border border-line bg-panel p-5 shadow-sm lg:sticky lg:top-4 lg:self-start">
+    <aside className={cn(CARD, "space-y-5 p-5 lg:sticky lg:top-4 lg:self-start")}>
       <div className="space-y-3">
         <input
           value={name}
@@ -515,7 +515,7 @@ function People({
   const sel =
     "h-8 max-w-[220px] rounded-md border border-line bg-bg/60 px-2 text-[12.5px] outline-none disabled:border-transparent disabled:bg-transparent";
   return (
-    <div className="overflow-x-auto rounded-2xl border border-line bg-panel shadow-sm">
+    <div className={cn(CARD, "overflow-x-auto")}>
       <table className="grid-table min-w-[640px] text-left">
         <thead className="border-b border-line text-[12px] text-muted">
           <tr>

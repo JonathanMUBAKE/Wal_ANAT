@@ -16,7 +16,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Empty, IconButton, cn, Hint } from "@/components/ui";
+import { Button, CARD, Dialog, Empty, Hint, IconButton, cn } from "@/components/ui";
 import { Field, Input, LoadingRows } from "@/components/gov";
 import { api } from "@/lib/api";
 import { useMe } from "@/lib/hooks";
@@ -80,7 +80,7 @@ function PrimaryDomain() {
   });
   const example = v || "agence.gouv.cd";
   return (
-    <section className="rounded-2xl border border-line bg-panel p-5 shadow-sm" aria-label="Domaine principal">
+    <section className={cn(CARD, "p-5")} aria-label="Domaine principal">
       <h2 className="flex items-center gap-2 text-[15px] font-semibold">
         <Globe className="size-4" />
         Domaine principal
@@ -171,7 +171,7 @@ function Referentials() {
         {meta.hint} Le code d'une valeur ne change jamais ; une valeur ne se supprime pas, elle s'archive et reste
         affichée sur les dossiers qui la portent.
       </Hint>
-      <section className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+      <section className={cn(CARD, "overflow-hidden")}>
         {isLoading ? (
           <LoadingRows />
         ) : values.length ? (

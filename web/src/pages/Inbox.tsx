@@ -19,7 +19,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Drawer } from "@/components/drawer";
-import { Avatar, Button, Empty, cn, Hint } from "@/components/ui";
+import { Avatar, Button, CARD, Empty, Hint, cn } from "@/components/ui";
 import { ApprovalCard } from "@/components/ai";
 import { useApprovals, useMe, useNotifications, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
@@ -147,7 +147,7 @@ export function InboxPage() {
         </section>
       )}
 
-      <section className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+      <section className={cn(CARD, "overflow-hidden")}>
         {list.length === 0 && (
           <Empty icon={<BellRing className="size-8" />} title="Rien de nouveau">
             Les mentions, assignations et demandes de validation arrivent ici.

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { ArrowRight, CalendarOff, FileSignature, Mail, Scale, Users } from "lucide-react";
-import { cn } from "@/components/ui";
+import { CARD, cn } from "@/components/ui";
 import { useCan, useMe, useMyUnits } from "@/lib/hooks";
 import { todayIso, pl } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -108,7 +108,7 @@ export function RoleFocus({ className }: { className?: string } = {}) {
         <Link
           key={i.label}
           to={i.to}
-          className="group flex items-center gap-3 rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm hover:border-line-strong"
+          className={cn(CARD, "group flex items-center gap-3 px-4 py-3 hover:border-line-strong")}
         >
           <span className="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-primary">
             <i.icon className="size-4" />

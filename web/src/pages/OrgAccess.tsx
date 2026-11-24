@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, Copy, Plus, Trash2, UserPlus } from "lucide-react";
-import { Button, Chip, ConfirmDialog, Dialog, Spinner, cn, Hint } from "@/components/ui";
+import { Button, CARD, Chip, ConfirmDialog, Dialog, Hint, Spinner, cn } from "@/components/ui";
 import { api } from "@/lib/api";
 import type {
   AccessProfile,
@@ -156,7 +156,7 @@ function ProfileForm({
       onDeleted?.();
     }, failure);
   return (
-    <div className="rounded-2xl border border-line bg-panel p-5 shadow-sm">
+    <div className={cn(CARD, "p-5")}>
       {locked && (
         <Hint className="mb-3 px-3">
           Le profil Propriétaire a tous les droits et ne peut pas être modifié : une organisation ne doit jamais perdre
@@ -445,7 +445,7 @@ export function InvitationsPanel() {
       report(r);
     }, failure);
   return (
-    <section className="mt-5 rounded-2xl border border-line bg-panel p-5 shadow-sm">
+    <section className={cn(CARD, "mt-5 p-5")}>
       {link && <LinkResult result={link} onClose={() => setLink(null)} />}
       <h3 className="flex items-center gap-2 text-[15px] font-semibold">
         <UserPlus className="size-4 text-muted" />

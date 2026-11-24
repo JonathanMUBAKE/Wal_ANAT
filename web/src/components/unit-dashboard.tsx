@@ -14,7 +14,7 @@ import {
   Plus,
 } from "lucide-react";
 import { UpcomingMeetingList } from "@/components/upcoming-meetings";
-import { Button, ProjectIcon, cn } from "@/components/ui";
+import { Button, CARD, ProjectIcon, cn } from "@/components/ui";
 import { frDate } from "@/components/gov";
 import { useShell } from "@/lib/shell";
 import { useTaskMenu } from "@/lib/context-menu";
@@ -53,7 +53,7 @@ function Card({
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-2xl border border-line bg-panel p-5 shadow-sm", className)}>
+    <section className={cn(CARD, "p-5", className)}>
       <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="text-[15px] font-semibold tracking-[-0.01em]">{title}</h2>
         {aside}
@@ -416,7 +416,7 @@ export function UnitDashboardView({
           hint={responsable && k.agents !== null ? `${k.agents} ${pl(k.agents, "agent(s) suivi(s)")}` : undefined}
           icon={<CheckCircle2 className="size-3.5" />}
         />
-        <div className="col-span-2 rounded-2xl border border-line bg-panel px-4 py-3.5 shadow-sm lg:col-span-1">
+        <div className={cn(CARD, "col-span-2 px-4 py-3 lg:col-span-1")}>
           <p className="flex items-center gap-1.5 text-[12.5px] text-muted">
             <Gauge className="size-3.5 text-faint" />
             Achèvement (30 j)

@@ -24,6 +24,19 @@ import type { User } from "@/lib/types";
 
 export const cn = clsx;
 
+/**
+ * La carte de la maison, écrite une seule fois (docs/DESIGN-SYSTEM.md § 2, « Retenue »). Filet net et ombre à
+ * peine posée ; en thème sombre, --shadow-sm ajoute le filet de lumière au sommet. Les marges restent au
+ * point d'appel : p-5 pour une carte pleine, rien quand la carte est découpée en en-tête et en corps.
+ */
+export const CARD = "rounded-2xl border border-line bg-panel shadow-sm";
+
+/** Modal centré : la même parcelle, mais détachée — l'ombre portée dit qu'elle flotte au-dessus de la page. */
+export const MODAL = "rounded-2xl border border-line bg-panel shadow-lg";
+
+/** Panneau latéral (tiroir, assistant) : plein écran sur téléphone, parcelle détachée à partir de la tablette. */
+export const PANEL = "border-line bg-panel shadow-lg sm:rounded-2xl sm:border";
+
 // ------------------------------------------------------------------ boutons
 type Variant = "primary" | "secondary" | "ghost" | "ai" | "danger";
 type Size = "sm" | "md" | "lg";
@@ -474,7 +487,7 @@ export function Dialog({
       <DI.Portal>
         <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-night/35 backdrop-blur-[3px] dark:bg-black/60" />
         <DI.Content
-          className="dialog-in fixed left-1/2 top-[8vh] z-50 flex max-h-[84vh] w-[calc(100vw-24px)] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-lg outline-none"
+          className={cn(MODAL, "dialog-in fixed left-1/2 top-[8vh] z-50 flex max-h-[84vh] w-[calc(100vw-24px)] -translate-x-1/2 flex-col overflow-hidden outline-none")}
           style={{ maxWidth: width }}
         >
           <div className="flex items-start gap-3 border-b border-line px-5 pb-3.5 pt-4">

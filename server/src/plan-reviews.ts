@@ -176,6 +176,7 @@ export class PlanReviews {
     )
       throw new HttpError(409, `La revue du trimestre ${input.quarter} existe déjà`);
     const periodEnd = quarterEnd(p.year, input.quarter);
+    // biome-ignore lint/complexity/useMathMinMax: ce sont des dates en toutes lettres, Math.min les rendrait NaN
     const at = today() < periodEnd ? today() : periodEnd;
     const acts = await this.svc.db.query<{
       id: string;

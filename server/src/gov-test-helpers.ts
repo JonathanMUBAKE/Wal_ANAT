@@ -24,7 +24,6 @@ export async function boot() {
     cookies[id] = cookieOf(res);
   };
   for (const id of ["u_alice", "u_karim", "u_hugo"]) await login(id);
-  // biome-ignore lint/suspicious/noExplicitAny: réponses JSON des tests
   const api = async (
     who: string,
     method: Method,

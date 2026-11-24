@@ -82,7 +82,6 @@ const latin = (s: string) =>
     .replace(/…/g, "...")
     .replace(/[  ]/g, " ")
     .replace(/→/g, "->")
-    // biome-ignore lint/suspicious/noControlCharactersInRegex: on ne garde que ce que la police sait dessiner
     .replace(/[^\x09\x0A\x0D\x20-\x7E -ÿŒœŸ€]/g, "");
 
 // ------------------------------------------------------------------ PDF

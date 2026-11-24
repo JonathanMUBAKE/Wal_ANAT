@@ -320,7 +320,7 @@ export function SheetDialog({
           <Head
             title="Domaines d'activité"
             add={
-              !ro && !!active.length
+              !ro && active.length > 0
                 ? () => set({ domains: [...(s.domains ?? []), { domain_id: active[0].id, role: "responsable" }] })
                 : undefined
             }

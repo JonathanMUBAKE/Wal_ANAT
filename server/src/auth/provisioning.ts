@@ -158,6 +158,7 @@ export class Provisioning {
 
   async reset(token: string, password: string, info: RequestInfo) {
     const t = await this.validToken(token);
+    // biome-ignore lint/complexity/useOptionalChain: dans du code d'authentification, le refus explicite d'un jeton absent se lit mieux
     if (!t || t.kind !== "reset" || (await this.accountStatus(t.user_id!)) !== "active")
       throw badRequest("Ce lien n'est plus valable : demandez-en un nouveau");
     await this.auth.setPassword(t.user_id!, password);

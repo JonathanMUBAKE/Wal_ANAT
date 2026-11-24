@@ -335,7 +335,7 @@ function SortableCard(props: {
       {...listeners}
       className={cn(isDragging && "opacity-30")}
     >
-      <Card {...props} />
+      <Card {...props} canEdit={!props.disabled} />
     </div>
   );
 }
@@ -347,6 +347,7 @@ function Card({
   onOpen,
   onToggle,
   readOnly,
+  canEdit = true,
   overlay,
 }: {
   t: Task;
@@ -355,6 +356,8 @@ function Card({
   onOpen?: () => void;
   onToggle?: (v: boolean) => void;
   readOnly?: boolean;
+  /** Sans le droit de modifier les tâches, la case se voit mais ne se coche pas (règle 5.1.3). */
+  canEdit?: boolean;
   overlay?: boolean;
 }) {
   const taskMenu = useTaskMenu();
@@ -378,7 +381,7 @@ function Card({
               <Circle className="size-4 text-faint" aria-label="En cours" />
             )
           ) : (
-            <Checkbox checked={t.completed} size={16} onChange={(v) => onToggle?.(v)} />
+            <Checkbox checked={t.completed} size={16} disabled={!canEdit} onChange={(v) => onToggle?.(v)} />
           )}
         </span>
         <p

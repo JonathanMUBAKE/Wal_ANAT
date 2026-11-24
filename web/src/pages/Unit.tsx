@@ -127,7 +127,7 @@ export function UnitPage() {
                 Projet
               </Button>
             )}
-            {board && (
+            {board && can("tasks.create") && (
               <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setGiving(true)}>
                 {responsable ? "Confier une tâche" : "Tâche"}
               </Button>
@@ -257,6 +257,7 @@ function BoardViews({ board, view }: { board: UnitBoard; view: View }) {
     canAddTask: editor && can("tasks.create"),
     canEditTask: editor && can("tasks.edit"),
     canSections: editor && can("sections.manage"),
+    canDelegate: editor && can("ai.delegate"),
   };
   return (
     <>

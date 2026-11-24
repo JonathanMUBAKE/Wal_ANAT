@@ -28,7 +28,8 @@ export function AutomationsView({ project }: ViewProps) {
   const [openRun, setOpenRun] = useState<string | null>(null);
   const can = useCan();
   // Le serveur demande le rôle d'administrateur du projet et le droit « ai.rules » (ai/engine.ts)
-  const isAdmin = project.role === "admin" && can("ai.rules");
+  const administreLeProjet = project.role === "admin";
+  const isAdmin = administreLeProjet && can("ai.rules");
   const save = async (r: Partial<AiRule>) => {
     await api.post(`/api/projects/${project.id}/ai/rules`, r).then(
       () => {
@@ -67,7 +68,9 @@ export function AutomationsView({ project }: ViewProps) {
             <Empty icon={<Zap className="size-7" />} title="Aucune règle">
               {isAdmin
                 ? "Par exemple : « Quand une tâche arrive dans En revue, Nova vérifie qu'elle a des critères de test »."
-                : "Les règles IA de ce projet se règlent par ses administrateurs."}
+                : administreLeProjet
+                  ? "Gérer les règles IA ne relève pas de votre profil."
+                  : "Les règles IA de ce projet se règlent par ses administrateurs."}
             </Empty>
           </div>
         ) : (

@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { CalendarDays, Check, Flag, Sparkles } from "lucide-react";
 import { Avatar, Menu, MenuContent, MenuItem, MenuTrigger, Popover, PopoverContent, PopoverTrigger, cn } from "./ui";
-import { useUserMap } from "@/lib/hooks";
+import { useCan, useUserMap } from "@/lib/hooks";
 import { PRIORITIES, dueLabel, isoIn, priorityMeta, todayIso } from "@/lib/format";
 import type { Priority, Section } from "@/lib/types";
 
@@ -19,6 +19,7 @@ export function AssigneePicker({
   align?: "start" | "end";
 }) {
   const users = useUserMap();
+  const can = useCan();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const members = useMemo(
@@ -31,7 +32,9 @@ export function AssigneePicker({
     [memberIds, users, q],
   );
   const humans = members.filter((u) => !u!.is_ai);
-  const ais = members.filter((u) => u!.is_ai);
+  // Assigner une tâche à un coéquipier IA le met au travail : c'est une délégation, que le serveur soumet au
+  // droit « ai.delegate » (services.ts, assertCanDelegate). Sans ce droit, les coéquipiers IA ne sont pas proposés.
+  const ais = can("ai.delegate") ? members.filter((u) => u!.is_ai) : [];
   const pick = (id: string | null) => {
     onChange(id);
     setOpen(false);

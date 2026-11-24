@@ -9,7 +9,12 @@ import type { ProjectStatus } from "@/lib/types";
 import type { ViewProps } from "@/pages/Project";
 import { ProjectGovernance } from "@/components/ProjectGovernance";
 
-export function DashboardView({ project, canEdit, onStatusUpdate }: ViewProps & { onStatusUpdate: () => void }) {
+export function DashboardView({
+  project,
+  canEdit,
+  canDelegate,
+  onStatusUpdate,
+}: ViewProps & { onStatusUpdate: () => void }) {
   const { data: s } = useStats(project.id);
   const { data: updates } = useProjectUpdates(project.id);
   const { data: activity } = useProjectActivity(project.id);
@@ -46,7 +51,7 @@ export function DashboardView({ project, canEdit, onStatusUpdate }: ViewProps & 
         <Panel
           title="Dernier point d'avancement"
           action={
-            canEdit ? (
+            canEdit && canDelegate ? (
               <Button size="sm" variant="ai" icon={<Sparkles className="size-3.5" />} onClick={onStatusUpdate}>
                 Générer
               </Button>
@@ -89,7 +94,9 @@ export function DashboardView({ project, canEdit, onStatusUpdate }: ViewProps & 
             </div>
           ) : (
             <p className="text-[13px] text-muted">
-              Aucun point publié. L'IA peut en rédiger un à partir des tâches et de l'activité récente.
+              {canEdit && canDelegate
+                ? "Aucun point publié. L'IA peut en rédiger un à partir des tâches et de l'activité récente."
+                : "Aucun point publié."}
             </p>
           )}
         </Panel>

@@ -167,4 +167,42 @@ describe("équipes (EQ-1)", () => {
     await g.promote("u_karim", "Agent");
     expect((await g.api("u_karim", "PATCH", `/api/teams/${t.id}`, { description: "Non" })).status).toBe(403);
   });
+
+  /*
+   * Le drapeau que l'interface doit lire. Elle ne peut pas deviner qui « administre tout » : ce rang suppose un
+   * rôle owner/admin SANS profil de fonction (services.ts, administersAll), et /api/me ne dit pas le profil.
+   * La DG est admin avec le profil DG : elle ne gère donc pas une équipe privée dont elle n'est pas responsable.
+   * Constat d'un testeur : l'interface lui proposait « Réglages » et la gestion des membres, que le serveur refusait.
+   */
+  it("dit dans la fiche d'une équipe si on la gère, et le refus suit le drapeau", async () => {
+    await g.promote("u_hugo", "DG");
+    const privee = (
+      await g.api("u_alice", "POST", "/api/teams", { name: "Comité privé (essai)", visibility: "private" })
+    ).body;
+    const publique = (await g.api("u_alice", "POST", "/api/teams", { name: "Comité public (essai)" })).body;
+    for (const t of [privee, publique])
+      await g.api("u_alice", "PUT", `/api/teams/${t.id}/members/u_hugo`, { role: "member" });
+
+    // Équipe privée : simple membre, profil de fonction → ni drapeau, ni écriture
+    const fichePrivee = await g.api("u_hugo", "GET", `/api/teams/${privee.id}`);
+    expect(fichePrivee.status).toBe(200);
+    expect(fichePrivee.body.can_manage).toBe(false);
+    expect((await g.api("u_hugo", "PATCH", `/api/teams/${privee.id}`, { description: "Non" })).status).toBe(403);
+
+    // Équipe non privée : le droit « gérer toutes les équipes » suffit → drapeau et écriture
+    const fichePublique = await g.api("u_hugo", "GET", `/api/teams/${publique.id}`);
+    expect(fichePublique.body.can_manage).toBe(true);
+    expect((await g.api("u_hugo", "PATCH", `/api/teams/${publique.id}`, { description: "Oui" })).status).toBe(200);
+
+    // Responsable de l'équipe privée : le drapeau s'ouvre, l'écriture aussi
+    await g.api("u_alice", "PUT", `/api/teams/${privee.id}/members/u_hugo`, { role: "lead" });
+    expect((await g.api("u_hugo", "GET", `/api/teams/${privee.id}`)).body.can_manage).toBe(true);
+    expect((await g.api("u_hugo", "PATCH", `/api/teams/${privee.id}`, { description: "Oui" })).status).toBe(200);
+
+    // Sans le droit « gérer toutes les équipes » et sans être responsable : rien
+    await g.promote("u_karim", "Agent");
+    await g.api("u_alice", "PUT", `/api/teams/${publique.id}/members/u_karim`, { role: "member" });
+    expect((await g.api("u_karim", "GET", `/api/teams/${publique.id}`)).body.can_manage).toBe(false);
+    expect((await g.api("u_karim", "PATCH", `/api/teams/${publique.id}`, { description: "Non" })).status).toBe(403);
+  });
 });

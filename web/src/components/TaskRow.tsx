@@ -166,7 +166,7 @@ export const TaskRow = memo(function TaskRow({
   const taskMenu = useTaskMenu();
   return (
     <TaskLine
-      leading={<Checkbox checked={t.completed} onChange={(v) => canEdit && onToggle(v)} />}
+      leading={<Checkbox checked={t.completed} disabled={!canEdit} onChange={onToggle} />}
       title={t.title}
       detail={!nested && t.parent_title ? t.parent_title : undefined}
       done={t.completed}

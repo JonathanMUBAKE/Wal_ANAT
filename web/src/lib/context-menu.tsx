@@ -94,7 +94,7 @@ export function useTaskMenu() {
         icon: Link2,
         onSelect: () => copy(`${location.origin}${location.pathname}?task=${t.id}`, "Lien copié"),
       },
-      ...(t.project_id
+      ...(t.project_id && can("ai.delegate") && can("tasks.create")
         ? [{ label: "Nouvelle tâche dans ce projet", icon: Plus, onSelect: () => shell.openQuickAdd(t.project_id!) }]
         : []),
       ...(can("ai.assistant")
@@ -187,7 +187,9 @@ export function ContextMenuProvider({ children }: { children: ReactNode }) {
         : [];
       const general: CtxItem[] = [
         { label: "Rechercher…", icon: Search, hint: "Ctrl K", onSelect: () => shell.setPalette(true) },
-        { label: "Nouvelle tâche", icon: Plus, onSelect: () => shell.openQuickAdd(null) },
+        ...(can("ai.delegate") && can("tasks.create")
+          ? [{ label: "Nouvelle tâche", icon: Plus, onSelect: () => shell.openQuickAdd(null) }]
+          : []),
         ...(can("ai.assistant")
           ? [{ label: "Demander à l'assistant", icon: Sparkles, onSelect: () => shell.openAssistant() }]
           : []),

@@ -145,10 +145,12 @@ export function CommandPalette() {
               Ouvrir Assistant IA<span className="ml-auto text-[12px] text-faint">⌘J</span>
             </Command.Item>
           )}
-          <Command.Item onSelect={() => run(() => shell.openQuickAdd(null))} className={item}>
-            <Wand2 className="size-4 text-ai-fg" />
-            Créer des tâches à partir de notes
-          </Command.Item>
+          {can("ai.delegate") && can("tasks.create") && (
+            <Command.Item onSelect={() => run(() => shell.openQuickAdd(null))} className={item}>
+              <Wand2 className="size-4 text-ai-fg" />
+              Créer des tâches à partir de notes
+            </Command.Item>
+          )}
           {can("projects.create") && (
             <Command.Item onSelect={() => run(() => shell.setNewProject(true))} className={item}>
               <FolderPlus className="size-4 text-muted" />

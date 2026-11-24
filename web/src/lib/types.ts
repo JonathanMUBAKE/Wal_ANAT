@@ -186,6 +186,8 @@ export interface Team {
   request_pending: boolean;
 }
 export interface TeamDetail extends Team {
+  /** Le serveur dit s'il acceptera les écritures : lui seul connaît le rang d'administration (services.ts). */
+  can_manage: boolean;
   members: { user_id: string; role: "lead" | "member" }[];
   projects: ProjectSummary[];
   requests: { id: string; user_id: string; created_at: string }[];

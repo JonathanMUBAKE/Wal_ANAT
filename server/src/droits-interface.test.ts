@@ -80,6 +80,13 @@ const DRAPEAUX: { droit: string; serveur: [string, string]; interface: [string, 
       "Ce droit ne commande aucun bouton : il élargit ce que la liste des livrables renvoie, au-delà des siens, sur les projets que l'on peut lire. L'interface affiche ce que le serveur lui donne ; il n'y a rien à cacher.",
   },
   {
+    droit: "teams.manage",
+    serveur: ["services.ts", "async managesTeam"],
+    interface: ["pages/Teams.tsx", "t.can_manage"],
+    pourquoi:
+      "Gérer une équipe tient à trois choses que l'interface ne peut pas composer seule : en être responsable, détenir ce droit, ou administrer l'organisation — ce dernier rang supposant un rôle owner/admin SANS profil de fonction, que /api/me ne dit pas. Le serveur tranche dans `managesTeam` et pose le verdict sur la fiche de l'équipe (`can_manage`), que l'interface lit.",
+  },
+  {
     droit: "ai.approve",
     serveur: ["ai/engine.ts", 'includes("ai.approve")'],
     interface: ["components/ai.tsx", 'can("ai.approve")'],
@@ -116,5 +123,114 @@ describe("Les droits du catalogue et l'interface", () => {
   it("consulte chaque droit du catalogue, par `can()` ou par un drapeau justifié", () => {
     const couverts = new Set([...CONSULTES, ...DRAPEAUX.map((d) => d.droit)]);
     expect(ALL_PERMISSIONS.filter((p) => !couverts.has(p))).toEqual([]);
+  });
+});
+
+/**
+ * Deuxième garde-fou, né d'un manquement constaté : le test ci-dessus vérifie qu'un droit est consulté
+ * QUELQUE PART dans l'interface, pas qu'il l'est à CHAQUE endroit qui appelle la route correspondante.
+ * `ai.delegate` était bien consulté dans le tiroir d'une tâche, et six autres appels le réclamaient sans
+ * le vérifier : point d'avancement, extraction de tâches, amélioration d'une description, suggestion de
+ * sous-tâches, assignation d'un coéquipier IA, mention d'un coéquipier IA en commentaire.
+ *
+ * On liste donc les appels sensibles un par un : la route, le droit que le serveur exige, le fichier
+ * serveur qui l'exige, et les fichiers d'interface autorisés à l'appeler — qui doivent tous consulter
+ * ce droit. Un nouvel appel ailleurs fait échouer la suite.
+ */
+const COUCHE_DONNEES = ["lib/hooks.ts", "lib/api.ts"];
+const APPELS: {
+  appel: string;
+  droit: string;
+  serveur: [string, string];
+  interfaces: string[];
+  pourquoi: string;
+}[] = [
+  {
+    // Le guillemet oblique final distingue `/ai/run` (confier) de `/ai/runs/:id/cancel` (arrêter), qui ne
+    // demande que le rôle d'éditeur : arrêter une intervention en cours n'est pas en lancer une.
+    appel: "/ai/run`",
+    droit: "ai.delegate",
+    serveur: ["ai/engine.ts", 'projectPerm(userId, t.project_id, "ai.delegate")'],
+    interfaces: ["components/TaskDrawer.tsx"],
+    pourquoi: "Confier une tâche à un coéquipier IA : le panneau « Coéquipiers IA » du tiroir.",
+  },
+  {
+    appel: "/ai/subtasks",
+    droit: "ai.delegate",
+    serveur: ["ai/engine.ts", "async suggestSubtasks"],
+    interfaces: ["components/TaskDrawer.tsx"],
+    pourquoi: "Bouton « Suggérer » des sous-tâches : c'est l'IA qui les propose.",
+  },
+  {
+    appel: "/ai/description",
+    droit: "ai.delegate",
+    serveur: ["ai/engine.ts", "async improveDescription"],
+    interfaces: ["components/TaskDrawer.tsx"],
+    pourquoi: "Bouton « Améliorer » la description d'une tâche.",
+  },
+  {
+    appel: "/ai/parse",
+    droit: "ai.delegate",
+    serveur: ["ai/engine.ts", "async parseTasks"],
+    interfaces: ["components/dialogs.tsx"],
+    pourquoi: "Dialogue « Notes → tâches » : l'IA extrait les tâches d'un texte collé.",
+  },
+  {
+    appel: "/ai/status",
+    droit: "ai.delegate",
+    serveur: ["ai/engine.ts", "async projectStatus"],
+    interfaces: ["components/dialogs.tsx"],
+    pourquoi: "Point d'avancement d'un projet, rédigé par l'IA.",
+  },
+  {
+    appel: "/ai/rules",
+    droit: "ai.rules",
+    serveur: ["ai/engine.ts", 'projectPerm(userId, input.project_id, "ai.rules")'],
+    interfaces: ["views/AutomationsView.tsx"],
+    pourquoi: "Règles d'automatisation IA d'un projet : les créer, les modifier, les supprimer.",
+  },
+  {
+    appel: "/api/ai/chat",
+    droit: "ai.assistant",
+    serveur: ["ai/engine.ts", 'requirePerm(userId, orgId, "ai.assistant")'],
+    interfaces: ["components/Assistant.tsx"],
+    pourquoi: "L'assistant conversationnel, ouvert depuis six endroits mais fermé à sa source.",
+  },
+];
+
+describe("Les appels sensibles et leur garde", () => {
+  it("ne cite que des droits du catalogue, avec une justification", () => {
+    for (const a of APPELS) {
+      expect(isPermission(a.droit), `${a.appel} : « ${a.droit} » n'est pas un droit du catalogue`).toBe(true);
+      expect(a.pourquoi.length, `${a.appel} : justification trop courte`).toBeGreaterThan(30);
+    }
+  });
+
+  it("vérifie que le serveur exige bien ce droit", () => {
+    for (const a of APPELS) {
+      const serveur = lu(a.serveur[0], SERVEUR);
+      expect(serveur, `${a.appel} : fichier serveur ${a.serveur[0]} introuvable`).not.toBeNull();
+      expect(serveur, `${a.appel} : ${a.serveur[0]} ne contient plus « ${a.serveur[1]} »`).toContain(a.serveur[1]);
+      expect(serveur, `${a.appel} : ${a.serveur[0]} ne mentionne plus « ${a.droit} »`).toContain(a.droit);
+    }
+  });
+
+  it("exige que chaque fichier d'interface qui appelle consulte le droit", () => {
+    for (const a of APPELS) {
+      for (const f of a.interfaces) {
+        const ui = texte.get(f);
+        expect(ui, `${a.appel} : fichier d'interface ${f} introuvable`).toBeDefined();
+        expect(ui, `${a.appel} : ${f} ne consulte pas can("${a.droit}")`).toContain(`can("${a.droit}")`);
+      }
+    }
+  });
+
+  it("n'autorise aucun autre fichier de l'interface à appeler ces routes", () => {
+    const fautes: string[] = [];
+    for (const a of APPELS)
+      for (const [chemin, src] of texte)
+        if (src.includes(a.appel) && !a.interfaces.includes(chemin) && !COUCHE_DONNEES.includes(chemin))
+          fautes.push(`${chemin} appelle ${a.appel} sans figurer dans APPELS (droit ${a.droit})`);
+    expect(fautes).toEqual([]);
   });
 });

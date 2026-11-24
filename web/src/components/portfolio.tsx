@@ -534,8 +534,9 @@ export function ProjectArbitrations({
         </ul>
       ) : (
         <Hint className="px-5 pb-5">
-          Une question que le projet ne peut pas trancher seul ? Demandez un arbitrage : options, recommandation, et la
-          DG décide.
+          {canAsk
+            ? "Une question que le projet ne peut pas trancher seul ? Demandez un arbitrage : options, recommandation, et la DG décide."
+            : "Aucun arbitrage demandé."}
         </Hint>
       )}
       {asking && <AskDialog base={base} onClose={() => setAsking(false)} />}

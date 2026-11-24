@@ -236,16 +236,19 @@ function PersonalHome() {
                     >
                       {p.name}
                     </Link>
-                    {(p.role === "editor" || p.role === "admin") && (
+                    {(p.role === "editor" || p.role === "admin") && can("projects.archive") && (
                       <Button
                         size="sm"
                         onClick={() =>
                           api
                             .patch(`/api/projects/${p.id}`, { archived: false })
-                            .then(() => {
-                              qc.invalidateQueries({ queryKey: ["projects"] });
-                              toast.success("Projet restauré");
-                            })
+                            .then(
+                              () => {
+                                qc.invalidateQueries({ queryKey: ["projects"] });
+                                toast.success("Projet restauré");
+                              },
+                              (e) => toast.error((e as Error).message),
+                            )
                         }
                       >
                         Restaurer
@@ -337,6 +340,7 @@ function PersonalHome() {
                     {q}
                   </button>
                 ))}
+                {can("ai.delegate") && can("tasks.create") && (
                 <Button
                   variant="ai"
                   className="mt-1"
@@ -345,6 +349,7 @@ function PersonalHome() {
                 >
                   Créer des tâches à partir de notes
                 </Button>
+                )}
               </div>
             </div>
           </section>

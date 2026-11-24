@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AtSign, Check, Globe2, Lock, LogIn, Plus, UserPlus, Users, X } from "lucide-react";
 import { Avatar, AvatarStack, Button, CARD, Chip, Dialog, Empty, Hint, IconButton, ProgressRing, ProjectIcon, Spinner, cn } from "@/components/ui";
 import { AssigneePicker } from "@/components/pickers";
-import { useCan, useMe, useServiceAddress, useTeam, useTeams, useUnits, useUserMap, useUsers } from "@/lib/hooks";
+import { useCan, useServiceAddress, useTeam, useTeams, useUnits, useUserMap, useUsers } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { STATUS, pl } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -244,7 +244,6 @@ export function TeamPage() {
   const can = useCan();
   const { id } = useParams();
   const { data: t, error } = useTeam(id);
-  const { data: me } = useMe();
   const { data: people } = useUsers();
   const { data: units } = useUnits();
   const users = useUserMap();
@@ -259,13 +258,10 @@ export function TeamPage() {
         <Spinner />
       </div>
     );
-  const orgRole = me?.orgs.find((o) => o.id === me.org_id)?.role;
-  // Les mêmes conditions que `requireTeamManager` au serveur (services.ts) : son responsable la gère ; sinon il faut
-  // le droit « gérer toutes les équipes », qui ne porte pas sur une équipe privée — celle-là ne s'ouvre qu'à
-  // l'administration généraliste de l'organisation, laquelle détient ce droit avec tous les autres.
-  const manager =
-    t.my_role === "lead" ||
-    (can("teams.manage") && (t.visibility !== "private" || orgRole === "owner" || orgRole === "admin"));
+  // Le serveur seul sait qui gère cette équipe : le rang d'« administration généraliste » suppose un rôle
+  // owner/admin SANS profil de fonction (services.ts, administersAll), ce que /api/me ne dit pas. La fiche
+  // porte donc le verdict, et l'interface s'y tient (constat d'un testeur sous le profil DG).
+  const manager = t.can_manage;
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["team", t.id] });
     qc.invalidateQueries({ queryKey: ["teams"] });

@@ -26,7 +26,7 @@ import {
   type Tone,
 } from "@/components/gov";
 import { api } from "@/lib/api";
-import { useCan, useLedUnitIds, useUnits, useUsers } from "@/lib/hooks";
+import { useCan, useLedUnitIds, useMe, useUnits, useUsers } from "@/lib/hooks";
 import { QuarterReviews, type ReviewRef } from "@/components/plan-reviews";
 
 type PlanStatus = "draft" | "submitted" | "approved";
@@ -77,7 +77,7 @@ interface Plan extends PlanRow {
     author_name: string | null;
   }[];
   reviews: ReviewRef[];
-  can: { edit: boolean; submit: boolean; approve: boolean; revise: boolean; review: boolean };
+  can: { prepare: boolean; edit: boolean; submit: boolean; approve: boolean; revise: boolean; review: boolean };
 }
 const STATE: Record<PlanStatus, { label: string; tone: Tone }> = {
   draft: { label: "En préparation", tone: "neutral" },
@@ -239,6 +239,7 @@ export function PlanPage() {
   const { id } = useParams();
   const qc = useQueryClient();
   const nav = useNavigate();
+  const { data: me } = useMe();
   const { data: users } = useUsers();
   const {
     data: p,
@@ -409,7 +410,9 @@ export function PlanPage() {
                         </IconButton>
                       </>
                     )}
-                    {p.status === "approved" && (
+                    {/* Le serveur accepte la saisie du responsable de l'activité, ou de qui prépare le plan
+                        (plans.ts, progress) : l'interface compose les deux au lieu du seul état du plan. */}
+                    {p.status === "approved" && (p.can.prepare || a.responsible_id === me?.id) && (
                       <Button size="sm" variant="ghost" onClick={() => setFollow(a)}>
                         Suivi
                       </Button>

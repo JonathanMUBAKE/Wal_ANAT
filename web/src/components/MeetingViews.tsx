@@ -29,6 +29,7 @@ import {
 import { CARD, Empty, cn } from "./ui";
 import { Drawer } from "./drawer";
 import { TabBar } from "./tabs";
+import { useCan } from "@/lib/hooks";
 import { LoadingRows } from "./gov";
 import {
   Badge,
@@ -298,6 +299,7 @@ const Initials = ({ name }: { name: string }) => (
 );
 
 function ListView({ rows, filtered, onClear }: { rows: MeetingRow[]; filtered: boolean; onClear: () => void }) {
+  const can = useCan();
   const nav = useNavigate();
   const columns: (Column<MeetingRow> & { Icon?: typeof Users; width?: string })[] = [
     {
@@ -415,7 +417,11 @@ function ListView({ rows, filtered, onClear }: { rows: MeetingRow[]; filtered: b
             </button>
           </Empty>
         ) : (
-          <Empty title="Aucune réunion enregistrée">Planifiez la première avec « Nouvelle réunion ».</Empty>
+          <Empty title="Aucune réunion enregistrée">
+            {can("meetings.manage")
+              ? "Planifiez la première avec « Nouvelle réunion »."
+              : "Les réunions auxquelles vous participez apparaîtront ici."}
+          </Empty>
         )
       }
     />

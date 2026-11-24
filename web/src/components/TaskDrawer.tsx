@@ -494,7 +494,12 @@ function DrawerBody({
           )}
           <div className="flex items-start gap-3">
             <div className="pt-[7px]">
-              <Checkbox checked={t.completed} size={22} onChange={(v) => canEdit && save({ completed: v })} />
+              <Checkbox
+                checked={t.completed}
+                size={22}
+                disabled={!canEdit}
+                onChange={(v) => save({ completed: v })}
+              />
             </div>
             <TitleEditor
               value={t.title}
@@ -587,7 +592,7 @@ function DrawerBody({
           <section className="mt-7">
             <div className="mb-1.5 flex items-center justify-between">
               <h3 className="text-[13px] font-semibold">Description</h3>
-              {canEdit && <ImproveDescription t={t} />}
+              {canEdit && canDelegate && <ImproveDescription t={t} />}
             </div>
             <DescriptionEditor
               value={t.description}
@@ -600,11 +605,17 @@ function DrawerBody({
             t={t}
             canEdit={canEdit}
             canAddTask={canAddTask}
+            canDelegate={canDelegate}
             memberIds={memberIds}
             onOpenTask={onOpenTask}
           />
           <Attachments t={t} />
-          <Conversation t={t} canComment={t.role !== "viewer" && can("tasks.comment")} memberIds={memberIds} />
+          <Conversation
+            t={t}
+            canComment={t.role !== "viewer" && can("tasks.comment")}
+            canDelegate={canDelegate}
+            memberIds={memberIds}
+          />
         </div>
       </div>
     </>
@@ -982,12 +993,15 @@ function Subtasks({
   t,
   canEdit,
   canAddTask,
+  canDelegate,
   memberIds,
   onOpenTask,
 }: {
   t: TaskDetail;
   canEdit: boolean;
   canAddTask: boolean;
+  /** Droit « ai.delegate » : faire suggérer les sous-tâches par l'IA (ai/engine.ts, suggestSubtasks). */
+  canDelegate: boolean;
   memberIds: string[];
   onOpenTask: (id: string) => void;
 }) {
@@ -1038,7 +1052,7 @@ function Subtasks({
             {done}/{t.subtasks.length}
           </span>
         )}
-        {canAddTask && !suggest && (
+        {canAddTask && canDelegate && !suggest && (
           <Button
             size="sm"
             variant="ghost"
@@ -1065,7 +1079,8 @@ function Subtasks({
             <Checkbox
               checked={s.completed}
               size={16}
-              onChange={(c) => canEdit && update.mutate({ id: s.id, completed: c })}
+              disabled={!canEdit}
+              onChange={(c) => update.mutate({ id: s.id, completed: c })}
             />
             <button
               onClick={() => onOpenTask(s.id)}
@@ -1158,7 +1173,18 @@ const ACTIVITY_LABEL: Record<string, (d: Record<string, unknown>) => string> = {
   "ai.rejected": (d) => `a refusé : ${d.summary}`,
 };
 
-function Conversation({ t, canComment, memberIds }: { t: TaskDetail; canComment: boolean; memberIds: string[] }) {
+function Conversation({
+  t,
+  canComment,
+  canDelegate,
+  memberIds,
+}: {
+  t: TaskDetail;
+  canComment: boolean;
+  /** Droit « ai.delegate » : mentionner un coéquipier IA le met au travail (services.ts, assertCanDelegate). */
+  canDelegate: boolean;
+  memberIds: string[];
+}) {
   const users = useUserMap();
   const [tab, setTab] = useState<"comments" | "activity">("comments");
   const items = useMemo(() => t.activity.filter((a) => ACTIVITY_LABEL[a.kind]), [t.activity]);
@@ -1182,7 +1208,7 @@ function Conversation({ t, canComment, memberIds }: { t: TaskDetail; canComment:
         <div className="space-y-4">
           {t.comments.length === 0 && (
             <p className="text-[13px] text-faint">
-              {canComment
+              {canComment && canDelegate
                 ? "Pas encore de commentaire. Écrivez @Atlas ou @Nova pour solliciter un coéquipier IA."
                 : "Pas encore de commentaire."}
             </p>
@@ -1196,7 +1222,7 @@ function Conversation({ t, canComment, memberIds }: { t: TaskDetail; canComment:
               attachments={t.attachments.filter((a) => a.comment_id === c.id)}
             />
           ))}
-          {canComment && <Composer taskId={t.id} memberIds={memberIds} />}
+          {canComment && <Composer taskId={t.id} canDelegate={canDelegate} memberIds={memberIds} />}
         </div>
       ) : (
         <ol className="space-y-2.5">
@@ -1348,7 +1374,7 @@ function CommentItem({
   );
 }
 
-function Composer({ taskId, memberIds }: { taskId: string; memberIds: string[] }) {
+function Composer({ taskId, canDelegate, memberIds }: { taskId: string; canDelegate: boolean; memberIds: string[] }) {
   const users = useUserMap();
   const qc = useQueryClient();
   const [v, setV] = useState("");
@@ -1360,7 +1386,9 @@ function Composer({ taskId, memberIds }: { taskId: string; memberIds: string[] }
   const options = mention
     ? memberIds
         .map((id) => users.get(id)!)
-        .filter((u) => u && u.id !== "ai_cadence" && u.name.toLowerCase().startsWith(mention[1].toLowerCase()))
+        // Mentionner un coéquipier IA lance son intervention : sans « ai.delegate », il n'est pas proposé
+        .filter((u) => u && u.id !== "ai_cadence" && (canDelegate || !u.is_ai))
+        .filter((u) => u.name.toLowerCase().startsWith(mention[1].toLowerCase()))
         .slice(0, 6)
     : [];
   const insert = (name: string) => {

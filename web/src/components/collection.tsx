@@ -28,7 +28,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { CARD, cn } from "./ui";
+import { CARD, cn, repere } from "./ui";
 import { useRowMenu } from "@/lib/context-menu";
 
 /* Cadastre — briques des collections : en-tête, barre d'outils, filtres, tableau, kanban, calendrier.
@@ -279,7 +279,7 @@ export function GroupedTable<T>({
                             )}
                             {columns.map((c) => (
                               <td key={c.key} className={cn("truncate px-3 py-2.5 align-middle", c.className)}>
-                                {c.render(r)}
+                                {repere(c.render(r))}
                               </td>
                             ))}
                             {actions && (
@@ -464,7 +464,7 @@ export function FilterGroup({ title, children }: { title: string; children: Reac
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between px-2.5 py-2 text-[11px] font-medium uppercase tracking-[0.08em] text-faint hover:text-muted"
+        className="flex w-full items-center justify-between px-2.5 py-2 text-[11.5px] font-medium text-faint hover:text-muted"
       >
         {title}
         <ChevronDown className={cn("size-3.5 transition-transform", !open && "-rotate-90")} />
@@ -541,7 +541,7 @@ export const Badge = ({ tone, label, count }: { tone: BadgeTone; label: string; 
 
 /** Numéro officiel : se lit comme un tampon, jamais tronqué. */
 export const Seal = ({ children }: { children: ReactNode }) => (
-  <span className="whitespace-nowrap font-mono text-[12px] text-muted">{children}</span>
+  <span className="repere whitespace-nowrap text-[12px] text-muted">{children}</span>
 );
 
 // ------------------------------------------------------------------ tableau de données
@@ -706,7 +706,7 @@ export function DataTable<T>({
                   )}
                   {columns.map((c) => (
                     <td key={c.key} className={cn("px-3 py-3 align-middle first:pl-5", c.className)}>
-                      {c.render(r)}
+                      {repere(c.render(r))}
                     </td>
                   ))}
                   {actions && (

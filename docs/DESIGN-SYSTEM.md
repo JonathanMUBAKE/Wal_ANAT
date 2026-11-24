@@ -87,9 +87,22 @@ déjà. L'écriture reste `text-[13px]` — une seule graphie par taille, repér
 | Mention fine | 11,5 px | normal |
 | Sceau (numéro officiel), micro-pastille | 11 px | mono pour le sceau |
 
+#### Les repères de registre sont en chasse fixe
+Nos écrans sont des registres : ils sont pleins de numéros officiels (`ENT/2026/0142`), de dates (`23/11/2026`),
+d'heures (`16 h 00`), de matricules et de montants. Écrits dans la chasse du texte courant, ces **repères** flottent
+d'une ligne à l'autre ; en chasse fixe tabulaire (classe `.repere`, famille `--font-mono`), ils tombent en colonne et
+se comparent sans qu'on ait à les lire. La reconnaissance se fait une seule fois, dans `components/ui.tsx`
+(`estRepere`, `repere`), et s'applique d'elle-même à toute cellule de tableau (`Td`, `DataTable`, `GroupedTable`),
+à la valeur d'un fait (`Fact`) et au sceau. **Aucune page n'a à s'en occuper** et un texte ordinaire — une phrase, un
+nom, un libellé — n'est jamais touché. La taille, la couleur et la graisse restent celles du texte qui entoure le
+repère : la chasse fixe est un signal de nature, pas un pas typographique de plus.
+
 ### Retenue (la règle d'Asana)
 - Une seule action principale bleue par écran, en haut à droite.
 - Les actions de ligne restent discrètes (60 % d'opacité) et se révèlent au survol.
+- **Une rubrique se ferme sur un filet.** Quand une carte porte un titre (`Section`, `DrawerSection`), un filet
+  `--line` sépare l'en-tête du corps, et les rubriques successives d'un même affichage sont séparées de la même
+  façon. L'espace seul laisse deviner où une rubrique finit ; le filet le dit. Même filet, même épaisseur partout.
 - **Trois surfaces, trois jetons** dans `components/ui.tsx`, et aucune ne s'écrit à la main :
   `CARD` (la carte posée dans la page : filet net, ombre à peine perceptible — en thème sombre,
   `--shadow-sm` ajoute le filet de lumière au sommet), `MODAL` (le dialogue centré : même parcelle,
@@ -117,10 +130,10 @@ déjà. L'écriture reste `text-[13px]` — une seule graphie par taille, repér
 | **Onglets soulignés** | Vues et sections d'une page ; trait bleu de 2 px sous l'actif, icône bleue. |
 | **Onglets segmentés** | Seulement pour une période (Jour · Semaine · Mois) : rail gris, actif blanc en relief. |
 | **Statut (`Badge`)** | Pilule douce bordée, point de couleur + mot. |
-| **Sceau** | Numéro officiel en mono, sur fond gris clair, jamais tronqué. |
+| **Sceau** | Numéro officiel en chasse fixe tabulaire (`.repere`), gris, jamais tronqué. |
 | **Champ** | Libellé permanent au-dessus, halo bleu au focus, erreur écrite sous le champ. |
 | **Recherche** | Champ de 36 px, rayon 10 px, loupe et raccourci « / ». |
-| **Panneau de filtres** | Colonne repliable, groupes titrés en petites capitales, cases à cocher. Le bouton « Filtres » affiche le nombre de filtres actifs. |
+| **Panneau de filtres** | Colonne repliable, groupes titrés en casse normale, cases à cocher. Le bouton « Filtres » affiche le nombre de filtres actifs. |
 | **Tableau de données** | Case de sélection, en-têtes triables, cellules sur deux lignes (titre + précision), actions à droite, pagination « Page 1 sur 4 · 10 lignes ». Barre d'actions groupées dès qu'une ligne est cochée. |
 | **Colonne de tableau (kanban)** | En-tête : statut en pastille + nombre. Cartes de 18 px de rayon, paires libellé/valeur. |
 | **Calendrier semaine** | Tuiles de jour en tête (le jour même en encre), grille horaire à filets, blocs d'événement teintés selon l'étape, liseré gauche de la couleur pleine. |
@@ -163,8 +176,13 @@ Le modal n'est jamais une fiche de consultation ; le tiroir n'est jamais une con
 
 ### Charpente de l'application (modèle Tracklio / Oripio)
 - **Barre du haut** (64 px, blanche, filet en bas) : recherche bordée à gauche (« Rechercher une réunion, un dossier, une personne… », ⌘K) ; à droite, carrés d'icône bordés de 40 px (Assistant IA, Boîte de réception, Notifications avec pastille rouge), puis la pastille du compte (photo, nom, rôle, chevron) qui ouvre profil, sécurité, organisations, thème et déconnexion.
-- **Barre latérale** (256 px, blanche) : en tête, sur 64 px alignés avec la barre du haut, le logo ANAT, « ANAT Pilotage » et l'organisation. Puis Accueil, Mes tâches, Coéquipiers IA ; des sections titrées en **petites capitales** avec chevron : PILOTAGE, SUIVI-ÉVALUATION, SECRÉTARIAT, ORGANISATION. Le contenu de chaque section est fixé par `docs/ARCHITECTURE-INFORMATION.md`. Liens de 36 px, rayon 10 px, icône 18 px ; actif : fond bleu très léger, texte et icône bleus. En pied : Assistant IA.
-- **Tableaux** : l'en-tête des colonnes est une **bande grise arrondie** (fond `--bg`, rayon 10 px) posée dans la carte blanche, libellés 12 px moyens.
+- **Barre latérale** (256 px, blanche) : en tête, sur 64 px alignés avec la barre du haut, le logo ANAT, « ANAT Pilotage » et l'organisation. Puis Accueil, Mes tâches, Coéquipiers IA ; des sections titrées avec chevron, **écrites comme on les écrit en français** et non en capitales espacées :
+  Pilotage, Suivi-évaluation, Partenariats, Secrétariat, Organisation. Les capitales effacent la silhouette des mots
+  et obligent à les épeler ; la place de l'intitulé, sa taille (11,5 px) et sa couleur disent déjà que c'est un
+  titre. Même règle pour les intitulés de groupe d'un menu, de la palette de commandes et du panneau de filtres.
+  Le contenu de chaque section est fixé par `docs/ARCHITECTURE-INFORMATION.md`. Liens de 36 px, rayon 10 px,
+  icône 18 px ; actif : fond bleu très léger, texte et icône bleus. En pied : Assistant IA.
+- **Tableaux** : l'en-tête des colonnes ne porte **aucun aplat** — des libellés gris de 13 px posés sur un filet `--line`, et les lignes séparées du même filet (`.grid-table`, `web/src/styles.css`).
 
 ### Calendrier
 Colonne gauche : mini-mois, carte de rappel, légende-filtre. Centre : en-tête de période (‹ date ›, Aujourd'hui, Jour/Semaine/Mois). Droite : détail de l'élément choisi.
@@ -198,7 +216,7 @@ chaque écran ; une revue d'écran les vérifie une à une.
 ### 5.5 Retour d'information
 14. **Succès** : message bref en bas d'écran (« Accord enregistré »), qui disparaît seul. **Échec** : message clair du serveur, en français, qui dit quoi faire ; il reste jusqu'à ce que la personne le ferme.
 15. **Chargement** : squelette à la place du contenu, jamais d'écran blanc ; bouton en cours d'envoi désactivé (pas de double envoi).
-16. **Liste vide** : une phrase qui dit pourquoi elle est vide et quoi faire, avec le bouton de création si le droit existe.
+16. **Liste vide** : une phrase qui dit pourquoi elle est vide et quoi faire, avec le bouton de création si le droit existe. Elle se **range sur la marge de la carte**, à la place qu'occuperait la première ligne (`Empty`) : ni grande boîte centrée, ni icône flottante — rien ne flotte dans un registre.
 
 ### 5.6 Traçabilité et confidentialité
 17. **Chaque fiche dit qui l'a créée ou modifiée, et quand** (pied de fiche ou historique).

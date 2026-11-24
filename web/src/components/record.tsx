@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { Eye, type LucideIcon, Pencil, Save, Trash2, X } from "lucide-react";
-import { Button, cn } from "./ui";
+import { Button, cn, repere } from "./ui";
 import { RoundBtn } from "./collection";
 
 /*
@@ -121,7 +121,7 @@ export function Fact({
           {Icon && <Icon className="size-3.5" />}
           {label}
         </dt>
-        <dd className={cn("mt-1 break-words", empty && "text-faint")}>{empty ? "—" : children}</dd>
+        <dd className={cn("mt-1 break-words", empty && "text-faint")}>{empty ? "—" : repere(children)}</dd>
       </div>
     );
   return (
@@ -130,8 +130,10 @@ export function Fact({
         {Icon && <Icon className="size-3.5" />}
         {label}
       </dt>
+      {/* Les valeurs de repère (numéro, date, montant) s'alignent à droite en chasse fixe : d'un fait à l'autre,
+          les chiffres tombent sous les chiffres. */}
       <dd className={cn("min-w-0 break-words text-right", empty ? "text-faint" : "font-medium")}>
-        {empty ? "—" : children}
+        {empty ? "—" : repere(children)}
       </dd>
     </div>
   );

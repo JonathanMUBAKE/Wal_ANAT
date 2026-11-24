@@ -11,7 +11,7 @@ import {
 import { AlertTriangle, Check, ChevronRight, CircleDashed, Clock, type LucideIcon, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { CARD, Hint, cn } from "./ui";
+import { CARD, Hint, cn, repere } from "./ui";
 import { TabBar } from "./tabs";
 import { useRowMenu } from "@/lib/context-menu";
 
@@ -129,13 +129,20 @@ export const Section = ({
   className?: string;
 }) => (
   <section className={cn(CARD, className)}>
-    {title && (
-      <div className="flex items-center justify-between gap-2 px-5 pb-1 pt-4">
-        <h2 className="text-[15px] font-medium tracking-[-0.01em]">{title}</h2>
-        {aside}
-      </div>
+    {/* Une rubrique se ferme sur un filet, comme dans le tiroir (DrawerSection) : l'espace seul laissait deviner
+        où le titre s'arrêtait et où le contenu commençait. Le filet est celui de la maison, --line, sans épaisseur
+        nouvelle ; la carte est alors découpée en en-tête et en corps, et ce sont eux qui portent les marges. */}
+    {title ? (
+      <>
+        <div className="flex items-center justify-between gap-2 border-b border-line px-5 py-2.5">
+          <h2 className="text-[15px] font-medium tracking-[-0.01em]">{title}</h2>
+          {aside}
+        </div>
+        <div className="pt-2">{children}</div>
+      </>
+    ) : (
+      children
     )}
-    {children}
   </section>
 );
 
@@ -342,7 +349,8 @@ export const Td = ({ children, className, wrap }: { children?: ReactNode; classN
     className={cn(wrap && "wrap", className)}
     title={!wrap && typeof children === "string" && children.length > 40 ? children : undefined}
   >
-    {children}
+    {/* Un numéro, une date, un montant passent en chasse fixe tabulaire : la colonne s'aligne (voir `repere`). */}
+    {repere(children)}
   </td>
 );
 

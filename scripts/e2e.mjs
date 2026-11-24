@@ -11,7 +11,9 @@ const PORT = 4321;
 const BASE = `http://localhost:${PORT}`;
 
 const server = spawn(process.execPath, ["server/dist/index.js"], {
-  env: { ...process.env, PORT: String(PORT), DATA_DIR: ":memory:", ANTHROPIC_API_KEY: "", NODE_ENV: "test" },
+  // Sans CADENCE_DEMO, le serveur ne sème aucune donnée et la connexion par choix de profil n'existe pas :
+  // ce test attendait un écran de connexion vide depuis que le mode démo a cessé d'être le comportement par défaut.
+  env: { ...process.env, PORT: String(PORT), DATA_DIR: ":memory:", CADENCE_DEMO: "1", ANTHROPIC_API_KEY: "", NODE_ENV: "test" },
   stdio: "inherit",
 });
 const step = (m) => console.log(`  ✓ ${m}`);
@@ -24,16 +26,26 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
 
-  await page.goto(`${BASE}/login`);
-  await page.getByText("Alice Martin").click();
-  await page.getByRole("heading", { name: /Alice/ }).waitFor();
-  step("connexion et accueil");
+  // Le compte de tête est lu au serveur : le jeu de démonstration a déjà été renommé une fois, et ce test
+  // cherchait encore « Alice Martin » sans que personne s'en aperçoive — il ne pouvait pas s'exécuter.
+  const comptes = await (await fetch(`${BASE}/api/auth/users`)).json();
+  const moi = comptes.find((u) => u.id === "u_alice") ?? comptes.find((u) => !u.is_ai);
+  assert.ok(moi, "aucun compte dans le jeu de démonstration");
 
-  await page.getByRole("link", { name: /Application mobile v2/ }).first().click();
-  await page.getByRole("link", { name: "Tableau", exact: true }).click();
+  await page.goto(`${BASE}/login`);
+  await page.getByText(moi.name, { exact: true }).first().click();
+  await page.getByRole("heading", { name: new RegExp(moi.name.split(" ")[0]) }).waitFor();
+  step(`connexion et accueil (${moi.name})`);
+
+  // On ouvre le tableau du projet par son adresse : l'accueil de la direction ne liste plus les projets
+  // depuis que le tableau de bord du jour l'a remplacé, et ce test cliquait encore un lien disparu.
+  const projets = await page.evaluate(() => fetch("/api/projects").then((r) => r.json()));
+  const projet = projets.find((p) => /Application mobile/.test(p.name)) ?? projets[0];
+  assert.ok(projet, "aucun projet dans le jeu de démonstration");
+  await page.goto(`${BASE}/projects/${projet.id}/board`);
   await page.getByText("Point d'avancement hebdo").first().click();
   await page.getByRole("dialog", { name: "Détail de la tâche" }).waitFor();
-  step("tableau Kanban et panneau de tâche");
+  step(`tableau Kanban et panneau de tâche (${projet.name})`);
 
   await page.getByRole("button", { name: /Confier à Atlas/ }).click();
   let approved = 0;

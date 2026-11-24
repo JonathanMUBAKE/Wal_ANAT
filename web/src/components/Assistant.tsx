@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowUp, RotateCcw, Sparkles, X } from "lucide-react";
 import { Hint, IconButton, Markdown, PANEL, ProjectIcon, cn } from "./ui";
 import { RunTimeline } from "./ai";
-import { onAiDelta, useAiStatus, useProjects, useRun } from "@/lib/hooks";
+import { onAiDelta, useAiStatus, useCan, useProjects, useRun } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { api } from "@/lib/api";
 
@@ -20,7 +20,10 @@ const SUGGESTIONS = [
 
 export function Assistant() {
   const shell = useShell();
-  const open = shell.assistant.open;
+  const can = useCan();
+  // Le serveur réserve l'assistant au droit « ai.assistant » (ai/engine.ts) : sans lui, le panneau n'existe pas,
+  // par quelque chemin qu'on l'appelle (barre latérale, palette, menus contextuels, raccourci clavier).
+  const open = shell.assistant.open && can("ai.assistant");
   const loc = useLocation();
   const projectId = loc.pathname.match(/^\/projects\/([^/?]+)/)?.[1] ?? null;
   const { data: projects } = useProjects();

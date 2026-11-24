@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { MenuContent, MenuItem, MenuLabel, MenuSeparator } from "@/components/ui";
+import { useCan } from "./hooks";
 import { useShell } from "./shell";
 
 /*
@@ -70,6 +71,7 @@ export function useContextMenu() {
 export function useTaskMenu() {
   const menu = useContextMenu();
   const shell = useShell();
+  const can = useCan();
   return (
     t: { id: string; key?: string; title: string; completed?: boolean; project_id?: string },
     opts: { onOpen?: () => void; onToggle?: (v: boolean) => void; canEdit?: boolean } = {},
@@ -95,11 +97,18 @@ export function useTaskMenu() {
       ...(t.project_id
         ? [{ label: "Nouvelle tâche dans ce projet", icon: Plus, onSelect: () => shell.openQuickAdd(t.project_id!) }]
         : []),
-      {
-        label: "Demander à l'assistant",
-        icon: Sparkles,
-        onSelect: () => shell.openAssistant(`Fais le point sur la tâche ${t.key ?? t.title} et propose les prochaines étapes.`),
-      },
+      ...(can("ai.assistant")
+        ? [
+            {
+              label: "Demander à l'assistant",
+              icon: Sparkles,
+              onSelect: () =>
+                shell.openAssistant(
+                  `Fais le point sur la tâche ${t.key ?? t.title} et propose les prochaines étapes.`,
+                ),
+            },
+          ]
+        : []),
     ]);
 }
 
@@ -151,6 +160,7 @@ export function ContextMenuProvider({ children }: { children: ReactNode }) {
   const shell = useShell();
   const nav = useNavigate();
   const qc = useQueryClient();
+  const can = useCan();
   const [state, setState] = useState<{ x: number; y: number; items: CtxItem[] } | null>(null);
 
   const open = useCallback<Open>(
@@ -178,7 +188,9 @@ export function ContextMenuProvider({ children }: { children: ReactNode }) {
       const general: CtxItem[] = [
         { label: "Rechercher…", icon: Search, hint: "Ctrl K", onSelect: () => shell.setPalette(true) },
         { label: "Nouvelle tâche", icon: Plus, onSelect: () => shell.openQuickAdd(null) },
-        { label: "Demander à l'assistant", icon: Sparkles, onSelect: () => shell.openAssistant() },
+        ...(can("ai.assistant")
+          ? [{ label: "Demander à l'assistant", icon: Sparkles, onSelect: () => shell.openAssistant() }]
+          : []),
         "-",
         { label: "Retour", icon: ArrowLeft, onSelect: () => nav(-1) },
         {

@@ -25,7 +25,8 @@ export function DashboardView({ project, canEdit, onStatusUpdate }: ViewProps & 
 
   return (
     <div className="mx-auto max-w-[1180px] space-y-5 px-4 py-6 sm:px-8">
-      <ProjectGovernance projectId={project.id} canEdit={project.role === "admin"} />
+      {/* Le serveur demande le rôle d'administrateur du projet et le droit « projects.edit » (activities.ts) */}
+      <ProjectGovernance projectId={project.id} canEdit={project.role === "admin" && canEdit} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Avancement" value={`${pct} %`} sub={`${s.done} sur ${s.total} tâches`} bar={pct / 100} />
         <Kpi label="En retard" value={s.overdue} sub="à débloquer" tone={s.overdue ? "danger" : undefined} />

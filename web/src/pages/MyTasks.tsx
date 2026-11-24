@@ -322,6 +322,9 @@ export function MyTasksPage() {
           tasks={[...open, ...givenTasks]}
           aiActive={NO_AI}
           canEdit={false}
+          canAddTask={false}
+          canEditTask={false}
+          canSections={false}
         />
         </div>
       )}

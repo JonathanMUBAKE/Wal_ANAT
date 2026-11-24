@@ -62,7 +62,14 @@ export interface ViewProps {
   project: ProjectDetail;
   tasks: Task[];
   aiActive: Set<string>;
+  /** Modifier la fiche du projet : rôle d'éditeur et droit « projects.edit ». */
   canEdit: boolean;
+  /** Créer une tâche : rôle d'éditeur et droit « tasks.create ». */
+  canAddTask: boolean;
+  /** Modifier une tâche : rôle d'éditeur et droit « tasks.edit ». */
+  canEditTask: boolean;
+  /** Gérer les sections : rôle d'éditeur et droit « sections.manage ». */
+  canSections: boolean;
 }
 
 const VIEWS = [
@@ -86,6 +93,7 @@ export function ProjectPage() {
   const { data: runs } = useRuns({ projectId: id });
   const shell = useShell();
   const qc = useQueryClient();
+  const can = useCan();
   const [statusOpen, setStatusOpen] = useState(false);
   const aiActive = useMemo(
     () => new Set((runs ?? []).filter((r) => isActive(r.status) && r.task_id).map((r) => r.task_id!)),
@@ -99,7 +107,13 @@ export function ProjectPage() {
         <Spinner />
       </div>
     );
-  const canEdit = project.role === "editor" || project.role === "admin";
+  // Le serveur exige les deux : le rôle sur le projet et le droit du profil (services.ts). L'interface compose
+  // les mêmes conditions, pour ne proposer aucun geste qu'il refuserait (règle 5.1.3 du système de design).
+  const editor = project.role === "editor" || project.role === "admin";
+  const canEdit = editor && can("projects.edit");
+  const canAddTask = editor && can("tasks.create");
+  const canEditTask = editor && can("tasks.edit");
+  const canSections = editor && can("sections.manage");
   const patch = (body: Record<string, unknown>) =>
     api.patch(`/api/projects/${project.id}`, body).then(
       () => {
@@ -108,11 +122,11 @@ export function ProjectPage() {
       },
       (e) => toast.error(e.message),
     );
-  const props: ViewProps = { project, tasks, aiActive, canEdit };
+  const props: ViewProps = { project, tasks, aiActive, canEdit, canAddTask, canEditTask, canSections };
   const unitBoard = project.kind === "unit";
   const views = unitBoard ? VIEWS.filter((v) => ["list", "board", "calendar", "timeline"].includes(v.id)) : VIEWS;
   const addTask = async () => {
-    if (!canEdit) return;
+    if (!canAddTask) return;
     const t = await api.post<Task>("/api/tasks", { project_id: project.id, title: "Nouvelle tâche" }).catch((e) => {
       toast.error(e.message);
       return null;
@@ -218,7 +232,7 @@ export function ProjectPage() {
                 Point d'avancement
               </Button>
             )}
-            {canEdit && (
+            {canAddTask && (
               <Button
                 variant="ai"
                 icon={<Wand2 className="size-3.5" />}
@@ -228,7 +242,7 @@ export function ProjectPage() {
                 Notes → tâches
               </Button>
             )}
-            {canEdit && (
+            {canAddTask && (
               <Button variant="primary" icon={<Plus className="size-3.5" />} onClick={addTask}>
                 Tâche
               </Button>
@@ -392,7 +406,9 @@ function Members({ project }: { project: ProjectDetail }) {
   const users = useUserMap();
   const { data: all } = useUsers();
   const qc = useQueryClient();
-  const isAdmin = project.role === "admin";
+  const can = useCan();
+  // Le serveur demande le rôle d'administrateur du projet et le droit « projects.members » (services.ts)
+  const isAdmin = project.role === "admin" && can("projects.members");
   const set = (userId: string, role: Role | null) =>
     api.put(`/api/projects/${project.id}/members/${userId}`, { role }).then(
       () => qc.invalidateQueries({ queryKey: ["project", project.id] }),

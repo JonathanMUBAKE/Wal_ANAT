@@ -224,11 +224,11 @@ export function TaskBoard({
 }
 
 /** Le tableau d'un projet ou du registre d'une entité : une colonne par section, déposer range la tâche dans la section. */
-export function BoardView({ project, tasks, aiActive, canEdit }: ViewProps) {
+export function BoardView({ project, tasks, aiActive, canAddTask, canEditTask, canSections }: ViewProps) {
   const move = useMoveTask();
   return (
     <TaskBoard
-      canEdit={canEdit}
+      canEdit={canEditTask}
       aiActive={aiActive}
       columns={project.sections.map((s) => {
         const items = tasks.filter((t) => t.section_id === s.id).sort((a, b) => a.position - b.position);
@@ -237,7 +237,7 @@ export function BoardView({ project, tasks, aiActive, canEdit }: ViewProps) {
           name: s.name,
           tasks: items,
           gauge: true,
-          menu: canEdit ? (
+          menu: canSections ? (
             <SectionMenu
               section={s}
               sections={project.sections}
@@ -245,7 +245,7 @@ export function BoardView({ project, tasks, aiActive, canEdit }: ViewProps) {
               canDelete={project.role === "admin"}
             />
           ) : undefined,
-          footer: canEdit ? <InlineAdd projectId={project.id} sectionId={s.id} compact /> : undefined,
+          footer: canAddTask ? <InlineAdd projectId={project.id} sectionId={s.id} compact /> : undefined,
         };
       })}
       onMove={({ task, to, before, after, revert }) =>

@@ -71,7 +71,7 @@ export function CommandPalette() {
       </div>
       <Command.List className="max-h-[min(60vh,440px)] overflow-y-auto p-2">
         <Command.Empty className="px-3 py-8 text-center text-[13px] text-muted">Aucun résultat.</Command.Empty>
-        {q.trim().length > 1 && (
+        {q.trim().length > 1 && can("ai.assistant") && (
           <Command.Group heading="Demander à l'IA" className={group}>
             <Command.Item value={`ia ${q}`} onSelect={() => run(() => shell.openAssistant(q))} className={item}>
               <Sparkles className="size-4 text-ai-fg" />
@@ -139,10 +139,12 @@ export function CommandPalette() {
           ))}
         </Command.Group>
         <Command.Group heading="Actions" className={group}>
-          <Command.Item onSelect={() => run(() => shell.openAssistant())} className={item}>
-            <Sparkles className="size-4 text-ai-fg" />
-            Ouvrir Assistant IA<span className="ml-auto text-[12px] text-faint">⌘J</span>
-          </Command.Item>
+          {can("ai.assistant") && (
+            <Command.Item onSelect={() => run(() => shell.openAssistant())} className={item}>
+              <Sparkles className="size-4 text-ai-fg" />
+              Ouvrir Assistant IA<span className="ml-auto text-[12px] text-faint">⌘J</span>
+            </Command.Item>
+          )}
           <Command.Item onSelect={() => run(() => shell.openQuickAdd(null))} className={item}>
             <Wand2 className="size-4 text-ai-fg" />
             Créer des tâches à partir de notes

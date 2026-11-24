@@ -238,6 +238,7 @@ function Overview({
 
 /** Les vues des tâches (celles d'un projet), appliquées au registre de l'entité. */
 function BoardViews({ board, view }: { board: UnitBoard; view: View }) {
+  const can = useCan();
   const { data: project } = useProject(board.project_id);
   const { data: tasks } = useProjectTasks(board.project_id);
   const { data: runs } = useRuns({ projectId: board.project_id });
@@ -246,11 +247,16 @@ function BoardViews({ board, view }: { board: UnitBoard; view: View }) {
     [runs],
   );
   if (!project || !tasks) return <Spinner />;
+  // Registre de l'entité : le serveur exige le rôle sur le tableau ET le droit du profil (règle 5.1.3)
+  const editor = project.role === "editor" || project.role === "admin";
   const props = {
     project: project as ProjectDetail,
     tasks,
     aiActive,
-    canEdit: project.role === "editor" || project.role === "admin",
+    canEdit: editor && can("projects.edit"),
+    canAddTask: editor && can("tasks.create"),
+    canEditTask: editor && can("tasks.edit"),
+    canSections: editor && can("sections.manage"),
   };
   return (
     <>

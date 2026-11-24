@@ -328,7 +328,7 @@ function PersonalHome() {
                 <h2 className="text-[15px] font-semibold">Assistant IA</h2>
               </div>
               <div className="mt-3 flex flex-col gap-1.5">
-                {["Qu'est-ce qui est en retard, et pourquoi ?"].map((q) => (
+                {(can("ai.assistant") ? ["Qu'est-ce qui est en retard, et pourquoi ?"] : []).map((q) => (
                   <button
                     key={q}
                     onClick={() => shell.openAssistant(q)}

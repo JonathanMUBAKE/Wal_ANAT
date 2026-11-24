@@ -56,9 +56,8 @@ function JoinButton({ t }: { t: Team }) {
 export function TeamsPage() {
   const { data: teams, isLoading } = useTeams();
   const { data: units } = useUnits();
-  const { data: me } = useMe();
+  const can = useCan();
   const [creating, setCreating] = useState(false);
-  const guest = me?.orgs.find((o) => o.id === me.org_id)?.role === "guest";
   const unitName = (id: string | null) => units?.find((u) => u.id === id)?.name;
   return (
     <div className="mx-auto max-w-[1480px] px-4 pb-16 pt-8 sm:px-8">
@@ -71,7 +70,7 @@ export function TeamsPage() {
             l'administrent.
           </Hint>
         </div>
-        {!guest && (
+        {can("teams.create") && (
           <Button variant="primary" icon={<Plus className="size-3.5" />} onClick={() => setCreating(true)}>
             Nouvelle équipe
           </Button>
@@ -261,7 +260,12 @@ export function TeamPage() {
       </div>
     );
   const orgRole = me?.orgs.find((o) => o.id === me.org_id)?.role;
-  const manager = t.my_role === "lead" || orgRole === "owner" || orgRole === "admin";
+  // Les mêmes conditions que `requireTeamManager` au serveur (services.ts) : son responsable la gère ; sinon il faut
+  // le droit « gérer toutes les équipes », qui ne porte pas sur une équipe privée — celle-là ne s'ouvre qu'à
+  // l'administration généraliste de l'organisation, laquelle détient ce droit avec tous les autres.
+  const manager =
+    t.my_role === "lead" ||
+    (can("teams.manage") && (t.visibility !== "private" || orgRole === "owner" || orgRole === "admin"));
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["team", t.id] });
     qc.invalidateQueries({ queryKey: ["teams"] });

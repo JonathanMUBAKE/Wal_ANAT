@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { Button, CARD, Dialog, Empty, Hint, IconButton, cn } from "@/components/ui";
 import { Field, Input, LoadingRows } from "@/components/gov";
 import { api } from "@/lib/api";
-import { useMe } from "@/lib/hooks";
+import { useCan, useMe } from "@/lib/hooks";
 import { HUES, HUE_LABEL, REF_ICONS, type RefList, type RefValue, useReferentials } from "@/lib/referentials";
 
 const LISTS: { id: RefList; label: string; hint: string }[] = [
@@ -64,6 +64,9 @@ const fail = (e: unknown) => toast.error((e as Error).message);
 function PrimaryDomain() {
   const qc = useQueryClient();
   const { data: me } = useMe();
+  const can = useCan();
+  // Modifier l'organisation relève du droit « org.settings » (services.ts) : sans lui, le domaine se lit seulement.
+  const editable = can("org.settings");
   const org = me?.orgs.find((o) => o.id === me.org_id);
   const current = org?.domains?.[0] ?? "";
   const [value, setValue] = useState<string | null>(null);
@@ -88,6 +91,7 @@ function PrimaryDomain() {
       <Hint className="mt-0.5">
         Le domaine de l'institution : adresses des agents (prénom.nom@{example}) et messagerie (serveur proposé : mail.
         {example}).
+        {!editable && " Le modifier relève du droit « Modifier l'organisation »."}
       </Hint>
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <Field label="Domaine principal du système" className="w-full max-w-[420px]">
@@ -99,12 +103,20 @@ function PrimaryDomain() {
               placeholder="agence.gouv.cd"
               autoComplete="off"
               spellCheck={false}
+              disabled={!editable}
             />
           )}
         </Field>
-        <Button variant="primary" loading={save.isPending} disabled={!v || v === current} onClick={() => save.mutate()}>
-          Enregistrer
-        </Button>
+        {editable && (
+          <Button
+            variant="primary"
+            loading={save.isPending}
+            disabled={!v || v === current}
+            onClick={() => save.mutate()}
+          >
+            Enregistrer
+          </Button>
+        )}
       </div>
     </section>
   );

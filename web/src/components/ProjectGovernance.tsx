@@ -126,7 +126,7 @@ export function ProjectGovernance({ projectId, canEdit }: { projectId: string; c
               <Scale className="size-3.5" />
               Décision attendue
             </p>
-            <p className={cn("mt-2 text-[14px] leading-snug", !g.decision_needed && "text-muted")}>
+            <p className={cn("mt-2 text-[13.5px] leading-snug", !g.decision_needed && "text-muted")}>
               {g.decision_needed || "Aucune décision en attente."}
             </p>
           </div>

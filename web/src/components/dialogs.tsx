@@ -10,10 +10,10 @@ import { AiBadge } from "./ai";
 import { useCan, useMe, useProject, useProjects, useTeams, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { api } from "@/lib/api";
+import { PALETTE } from "@/lib/referentials";
 import type { ParsedTask, ProjectDetail, StatusProposal } from "@/lib/types";
 import { STATUS, pl } from "@/lib/format";
 
-const COLORS = ["#6E56CF", "#0090FF", "#12A594", "#30A46C", "#F76B15", "#E5484D", "#D6409F", "#8E8C99"];
 const TEMPLATES: { id: string; label: string; hint: string; sections: string[] }[] = [
   {
     id: "kanban",
@@ -42,7 +42,7 @@ export function NewProjectDialog() {
   const qc = useQueryClient();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [color, setColor] = useState(COLORS[0]);
+  const [color, setColor] = useState(PALETTE[0]);
   const [icon, setIcon] = useState("rocket");
   const [template, setTemplate] = useState("kanban");
   const [due, setDue] = useState<string | null>(null);
@@ -158,7 +158,7 @@ export function NewProjectDialog() {
           />
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex gap-1.5">
-              {COLORS.map((c) => (
+              {PALETTE.map((c) => (
                 <button
                   key={c}
                   aria-label={`Couleur ${c}`}

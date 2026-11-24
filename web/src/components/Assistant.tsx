@@ -95,11 +95,11 @@ export function Assistant() {
           className="fixed inset-y-0 right-0 z-[45] flex w-full flex-col border-l border-line bg-panel shadow-lg sm:inset-y-3 sm:right-3 sm:w-[440px] sm:rounded-2xl sm:border"
         >
           <header className="flex h-14 shrink-0 items-center gap-2.5 border-b border-line px-4">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-[conic-gradient(from_200deg,var(--ai),#4FB3F0,var(--ai))] text-white shadow-sm">
+            <span className="flex size-8 items-center justify-center rounded-xl bg-[conic-gradient(from_200deg,var(--ai),var(--highlight),var(--ai))] text-white shadow-sm">
               <Sparkles className="size-4" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-semibold leading-tight">Assistant IA</p>
+              <p className="text-[15px] font-semibold leading-tight">Assistant IA</p>
               <p className="truncate text-[11.5px] text-faint">
                 {ai?.provider === "anthropic" ? `Claude · ${ai.model}` : "Mode démo : réponses simulées, sans clé API"}
               </p>

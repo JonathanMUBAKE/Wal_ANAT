@@ -23,6 +23,10 @@
   --primary: #006BAB;
   --primary-hover: #005E96;
   --night: #0B2A45;
+  /* Accent lisible sur la surface nuit (connexion, carte de rappel) : elle est sombre dans les deux thèmes. */
+  --night-accent: #8CCBF2;
+  /* Reflet clair des dégradés coniques (pastille IA, avatars). */
+  --highlight: #4FB3F0;
   --ring: rgba(0, 123, 196, 0.2);
   --brand-soft: rgba(0, 123, 196, 0.08);
   --on-primary: #FFFFFF;
@@ -141,6 +145,8 @@
   --color-table-head: var(--table-head);
   --color-primary-hover: var(--primary-hover);
   --color-night: var(--night);
+  --color-night-accent: var(--night-accent);
+  --color-highlight: var(--highlight);
   --color-brand-soft: var(--brand-soft);
   --color-primary: var(--primary);
   --color-on-primary: var(--on-primary);

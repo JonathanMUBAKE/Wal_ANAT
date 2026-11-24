@@ -140,7 +140,7 @@ function PersonalHome() {
           <RoleFocus />
           <section className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
             <div className="flex items-center gap-1 overflow-x-auto border-b border-line px-4 pt-3">
-              <h2 className="mr-3 hidden shrink-0 pb-2.5 text-[14px] font-semibold sm:block">
+              <h2 className="mr-3 hidden shrink-0 pb-2.5 text-[15px] font-semibold sm:block">
                 Mes tâches
               </h2>
               {(
@@ -203,7 +203,7 @@ function PersonalHome() {
 
           <section>
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="text-[14px] font-semibold">Projets</h2>
+              <h2 className="text-[15px] font-semibold">Projets</h2>
               <span className="flex gap-1">
                 <Button
                   size="sm"
@@ -283,7 +283,7 @@ function PersonalHome() {
                       </span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-medium">
+                      <p className="truncate text-[15px] font-medium">
                         {p.name}
                       </p>
                       <p className="mt-0.5 flex items-center gap-2 text-[12px] text-muted">
@@ -332,7 +332,7 @@ function PersonalHome() {
             <div className="relative">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 text-ai-fg" />
-                <h2 className="text-[14px] font-semibold">Assistant IA</h2>
+                <h2 className="text-[15px] font-semibold">Assistant IA</h2>
               </div>
               <div className="mt-3 flex flex-col gap-1.5">
                 {["Qu'est-ce qui est en retard, et pourquoi ?"].map((q) => (
@@ -358,7 +358,7 @@ function PersonalHome() {
 
           {!!approvals?.length && (
             <section>
-              <h2 className="mb-3 text-[14px] font-semibold">
+              <h2 className="mb-3 text-[15px] font-semibold">
                 En attente de votre accord
               </h2>
               <div className="space-y-2.5">
@@ -373,7 +373,7 @@ function PersonalHome() {
           {!!runs?.length && (
             <section>
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-[14px] font-semibold">
+                <h2 className="text-[15px] font-semibold">
                   Activité des coéquipiers IA
                 </h2>
                 <Link

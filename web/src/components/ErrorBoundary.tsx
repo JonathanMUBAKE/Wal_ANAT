@@ -19,8 +19,8 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
         role="alert"
         className="flex min-h-screen flex-col items-center justify-center gap-3 bg-bg px-6 text-center text-fg"
       >
-        <p className="font-serif text-[26px] leading-tight">Un problème d'affichage est survenu</p>
-        <p className="max-w-md text-[14px] text-muted">
+        <p className="font-serif text-[18px] leading-tight">Un problème d'affichage est survenu</p>
+        <p className="max-w-md text-[13.5px] text-muted">
           Vos données ne sont pas perdues. Rechargez la page pour reprendre.
         </p>
         <button

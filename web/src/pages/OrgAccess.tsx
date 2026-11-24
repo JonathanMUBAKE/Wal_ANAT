@@ -447,7 +447,7 @@ export function InvitationsPanel() {
   return (
     <section className="mt-5 rounded-2xl border border-line bg-panel p-5 shadow-sm">
       {link && <LinkResult result={link} onClose={() => setLink(null)} />}
-      <h3 className="flex items-center gap-2 text-[14px] font-semibold">
+      <h3 className="flex items-center gap-2 text-[15px] font-semibold">
         <UserPlus className="size-4 text-muted" />
         Inviter une personne
       </h3>

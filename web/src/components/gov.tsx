@@ -104,7 +104,7 @@ export function PageHeader({
               <Icon className="size-[18px]" />
             </span>
           )}
-          <h1 className="min-w-0 text-[22px] font-semibold leading-tight tracking-[-0.02em]">{title}</h1>
+          <h1 className="min-w-0 text-[24px] font-semibold leading-tight tracking-[-0.025em]">{title}</h1>
           {typeof subtitle === "string" && subtitle.length > 70 && <Hint iconOnly>{subtitle}</Hint>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -131,7 +131,7 @@ export const Section = ({
   <section className={cn("rounded-2xl border border-line bg-panel shadow-sm", className)}>
     {title && (
       <div className="flex items-center justify-between gap-2 px-5 pb-1 pt-4">
-        <h2 className="text-[14.5px] font-medium tracking-[-0.01em]">{title}</h2>
+        <h2 className="text-[15px] font-medium tracking-[-0.01em]">{title}</h2>
         {aside}
       </div>
     )}
@@ -194,7 +194,7 @@ export function StatCard({
       <p className="truncate text-[13px] font-medium">{label}</p>
       <p className="mt-3 flex items-center gap-2.5">
         {icon && <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4", STAT_TILE[tone])}>{icon}</span>}
-        <span className={cn("text-[26px] font-medium leading-none tracking-[-0.02em] tabular", (strong || tone === "danger") && "text-danger")}>
+        <span className={cn("text-[22px] font-medium leading-none tracking-[-0.02em] tabular", (strong || tone === "danger") && "text-danger")}>
           {typeof value === "number" ? <CountUp value={value} duration={700} /> : value}
         </span>
       </p>

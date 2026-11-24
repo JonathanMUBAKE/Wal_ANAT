@@ -136,7 +136,7 @@ function HrIndicators({ rows }: { rows: AgentRow[] }) {
       (a.contract_end_on && a.contract_end_on >= today && a.contract_end_on <= inYear) ||
       (a.retire_on && a.retire_on >= today && a.retire_on <= inYear),
   );
-  const box = "rounded-2xl border border-line bg-panel p-4";
+  const box = "rounded-2xl border border-line bg-panel p-4 shadow-sm";
   return (
     <div className="grid gap-3 md:grid-cols-3">
       <section className={box}>

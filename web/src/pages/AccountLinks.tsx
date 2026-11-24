@@ -12,8 +12,8 @@ export const PASSWORD_HINT =
 function BadLink() {
   return (
     <div>
-      <h2 className="text-[20px] font-semibold">Lien expiré</h2>
-      <p className="mt-2 text-[14px] text-muted">
+      <h2 className="text-[18px] font-semibold">Lien expiré</h2>
+      <p className="mt-2 text-[13.5px] text-muted">
         Ce lien n'est plus valable. Demandez-en un nouveau à votre administrateur.
       </p>
       <Link to="/login" className="mt-4 inline-block text-[13px] text-muted hover:text-fg">
@@ -114,7 +114,7 @@ export function ActivationPage() {
         <BadLink />
       ) : (
         <form onSubmit={submit}>
-          <h2 className="text-[20px] font-semibold">
+          <h2 className="text-[18px] font-semibold">
             {setup ? "Créer l'administrateur système" : "Activer votre compte"}
           </h2>
           <p className="mt-1 text-[13px] text-muted">
@@ -188,7 +188,7 @@ export function ResetPage() {
         <BadLink />
       ) : (
         <form onSubmit={submit}>
-          <h2 className="text-[20px] font-semibold">Nouveau mot de passe</h2>
+          <h2 className="text-[18px] font-semibold">Nouveau mot de passe</h2>
           <p className="mt-1 text-[13px] text-muted">Pour {peek.data.email}.</p>
           <PasswordFields password={password} confirm={confirm} setPassword={setPassword} setConfirm={setConfirm} />
           <Button type="submit" variant="primary" size="lg" className="mt-4 w-full" loading={busy}>

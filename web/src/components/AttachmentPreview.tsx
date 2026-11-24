@@ -102,7 +102,7 @@ const Truncated = ({ on }: { on: boolean }) =>
 
 function Document({ text }: { text: string }) {
   return (
-    <div className="mx-auto max-w-[720px] space-y-2 text-[14px] leading-relaxed">
+    <div className="mx-auto max-w-[720px] space-y-2 text-[13.5px] leading-relaxed">
       {text.split("\n").map((line, i) => {
         const heading = line.match(/^(#{1,6})\s+(.*)$/);
         if (heading)
@@ -112,10 +112,10 @@ function Document({ text }: { text: string }) {
               className={cn(
                 "font-semibold",
                 heading[1].length === 1
-                  ? "pt-2 text-[20px]"
+                  ? "pt-2 text-[18px]"
                   : heading[1].length === 2
-                    ? "pt-1 text-[16px]"
-                    : "text-[14.5px]",
+                    ? "pt-1 text-[15px]"
+                    : "text-[13.5px]",
               )}
             >
               {heading[2]}

@@ -84,7 +84,7 @@ function Legend({ items }: { items: { label: string; color: string }[] }) {
     <div className="flex flex-wrap items-center gap-3 text-[12px] text-muted">
       {items.map((i) => (
         <span key={i.label} className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[3px]" style={{ background: i.color }} />
+          <span className="size-2.5 rounded-sm" style={{ background: i.color }} />
           {i.label}
         </span>
       ))}
@@ -140,7 +140,7 @@ function Trend({ data }: { data: UnitDashboard["trend"] }) {
                 ).map(([v, color], k) => (
                   <div
                     key={k}
-                    className="w-[10px] rounded-t-[4px] sm:w-[14px]"
+                    className="w-[10px] rounded-t-sm sm:w-[14px]"
                     style={{ height: v ? Math.max(3, (v / top) * H) : 0, background: color }}
                   />
                 ))}
@@ -148,11 +148,11 @@ function Trend({ data }: { data: UnitDashboard["trend"] }) {
                   <div className="pointer-events-none absolute bottom-full z-10 mb-2 w-max rounded-lg border border-line bg-panel px-3 py-2 text-[12px] shadow-lg">
                     <p className="font-medium">Semaine du {frDate(d.week)}</p>
                     <p className="mt-1 flex items-center gap-1.5 text-muted">
-                      <span className="size-2 rounded-[2px]" style={{ background: "var(--viz-1)" }} />
+                      <span className="size-2 rounded-sm" style={{ background: "var(--viz-1)" }} />
                       Créées : <span className="font-medium text-fg tabular-nums">{d.created}</span>
                     </p>
                     <p className="flex items-center gap-1.5 text-muted">
-                      <span className="size-2 rounded-[2px]" style={{ background: "var(--viz-2)" }} />
+                      <span className="size-2 rounded-sm" style={{ background: "var(--viz-2)" }} />
                       Terminées : <span className="font-medium text-fg tabular-nums">{d.completed}</span>
                     </p>
                   </div>
@@ -257,13 +257,13 @@ function Workload({ rows }: { rows: NonNullable<UnitDashboard["workload"]> }) {
               <span className="flex h-3 gap-[2px]">
                 {r.overdue > 0 && (
                   <span
-                    className="rounded-l-[4px]"
+                    className="rounded-l-sm"
                     style={{ width: `${(r.overdue / max) * 100}%`, minWidth: 6, background: "var(--danger)" }}
                   />
                 )}
                 {r.open - r.overdue > 0 && (
                   <span
-                    className={cn("rounded-r-[4px]", r.overdue === 0 && "rounded-l-[4px]")}
+                    className={cn("rounded-r-sm", r.overdue === 0 && "rounded-l-sm")}
                     style={{ width: `${((r.open - r.overdue) / max) * 100}%`, minWidth: 6, background: "var(--viz-1)" }}
                   />
                 )}
@@ -332,7 +332,7 @@ export function UnitProjects({ rows, onCreate }: { rows: UnitDashboard["projects
           <span className="flex items-center gap-2.5">
             <ProjectIcon icon={p.icon} color={p.color} size={28} />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[14px] font-medium">{p.name}</span>
+              <span className="block truncate text-[15px] font-medium">{p.name}</span>
               <span className="block truncate text-[12px] text-muted">
                 {p.role === "contribue" ? "Contribution · " : ""}
                 {STATUS[p.status] ?? p.status}
@@ -421,7 +421,7 @@ export function UnitDashboardView({
             <Gauge className="size-3.5 text-faint" />
             Achèvement (30 j)
           </p>
-          <p className="mt-1 text-[28px] font-semibold leading-none tracking-[-0.02em] tabular-nums">
+          <p className="mt-1 text-[30px] font-semibold leading-none tracking-[-0.02em] tabular-nums">
             {k.completion_rate} %
           </p>
           <span

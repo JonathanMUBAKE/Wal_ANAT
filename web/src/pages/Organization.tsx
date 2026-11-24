@@ -24,7 +24,7 @@ function UnitKind({ code }: { code: string }) {
     <>
       {t.label}
       {t.value?.props.provincial && (
-        <span className="ml-1.5 inline-flex items-center gap-0.5 rounded bg-success-soft px-1 text-[10.5px] font-medium text-success">
+        <span className="ml-1.5 inline-flex items-center gap-0.5 rounded bg-success-soft px-1 text-[11px] font-medium text-success">
           <MapPin className="size-2.5" />
           Province
         </span>
@@ -265,7 +265,7 @@ function UnitDetail({
           onChange={(e) => setName(e.target.value)}
           onBlur={() => name.trim() && name !== unit.name && patch({ name: name.trim() }, "Entité renommée")}
           aria-label="Nom de l'entité"
-          className="w-full rounded-md bg-transparent text-[19px] font-semibold tracking-[-0.01em] outline-none hover:bg-hover focus:bg-hover disabled:hover:bg-transparent"
+          className="w-full rounded-md bg-transparent text-[18px] font-semibold tracking-[-0.01em] outline-none hover:bg-hover focus:bg-hover disabled:hover:bg-transparent"
         />
         {address && (
           <p className="-mt-2 flex items-center gap-1.5 text-[12.5px] text-muted" title="Adresse de service">

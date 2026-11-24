@@ -17,7 +17,7 @@ import type { User } from "@/lib/types";
 
 type Step = "login" | "mfa" | "forgot" | "request" | "sent";
 export const authField =
-  "field-ring mt-1 h-10 w-full rounded-lg border border-field bg-panel px-3 text-[14px] text-fg shadow-sm outline-none";
+  "field-ring mt-1 h-10 w-full rounded-lg border border-field bg-panel px-3 text-[13.5px] text-fg shadow-sm outline-none";
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
@@ -36,7 +36,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-5 text-[12px] font-medium uppercase tracking-[0.16em] text-[#8CCBF2]"
+            className="mb-5 text-[12px] font-medium uppercase tracking-[0.16em] text-night-accent"
           >
             Agence Nationale d'Aménagement du Territoire
           </motion.p>
@@ -44,11 +44,11 @@ export function AuthShell({ children }: { children: ReactNode }) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="font-serif text-[46px] leading-[1.04] tracking-[-0.015em] sm:text-[68px]"
+            className="font-serif text-[40px] leading-[1.04] tracking-[-0.015em] sm:text-[52px]"
           >
             Piloter l'Agence,
             <br />
-            <span className="italic text-[#8CCBF2]">en toute clarté.</span>
+            <span className="italic text-night-accent">en toute clarté.</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 12 }}
@@ -72,7 +72,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
             ["03", "Décider"],
           ].map(([n, t]) => (
             <li key={n}>
-              <span className="block font-serif text-[22px] italic text-[#8CCBF2]">{n}</span>
+              <span className="block font-serif text-[22px] italic text-night-accent">{n}</span>
               {t}
             </li>
           ))}
@@ -156,7 +156,7 @@ export function LoginPage() {
     <AuthShell>
       {step === "login" && (
         <form onSubmit={login}>
-          <h2 className="text-[20px] font-semibold">Connexion</h2>
+          <h2 className="text-[18px] font-semibold">Connexion</h2>
           <label className="mt-5 block text-[12.5px] font-medium text-muted">
             Adresse e-mail
             <input
@@ -197,7 +197,7 @@ export function LoginPage() {
       )}
       {step === "mfa" && (
         <form onSubmit={mfa}>
-          <h2 className="flex items-center gap-2 text-[20px] font-semibold">
+          <h2 className="flex items-center gap-2 text-[18px] font-semibold">
             <ShieldCheck className="size-5 text-ai-fg" />
             Double authentification
           </h2>
@@ -221,7 +221,7 @@ export function LoginPage() {
       )}
       {step === "forgot" && (
         <form onSubmit={forgot}>
-          <h2 className="text-[20px] font-semibold">Mot de passe oublié</h2>
+          <h2 className="text-[18px] font-semibold">Mot de passe oublié</h2>
           <p className="mt-1 text-[13px] text-muted">
             Indiquez votre adresse : nous vous enverrons un lien valable 30 minutes.
           </p>
@@ -244,7 +244,7 @@ export function LoginPage() {
       )}
       {step === "request" && (
         <form onSubmit={request}>
-          <h2 className="text-[20px] font-semibold">Demander un accès</h2>
+          <h2 className="text-[18px] font-semibold">Demander un accès</h2>
           <p className="mt-1 text-[13px] text-muted">
             Un administrateur examinera votre demande avant d'ouvrir votre compte.
           </p>
@@ -280,8 +280,8 @@ export function LoginPage() {
       )}
       {step === "sent" && (
         <div>
-          <h2 className="text-[20px] font-semibold">C'est noté</h2>
-          <p className="mt-2 text-[14px] leading-relaxed text-muted">{sentText}</p>
+          <h2 className="text-[18px] font-semibold">C'est noté</h2>
+          <p className="mt-2 text-[13.5px] leading-relaxed text-muted">{sentText}</p>
           {back}
         </div>
       )}
@@ -299,7 +299,7 @@ export function LoginPage() {
               >
                 <Avatar user={u} size={34} />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[14px] font-medium">{u.name}</span>
+                  <span className="block text-[15px] font-medium">{u.name}</span>
                   <span className="block truncate text-[12.5px] text-muted">{u.title}</span>
                 </span>
                 <ArrowRight className="size-4 text-faint transition-transform group-hover:translate-x-0.5 group-hover:text-fg" />

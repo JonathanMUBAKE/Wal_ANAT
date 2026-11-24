@@ -171,7 +171,7 @@ function Referentials() {
         {meta.hint} Le code d'une valeur ne change jamais ; une valeur ne se supprime pas, elle s'archive et reste
         affichée sur les dossiers qui la portent.
       </Hint>
-      <section className="overflow-hidden rounded-2xl border border-line bg-panel">
+      <section className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
         {isLoading ? (
           <LoadingRows />
         ) : values.length ? (

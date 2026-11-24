@@ -126,7 +126,7 @@ export const HEALTH: Record<
 };
 
 /** Teintes des séances dans l'agenda de l'accueil. */
-const MEETING_HUES = ["var(--primary)", "#8B7CF6", "#2BB3A3", "#E0699F", "#E0A23B"];
+const MEETING_HUES = ["var(--primary)", "var(--hue-violet)", "var(--hue-teal)", "var(--hue-terracotta)", "var(--hue-ochre)"];
 
 export function PilotagePage() {
   const { data: me } = useMe();
@@ -228,7 +228,7 @@ export function PilotagePage() {
     <div className="mx-auto max-w-[1320px] space-y-4 p-4 sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3 pb-1">
         <div>
-          <h1 className="text-[22px] font-semibold leading-tight tracking-[-0.02em]">{salutation(me?.name)}</h1>
+          <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.025em]">{salutation(me?.name)}</h1>
           <p className="mt-0.5 text-[13px] text-muted first-letter:uppercase">
             {format(parseISO(o.today), "EEEE d MMMM yyyy", { locale: fr })}
           </p>
@@ -252,7 +252,7 @@ export function PilotagePage() {
               </span>
               <span
                 className={cn(
-                  "mt-2.5 block text-[28px] font-semibold leading-none tracking-[-0.025em] tabular",
+                  "mt-2.5 block text-[30px] font-semibold leading-none tracking-[-0.025em] tabular",
                   f.strong && "text-danger",
                 )}
               >
@@ -285,7 +285,7 @@ export function PilotagePage() {
           note={period}
           badge={
             <span className="hidden size-10 shrink-0 flex-col items-center justify-center rounded-lg border border-line bg-bg leading-none sm:flex">
-              <span className="text-[10px] text-muted">{format(days[0], "MMM", { locale: fr }).replace(".", "")}</span>
+              <span className="text-[11px] text-muted">{format(days[0], "MMM", { locale: fr }).replace(".", "")}</span>
               <span className="mt-0.5 text-[15px] font-semibold tabular">{format(days[0], "d")}</span>
             </span>
           }
@@ -319,7 +319,7 @@ export function PilotagePage() {
           ) : o.agenda.length ? (
             o.agenda.slice(0, 8).map((a) => (
               <Row key={a.id}>
-                <span className="size-2 shrink-0 rounded-[2px]" style={{ background: hueOf(a.form, a.title) }} title={form(a.form).label} />
+                <span className="size-2 shrink-0 rounded-sm" style={{ background: hueOf(a.form, a.title) }} title={form(a.form).label} />
                 <span className="w-[52px] shrink-0 whitespace-nowrap text-[12px] tabular text-muted">
                   {format(parseISO(a.date), "d MMM", { locale: fr })}
                 </span>
@@ -528,7 +528,7 @@ function Card({
   return (
     <section className={cn("@container min-w-0 overflow-hidden rounded-2xl border border-line bg-panel shadow-sm", className)}>
       <div className="flex items-center justify-between gap-2 px-4 pb-2.5 pt-3">
-        <h2 className={cn("flex gap-2 text-[14px] font-medium", badge ? "items-center gap-3" : "items-center")}>
+        <h2 className={cn("flex gap-2 text-[15px] font-medium", badge ? "items-center gap-3" : "items-center")}>
           {badge}
           <span className={cn(badge ? "flex flex-col gap-0.5" : "contents")}>
           {title}

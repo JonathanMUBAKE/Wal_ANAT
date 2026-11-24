@@ -42,34 +42,57 @@ Ce document fait foi pour tout nouvel écran. Le code de référence se trouve d
 - Formes d'activité : `--form-projet_interne`, `--form-projet_confie`, `--form-commission`, `--form-conference`, `--form-rendez_vous`, `--form-interne`.
 - IA : `--ai` violet, réservé.
 - Chaque couleur existe en version « douce » (`*-soft`) pour les fonds de pastilles et d'événements.
+- **Une seule palette de teintes** dans toute l'application : les huit `--hue-*` (bleu, sarcelle, vert, ocre,
+  terre cuite, indigo, violet, ardoise). `HUES` (`lib/referentials.ts`) les donne en jetons, pour ce qui
+  s'affiche ; `PALETTE`, en valeurs fixes, pour ce qui se range en base (couleur d'un projet, d'une équipe).
+- Deux rôles de surface sombre : `--night-accent` (accent lisible sur la surface nuit) et `--highlight`
+  (reflet des dégradés coniques). **Aucune couleur écrite en dur dans un composant.**
 
 ### Rayons (géométrie)
-| Jeton | Valeur | Pour |
+Six crans, pas un de plus. **Aucune valeur libre** (`rounded-[7px]`, `rounded-[10px]`…) : le cran existe déjà.
+
+| Classe | Valeur | Pour |
 | --- | --- | --- |
-| `r-sm` | 6–8 px (`rounded-md`, `rounded-lg`) | Cases, compteurs, boutons-icônes, liens de navigation |
-| `r-md` | 10 px (`rounded-[10px]`) | **Toutes les commandes** : boutons, champs, recherche, filtres, sélecteurs |
-| `r-lg` | 14 px (`rounded-xl`) | Cartes internes : kanban, événements, détail |
-| `r-xl` | 16 px (`rounded-2xl`) | Cartes de page et sections |
-| `r-pill` | 999 px | **Seulement** les statuts (`Badge`) et les points de couleur |
+| `rounded-sm` | 4 px | Carré de couleur d'une légende, barre d'avancement |
+| `rounded-md` | 6 px | Cases à cocher, compteurs, boutons-icônes, pastille d'onglet segmenté |
+| `rounded-lg` | 10 px | **Toutes les commandes** : boutons, champs, recherche, filtres, liens de navigation |
+| `rounded-xl` | 14 px | Cartes internes : kanban, événements, détail |
+| `rounded-2xl` | 16 px | Cartes de page, sections, tiroir |
+| `rounded-full` | — | **Seulement** les statuts (`Badge`), les avatars et les pastilles |
 
 ### Hauteurs de commande
-Une seule échelle : **32 px** (compacte : pagination, actions de ligne), **36 px** (par défaut : boutons, recherche, filtres, onglets segmentés), **40 px** (onglets soulignés). Deux commandes côte à côte ont toujours la même hauteur.
+Une seule échelle : **32 px** (`h-8`, compacte : pagination, actions de ligne), **36 px** (`h-9`, par défaut :
+boutons, recherche, filtres, onglets segmentés), **40 px** (`h-10`, onglets soulignés, carrés d'icône de la barre
+du haut). Deux commandes côte à côte ont toujours la même hauteur.
+
+Les **lignes** ne sont pas des commandes et suivent leur propre échelle : **40 px** (ligne dense), **44 px**
+(ligne de tâche, en-tête de groupe), **56 px** (ligne de tableau `grid-table`).
 
 ### Typographie (Geist)
-| Rôle | Taille / graisse |
-| --- | --- |
-| Titre de page | 24 px, demi-gras, interlettrage −2,5 % |
-| Chiffre clé | 30–32 px, demi-gras, chiffres tabulaires |
-| Titre de carte | 15 px, demi-gras |
-| Titre de groupe (liste) | 13,5 px, demi-gras |
-| Corps | 13–13,5 px, normal |
-| En-tête de colonne | 12 px, normal, gris, avec icône |
-| Sceau (numéro officiel) | Mono 11 px |
+**Douze tailles, et aucune autre.** Une taille qui ne figure pas dans ce tableau est une erreur : le rôle existe
+déjà. L'écriture reste `text-[13px]` — une seule graphie par taille, repérable d'un `grep`.
+
+| Rôle | Taille | Graisse |
+| --- | --- | --- |
+| Héro (connexion, accueil, coéquipiers IA) | 40 px, **52 px** à partir de `sm:` | `font-serif` |
+| Titre de page (`h1`) | 24 px | demi-gras, interlettrage −2,5 % |
+| Grand chiffre (tableau de bord, carte de synthèse) | 30 px | demi-gras, chiffres tabulaires |
+| Chiffre compact (grille de faits, carte dense) | 22 px | demi-gras, chiffres tabulaires |
+| Titre de panneau, de tiroir, de dialogue, saisie d'un titre | 18 px | demi-gras |
+| Titre de carte, de section | 15 px | demi-gras ou moyen |
+| Titre de groupe (liste) | 13,5 px | demi-gras |
+| Corps, champ, texte long | 13,5 px / 13 px | normal |
+| Corps secondaire | 12,5 px | normal |
+| En-tête de colonne, mention | 12 px | normal, gris, avec icône |
+| Mention fine | 11,5 px | normal |
+| Sceau (numéro officiel), micro-pastille | 11 px | mono pour le sceau |
 
 ### Retenue (la règle d'Asana)
 - Une seule action principale bleue par écran, en haut à droite.
 - Les actions de ligne restent discrètes (60 % d'opacité) et se révèlent au survol.
-- Pas d'ombre portée sur ce qui est posé : un filet suffit. L'ombre est réservée au survol, au menu, au dialogue.
+- Une carte s'écrit partout `rounded-2xl border border-line bg-panel shadow-sm` : filet net et ombre à peine
+  posée (en thème sombre, `--shadow-sm` ajoute le filet de lumière au sommet). Les ombres franches
+  (`--shadow-md`, `--shadow-lg`) restent au survol, au menu et au dialogue.
 - Les couleurs vives ne servent qu'aux statuts et aux formes d'activité ; le reste est en encre et en gris.
 - Une page n'a qu'une rangée d'onglets. Pas de tuiles de chiffres sur une page de liste : les compteurs vivent dans les en-têtes de groupe.
 

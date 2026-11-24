@@ -42,7 +42,7 @@ export function TimelineView({ project, tasks, aiActive }: ViewProps) {
                   <div className="px-2 pt-1.5 text-[12px] font-medium">{format(d, "d MMM", { locale: fr })}</div>
                   <div className="flex">
                     {Array.from({ length: 7 }, (_, i) => (
-                      <div key={i} className="pb-1 text-center text-[10.5px] text-faint" style={{ width: DAY }}>
+                      <div key={i} className="pb-1 text-center text-[11px] text-faint" style={{ width: DAY }}>
                         {format(addDays(d, i), "EEEEE", { locale: fr })}
                       </div>
                     ))}
@@ -56,7 +56,7 @@ export function TimelineView({ project, tasks, aiActive }: ViewProps) {
             className="pointer-events-none absolute bottom-0 top-0 z-[5] w-px bg-danger"
             style={{ left: 240 + todayX + DAY / 2 }}
           >
-            <span className="absolute -top-0 left-1 rounded bg-danger px-1 text-[10px] font-medium text-on-danger">
+            <span className="absolute -top-0 left-1 rounded bg-danger px-1 text-[11px] font-medium text-on-danger">
               Auj.
             </span>
           </div>

@@ -1962,7 +1962,7 @@ function MeetingReading({ m }: { m: MeetingDetail }) {
             {m.agenda.map((item, i) => (
               <li key={item.id ?? i} className="space-y-3 px-5 py-4">
                 <div>
-                  <p className="text-[14px] font-semibold">
+                  <p className="text-[15px] font-semibold">
                     {i + 1}. {item.subject}
                   </p>
                   {item.speakers && <p className="text-[12.5px] text-muted">Rapporteur : {item.speakers}</p>}

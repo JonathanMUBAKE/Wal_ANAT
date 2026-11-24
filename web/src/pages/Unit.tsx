@@ -405,7 +405,7 @@ function FollowUp({ unitId }: { unitId: string }) {
             ["Terminées (30 j)", total("done_30")],
           ] as const
         ).map(([label, v]) => (
-          <div key={label} className="rounded-2xl border border-line bg-panel px-4 py-3">
+          <div key={label} className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm">
             <p className="text-[12px] text-muted">{label}</p>
             <p
               className={cn("text-[22px] font-semibold tabular-nums", label === "En retard" && v > 0 && "text-danger")}

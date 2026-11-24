@@ -118,7 +118,7 @@ export function SectionMenu({
               setRenaming(false);
             }
           }}
-          className="h-10 w-full rounded-lg border border-line bg-bg/60 px-3 text-[14px] outline-none focus:border-line-strong"
+          className="h-10 w-full rounded-lg border border-line bg-bg/60 px-3 text-[13.5px] outline-none focus:border-line-strong"
         />
       </Dialog>
 

@@ -9,6 +9,7 @@ import {
   type Permission,
 } from "./permissions.js";
 import { Referentials } from "./referentials.js";
+import { PALETTE } from "./palette.js";
 
 // ---------------------------------------------------------------------------
 // Types exposés par l'API
@@ -1085,7 +1086,7 @@ export class Services {
           input.name.trim(),
           input.description ?? "",
           input.visibility ?? "public",
-          input.color ?? "#6E56CF",
+          input.color ?? PALETTE[6],
         ],
       );
       await q.query("INSERT INTO team_members (team_id, user_id, role) VALUES ($1,$2,'lead')", [id, actorId]);
@@ -1420,7 +1421,7 @@ export class Services {
           input.access ?? "team",
           name,
           input.description ?? "",
-          input.color ?? "#6E56CF",
+          input.color ?? PALETTE[6],
           input.icon ?? "rocket",
           input.due_on ?? null,
           actorId,

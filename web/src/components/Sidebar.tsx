@@ -176,7 +176,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          "group relative flex h-9 items-center gap-3 rounded-[10px] px-2.5 text-[13.5px] transition-colors duration-200",
+          "group relative flex h-9 items-center gap-3 rounded-lg px-2.5 text-[13.5px] transition-colors duration-200",
           isActive ? "font-medium text-primary" : "text-fg/75 hover:bg-hover hover:text-fg",
         )
       }
@@ -186,7 +186,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           {isActive && (
             <motion.span
               layoutId={`nav-${navId}`}
-              className="absolute inset-0 rounded-[10px] bg-brand-soft"
+              className="absolute inset-0 rounded-lg bg-brand-soft"
               transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.7 }}
             />
           )}
@@ -276,9 +276,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="border-t border-line p-3">
         <button
           onClick={() => shell.openAssistant()}
-          className="flex w-full items-center gap-3 rounded-[10px] px-2.5 py-2 text-left transition-colors hover:bg-ai-soft"
+          className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-ai-soft"
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-[conic-gradient(from_200deg,var(--ai),#4FB3F0,var(--ai))] text-white">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[conic-gradient(from_200deg,var(--ai),var(--highlight),var(--ai))] text-white">
             <Sparkles className="size-4" />
           </span>
           <span className="min-w-0 flex-1">
@@ -301,7 +301,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
   const { data: notifs } = useNotifications();
   const unread = notifs?.filter((n) => !n.read).length ?? 0;
   const box =
-    "relative flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-line-strong bg-panel text-muted transition-colors hover:bg-hover hover:text-fg";
+    "relative flex size-10 shrink-0 items-center justify-center rounded-lg border border-line-strong bg-panel text-muted transition-colors hover:bg-hover hover:text-fg";
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-panel px-4 sm:px-6">
       <button aria-label="Menu" onClick={onMenu} className={cn(box, "lg:hidden")}>
@@ -309,7 +309,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
       </button>
       <button
         onClick={() => shell.setPalette(true)}
-        className="flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-[10px] border border-line-strong bg-panel px-3.5 text-[13px] text-faint transition-colors hover:border-faint/60 sm:max-w-[380px]"
+        className="flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-line-strong bg-panel px-3.5 text-[13px] text-faint transition-colors hover:border-faint/60 sm:max-w-[380px]"
       >
         <Search className="size-4 shrink-0" />
         <span className="flex-1 truncate text-left">Rechercher une réunion, un dossier, une personne…</span>
@@ -345,7 +345,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
           {unread > 0 && (
             <span
               aria-hidden
-              className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-on-danger ring-2 ring-panel"
+              className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[11px] font-semibold text-on-danger ring-2 ring-panel"
             >
               {unread}
             </span>
@@ -369,7 +369,7 @@ function AccountMenu() {
     <>
       <Menu>
         <MenuTrigger asChild>
-          <button className="flex h-10 items-center gap-2.5 rounded-[10px] border border-line-strong bg-panel py-1 pl-1.5 pr-2.5 text-left transition-colors hover:bg-hover">
+          <button className="flex h-10 items-center gap-2.5 rounded-lg border border-line-strong bg-panel py-1 pl-1.5 pr-2.5 text-left transition-colors hover:bg-hover">
             <Avatar user={me} size={28} />
             <span className="hidden min-w-0 md:block">
               <span className="block max-w-[160px] truncate text-[13px] font-medium leading-tight">

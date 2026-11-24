@@ -43,13 +43,13 @@ export function Drawer({
         <DI.Portal>
           <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-black/25 backdrop-blur-[2px] dark:bg-black/55" />
           <DI.Content
-            className="drawer-in fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-hidden border-line bg-panel shadow-lg outline-none sm:inset-y-2.5 sm:right-2.5 sm:w-[calc(100vw-48px)] sm:rounded-3xl sm:border"
+            className="drawer-in fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-hidden border-line bg-panel shadow-lg outline-none sm:inset-y-2.5 sm:right-2.5 sm:w-[calc(100vw-48px)] sm:rounded-2xl sm:border"
             style={{ maxWidth: width }}
           >
             <header className="flex items-start gap-3 border-b border-line px-5 pb-3.5 pt-4">
               <div className="min-w-0 flex-1">
                 {subtitle && <p className="mb-1 text-[12.5px] text-muted">{subtitle}</p>}
-                <DI.Title className="text-[16.5px] font-semibold leading-snug tracking-[-0.01em]">{title}</DI.Title>
+                <DI.Title className="text-[18px] font-semibold leading-snug tracking-[-0.01em]">{title}</DI.Title>
                 <DI.Description className="sr-only">{typeof title === "string" ? title : "Fiche"}</DI.Description>
                 {badges && <div className="mt-2 flex flex-wrap items-center gap-2">{badges}</div>}
               </div>

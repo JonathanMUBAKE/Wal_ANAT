@@ -91,7 +91,7 @@ export function InboxPage() {
     <div className="mx-auto max-w-[1480px] px-4 pb-16 pt-8 sm:px-8 [&>*]:max-w-[960px]">
       <header className="mb-6 flex flex-wrap items-end gap-3">
         <div>
-          <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Boîte de réception</h1>
+          <h1 className="text-[24px] font-semibold tracking-[-0.025em]">Boîte de réception</h1>
           <p className="mt-1 text-[13px] text-muted">{unread ? `${unread} ${pl(unread, "non lue(s)")}` : "Tout est lu."}</p>
         </div>
         <span className="ml-auto flex gap-2">

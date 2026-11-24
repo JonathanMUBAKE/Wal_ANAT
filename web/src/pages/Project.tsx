@@ -92,7 +92,7 @@ export function ProjectPage() {
     [runs],
   );
 
-  if (error) return <div className="p-8 text-[14px] text-danger">{(error as Error).message}</div>;
+  if (error) return <div className="p-8 text-[13.5px] text-danger">{(error as Error).message}</div>;
   if (!project || !tasks)
     return (
       <div className="flex h-64 items-center justify-center">
@@ -144,7 +144,7 @@ export function ProjectPage() {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               {unitBoard ? (
-                <h1 className="text-[22px] font-semibold tracking-[-0.01em]">{project.name}</h1>
+                <h1 className="text-[24px] font-semibold tracking-[-0.025em]">{project.name}</h1>
               ) : (
                 <ProjectTitle project={project} canEdit={canEdit} onSave={(name) => patch({ name })} />
               )}
@@ -351,7 +351,7 @@ function ProjectMenu({ project }: { project: ProjectDetail }) {
             autoFocus
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            className="mt-2 h-10 w-full rounded-lg border border-line bg-bg/60 px-3 text-[14px] text-fg outline-none focus:border-danger"
+            className="mt-2 h-10 w-full rounded-lg border border-line bg-bg/60 px-3 text-[13.5px] text-fg outline-none focus:border-danger"
           />
         </label>
       </Dialog>

@@ -71,7 +71,7 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
           {["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."].map((d) => (
             <div
               key={d}
-              className="border-b border-line px-1 py-2 text-center text-[10.5px] font-medium uppercase tracking-wider text-faint sm:px-2 sm:text-left sm:text-[11.5px]"
+              className="border-b border-line px-1 py-2 text-center text-[11px] font-medium uppercase tracking-wider text-faint sm:px-2 sm:text-left sm:text-[11.5px]"
             >
               {d}
             </div>

@@ -22,6 +22,7 @@ import { useCan, useMe, useServiceAddress, useTeam, useTeams, useUnits, useUserM
 import { useShell } from "@/lib/shell";
 import { STATUS, pl } from "@/lib/format";
 import { api } from "@/lib/api";
+import { PALETTE } from "@/lib/referentials";
 import type { Team, TeamVisibility } from "@/lib/types";
 
 export const VISIBILITY: Record<TeamVisibility, { label: string; hint: string; icon: typeof Globe2 }> = {
@@ -29,7 +30,6 @@ export const VISIBILITY: Record<TeamVisibility, { label: string; hint: string; i
   request: { label: "Sur demande", hint: "Visible de tous, adhésion validée par un responsable", icon: LogIn },
   private: { label: "Privée", hint: "Invisible hors de ses membres", icon: Lock },
 };
-const COLORS = ["#6E56CF", "#0090FF", "#12A594", "#30A46C", "#F76B15", "#E5484D", "#D6409F", "#8E8C99"];
 
 function JoinButton({ t }: { t: Team }) {
   const qc = useQueryClient();
@@ -77,7 +77,7 @@ export function TeamsPage() {
     <div className="mx-auto max-w-[1480px] px-4 pb-16 pt-8 sm:px-8">
       <header className="mb-6 flex flex-wrap items-end gap-3">
         <div className="flex-1">
-          <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Équipes</h1>
+          <h1 className="text-[24px] font-semibold tracking-[-0.025em]">Équipes</h1>
           <Hint className="mt-1">
             Les équipes servent aux groupes transversaux (comités, groupes de travail entre directions) ; l'organisation
             hiérarchique se tient dans les entités. Les membres d'une équipe éditent ses projets, ses responsables
@@ -149,7 +149,7 @@ function TeamDialog({ open, onOpenChange, team }: { open: boolean; onOpenChange:
   const [description, setDescription] = useState(team?.description ?? "");
   const [visibility, setVisibility] = useState<TeamVisibility>(team?.visibility ?? "public");
   const [unit, setUnit] = useState<string>(team?.unit_id ?? "");
-  const [color, setColor] = useState(team?.color ?? COLORS[0]);
+  const [color, setColor] = useState(team?.color ?? PALETTE[0]);
   const save = async () => {
     const body = { name, description, visibility, unit_id: unit || null, color };
     try {
@@ -239,7 +239,7 @@ function TeamDialog({ open, onOpenChange, team }: { open: boolean; onOpenChange:
           </select>
         </label>
         <div className="flex gap-1.5">
-          {COLORS.map((c) => (
+          {PALETTE.map((c) => (
             <button
               key={c}
               aria-label={`Couleur ${c}`}
@@ -266,7 +266,7 @@ export function TeamPage() {
   const qc = useQueryClient();
   const [settings, setSettings] = useState(false);
   const address = useServiceAddress("team", id);
-  if (error) return <div className="p-8 text-[14px] text-danger">{(error as Error).message}</div>;
+  if (error) return <div className="p-8 text-[13.5px] text-danger">{(error as Error).message}</div>;
   if (!t)
     return (
       <div className="flex h-64 items-center justify-center">
@@ -297,7 +297,7 @@ export function TeamPage() {
           <Users className="size-7" />
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="text-[26px] font-semibold tracking-[-0.02em]">{t.name}</h1>
+          <h1 className="text-[24px] font-semibold tracking-[-0.025em]">{t.name}</h1>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
             <span className="flex items-center gap-1">
               <V.icon className="size-3.5" />
@@ -331,7 +331,7 @@ export function TeamPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <section>
-          <h2 className="mb-3 text-[14px] font-semibold">Projets · {t.projects.length}</h2>
+          <h2 className="mb-3 text-[15px] font-semibold">Projets · {t.projects.length}</h2>
           {!t.projects.length ? (
             <div className="rounded-2xl border border-dashed border-line-strong">
               <Empty title="Aucun projet">Les projets de l'équipe apparaîtront ici.</Empty>
@@ -351,7 +351,7 @@ export function TeamPage() {
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-medium">{p.name}</p>
+                    <p className="truncate text-[15px] font-medium">{p.name}</p>
                     <p className="text-[12px] text-muted">
                       <span className="font-mono">{p.key}</span> ·{" "}
                       <span style={{ color: STATUS[p.status].color }}>{STATUS[p.status].label}</span>

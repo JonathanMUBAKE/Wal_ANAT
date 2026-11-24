@@ -21,8 +21,8 @@ function When({ date }: { date: string }) {
         date === today ? "border-primary bg-brand-soft text-primary" : "border-line text-fg",
       )}
     >
-      <span className="text-[17px] font-semibold leading-tight tabular-nums">{Number(date.slice(8, 10))}</span>
-      <span className="text-[10.5px] uppercase tracking-wide text-muted">{MONTHS[Number(date.slice(5, 7)) - 1]}</span>
+      <span className="text-[15px] font-semibold leading-tight tabular-nums">{Number(date.slice(8, 10))}</span>
+      <span className="text-[11px] uppercase tracking-wide text-muted">{MONTHS[Number(date.slice(5, 7)) - 1]}</span>
     </span>
   );
 }
@@ -105,7 +105,7 @@ export function MyMeetingsCard() {
     <section className="rounded-2xl border border-line bg-panel p-5 shadow-sm">
       <div className="mb-3 flex items-center gap-2">
         <CalendarDays className="size-4 text-faint" />
-        <h2 className="text-[14px] font-semibold">Mes prochaines réunions</h2>
+        <h2 className="text-[15px] font-semibold">Mes prochaines réunions</h2>
         <Link to="/reunions" className="ml-auto text-[12.5px] text-muted hover:text-fg">
           Tout voir
         </Link>

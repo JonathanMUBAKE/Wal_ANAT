@@ -80,7 +80,7 @@ export function AutomationsView({ project }: ViewProps) {
                   <Zap className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-semibold">{r.name}</p>
+                  <p className="text-[15px] font-semibold">{r.name}</p>
                   <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[12.5px] text-muted">
                     {TRIGGERS[r.trigger]}
                     {r.section_id && (

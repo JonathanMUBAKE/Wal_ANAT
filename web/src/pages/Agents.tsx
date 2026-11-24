@@ -37,7 +37,7 @@ export function AgentsPage() {
           <Sparkles className="size-3.5" />
           Coéquipiers IA
         </p>
-        <h1 className="mt-2 font-serif text-[38px] leading-[1.05] tracking-[-0.02em] sm:text-[46px]">
+        <h1 className="mt-2 font-serif text-[40px] leading-[1.05] tracking-[-0.02em] sm:text-[52px]">
           L'IA prépare le travail,
           <br className="hidden sm:block" /> une personne habilitée décide.
         </h1>
@@ -85,7 +85,7 @@ export function AgentsPage() {
             className="rounded-2xl border border-line bg-panel p-4 shadow-sm"
           >
             <c.icon className="size-4 text-ai-fg" />
-            <p className="mt-2 text-[14px] font-semibold">{c.title}</p>
+            <p className="mt-2 text-[15px] font-semibold">{c.title}</p>
             <p className="mt-1 text-[13px] leading-relaxed text-muted">
               {c.text}
             </p>
@@ -113,7 +113,7 @@ export function AgentsPage() {
                 <Avatar user={a} size={48} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-[17px] font-semibold">{a.name}</h2>
+                    <h2 className="text-[15px] font-semibold">{a.name}</h2>
                     {active > 0 && (
                       <Chip tone="ai">
                         <span className="pulse-dot size-1.5 rounded-full bg-current" />
@@ -189,7 +189,7 @@ export function AgentsPage() {
           Journal des interventions
         </h2>
         {!runs?.length ? (
-          <div className="rounded-2xl border border-line bg-panel">
+          <div className="rounded-2xl border border-line bg-panel shadow-sm">
             <Empty title="Aucune intervention">
               Confiez une tâche à un coéquipier IA depuis la tâche, ou
               mentionnez-le dans un commentaire.

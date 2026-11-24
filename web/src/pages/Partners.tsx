@@ -691,7 +691,7 @@ export function PartnerPage() {
               <ArrowLeft className="size-5" />
             </Link>
             {p?.name}
-            {p?.acronym && <span className="text-[16px] font-medium text-muted">({p.acronym})</span>}
+            {p?.acronym && <span className="text-[15px] font-medium text-muted">({p.acronym})</span>}
             {d.confidential && <Lock aria-label="Confidentiel" className="size-4 text-warning" />}
           </span>
         }

@@ -31,7 +31,7 @@ import type { ProjectSummary, Task } from "@/lib/types";
 import { MyDeliverables, useLateDeliverables } from "./ProjectDossier";
 
 /** Une tâche hors projet vit dans le registre de son entité, qui n'est pas un projet du portefeuille. */
-const UNIT_TASK = { name: "Tâche d'entité", icon: "users", color: "#64748B" } as unknown as ProjectSummary;
+const UNIT_TASK = { name: "Tâche d'entité", icon: "users", color: "var(--hue-slate)" } as unknown as ProjectSummary;
 /** Une tâche confiée par la personne, suivie où qu'elle soit (T-12, E-8). */
 interface Confided {
   id: string;
@@ -233,7 +233,7 @@ export function MyTasksPage() {
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-primary">
             <CircleCheck className="size-5" />
           </span>
-          <h1 className="text-[22px] font-semibold tracking-[-0.01em]">Mes tâches</h1>
+          <h1 className="text-[24px] font-semibold tracking-[-0.025em]">Mes tâches</h1>
           <Hint iconOnly>
             Tout ce qui vous est assigné, dans vos projets et dans votre entité : livrables à produire ou à valider,
             puis tâches.

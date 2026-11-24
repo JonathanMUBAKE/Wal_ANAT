@@ -16,7 +16,7 @@ const failure = (e: unknown) => toast.error((e as Error).message);
 function Card({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-line bg-panel p-5 shadow-sm">
-      <h2 className="mb-3 flex items-center gap-2 text-[14.5px] font-semibold">
+      <h2 className="mb-3 flex items-center gap-2 text-[15px] font-semibold">
         {icon}
         {title}
       </h2>
@@ -29,7 +29,7 @@ function Card({ icon, title, children }: { icon: React.ReactNode; title: string;
 export function AccountPage() {
   return (
     <div className="mx-auto max-w-[1480px] space-y-5 px-4 pb-16 pt-8 sm:px-8 [&>*]:max-w-[860px]">
-      <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Sécurité du compte</h1>
+      <h1 className="text-[24px] font-semibold tracking-[-0.025em]">Sécurité du compte</h1>
       <PasswordCard />
       <MfaCard />
       <SessionsCard />

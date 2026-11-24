@@ -1,5 +1,6 @@
 import { uid } from "./db.js";
 import { localDate, type Services, type Priority, type Role } from "./services.js";
+import { PALETTE } from "./palette.js";
 
 const d = (offset: number) => {
   const x = new Date();
@@ -22,18 +23,18 @@ export async function seedIfEmpty(svc: Services) {
 export async function seed(svc: Services) {
   const db = svc.db;
   const users: [string, string, string | null, string, string, boolean, string | null, string | null][] = [
-    ["u_alice", "Bernadette Mbuyi", "bernadette@cadence.app", "Directrice générale", "#E5484D", false, null, null],
-    ["u_karim", "Fiston Banza", "fiston@cadence.app", "Chef du département Ingénierie", "#0090FF", false, null, null],
-    ["u_chloe", "Clarisse Diala", "clarisse@cadence.app", "Chargée d'études", "#D6409F", false, null, null],
-    ["u_hugo", "Didier Lukusa", "didier@cadence.app", "Directeur du Marketing", "#F76B15", false, null, null],
-    ["u_ines", "Esther Mukendi", "esther@cadence.app", "Assistante de direction", "#12A594", false, null, null],
-    ["u_theo", "Gaston Kalala", "gaston@cadence.app", "Chef du service Qualité", "#8E4EC6", false, null, null],
+    ["u_alice", "Bernadette Mbuyi", "bernadette@cadence.app", "Directrice générale", PALETTE[4], false, null, null],
+    ["u_karim", "Fiston Banza", "fiston@cadence.app", "Chef du département Ingénierie", PALETTE[0], false, null, null],
+    ["u_chloe", "Clarisse Diala", "clarisse@cadence.app", "Chargée d'études", PALETTE[5], false, null, null],
+    ["u_hugo", "Didier Lukusa", "didier@cadence.app", "Directeur du Marketing", PALETTE[4], false, null, null],
+    ["u_ines", "Esther Mukendi", "esther@cadence.app", "Assistante de direction", PALETTE[1], false, null, null],
+    ["u_theo", "Gaston Kalala", "gaston@cadence.app", "Chef du service Qualité", PALETTE[6], false, null, null],
     [
       "ai_atlas",
       "Atlas",
       null,
       "Coéquipier IA",
-      "#6E56CF",
+      PALETTE[6],
       true,
       "chef de projet IA : suivi, relances, points d'avancement, découpage du travail",
       "Rapports courts, en puces, risques en premier. Quand tu relances quelqu'un, rappelle toujours l'échéance et propose ton aide. Ne change jamais une échéance sans le signaler.",
@@ -43,12 +44,12 @@ export async function seed(svc: Services) {
       "Nova",
       null,
       "Coéquipière IA",
-      "#00A2C7",
+      PALETTE[1],
       true,
       "analyste QA et triage : qualifie les bugs, fixe les priorités, prépare les plans de test",
       "Pour un bug : vérifie qu'il y a des étapes de reproduction, un résultat attendu et observé ; sinon demande-les en commentaire. Fixe la priorité selon l'impact utilisateur.",
     ],
-    ["ai_cadence", "Cadence AI", null, "Assistant", "#6E56CF", true, "assistant conversationnel", null],
+    ["ai_cadence", "Cadence AI", null, "Assistant", PALETTE[6], true, "assistant conversationnel", null],
   ];
   for (const u of users)
     await db.query(
@@ -113,7 +114,7 @@ export async function seed(svc: Services) {
     "Équipe Mobile",
     mobile,
     "public",
-    "#0090FF",
+    PALETTE[0],
     "Développement et qualité des applications iOS et Android.",
     [["u_theo", "member"]],
   );
@@ -122,7 +123,7 @@ export async function seed(svc: Services) {
     "Produit & Design",
     produit,
     "public",
-    "#D6409F",
+    PALETTE[5],
     "Vision produit, recherche utilisateur et design.",
     [["u_alice", "member"]],
   );
@@ -131,11 +132,11 @@ export async function seed(svc: Services) {
     "Marketing",
     acquisition,
     "request",
-    "#F76B15",
+    PALETTE[4],
     "Acquisition, contenus et lancements.",
     [],
   );
-  const tRh = await team("u_ines", "RH", rh, "private", "#12A594", "Recrutements, rémunération, vie de l'entreprise.", [
+  const tRh = await team("u_ines", "RH", rh, "private", PALETTE[1], "Recrutements, rémunération, vie de l'entreprise.", [
     ["u_alice", "lead"],
   ]);
 
@@ -228,7 +229,7 @@ export async function seed(svc: Services) {
     key: "APP",
     team: tMobile,
     icon: "smartphone",
-    color: "#6E56CF",
+    color: PALETTE[6],
     due: 37,
     createdDaysAgo: 24,
     status: "at_risk",
@@ -397,7 +398,7 @@ export async function seed(svc: Services) {
     key: "CAMP",
     team: tMarketing,
     icon: "megaphone",
-    color: "#F76B15",
+    color: PALETTE[4],
     due: 45,
     createdDaysAgo: 15,
     description: "Campagne d'acquisition pour la sortie de l'app v2 : vidéo, réseaux sociaux, presse et partenaires.",
@@ -453,7 +454,7 @@ export async function seed(svc: Services) {
     key: "WEB",
     team: tProduit,
     icon: "globe",
-    color: "#12A594",
+    color: PALETTE[1],
     due: 60,
     createdDaysAgo: 10,
     description: "Nouveau site vitrine aligné sur la nouvelle identité : pages produit, tarifs, blog et centre d'aide.",
@@ -479,7 +480,7 @@ export async function seed(svc: Services) {
     team: tRh,
     access: "private",
     icon: "lock",
-    color: "#D6409F",
+    color: PALETTE[5],
     due: 90,
     createdDaysAgo: 6,
     description: "Confidentiel. Ouverture de postes, grilles de rémunération et calendrier des entretiens.",
@@ -525,7 +526,7 @@ export async function seed(svc: Services) {
     name: "Création",
     unit_id: sRoot,
     visibility: "public",
-    color: "#0090FF",
+    color: PALETTE[0],
   });
   await svc.setTeamMember("u_hugo", sTeam.id, "u_alice", "member");
   const idv = await svc.createProject("u_hugo", studio.id, {
@@ -533,7 +534,7 @@ export async function seed(svc: Services) {
     key: "IDV",
     team_id: sTeam.id,
     icon: "target",
-    color: "#0090FF",
+    color: PALETTE[0],
     due_on: d(20),
     sections: ["À faire", "En cours", "Terminé"],
   });

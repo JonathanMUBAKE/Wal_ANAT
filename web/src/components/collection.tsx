@@ -171,7 +171,7 @@ export function GroupedTable<T>({
     else s.add(id);
     setSelected(s);
   };
-  if (!all.length) return <div className="rounded-2xl border border-line bg-panel">{empty}</div>;
+  if (!all.length) return <div className="rounded-2xl border border-line bg-panel shadow-sm">{empty}</div>;
   return (
     <div className="space-y-3">
       {bulk && chosen.length > 0 && (
@@ -231,7 +231,7 @@ export function GroupedTable<T>({
                     <thead>
                       <tr className="text-left">
                         {bulk && (
-                          <th className="bg-bg py-2.5 pl-3 first:rounded-l-[10px]">
+                          <th className="bg-bg py-2.5 pl-3 first:rounded-l-lg">
                             <Check
                               on={allOn}
                               label={`Tout sélectionner : ${g.label}`}
@@ -326,7 +326,7 @@ export function FilterToggle({ open, count, onClick }: { open: boolean; count: n
       <SlidersHorizontal className="size-4" />
       Filtres
       {count > 0 && (
-        <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10.5px] font-semibold text-on-primary">
+        <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-semibold text-on-primary">
           {count}
         </span>
       )}
@@ -364,7 +364,7 @@ export function ViewSwitch<T extends string>({
             aria-checked={on}
             onClick={() => onChange(id)}
             className={cn(
-              "relative inline-flex h-full items-center rounded-[8px] font-medium transition-colors duration-200",
+              "relative inline-flex h-full items-center rounded-md font-medium transition-colors duration-200",
               size === "sm" ? "px-2 text-[12px]" : "px-3 text-[12.5px]",
               on ? "text-fg" : "text-muted hover:text-fg",
             )}
@@ -372,7 +372,7 @@ export function ViewSwitch<T extends string>({
             {on && (
               <motion.span
                 layoutId={`switch-${group}`}
-                className="absolute inset-0 rounded-[8px] bg-panel shadow-sm ring-1 ring-line"
+                className="absolute inset-0 rounded-md bg-panel shadow-sm ring-1 ring-line"
                 transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.7 }}
               />
             )}
@@ -493,7 +493,7 @@ export function CheckOption({
         aria-hidden
         className={cn(
           "flex size-4 shrink-0 items-center justify-center border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--ring)]",
-          type === "radio" ? "rounded-full" : "rounded-[5px]",
+          type === "radio" ? "rounded-full" : "rounded-md",
           checked ? "border-primary bg-primary text-on-primary" : "border-faint/70 bg-panel",
         )}
       >
@@ -626,7 +626,7 @@ export function DataTable<T>({
           <thead>
             <tr className="text-left">
               {bulk && (
-                <th className="w-10 rounded-l-[10px] bg-bg py-2.5 pl-4 pr-1">
+                <th className="w-10 rounded-l-lg bg-bg py-2.5 pl-4 pr-1">
                   <Check
                     on={allOn}
                     label="Tout sélectionner sur cette page"
@@ -753,7 +753,7 @@ const Check = ({ on, onChange, label }: { on: boolean; onChange: () => void; lab
     aria-label={label}
     checked={on}
     onChange={onChange}
-    className="size-4 cursor-pointer rounded-[5px] accent-[var(--primary)]"
+    className="size-4 cursor-pointer rounded-md accent-[var(--primary)]"
   />
 );
 
@@ -861,7 +861,7 @@ export function MiniMonth({
   return (
     <div className="rounded-2xl border border-line bg-panel p-4 shadow-sm">
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-[16px] font-semibold capitalize tracking-[-0.02em]">{format(month, "MMMM yyyy", { locale: fr })}</p>
+        <p className="text-[15px] font-semibold capitalize tracking-[-0.02em]">{format(month, "MMMM yyyy", { locale: fr })}</p>
         <span className="flex">
           <button aria-label="Mois précédent" onClick={() => setMonth(addMonths(month, -1))} className="rounded-full p-1.5 text-muted hover:bg-hover">
             <ChevronLeft className="size-4" />
@@ -871,7 +871,7 @@ export function MiniMonth({
           </button>
         </span>
       </div>
-      <div className="grid grid-cols-7 text-center text-[10.5px] uppercase text-faint">
+      <div className="grid grid-cols-7 text-center text-[11px] uppercase text-faint">
         {["l", "m", "m", "j", "v", "s", "d"].map((w, i) => (
           <span key={i} className="py-1">
             {w}
@@ -1108,7 +1108,7 @@ export function TimeGrid({
                   style={{ height: heightOf(b) }}
                   className={cn(
                     "pr-2.5 text-right tabular",
-                    b.folded ? "flex items-center justify-end text-[10.5px] text-faint" : "text-[11px] text-muted",
+                    b.folded ? "flex items-center justify-end text-[11px] text-faint" : "text-[11px] text-muted",
                   )}
                 >
                   {b.folded ? bandLabel(b) : <span className="relative -top-2">{b.from} h</span>}
@@ -1231,7 +1231,7 @@ export function MonthGrid({
         {["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."].map((w) => (
           <p
             key={w}
-            className="border-b border-r border-line px-1 py-2 text-center text-[10.5px] font-medium uppercase tracking-wider text-faint sm:px-2 sm:text-left sm:text-[11.5px]"
+            className="border-b border-r border-line px-1 py-2 text-center text-[11px] font-medium uppercase tracking-wider text-faint sm:px-2 sm:text-left sm:text-[11.5px]"
           >
             {w}
           </p>

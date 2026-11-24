@@ -116,7 +116,7 @@ export function RoleFocus({ className }: { className?: string } = {}) {
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[12.5px] text-muted">{i.label}</span>
             <span
-              className={cn("block text-[20px] font-semibold leading-tight tabular-nums", i.alert && "text-danger")}
+              className={cn("block text-[22px] font-semibold leading-tight tabular-nums", i.alert && "text-danger")}
             >
               {i.value}
             </span>

@@ -685,7 +685,7 @@ function TitleEditor({
       onBlur={() => v.trim() && v !== value && onSave(v.trim())}
       onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), (e.target as HTMLTextAreaElement).blur())}
       className={cn(
-        "w-full resize-none bg-transparent text-[22px] font-semibold leading-tight tracking-[-0.02em] outline-none",
+        "w-full resize-none bg-transparent text-[18px] font-semibold leading-tight tracking-[-0.02em] outline-none",
         done && "text-muted line-through decoration-1",
       )}
     />

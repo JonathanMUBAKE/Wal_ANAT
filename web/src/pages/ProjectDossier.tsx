@@ -564,13 +564,13 @@ export function ProjectContracts({ projectId }: { projectId: string }) {
             const mine = (items ?? []).filter((d) => d.contract_id === c.id);
             const paidPct = c.amount ? Math.round((c.paid_amount / c.amount) * 100) : 0;
             return (
-              <section key={c.id} className="rounded-2xl border border-line bg-panel">
+              <section key={c.id} className="rounded-2xl border border-line bg-panel shadow-sm">
                 <header className="flex items-start gap-3 border-b border-line px-5 py-4">
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-primary">
                     <FileSignature className="size-4" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[14px] font-semibold">{c.title}</span>
+                    <span className="block text-[15px] font-semibold">{c.title}</span>
                     <span className="block text-[12.5px] text-muted">
                       {c.consultant_name} · supervision {c.supervisor_name ?? "—"} · {frDate(c.start_on)} →{" "}
                       {frDate(c.end_on)}
@@ -661,7 +661,7 @@ export function ProjectContracts({ projectId }: { projectId: string }) {
 const Figure = ({ label, value, accent }: { label: string; value: string; accent?: boolean }) => (
   <div>
     <p className="text-muted">{label}</p>
-    <p className={cn("mt-0.5 text-[14px] font-semibold tabular", accent && "text-primary")}>{value}</p>
+    <p className={cn("mt-0.5 text-[15px] font-semibold tabular", accent && "text-primary")}>{value}</p>
   </div>
 );
 

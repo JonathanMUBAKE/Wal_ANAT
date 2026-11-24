@@ -11,3 +11,6 @@ test-results/
 server/data/
 desktop/build/app-server/
 desktop/release/
+
+# Fichiers de verrou laissés par Word quand un document est ouvert
+~$*

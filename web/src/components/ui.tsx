@@ -87,7 +87,7 @@ export const Spinner = ({ className }: { className?: string }) => (
   <LoaderCircle className={cn("size-4 animate-spin text-faint", className)} />
 );
 export const Kbd = ({ children }: { children: ReactNode }) => (
-  <kbd className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-line bg-panel px-1 font-mono text-[10.5px] text-faint">
+  <kbd className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-line bg-panel px-1 font-mono text-[11px] text-faint">
     {children}
   </kbd>
 );
@@ -145,7 +145,7 @@ export function Avatar({ user, size = 22, ring }: { user?: User | null; size?: n
         style={{
           width: size,
           height: size,
-          background: `conic-gradient(from 210deg, ${user.avatar_color}, #4FB3F0, ${user.avatar_color})`,
+          background: `conic-gradient(from 210deg, ${user.avatar_color}, var(--highlight), ${user.avatar_color})`,
         }}
       >
         <Sparkles style={{ width: size * 0.52, height: size * 0.52 }} strokeWidth={2.2} />
@@ -192,7 +192,7 @@ export function AvatarStack({
       ))}
       {list.length > max && (
         <span
-          className="inline-flex items-center justify-center rounded-full bg-active text-[10px] font-medium text-muted ring-2 ring-panel"
+          className="inline-flex items-center justify-center rounded-full bg-active text-[11px] font-medium text-muted ring-2 ring-panel"
           style={{ width: size, height: size }}
         >
           +{list.length - max}
@@ -249,7 +249,7 @@ export function ProjectIcon({ icon, color, size = 22 }: { icon: string; color: s
   const I = ICONS[icon] ?? Folder;
   return (
     <span
-      className="inline-flex shrink-0 items-center justify-center rounded-[7px]"
+      className="inline-flex shrink-0 items-center justify-center rounded-md"
       style={{ width: size, height: size, background: `color-mix(in oklab, ${color} 16%, transparent)`, color }}
     >
       <I style={{ width: size * 0.58, height: size * 0.58 }} strokeWidth={2} />
@@ -337,7 +337,7 @@ export function Empty({
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
       {icon && <div className="mb-1 text-faint">{icon}</div>}
-      <p className="font-serif text-[22px] leading-tight text-fg">{title}</p>
+      <p className="font-serif text-[18px] leading-tight text-fg">{title}</p>
       {children && <p className="max-w-sm text-[13px] text-muted">{children}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
@@ -472,7 +472,7 @@ export function Dialog({
   return (
     <DI.Root open={open} onOpenChange={onOpenChange}>
       <DI.Portal>
-        <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-[#0B2A45]/35 backdrop-blur-[3px] dark:bg-black/60" />
+        <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-night/35 backdrop-blur-[3px] dark:bg-black/60" />
         <DI.Content
           className="dialog-in fixed left-1/2 top-[8vh] z-50 flex max-h-[84vh] w-[calc(100vw-24px)] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-lg outline-none"
           style={{ maxWidth: width }}

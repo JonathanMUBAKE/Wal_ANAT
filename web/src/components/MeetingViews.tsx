@@ -287,7 +287,7 @@ function MeetingMark({ m }: { m: MeetingRow }) {
   );
 }
 const Initials = ({ name }: { name: string }) => (
-  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[10.5px] font-semibold text-primary">
+  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[11px] font-semibold text-primary">
     {name
       .split(/\s+/)
       .map((w) => w[0])
@@ -587,12 +587,12 @@ function CalendarView({
             peaks={[{ x: 230, y: 10, rings: 9, seed: 2.7, r0: 10, step: 16 }]}
             width={260}
             height={200}
-            className="absolute inset-0 -z-10 size-full text-[#8CCBF2] opacity-[0.22]"
+            className="absolute inset-0 -z-10 size-full text-night-accent opacity-[0.22]"
           />
-          <p className="text-[12px] font-medium text-[#8CCBF2]">Prochaine réunion</p>
+          <p className="text-[12px] font-medium text-night-accent">Prochaine réunion</p>
           {next ? (
             <>
-              <p className="mt-1 text-[19px] font-semibold leading-snug tracking-[-0.02em]">{next.meeting_type}</p>
+              <p className="mt-1 text-[15px] font-semibold leading-snug tracking-[-0.02em]">{next.meeting_type}</p>
               <p className="mt-2 flex items-center gap-1.5 text-[12.5px] text-white/75">
                 <Clock className="size-3.5" />
                 {fmt(next.meeting_date, "EEE d MMM")} · {span(next)}
@@ -648,7 +648,7 @@ function CalendarView({
             <RoundBtn label="Période précédente" onClick={() => step(-1)}>
               <ChevronLeft className="size-4" />
             </RoundBtn>
-            <h2 className="px-2 text-[19px] font-semibold tracking-[-0.02em]">{title}</h2>
+            <h2 className="px-2 text-[18px] font-semibold tracking-[-0.02em]">{title}</h2>
             <RoundBtn label="Période suivante" onClick={() => step(1)}>
               <ChevronRight className="size-4" />
             </RoundBtn>
@@ -713,7 +713,7 @@ function MeetingDetailPanel({ id }: { id: string | null }) {
             <Users className="size-4.5" />
           </span>
           <div className="min-w-0">
-            <p className="text-[16px] font-semibold leading-snug tracking-[-0.015em]">{m.meeting_type}</p>
+            <p className="text-[15px] font-semibold leading-snug tracking-[-0.015em]">{m.meeting_type}</p>
             <p className="mt-0.5 text-[12.5px] text-muted">
               {fmt(m.meeting_date, "EEEE d MMMM")} · {span(m)}
             </p>
@@ -790,7 +790,7 @@ function MeetingSummary({ m }: { m: MeetingDetail }) {
             <ol className="space-y-1.5">
               {m.agenda.slice(0, 5).map((it, i) => (
                 <li key={it.id ?? i} className="flex gap-2 text-[12.5px] leading-snug">
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-hover text-[10.5px] font-semibold tabular text-muted">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-hover text-[11px] font-semibold tabular text-muted">
                     {i + 1}
                   </span>
                   <span>{it.subject}</span>

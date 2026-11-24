@@ -75,6 +75,12 @@ export const HUES: Record<string, string> = {
   violet: "var(--hue-violet)",
   slate: "var(--hue-slate)",
 };
+/**
+ * Les mêmes huit teintes, en valeurs fixes, pour ce qui se range en base : couleur d'un projet, d'une équipe.
+ * Une couleur choisie ici est donc l'une de celles des référentiels — une seule palette dans toute l'application.
+ */
+export const PALETTE = ["#007BC4", "#0B8580", "#2F7D3B", "#9A7420", "#B4553A", "#4A5FC1", "#7A4FC1", "#56677F"];
+
 export const HUE_LABEL: Record<string, string> = {
   blue: "Bleu",
   teal: "Sarcelle",

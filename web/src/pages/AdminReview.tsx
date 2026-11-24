@@ -103,7 +103,7 @@ export function AdminReviewPage() {
             </section>
 
             <section>
-              <h2 className="text-[14px] font-semibold">
+              <h2 className="text-[15px] font-semibold">
                 À relire : {data.count} action{data.count > 1 ? "s" : ""} depuis la dernière relecture
               </h2>
               {data.entries.length ? (
@@ -140,7 +140,7 @@ export function AdminReviewPage() {
 
             {data.history.length > 0 && (
               <section>
-                <h2 className="text-[14px] font-semibold">Relectures précédentes</h2>
+                <h2 className="text-[15px] font-semibold">Relectures précédentes</h2>
                 <ul className="mt-2 space-y-1.5 text-[13px]">
                   {data.history.map((r) => (
                     <li key={r.id} className="text-muted">

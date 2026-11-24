@@ -144,13 +144,13 @@ export function ImportProjectDialog({ open, onOpenChange }: { open: boolean; onO
           {loading ? (
             <>
               <Spinner className="size-5" />
-              <span className="text-[14px] font-medium">L'IA lit le document…</span>
+              <span className="text-[15px] font-medium">L'IA lit le document…</span>
               <span className="text-[12.5px] text-muted">Cela peut prendre une minute pour un long fichier.</span>
             </>
           ) : (
             <>
               <FileUp className="size-6 text-muted" />
-              <span className="text-[14px] font-medium">Déposez un fichier ou cliquez pour le choisir</span>
+              <span className="text-[15px] font-medium">Déposez un fichier ou cliquez pour le choisir</span>
               <span className="text-[12.5px] text-muted">Word, Excel, PDF, CSV ou texte · 10 Mo maximum</span>
             </>
           )}

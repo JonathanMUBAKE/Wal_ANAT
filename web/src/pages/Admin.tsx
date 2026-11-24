@@ -494,7 +494,7 @@ function Settings() {
   return (
     <div className="max-w-2xl space-y-2">
       <NewOrganization />
-      <h3 className="pt-4 text-[14px] font-semibold">Création des comptes</h3>
+      <h3 className="pt-4 text-[15px] font-semibold">Création des comptes</h3>
       {options.map((o) => (
         <button
           key={o.v}
@@ -504,7 +504,7 @@ function Settings() {
             data.registration === o.v ? "border-fg bg-hover" : "border-line hover:border-line-strong",
           )}
         >
-          <p className="text-[14px] font-medium">{o.title}</p>
+          <p className="text-[15px] font-medium">{o.title}</p>
           <p className="mt-0.5 text-[13px] text-muted">{o.text}</p>
         </button>
       ))}
@@ -517,7 +517,7 @@ function NewOrganization() {
   const create = () => api.post("/api/orgs", { name }).then(() => window.location.assign("/org"), failure);
   return (
     <section className="rounded-xl border border-line p-4">
-      <h3 className="text-[14px] font-semibold">Nouvelle organisation</h3>
+      <h3 className="text-[15px] font-semibold">Nouvelle organisation</h3>
       <p className="mt-0.5 text-[13px] text-muted">Vous en serez propriétaire et pourrez y inviter ses membres.</p>
       <div className="mt-2 flex gap-2">
         <input
@@ -573,7 +573,7 @@ function AuditJournal() {
   const filtered = Object.values(f).some((v) => v.trim());
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 rounded-2xl border border-line bg-panel p-4 sm:grid-cols-2 xl:grid-cols-6 xl:items-end">
+      <div className="grid gap-3 rounded-2xl border border-line bg-panel p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-6 xl:items-end">
         <Field label="Rechercher" className="sm:col-span-2">
           {(a) => <Input {...a} type="search" value={f.q} onChange={set("q")} placeholder="Action, objet, auteur…" />}
         </Field>
@@ -663,7 +663,7 @@ function AuditTable({
 }) {
   if (!entries.length)
     return (
-      <div className="rounded-2xl border border-line bg-panel">
+      <div className="rounded-2xl border border-line bg-panel shadow-sm">
         <Empty title="Aucune trace">Aucune action ne correspond à ces critères.</Empty>
       </div>
     );

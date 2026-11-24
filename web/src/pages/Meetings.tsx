@@ -726,6 +726,22 @@ export function MeetingPage() {
   const [reopening, setReopening] = useState(false);
   const [notHeld, setNotHeld] = useState(false);
   const [reopenReason, setReopenReason] = useState("");
+  /*
+   * Règle 5.2.4 : des champs ouverts et modifiés ne se ferment pas sans confirmation. Le tiroir la tenait déjà
+   * (components/drawer.tsx) ; le rechargement et la fermeture de l'onglet, non — et un compte rendu monte à une
+   * centaine de champs pour un seul « Enregistrer ».
+   *
+   * La navigation interne reste à couvrir : `useBlocker` de react-router exige un routeur de données, et
+   * l'application est montée sur `<BrowserRouter>` (web/src/main.tsx). La convertir touche tous les écrans :
+   * c'est un lot à part, laissé à l'arbitrage.
+   */
+  useEffect(() => {
+    if (!dirty) return;
+    // Le navigateur n'affiche que sa propre formule : on ne peut qu'armer le garde-fou, pas en choisir le texte.
+    const retenir = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", retenir);
+    return () => window.removeEventListener("beforeunload", retenir);
+  }, [dirty]);
   useEffect(() => {
     if (m) {
       setDraft(structuredClone(m));

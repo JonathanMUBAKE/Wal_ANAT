@@ -467,6 +467,7 @@ const taskUrl =
 const TABLE = [
   R_("GET", "/api/me"),
   R_("GET", "/api/tasks/confided"),
+  R_("GET", "/api/projects/health"),
   R_("GET", "/api/users"),
   R_("PUT", "/api/users/:id/avatar", () => ({ url: "/api/users/u_karim/avatar", body: { data_url: PNG } })),
   R_("DELETE", "/api/users/:id/avatar", () => ({ url: "/api/users/u_karim/avatar" })),
@@ -1289,10 +1290,12 @@ describe("contrat d'accès de toute l'API", () => {
   });
 
   it("toute route privée déclarée figure dans le contrat", () => {
+    // Tout fichier du serveur, et non les seuls « *-routes.ts » : huit fichiers de routes — dont
+    // l'administration système — échappaient autrement au contrat.
     const declared = readdirSync(new URL(".", import.meta.url))
-      .filter((f) => f.endsWith("-routes.ts"))
+      .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts") && !f.endsWith(".d.ts"))
       .map((f) => `./${f}`)
-      .concat("./app.ts", "./auth/routes.ts")
+      .concat("./auth/routes.ts", "./auth/provisioning.ts")
       .flatMap((f) =>
         [
           ...readFileSync(new URL(f, import.meta.url), "utf8").matchAll(

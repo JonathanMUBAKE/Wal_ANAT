@@ -288,11 +288,14 @@ Les briques existent déjà : `Button`, `IconButton`, `Checkbox`, `Dialog`, `Con
 `Chip`, `Avatar` dans `components/ui.tsx` ; `Field`, `Input`, `Select`, `Textarea` dans `components/gov.tsx` ;
 `DataTable` et `GroupedTable` dans `components/collection.tsx`. Elles sont contournées :
 
-- [ ] **T5. Les boutons.** 148 balises `<button>` sont écrites à la main, dont 4 seulement dans `ui.tsx` —
-      donc **144 boutons hors de la brique**. Et **100 hauteurs** sont posées à la main (`h-8`, `h-9`,
-      `h-10`…) alors que `Button` a trois tailles. Le composant partagé, lui, n'est appelé qu'avec quatre
-      variantes (138 `primary`, 23 `ghost`, 13 `danger`, 8 `ai`) et deux tailles (120 `sm`, 6 `lg`) : la
-      palette d'accentuation est donc déjà la bonne, c'est son emploi qui ne l'est pas.
+- [x] **T5. Les boutons — constat corrigé le 25/11 après examen.** Le comptage de balises `<button>` était
+      trompeur : reprises une par une, **presque aucune des 148 n'est un bouton d'action**. Ce sont des
+      lignes cliquables, des déclencheurs de sélecteurs, des onglets, des liens en ligne, des pastilles.
+      Le vrai défaut est ailleurs : **le système n'a qu'une brique interactive et aucun mot pour les cinq
+      autres motifs**, d'où les **100 hauteurs écrites à la main**. La palette d'accentuation, elle, est
+      bien employée (138 `primary`, 23 `ghost`, 13 `danger`, 8 `ai` ; 120 `sm`, 6 `lg`).
+      `server/src/boutons-briques.test.ts` épingle les 143 balises restantes avec leur raison. **Nommer
+      les cinq motifs est une décision de design, à prendre avant toute conversion.**
 - [ ] **T6. Les champs.** 91 `<input>`, 26 `<select>` et 20 `<textarea>` écrits à la main, alors que
       `Field`, `Input`, `Select` et `Textarea` existent et portent le libellé permanent, le halo de focus et
       l'erreur sous le champ (règles 5.4 du système de design).

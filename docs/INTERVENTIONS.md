@@ -332,15 +332,29 @@ Prérequis de tout le chantier courrier. Détail complet au point **X16** du pla
 
 ## F1.1 — Les boutons *(T5)*
 
-- **Défaut** — 148 balises `<button>` écrites à la main, dont 4 seulement dans `components/ui.tsx` :
-  **144 hors de la brique**. Et **100 hauteurs** posées à la main (`h-8`, `h-9`, `h-10`…) alors que
-  `Button` a trois tailles. Le composant partagé, lui, n'est appelé qu'avec quatre variantes
-  (138 `primary`, 23 `ghost`, 13 `danger`, 8 `ai`) et deux tailles (120 `sm`, 6 `lg`) : la palette
-  d'accentuation est la bonne, c'est son emploi qui ne l'est pas.
-- **Change** — Tout bouton passe par `Button` ou `IconButton`. Seule l'**accentuation** varie selon
-  l'insistance de l'action ; la taille et la forme ne varient pas d'un module à l'autre.
-- **Test** — F1.8.
-- **Fini quand** — Il ne reste de `<button>` que dans les fichiers de briques.
+> **Corrigé le 25 novembre 2026, après examen.** Le constat d'origine — « 144 boutons hors de la
+> brique » — reposait sur un comptage de balises `<button>`, et ce comptage était trompeur. Les 148
+> balises ont été reprises une par une : **presque aucune n'est un bouton d'action**. Ce sont des lignes
+> et des cartes cliquables, des déclencheurs de sélecteurs dont le contenu est une valeur affichée, des
+> onglets, des liens textuels en ligne, des pastilles de couleur. Les convertir en `Button` aurait changé
+> la forme et le comportement de ces écrans. Une seule balise méritait la conversion ; elle est faite.
+
+- **Défaut réel** — Le système de design n'a **qu'une** brique interactive, `Button`, et **aucun mot**
+  pour les cinq autres motifs qui existent pourtant partout : la ligne cliquable, le déclencheur de
+  sélecteur, l'onglet, le lien en ligne, la pastille. Faute de brique, chacun est réécrit à la main —
+  d'où les **100 hauteurs** posées une par une (`h-7`, `h-8`, `h-9`, `h-10`…), qui sont le vrai défaut.
+  Le composant partagé, lui, est bien employé : quatre variantes (138 `primary`, 23 `ghost`, 13 `danger`,
+  8 `ai`) et deux tailles (120 `sm`, 6 `lg`). **La palette d'accentuation est la bonne.**
+- **Change** — Nommer les cinq motifs et donner une brique à chacun, dans `docs/DESIGN-SYSTEM.md` puis
+  dans `components/ui.tsx`. C'est une décision de design avant d'être un travail de conversion.
+  **Elle appartient au maître d'ouvrage** : voir la question ouverte en fin de dossier.
+- **Fait** — `server/src/boutons-briques.test.ts` épingle les **143 balises brutes restantes**, par
+  fichier, avec une raison écrite et un compte exact dans les deux sens. Aucune nouvelle balise ne peut
+  plus apparaître en silence, et le jour où une brique naît, le test dit exactement ce qu'elle remplace.
+- **Reste** — « Recharger » dans `components/ErrorBoundary.tsx` est un vrai bouton, laissé brut parce
+  que le convertir change la couleur de l'écran de secours. Inscrit comme tel dans le test.
+- **Fini quand** — Chaque motif interactif a sa brique, et la liste d'exceptions ne contient plus que des
+  cas nommés par le design.
 
 ## F1.2 — Les champs *(T6)*
 

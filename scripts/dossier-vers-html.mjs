@@ -24,7 +24,9 @@ const C = {
   filet: "#000000",
   sourdine: "#595959",
 };
-const P = { titres: "'Play', sans-serif", texte: "'Aptos', 'Calibri', sans-serif", tableaux: "'Montserrat', sans-serif" };
+// Montserrat partout pour le texte et les tableaux (demande du 25 novembre) ; les titres gardent Play,
+// qui est la signature du document d'origine. Pour les passer aussi en Montserrat : remplacer `titres`.
+const P = { titres: "'Play', sans-serif", texte: "'Montserrat', sans-serif", tableaux: "'Montserrat', sans-serif" };
 
 const ech = (s) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

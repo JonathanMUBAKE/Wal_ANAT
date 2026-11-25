@@ -12,12 +12,12 @@ A4 — 595,28 × 841,89 pt. Marges de **70,85 pt** (2,5 cm) sur les quatre côt�
 
 | Style | Police | Taille | Couleur | Espace avant | Espace après |
 |---|---|---|---|---|---|
-| `TITLE` | Play | 28 | — | — | 4 |
+| `TITLE` | Montserrat | 28 | — | — | 4 |
 | `SUBTITLE` | — | 14 | #595959 | — | — |
-| `HEADING_1` | Play | 20 | **#0F4761** | 18 | 4 |
-| `HEADING_2` | Play | 16 | **#0F4761** | 8 | 4 |
+| `HEADING_1` | Montserrat | 20 | **#0F4761** | 18 | 4 |
+| `HEADING_2` | Montserrat | 16 | **#0F4761** | 8 | 4 |
 | `HEADING_3` | — | 14 | **#0F4761** | 8 | 4 |
-| `NORMAL_TEXT` | Aptos | 12 | #000000 | — | 8 |
+| `NORMAL_TEXT` | Montserrat | 12 | #000000 | — | 8 |
 
 ## Tableaux
 
@@ -48,3 +48,9 @@ Pour les tableaux de modules, d'exigences, de lots.
 **#007BC4 est le bleu d'identité de l'ANAT**, celui des documents, des graphiques et des référentiels du
 système (`docs/DESIGN-SYSTEM.md`). Le document Google et l'application parlent donc déjà la même langue
 de couleur. Le bleu des titres, #0F4761, en est la déclinaison sombre.
+
+## Révision du 25 novembre 2026
+
+Jonathan a demandé **Montserrat partout** — titres, texte courant et tableaux. Le document d'origine
+employait Play pour les titres et Aptos pour le corps ; le tableau ci-dessus porte l'état retenu.
+**Les couleurs, les tailles et les gabarits de tableau ne changent pas.**

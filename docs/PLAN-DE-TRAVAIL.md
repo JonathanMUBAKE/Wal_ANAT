@@ -281,6 +281,27 @@ personne** et **le module où la brique est posée** — jamais le comportement,
 - [ ] **T4.** Une brique « ce qu'on me demande » : une seule liste des charges d'une personne, quelle que
       soit l'origine — tâche de projet, action de réunion, courrier pour traitement, décision à exécuter.
 
+**La règle vaut pour tous les composants, pas seulement la tâche** (demandé le 25 novembre). Un bouton a
+partout la même taille et le même type ; seule l'**accentuation** change selon l'insistance de l'action.
+Un champ, un tableau, une pastille, un dialogue se comportent de la même façon dans tous les modules.
+Les briques existent déjà : `Button`, `IconButton`, `Checkbox`, `Dialog`, `ConfirmDialog`, `Empty`, `Menu`,
+`Chip`, `Avatar` dans `components/ui.tsx` ; `Field`, `Input`, `Select`, `Textarea` dans `components/gov.tsx` ;
+`DataTable` et `GroupedTable` dans `components/collection.tsx`. Elles sont contournées :
+
+- [ ] **T5. Les boutons.** 148 balises `<button>` sont écrites à la main, dont 4 seulement dans `ui.tsx` —
+      donc **144 boutons hors de la brique**. Et **100 hauteurs** sont posées à la main (`h-8`, `h-9`,
+      `h-10`…) alors que `Button` a trois tailles. Le composant partagé, lui, n'est appelé qu'avec quatre
+      variantes (138 `primary`, 23 `ghost`, 13 `danger`, 8 `ai`) et deux tailles (120 `sm`, 6 `lg`) : la
+      palette d'accentuation est donc déjà la bonne, c'est son emploi qui ne l'est pas.
+- [ ] **T6. Les champs.** 91 `<input>`, 26 `<select>` et 20 `<textarea>` écrits à la main, alors que
+      `Field`, `Input`, `Select` et `Textarea` existent et portent le libellé permanent, le halo de focus et
+      l'erreur sous le champ (règles 5.4 du système de design).
+- [ ] **T7. Les tableaux.** 10 `<table>` à la main contre 8 appels de `DataTable` / `GroupedTable` : un
+      tableau sur deux ignore la sélection, le tri, les actions de ligne et la pagination de la maison.
+- [ ] **T8.** Une fois les briques rétablies, interdire la régression : un test qui échoue si une balise
+      `<button>`, `<input>`, `<select>` ou `<textarea>` apparaît ailleurs que dans les fichiers de briques,
+      sur le modèle de `server/src/droits-interface.test.ts`.
+
 ### Lot U — Ce que le serveur calcule et que l'écran jette
 
 Le travail est déjà fait côté serveur ; il n'est pas branché. Meilleur rapport effet/coût de la campagne,

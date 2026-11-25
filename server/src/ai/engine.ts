@@ -667,6 +667,13 @@ export class AiEngine {
       if ((await this.tools.targets(ctx as never, a.tool, edited)).includes(userId))
         throw forbidden("Retouchée ainsi, la proposition vous vise : une autre personne habilitée la valide");
     }
+    // Le journal n'atteste que ce qui s'exécute : sans l'attente en mémoire (serveur redémarré), rien ne partirait (S2.1)
+    const w = this.waiters.get(approvalId);
+    if (!w)
+      throw new HttpError(
+        409,
+        "Cette proposition n'est plus en attente de réponse (le serveur a redémarré ou l'intervention s'est arrêtée) : aucune action n'a été engagée. Demandez à l'IA de refaire sa proposition.",
+      );
     // Deux décisions simultanées : une seule l'emporte
     if (
       !(await this.svc.db.one(
@@ -701,13 +708,11 @@ export class AiEngine {
       taskId: a.task_id,
       data: { summary: a.summary, agent: a.agent_id },
     });
-    const w = this.waiters.get(approvalId);
     this.waiters.delete(approvalId);
     this.bus.emit({ type: "ai.approval", approvalId, runId: a.run_id, projectId: a.project_id, taskId: a.task_id });
     // Un refus arrête l'intervention d'un coéquipier, sauf si l'on choisit de le laisser continuer (I-2)
     const stop = !approve && run.kind !== "assistant" && !opts.continue;
-    if (w) w(approve, stop, (await this.svc.user(userId)).name);
-    else await this.svc.db.query("UPDATE ai_approvals SET status = 'expired' WHERE id = $1", [approvalId]);
+    w(approve, stop, (await this.svc.user(userId)).name);
     return this.getApproval(approvalId);
   }
 

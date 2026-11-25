@@ -283,3 +283,35 @@ describe("le budget d'un projet ne sort par aucune route de santé", () => {
     expect(appels.length).toBeGreaterThanOrEqual(3); // la définition, review() et health()
   });
 });
+
+describe("une demande d'arbitrage ne part qu'à ceux qui peuvent ouvrir le dossier", () => {
+  const demande = (p: string, who = "u_karim") =>
+    g.api(who, "POST", `/api/projects/${p}/arbitrations`, {
+      question: "Faut-il réattribuer le marché de Kolwezi ?",
+      options: [{ label: "Oui" }, { label: "Non" }],
+    });
+  const titres = async (u: string) =>
+    JSON.stringify(await g.ctx.db.query("SELECT title, body FROM notifications WHERE user_id = $1", [u]));
+
+  it("un détenteur de decisions.record sans accès au dossier privé ne reçoit rien", async () => {
+    const p = await mkProject("Dossier privé de la DG (essai)");
+    await g.ctx.db.query("UPDATE projects SET access = 'private' WHERE id = $1", [p]);
+    await g.api("u_alice", "PUT", "/api/org/members/u_hugo/permissions", { overrides: { "decisions.record": true } });
+    expect((await g.ctx.svc.permissionsOf("u_hugo", g.org)).includes("decisions.record")).toBe(true);
+    expect(await g.ctx.svc.projectRole("u_hugo", p)).toBeFalsy();
+
+    expect((await demande(p)).status).toBe(200);
+    expect(await titres("u_hugo")).not.toMatch(/Kolwezi|Dossier privé/);
+    // Celui qui peut ouvrir le dossier, lui, est prévenu
+    expect(await titres("u_alice")).toMatch(/Kolwezi/);
+  });
+
+  it("si personne ne peut décider, la demande ne reste pas muette : le demandeur en est informé", async () => {
+    const p = await mkProject("Dossier sans décideur (essai)");
+    // Alice est la seule à détenir le droit : en demandant elle-même, personne d'autre ne reçoit l'avis
+    const r = await demande(p, "u_alice");
+    expect(r.status).toBe(200);
+    const mine = await g.ctx.db.query<Any>("SELECT kind, title FROM notifications WHERE user_id = 'u_alice' AND kind LIKE 'arbitration.%'");
+    expect(mine.some((n) => n.kind === "arbitration.unrouted")).toBe(true);
+  });
+});

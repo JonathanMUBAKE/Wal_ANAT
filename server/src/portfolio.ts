@@ -284,6 +284,7 @@ export class Portfolio {
         name: a.title,
         lead: a.lead_id,
         canAsk: a.lead_id === actorId || a.manage,
+        confidential: a.confidential,
         table: "agency_activities" as const,
         id: a.id,
       };
@@ -300,9 +301,18 @@ export class Portfolio {
       name: p?.name ?? "",
       lead: p?.lead_id ?? null,
       canAsk: role === "admin" || (!!role && p?.lead_id === actorId),
+      confidential: false,
       table: "projects" as const,
       id: projectId,
     };
+  }
+
+  /** Celui qui peut ouvrir le dossier visé : mêmes règles que `list()` (projet privé, activité confidentielle). */
+  private async canOpen(userId: string, d: Awaited<ReturnType<Portfolio["dossier"]>>) {
+    if (d.table === "projects") return !!(await this.svc.projectRole(userId, d.id));
+    const perms = await this.svc.permissionsOf(userId, d.orgId);
+    if (!perms.includes("agenda.view")) return false;
+    return !d.confidential || d.lead === userId || perms.includes("agenda.manage");
   }
 
   async ofProject(actorId: string, projectId: string) {
@@ -381,14 +391,41 @@ export class Portfolio {
       data: { id, question: input.question, activity_id: d.table === "projects" ? null : d.id },
     });
     const a = await this.row(d.orgId, id);
+    // L'avis ne part qu'à ceux qui peuvent ouvrir le dossier : un titre confidentiel ne sort pas du cercle
+    let reached = 0;
     for (const u of await this.svc.usersOf(d.orgId)) {
       if (u.is_ai || u.id === actorId) continue;
       if (!(await this.svc.permissionsOf(u.id, d.orgId)).includes("decisions.record")) continue;
+      if (!(await this.canOpen(u.id, d))) continue;
+      reached++;
       await this.svc.notify(u.id, d.orgId, {
         kind: "arbitration.requested",
         title: `Arbitrage demandé · ${d.name}`,
         body: input.question,
         project_id: d.table === "projects" ? d.id : null,
+        actor_id: actorId,
+        link: `/activites?onglet=arbitrages&arbitrage=${id}`,
+        category: "decisions",
+      });
+    }
+    if (!reached) {
+      // Personne ne peut décider : la demande remonte à la direction générale, sans dire de quel dossier il s'agit
+      for (const u of await this.svc.usersOf(d.orgId)) {
+        if (u.is_ai || u.id === actorId) continue;
+        if (!(await this.svc.permissionsOf(u.id, d.orgId)).includes("decisions.confirm")) continue;
+        await this.svc.notify(u.id, d.orgId, {
+          kind: "arbitration.unrouted",
+          title: "Un arbitrage attend un décideur qui puisse ouvrir son dossier",
+          body: "Le dossier est réservé à un cercle restreint : ouvrez le registre des arbitrages ou ajustez les accès.",
+          actor_id: actorId,
+          link: `/activites?onglet=arbitrages&arbitrage=${id}`,
+          category: "decisions",
+        });
+      }
+      await this.svc.notify(actorId, d.orgId, {
+        kind: "arbitration.unrouted",
+        title: `Votre demande d'arbitrage n'a pas de décideur : ${d.name}`,
+        body: "Personne, parmi ceux qui peuvent trancher, n'a accès à ce dossier. La direction générale en est informée ; élargissez l'accès au dossier si elle doit en connaître.",
         actor_id: actorId,
         link: `/activites?onglet=arbitrages&arbitrage=${id}`,
         category: "decisions",

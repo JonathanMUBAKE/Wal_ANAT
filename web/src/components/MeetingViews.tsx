@@ -26,7 +26,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { CARD, Empty, cn } from "./ui";
+import { Button, CARD, Empty, cn } from "./ui";
 import { Drawer } from "./drawer";
 import { TabBar } from "./tabs";
 import { useCan } from "@/lib/hooks";
@@ -658,12 +658,9 @@ function CalendarView({
             <RoundBtn label="Période suivante" onClick={() => step(1)}>
               <ChevronRight className="size-4" />
             </RoundBtn>
-            <button
-              onClick={() => setCursor(new Date())}
-              className="ml-1 h-8 rounded-lg border border-line-strong px-3 text-[12.5px] font-medium hover:bg-hover"
-            >
+            <Button size="sm" className="ml-1" onClick={() => setCursor(new Date())}>
               Aujourd'hui
-            </button>
+            </Button>
           </div>
           <ViewSwitch
             label="Période"

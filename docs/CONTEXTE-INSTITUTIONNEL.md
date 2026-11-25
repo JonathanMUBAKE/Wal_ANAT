@@ -17,11 +17,32 @@ ONAT, CTCAT. Sa mission est l'assistance technique à l'État et aux provinces :
 planification, modernisation des villes. Elle travaille sur 2,3 millions de km² et 145 territoires, avec
 quelque **192 agents**.
 
-Son sommet n'est pas la direction générale. Au-dessus siège un **Conseil d'administration**, présidé, et
-composé d'administrateurs ; à côté, un **Collège des commissaires aux comptes**. Le conseil tient des
-sessions, prend des résolutions, valide les états financiers — qui sont ensuite transmis à la **Cour des
-comptes**. Les décisions du conseil redescendent dans l'Agence sous forme de mesures à appliquer et de
-tableaux de suivi.
+Comme tout établissement public congolais, l'Agence a **trois structures organiques**, fixées par la
+**loi n° 08/009 du 7 juillet 2008** : un Conseil d'administration, une Direction générale, un Collège
+des commissaires aux comptes. Il faut comprendre ce que chacune fait, parce que **deux d'entre elles ne
+sont pas opérationnelles** — et l'outil ne doit pas prétendre les outiller.
+
+Le **Conseil d'administration** est l'organe de *conception, d'orientation, de contrôle et de décision*.
+Il définit la politique générale, détermine le programme de l'établissement, **arrête le budget** et
+**approuve les états financiers** de fin d'exercice. Il se réunit **trimestriellement** en séance
+ordinaire. Il ne gère pas : il oriente et il arrête.
+
+Le **Collège des commissaires aux comptes** contrôle les opérations financières. Il est composé de deux
+personnes issues de structures professionnelles distinctes, et — c'est important — **ses membres ne
+peuvent prendre individuellement aucune décision**. C'est un organe de contrôle, pas un acteur.
+
+La **Direction générale** est **l'organe de gestion**. Elle exécute les décisions du conseil, exécute le
+budget, élabore les états financiers, dirige l'ensemble des services — et **représente l'établissement
+vis-à-vis des tiers**.
+
+Cette dernière phrase est le fondement de la règle que Jonathan a énoncée : *la direction générale seule
+engage l'Agence*. Ce n'est pas un usage interne ni une préférence de la maison, c'est la loi. Et c'est
+pourquoi le circuit d'un courrier sortant finit toujours à la même signature.
+
+**Ce que l'outil couvre, c'est donc la gestion** — la sphère de la direction générale et des services.
+Les actes du conseil n'y sont pas produits : ils y **entrent**, comme des données d'amont que la
+direction exécute. Une résolution du conseil devient, dans l'outil, une charge à suivre ; elle ne s'y
+délibère pas. Les états financiers y sont élaborés ; ils sont approuvés ailleurs.
 
 La **direction générale** est tenue par une **directrice générale** et **un** directeur général adjoint.
 Un seul. Au-dessous, il n'y a que des **directeurs** et des **chefs de cellule**.
@@ -56,7 +77,8 @@ restriction de sécurité qu'on ajoute : c'est la définition de sa fonction. Un
 proposer de créer un risque « Agence entière » n'est pas devant un bouton de trop, il est devant une
 proposition qui n'a pas de sens dans son monde.
 
-Enfin, **la direction générale seule engage l'Agence**. Un accord, une convention, une lettre qui sort :
+Enfin, **la direction générale seule engage l'Agence** — parce que la loi lui donne de représenter
+l'établissement vis-à-vis des tiers. Un accord, une convention, une lettre qui sort :
 c'est la directrice générale qui signe, et le directeur général adjoint seulement en cas d'intérim. Tout
 le reste de l'institution **prépare** ; une seule personne **engage**.
 
@@ -65,12 +87,15 @@ le reste de l'institution **prépare** ; une seule personne **engage**.
 - Les types d'entité doivent couvrir ce qui existe : il manque **Division**, **Bureau** et **Pool**.
   Le référentiel connaît aujourd'hui Institution, Direction générale, Direction, Département, Service,
   Cellule, Représentation provinciale, Antenne.
-- **Le Conseil d'administration n'existe nulle part dans le modèle**, alors qu'il est au-dessus de la
-  direction générale, qu'il tient des sessions, prend des résolutions et valide les états financiers.
-  Ses décisions redescendent comme des charges à exécuter, exactement comme celles d'une réunion. À
-  trancher : une entité d'un type propre, ou un objet à part.
-- Le **Collège des commissaires aux comptes** et la **Cour des comptes** sont des destinataires
-  extérieurs d'actes de l'Agence. Un document qui leur est transmis sort de l'institution.
+- **Ne pas outiller le Conseil d'administration ni le Collège des commissaires aux comptes.** Ce ne sont
+  pas des organes de gestion, et l'outil est un outil de gestion. Ce qui entre dans l'outil, ce sont
+  leurs **actes** : une résolution du conseil devient une charge à suivre, un budget arrêté devient le
+  cadre d'exécution, des états financiers approuvés deviennent un document de référence. Jamais une
+  délibération à conduire dans l'application.
+- Le **Collège des commissaires aux comptes** et la **Cour des comptes** sont des **destinataires
+  extérieurs**. Un document qui leur est transmis sort de l'institution, comme tout courrier sortant.
+- La cadence **trimestrielle** du conseil et l'exercice annuel donnent le rythme de l'Agence : le plan de
+  travail, les états financiers et les revues s'y accrochent.
 - Il y a **un seul** directeur général adjoint. Les profils du catalogue doivent le refléter.
 - Les fonctions à nommer : directeur, chef de cellule, **directeur de pool**.
 - L'autonomie d'une entité est un principe de conception, pas une permission : ce qui se décide dans une
@@ -367,7 +392,15 @@ ici, ni dans le dépôt, ni dans les données de démonstration — et par le si
 **https://anat.gouv.cd** (pages « Organigramme » et « Écosystème », consultées le 25 novembre 2026),
 d'où viennent la composition de la haute gouvernance, les services rattachés, les directions centrales,
 les pools territoriaux et les effectifs. Les noms des personnes figurant sur ce site public ne sont pas
-repris ici : le dépôt ne porte aucune donnée nominative de l'Agence. Les décisions prises figurent aussi dans
+repris ici : le dépôt ne porte aucune donnée nominative de l'Agence.
+
+Le cadre juridique vient de la **loi n° 08/009 du 7 juillet 2008 portant dispositions générales
+applicables aux établissements publics** (RDC), articles 6, 7 et suivants. **Réserve honnête** : il a été
+établi à partir de copies du texte et de travaux universitaires, non du Journal officiel. Avant de s'en
+servir dans un acte, il faut le vérifier au texte officiel.
+
+- [Loi n° 08/009 du 7 juillet 2008 (leganet.cd)](https://www.leganet.cd/Legislation/Droit%20Public/EPub/loi.08.009.07.07.2008.pdf)
+- [Fiche de la loi (UNEP LEAP)](https://leap.unep.org/en/countries/cd/national-legislation/loi-ndeg-08009-du-07-juillet-2008-portant-dispositions-generales) Les décisions prises figurent aussi dans
 `docs/PLAN-DE-TRAVAIL.md` (§ 3 bis) et dans le dossier `docs/INTERVENTIONS.md`.
 
 Huit points restent à trancher ; ils sont listés à la fin de `docs/INTERVENTIONS.md`.

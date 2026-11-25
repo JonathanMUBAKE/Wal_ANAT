@@ -5,6 +5,10 @@
 > d'accessibilité, l'audit du système de design, et les décisions prises en conversation les 24 et
 > 25 novembre.
 >
+> **À lire d'abord** : `docs/CONTEXTE-INSTITUTIONNEL.md` — comment l'Agence fonctionne réellement, et
+> pourquoi chacune de ces interventions est demandée. Un agent qui exécute cette liste sans avoir lu ce
+> document produira un logiciel qui passe les tests et dont personne ne se sert.
+>
 > **Stratégie** : `docs/PLAN-INTERVENTION.md`. **Ordre d'exécution** : `docs/PLAN-DE-TRAVAIL.md` § 3 ter.
 > **Ici** : le détail de chaque intervention, pour qu'un agent l'exécute sans rien redécouvrir.
 

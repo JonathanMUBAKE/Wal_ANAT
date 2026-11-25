@@ -1426,7 +1426,7 @@ export class Services {
           orgId,
           input.team_id ?? null,
           key,
-          input.access ?? "team",
+          input.access ?? (input.team_id ? "team" : "private"),
           name,
           input.description ?? "",
           input.color ?? PALETTE[6],

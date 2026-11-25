@@ -104,3 +104,22 @@ describe("besoin d'en connaître : santé protégée, lectures de la hiérarchie
     expect(logs).toHaveLength(1);
   });
 });
+
+describe("un projet naît ouvert à l'équipe choisie, et à personne si aucune", () => {
+  it("sans équipe : un seul membre, son créateur, et la direction n'y lit rien tant qu'on ne l'y invite pas", async () => {
+    await g.direction("u_hugo");
+    const p = (await g.api("u_karim", "POST", "/api/projects", { name: "Projet né seul (essai)" })).body;
+    const lu = (await g.api("u_karim", "GET", `/api/projects/${p.id}`)).body;
+    expect((lu.members as Any[]).map((m) => m.user_id ?? m.id ?? m)).toEqual(["u_karim"]);
+    const visibles = ((await g.api("u_hugo", "GET", "/api/projects")).body as Any[]).map((x) => x.id);
+    expect(visibles).not.toContain(p.id);
+  });
+
+  it("avec une équipe : ses membres et personne d'autre", async () => {
+    const t = (await g.api("u_alice", "POST", "/api/teams", { name: "Équipe choisie (essai)", visibility: "public" })).body;
+    await g.api("u_alice", "PUT", `/api/teams/${t.id}/members/u_hugo`, { role: "member" });
+    const p = (await g.api("u_alice", "POST", "/api/projects", { name: "Projet d'équipe (essai)", team_id: t.id })).body;
+    const lu = ((await g.api("u_alice", "GET", `/api/projects/${p.id}`)).body.members as Any[]).map((m) => m.user_id ?? m.id ?? m).sort();
+    expect(lu).toEqual(["u_alice", "u_hugo"]);
+  });
+});

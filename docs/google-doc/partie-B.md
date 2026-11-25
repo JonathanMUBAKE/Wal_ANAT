@@ -7,9 +7,9 @@ Le système compte seize modules. Ils ne forment pas seize outils côte à côte
 Les modules se rangent en quatre familles. Les registres de l'écrit tiennent les actes : courrier, signataire, réunions, décisions. Le travail de l'entité tient ce que chaque direction ou cellule s'est engagée à faire : attributions, plans de travail, portefeuille, livrables, partenaires, risques. Les personnes et la structure disent qui est qui et qui peut quoi : ressources humaines, organisation, administration. Deux modules sont transverses : les tâches, qui rassemblent ce qu'on demande à une personne, quelle qu'en soit l'origine, et les documents, qui portent les pièces de tous les autres. Les coéquipiers IA proposent dans tous les modules et ne décident dans aucun.
 
 <!-- matrice -->
-| Code | Module | Ce qu'il tient dans la vie de l'Agence | Famille |
-|---|---|---|---|
 | @@ Les seize modules | | | |
+|---|---|---|---|
+| Code | Module | Ce qu'il tient dans la vie de l'Agence | Famille |
 | COU | Courrier | Le registre du courrier entrant et sortant, de l'accusé de réception au classement | Registres de l'écrit |
 | SIG | Signataire | Le circuit de visa puis de signature de tout ce qui sort de l'Agence ou l'engage | Registres de l'écrit |
 | REU | Réunions | Programmation, tenue, compte rendu adopté collégialement, recommandations | Registres de l'écrit |
@@ -49,9 +49,9 @@ Un module ne tient pas sa propre version de ce qu'un autre module a déjà étab
 Le tableau suivant dit ce qui circule entre les modules. Chaque ligne est un lien que le système doit tenir ; une ligne sans lien tenu est un défaut d'architecture, pas seulement de module.
 
 <!-- matrice -->
-| De | Vers | Ce qui circule | Règle |
-|---|---|---|---|
 | @@ Les liens entre modules | | | |
+|---|---|---|---|
+| De | Vers | Ce qui circule | Règle |
 | Courrier | Signataire | Le courrier entrant pour l'annotation de la direction générale ; le projet de courrier sortant pour visa et signature | RG-COU-05, RG-SIG-08 |
 | Courrier | Tâches | Une charge pour tout destinataire recevant un courrier pour traitement | RG-COU-04 |
 | Signataire | Courrier, Partenaires, Livrables | Le document signé, daté, figé, avec sa mention éventuelle de délégation | RG-SIG-04, RG-SIG-06 |
@@ -165,9 +165,8 @@ CHAQUE DESTINATAIRE : pour traitement (charge + echeance) / pour information / l
 ### Le tableau des fonctions
 
 <!-- matrice -->
-| Sous-module | Fonction | Acteurs | Règle appliquée | État |
-|---|---|---|---|---|
 | @@ Module Courrier | | | | |
+|---|---|---|---|---|
 | Sous-module | Fonction | Acteurs | Règle appliquée | État |
 | Réception | Enregistrer un courrier entrant une seule fois, avec expéditeur, destinataire, objet, date de réception et numéro (EX-COU-001) | Service courrier | RG-COU-01 | Partiel |
 | Réception | Produire l'étiquette d'accusé de réception imprimable, portant le numéro et les mentions d'identification ; contenu exact attendu du maître d'ouvrage (EX-COU-002) | Service courrier | RG-COU-01 | À construire |
@@ -207,8 +206,6 @@ CHAQUE DESTINATAIRE : pour traitement (charge + echeance) / pour information / l
 ### Ce qui manque aujourd'hui
 
 Sur trente-trois exigences, vingt-trois ont été confrontées à l'existant : deux sont tenues, sept le sont en partie, sept ne le sont pas, sept n'existent pas. L'écart tient en une phrase : l'outil représente un courrier qui a un destinataire, alors que l'Agence a un courrier qui a des destinataires. Il n'existe qu'un seul chargé par courrier, les autres ne sont que des copies, et la mention pour traitement n'existe pas comme telle. Il s'ensuit qu'aucune charge n'est créée dans la liste de la personne, et que le courrier n'entre jamais au signataire : l'annotation de la direction générale se saisit pendant l'imputation, par celui qui impute, alors qu'à l'Agence elle la précède et la commande. Il n'y a pas d'accusé de réception, donc pas d'étiquette pour le porteur ; le numéro est calculé et non stocké, donc aucune insertion possible ; l'antidatage est accepté sans un mot. Répondre à un entrant coûte quatre clics et trois informations ressaisies. Aucune recherche, aucun filtre. Les relances sont un rappel unique, à l'échéance, au lieu d'un toutes les deux jours. Enfin un partenaire confidentiel figure dans la liste des expéditeurs et son nom est livré avant que le lien soit refusé. Ce qui tient : la date future est refusée et la réponse clôt bien l'entrant. Dix exigences ne sont pas vérifiées et le resteront jusqu'à relecture du code.
-
----
 
 ## Module Signataire
 
@@ -260,9 +257,8 @@ DELEGATION : declaree (dates de debut et de fin) --> ouverte --> fermee d'elle-m
 ### Le tableau des fonctions
 
 <!-- matrice -->
-| Sous-module | Fonction | Acteurs | Règle appliquée | État |
-|---|---|---|---|---|
 | @@ Module Signataire | | | | |
+|---|---|---|---|---|
 | Sous-module | Fonction | Acteurs | Règle appliquée | État |
 | Deux phases | Distinguer pour tout document la phase de préparation et la phase de signature (EX-SIG-001) | Auteur, système | RG-SIG-01 | Partiel |
 | Deux phases | Modifier le texte pendant la préparation (EX-SIG-002) | Auteur, antichambre | RG-SIG-02 | À corriger |
@@ -294,8 +290,6 @@ DELEGATION : declaree (dates de debut et de fin) --> ouverte --> fermee d'elle-m
 ### Ce qui manque aujourd'hui
 
 Sur vingt-six exigences, quatorze ont été confrontées : une est tenue, deux le sont en partie, quatre ne le sont pas, sept n'existent pas. Le circuit lui-même fonctionne et son intégrité tient depuis l'entrée du document ; ce qui manque est tout ce qui l'entoure. La phase de préparation n'est pas distinguée, si bien que l'antichambre ne peut pas corriger un projet dans le circuit. Le courrier n'y entre jamais, ni en sortant ni pour l'annotation de la direction générale. La délégation de signature n'existe pas : le droit de signer au nom de l'Agence est un droit permanent du seul profil de la direction générale, et l'intérim n'est connu du système que pour les congés d'un agent. Rien n'ouvre ni ne ferme une période d'intérim, rien ne la journalise, rien ne la mentionne sur l'acte signé. Une résiliation d'accord laisse son avenant coincé au statut signature : il ne peut plus entrer en vigueur, ni être supprimé, ni être rejeté. Trois actes engageants — enregistrer un brouillon, lancer un circuit, approuver — ne répondent rien. Et le mot « parapheur » est employé deux cent trente-deux fois, tandis que Signataire désigne déjà une personne dans l'écran des accords. Douze exigences ne sont pas vérifiées.
-
----
 
 ## Module Réunions
 
@@ -352,9 +346,9 @@ PROGRAMMEE --> CONVOQUEE --> TENUE --> PROJET DE COMPTE RENDU ----------> ADOPTE
 ### Le tableau des fonctions
 
 <!-- matrice -->
-| Sous-module | Fonction | Acteurs | Règle appliquée | État |
-|---|---|---|---|---|
 | @@ Module Réunions | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
 | Programmation | Programmer une réunion de son entité (EX-REU-001) | Rapporteur | RG-REU-01 | Non vérifié |
 | Programmation | Rattacher toute réunion à un type d'un référentiel fermé (EX-REU-002) | Rapporteur | RG-REU-01 | À corriger |
 | Programmation | Chaîner les séries sur l'identifiant du type et jamais sur un libellé ; ne faire dépendre aucune règle d'un champ libre (EX-REU-003, EX-REU-004) | Système | RG-REU-08 | À corriger |
@@ -394,9 +388,7 @@ PROGRAMMEE --> CONVOQUEE --> TENUE --> PROJET DE COMPTE RENDU ----------> ADOPTE
 
 ### Ce qui manque aujourd'hui
 
-Sur quarante et une exigences, vingt-deux ont été confrontées : aucune n'est tenue, cinq le sont en partie, onze ne le sont pas, six n'existent pas. Le module a faux au point central : l'adoption collégiale n'existe pas. Aucun amendement du projet par les présents n'est décrit, la validation est individuelle, et le droit de valider les comptes rendus est un droit personnel détenu par deux personnes, ce qui reproduit exactement ce que l'Agence refuse. L'adoption à la séance suivante, l'adoption avec modifications, le cas d'une séance sans suivante : rien. Le type de réunion est un champ libre ; le chaînage des séries se fait par égalité de chaîne, si bien que trois séances sur quatre deviennent orphelines. La visibilité du compte rendu d'une réunion des directions vise un libellé qui n'existe pas, le nom réel étant celui de la réunion hebdomadaire des directions. Le code de service n'est jamais envoyé : tous les comptes rendus portent le même sigle. Le formulaire de programmation compte seize champs et aucun pour l'ordre du jour : sept clics pour programmer puis convoquer. L'écran appelle rapporteur la personne qui intervient sur un point, les deux mots de la maison étant intervertis. Rien ne relance une recommandation, et elle ne devient tâche que si elle a un dossier de rattachement. Seize exigences ne sont pas vérifiées.
-
----
+Sur quarante et une exigences, vingt-deux ont été confrontées : aucune n'est tenue, cinq le sont en partie, onze ne le sont pas, six n'existent pas. Le module a faux au point central : l'adoption collégiale n'existe pas. Aucun amendement du projet par les présents n'est décrit, la validation est individuelle, et le droit de valider les comptes rendus est un droit personnel détenu par deux personnes, ce qui reproduit exactement ce que l'Agence refuse. L'adoption à la séance suivante, l'adoption avec modifications, le cas d'une séance sans suivante : rien. Le type de réunion est un champ libre ; le chaînage des séries se fait par égalité de chaîne, si bien que trois séances sur quatre deviennent orphelines. La visibilité du compte rendu d'une réunion des directions vise un libellé qui n'existe pas, le nom réel étant celui de la réunion hebdomadaire des directions. Le code de service n'est jamais envoyé : tous les comptes rendus portent le même sigle. Le formulaire de programmation compte seize champs et aucun pour l'ordre du jour : sept clics pour programmer puis convoquer. L'écran appelle rapporteur la personne qui intervient sur un point, les deux mots de la maison étant intervertis. Rien ne relance une recommandation, et elle ne devient tâche que si elle a un dossier de rattachement. Dix-neuf exigences ne sont pas vérifiées.
 
 ## Module Décisions
 
@@ -454,9 +446,9 @@ EXECUTION          A EXECUTER --> EN COURS --> DECLAREE EXECUTEE --> CONFIRMEE
 ### Le tableau des fonctions
 
 <!-- matrice -->
-| Sous-module | Fonction | Acteurs | Règle appliquée | État |
-|---|---|---|---|---|
 | @@ Module Décisions | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
 | Trois objets | Distinguer arbitrage, décision à confirmer et exécution déclarée comme trois objets, chacun avec sa liste et son cycle (EX-DEC-001) | Tous | RG-DEC-10 | À corriger |
 | Trois objets | Donner à chacun un nom propre, employé seul dans toute l'interface ; noms attendus du maître d'ouvrage (EX-DEC-002) | Tous | EX-TRA-062 | À corriger |
 | Trois objets | Renvoyer chaque compteur vers la liste qu'il compte (EX-DEC-003) | Direction générale | RG-DEC-10 | À corriger |
@@ -485,9 +477,7 @@ EXECUTION          A EXECUTER --> EN COURS --> DECLAREE EXECUTEE --> CONFIRMEE
 
 ### Ce qui manque aujourd'hui
 
-Sur trente-trois exigences, neuf ont été confrontées : une est tenue, six ne le sont pas, deux n'existent pas. Le refus qu'un demandeur tranche sa propre demande est la seule chose qui tienne. Pour le reste, le module n'existe pas sous la forme que l'Agence lui donne : sept objets sous un même mot, trois arbitrages, deux décisions à confirmer, deux exécutions déclarées, et les compteurs mentent. « Tout voir » mène à un registre de soixante-deux lignes où aucun des trois arbitrages ne figure ; « aucun en attente » mène à un onglet vide pendant que l'écran annonce trois décisions en attente. Une demande d'arbitrage nomme le dossier à des personnes qui ne peuvent pas l'ouvrir. Un demandeur qui est le seul décideur possible se refuse lui-même, et personne n'est prévenu. Une décision à exécuter n'entre pas dans la liste de son chargé. Les noms des trois objets ne sont pas arrêtés. Rien n'existe pour les actes d'amont du conseil : une résolution n'entre pas, un budget arrêté ne sert pas de cadre. Enfin l'écrit fait foi, et vingt-quatre exigences, dont la numérotation, la datation, la figeage du texte et la décision de remplacement, n'ont pas été relues au code. Le module est donc, de tous, celui dont l'état réel est le moins connu au regard de son importance.
-
----
+Sur trente-trois exigences, neuf ont été confrontées : une est tenue, six ne le sont pas, deux n'existent pas. Le refus qu'un demandeur tranche sa propre demande est la seule chose qui tienne. Pour le reste, le module n'existe pas sous la forme que l'Agence lui donne : sept objets sous un même mot, trois arbitrages, deux décisions à confirmer, deux exécutions déclarées, et les compteurs mentent. « Tout voir » mène à un registre de soixante-deux lignes où aucun des trois arbitrages ne figure ; « aucun en attente » mène à un onglet vide pendant que l'écran annonce trois décisions en attente. Une demande d'arbitrage nomme le dossier à des personnes qui ne peuvent pas l'ouvrir. Un demandeur qui est le seul décideur possible se refuse lui-même, et personne n'est prévenu. Une décision à exécuter n'entre pas dans la liste de son chargé. Les noms des trois objets ne sont pas arrêtés. Rien n'existe pour les actes d'amont du conseil : une résolution n'entre pas, un budget arrêté ne sert pas de cadre. Enfin l'écrit fait foi, et vingt-quatre exigences, dont la numérotation, la datation, le figement du texte et la décision de remplacement, n'ont pas été relues au code. Le module est donc, de tous, celui dont l'état réel est le moins connu au regard de son importance.
 
 ## Module Plans de travail
 
@@ -537,9 +527,9 @@ REVUE TRIMESTRIELLE : constate / attendu --> ecarts expliques --> revue figee
 ### Le tableau des fonctions
 
 <!-- matrice -->
-| Sous-module | Fonction | Acteurs | Règle appliquée | État |
-|---|---|---|---|---|
 | @@ Module Plans de travail | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
 | Préparation | Préparer le plan annuel de son entité (EX-PLA-001) | Chef d'entité | RG-PLA-01 | Non vérifié |
 | Préparation | Refuser à un chef de préparer le plan d'une entité hors de son périmètre (EX-PLA-002) | Système | RG-PLA-05 | Non vérifié |
 | Préparation | Rattacher chaque plan à un exercice (EX-PLA-003) | Système | RG-PLA-01 | Non vérifié |
@@ -563,9 +553,7 @@ REVUE TRIMESTRIELLE : constate / attendu --> ecarts expliques --> revue figee
 
 ### Ce qui manque aujourd'hui
 
-C'est, avec les attributions, le module le moins instruit : trois exigences sur vingt-cinq ont été confrontées à l'existant, et le dossier des cent deux défauts ne contient aucun point qui lui soit propre. On ne peut donc pas dire qu'il est sain ; on peut dire qu'on ne l'a pas regardé. Ce qui est établi est mince et franc. Le cadre organique est inconnu de l'outil et les attributions y sont du texte libre : un plan ne peut donc pas découler de ses attributions, ce qui est pourtant sa raison d'être. L'outil n'indique pas qui peut approuver un plan, si bien que celui qui soumet se trouve devant un écran sans issue. Et dans le rail de navigation, l'entrée Plans n'apparaît que si le module contient déjà quelque chose : un approbateur dont rien n'attend ne découvre jamais où le chercher. Pour les vingt-deux autres exigences, y compris la figeage du plan approuvé, la révision et la revue trimestrielle, l'état est à établir avant l'ouverture de tout lot.
-
----
+C'est, avec les attributions, le module le moins instruit : trois exigences sur vingt-cinq ont été confrontées à l'existant, et le dossier des cent deux défauts ne contient aucun point qui lui soit propre. On ne peut donc pas dire qu'il est sain ; on peut dire qu'on ne l'a pas regardé. Ce qui est établi est mince et franc. Le cadre organique est inconnu de l'outil et les attributions y sont du texte libre : un plan ne peut donc pas découler de ses attributions, ce qui est pourtant sa raison d'être. L'outil n'indique pas qui peut approuver un plan, si bien que celui qui soumet se trouve devant un écran sans issue. Et dans le rail de navigation, l'entrée Plans n'apparaît que si le module contient déjà quelque chose : un approbateur dont rien n'attend ne découvre jamais où le chercher. Pour les vingt-deux autres exigences, y compris le figement du plan approuvé, la révision et la revue trimestrielle, l'état est à établir avant l'ouverture de tout lot.
 
 ## Module Attributions
 
@@ -607,9 +595,9 @@ BROUILLON --> SOUMISE --> ARRETEE --> EN REVISION --> SOUMISE --> ARRETEE
 ### Le tableau des fonctions
 
 <!-- matrice -->
-| Sous-module | Fonction | Acteurs | Règle appliquée | État |
-|---|---|---|---|---|
 | @@ Module Attributions | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
 | Rédaction | Rédiger la fiche d'attributions de son entité (EX-ATT-001) | Chef d'entité | RG-ATT-03 | Non vérifié |
 | Rédaction | Refuser à un chef de rédiger ou de supprimer la fiche d'une entité hors de son périmètre (EX-ATT-002) | Système | RG-ATT-04 | Non vérifié |
 | Rédaction | Ne proposer Créer la fiche que pour les entités où la personne peut la rédiger (EX-ATT-003) | Chef d'entité | RG-ATT-04 | À corriger |
@@ -625,8 +613,6 @@ BROUILLON --> SOUMISE --> ARRETEE --> EN REVISION --> SOUMISE --> ARRETEE
 ### Ce qui manque aujourd'hui
 
 Onze exigences, dont quatre confrontées : deux ne sont pas tenues, deux n'existent pas. Le module est tenu pour l'essentiel par défaut. L'outil ignore le cadre organique : les attributions s'y écrivent en texte libre, sans référence, ce qui est exactement ce que l'Agence interdit. Personne n'arrête les fiches ; la question de qui le fait est posée et sans réponse, et elle bloque le cycle de vie du module. Un chef de cellule se voit proposer de créer la fiche des treize entités, alors qu'il n'en peut rédiger qu'une partie : l'interface lit le droit, jamais l'étendue. Enfin le droit de consulter les attributions n'a aucun chemin dans la navigation : celui qui le détient ne peut pas atteindre le module. Sept exigences ne sont pas vérifiées. L'échéance de ce module dépend de la décision sur l'autorité qui arrête la fiche.
-
----
 
 ## Module Portefeuille
 
@@ -679,9 +665,9 @@ SANTE :     declaree (par le responsable)   <-- ecart a la revue -->   calculee 
 ### Le tableau des fonctions
 
 <!-- matrice -->
-| Sous-module | Fonction | Acteurs | Règle appliquée | État |
-|---|---|---|---|---|
 | @@ Module Portefeuille | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
 | Création | Créer un projet dont le seul membre est son créateur quand aucune équipe n'est choisie, ou qui compte l'équipe choisie et personne d'autre (EX-POR-001, EX-POR-002) | Responsable de dossier | RG-POR-04 | À corriger |
 | Création | N'imposer aucune équipe par défaut à la création (EX-POR-003) | Responsable de dossier | RG-POR-04 | À corriger |
 | Création | Présenter le même formulaire de création depuis l'accueil et depuis Mon entité (EX-POR-004) | Responsable de dossier | EX-TRA-070 | Partiel |
@@ -709,8 +695,6 @@ SANTE :     declaree (par le responsable)   <-- ecart a la revue -->   calculee 
 ### Ce qui manque aujourd'hui
 
 Sur vingt-quatre exigences, onze ont été confrontées : une est tenue en partie, dix ne le sont pas, aucune n'est tenue. Ce que le module montre, il ne le tient pas. Un projet créé depuis l'accueil naît avec trois éditeurs que personne n'a choisis, dont la directrice générale, et la liste d'équipe n'offre qu'une entrée imposée. Un compte en lecture seule a déposé un document dans un dossier de projet, et le serveur a répondu que tout allait bien : aucune règle d'écriture n'existe sur les documents de dossier. Les raisons budgétaires sortent par la route de santé des projets sans passer par le masque : « budget consommé à 125 % » est lisible par tout lecteur du projet. La modification d'une activité n'est jamais journalisée ; une activité confidentielle peut être ouverte puis refermée sans trace, et le nouveau responsable n'est pas prévenu. Treize exigences ne sont pas vérifiées, dont le calcul de la santé, qui est pourtant l'objet de la revue.
-
----
 
 ## Module Tâches
 
@@ -760,9 +744,9 @@ LISTE UNIQUE (vue) :  taches + recommandations + courriers pour traitement + dec
 ### Le tableau des fonctions
 
 <!-- matrice -->
-| Sous-module | Fonction | Acteurs | Règle appliquée | État |
-|---|---|---|---|---|
 | @@ Module Tâches | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
 | Liste unique | Placer dans la liste d'une personne les tâches de projet et de registre d'entité qui lui sont confiées (EX-TAC-001) | Chargé | RG-TAC-03 | Existant |
 | Liste unique | Y placer les actions décidées en réunion dont elle est responsable (EX-TAC-002) | Chargé | RG-TAC-04 | Partiel |
 | Liste unique | Y placer les courriers qu'elle reçoit pour traitement (EX-TAC-003) | Chargé | RG-TAC-04 | À construire |
@@ -788,5 +772,651 @@ LISTE UNIQUE (vue) :  taches + recommandations + courriers pour traitement + dec
 
 Sur vingt-cinq exigences, quatorze ont été confrontées : deux sont tenues, deux le sont en partie, huit ne le sont pas, deux n'existent pas. La liste unique est la promesse du module, et elle n'est tenue qu'à moitié : les tâches et les livrables y figurent, mais aucun courrier reçu pour traitement ni aucune décision à exécuter n'y entre, et une recommandation de réunion ne devient tâche que lorsqu'elle a un dossier de rattachement. Une personne a donc encore plusieurs endroits où regarder. Ensuite le geste courant est trop long : zéro élément déplaçable en vue calendrier comme en vue tableau, un menu contextuel de cinq entrées sans échéance ni priorité, un seul filtre et aucun tri ; les sept tâches ouvertes d'un lundi matin coûtent vingt-huit clics à replanifier, alors que l'Agence en attend moins de dix. La vue tableau empile les sections de trois projets en six colonnes de sens différents. La ligne, le tiroir et le formulaire de tâche ne se comportent pas pareil selon l'écran. Enfin le sélecteur de personne propose dix-sept noms pour une cellule de deux, et imputer accepte un agent d'ailleurs. Onze exigences ne sont pas vérifiées.
 
----
+## Module Livrables
 
+L'Agence rémunère des consultants sur ce qu'ils produisent. Un livrable est un produit attendu — rapport d'étude, cahier des charges, plan, carte, procès-verbal —, remis par son auteur et validé par une autre personne que lui. Il n'est jamais isolé : il provient d'un travail, d'une activité, d'un projet ou d'une mission, et selon son type il obéit à des règles différentes. La liste de ces types est attendue des directions.
+
+Un livrable porte de l'argent. Sa validation engage une tranche de paiement à un consultant : quarante pour cent d'un contrat, dans la démonstration. Valider un document qu'on n'a pas vu, puis engager la tranche, n'est pas une gêne d'ergonomie, c'est un risque financier ; le système est, de fait, dans la chaîne de la dépense. C'est pourquoi un livrable ne se remet pas sans sa pièce, ne se valide pas sans sa pièce, et ne se valide jamais par son auteur. Le module porte aussi le contrat de mission du consultant — termes de référence, échéancier, montant — et ce que le consultant voit : ce qu'il doit produire, pour quand, et comment le remettre. Ce contrat engage l'Agence ; il est signé par la direction générale.
+
+### Les acteurs du module
+
+<!-- fiche -->
+| Acteur | Rôle dans le module |
+|---|---|
+| Consultant | Produit, remet ; lit son contrat, le plan du projet, ses livrables attendus et remis |
+| Valideur | Valide ou rejette ; n'est jamais l'auteur |
+| Chef d'entité, responsable du projet | Supervise ; voit les engagements de son périmètre |
+| Membre du projet | Voit les livrables ; les engagements seulement avec le droit correspondant |
+| Direction générale | Voit tout ; signe le contrat de mission, comme tout acte qui engage l'Agence |
+
+### Le cycle de vie
+
+Un livrable est attendu, avec son type et son rattachement. Le consultant le remet avec sa pièce, accompagnée d'un mot au valideur ; le livrable est alors remis et reste visible chez son auteur avec son nouvel état. Le valideur le valide ou le rejette : le rejet porte un commentaire obligatoire, le consultant corrige et remet de nouveau, car un livrable se corrige tant qu'il n'est pas validé. La validation engage la tranche de paiement liée au livrable, une seule fois, puis le paiement constaté est enregistré. Le consultant voit l'état de chaque livrable : non traité, validé, rejeté, et en retard quand l'échéance est passée.
+
+```
+ATTENDU --> REMIS ----------------> VALIDE --> TRANCHE ENGAGEE --> PAIEMENT CONSTATE
+(type,      (piece obligatoire)        |        (ex. 40 %)
+ rattache)       |                     |
+                 +--- REJETE ----------+   (commentaire ; le consultant corrige et remet)
+
+CONSULTANT voit : non traite / valide / rejete / en retard
+```
+
+### Les règles de gestion
+
+<!-- matrice -->
+| N° | Règle | Origine |
+|---|---|---|
+| RG-LIV-01 | Un livrable est rattaché à une activité, un projet ou une mission, selon son type. | Fonctionnement de l'Agence |
+| RG-LIV-02 | Les règles d'un livrable dépendent de son type ; la liste des types est attendue. | Fonctionnement de l'Agence |
+| RG-LIV-03 | Un livrable ne se remet pas sans sa pièce. | Fonctionnement de l'Agence |
+| RG-LIV-04 | Un livrable ne se valide pas sans sa pièce. | Fonctionnement de l'Agence |
+| RG-LIV-05 | Un livrable est validé par une autre personne que son auteur. | Métier |
+| RG-LIV-06 | La validation d'un livrable engage une tranche de paiement. | Fonctionnement de l'Agence |
+| RG-LIV-07 | Un livrable se corrige tant qu'il n'est pas validé. | Fonctionnement de l'Agence |
+| RG-LIV-08 | Un contrat de mission se lit par le consultant titulaire, sa hiérarchie et les membres du projet qui ont le droit d'en voir les engagements ; non par les autres consultants. | Fonctionnement de l'Agence |
+| RG-LIV-09 | Un montant est un champ sensible : il se masque par fonction. | Qualité |
+| RG-LIV-10 | Un contrat de mission engage l'Agence : il est signé par la direction générale. | Loi |
+
+### Le tableau des fonctions
+
+<!-- matrice -->
+| @@ Module Livrables | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
+| Rattachement | Refuser de créer un livrable qui n'est rattaché à rien (EX-LIV-001) | Système | RG-LIV-01 | À corriger |
+| Rattachement | Exiger le rattachement que le type prescrit : activité, projet ou mission (EX-LIV-002) | Système | RG-LIV-01 | À corriger |
+| Types | Porter pour chaque livrable un type pris dans un référentiel fermé, liste attendue des directions (EX-LIV-003) | Responsable du projet | RG-LIV-02 | À construire |
+| Types | Appliquer à chaque type ses règles propres de remise et de validation (EX-LIV-004) | Système | RG-LIV-02 | À construire |
+| Correction | Corriger un livrable tant qu'il n'est pas validé, et journaliser la correction avant et après (EX-LIV-005, EX-LIV-006) | Auteur | RG-LIV-07 | À corriger |
+| Remise | Refuser la remise d'un livrable sans fichier (EX-LIV-010) | Système | RG-LIV-03 | À corriger |
+| Remise | Présenter pour remettre une fenêtre de deux champs : le fichier et un mot au valideur (EX-LIV-011) | Consultant | RG-LIV-03 | À corriger |
+| Remise | Lier le document remis au livrable et le rendre visible au valideur (EX-LIV-012) | Système | RG-LIV-03 | À corriger |
+| Remise | Laisser visible chez son auteur un livrable remis, avec son nouvel état (EX-LIV-013) | Consultant | EX-TRA-050 | À corriger |
+| Remise | Répondre à la remise par un message écrit qui la nomme (EX-LIV-014) | Consultant | EX-TRA-050 | À corriger |
+| Validation | Refuser la validation d'un livrable sans pièce (EX-LIV-020) | Système | RG-LIV-04 | À corriger |
+| Validation | Refuser la validation par l'auteur du livrable (EX-LIV-021) | Système | RG-LIV-05 | Non vérifié |
+| Validation | Exiger un commentaire pour rejeter, et informer le consultant de la validation ou du rejet (EX-LIV-022, EX-LIV-023) | Valideur | RG-LIV-05 | Non vérifié |
+| Validation | Présenter au consultant l'état de chaque livrable soumis : non traité, validé, rejeté (EX-LIV-024) | Consultant | RG-LIV-05 | Non vérifié |
+| Paiement | Engager la tranche de paiement liée au livrable à sa validation (EX-LIV-025) | Système | RG-LIV-06 | Existant |
+| Paiement | Refuser d'engager deux fois la même tranche (EX-LIV-026) | Système | RG-LIV-06 | Non vérifié |
+| Paiement | Enregistrer le paiement constaté d'une tranche (EX-LIV-027) | Responsable du projet | RG-LIV-06 | Non vérifié |
+| Paiement | Journaliser la validation et l'engagement de la tranche (EX-LIV-028) | Système | EX-TRA-007 | Non vérifié |
+| Contrats | Rattacher à un projet le contrat d'un consultant, avec termes de référence et échéancier (EX-LIV-030) | Responsable du projet | RG-LIV-08 | Non vérifié |
+| Contrats | Réserver la lecture d'un contrat au titulaire, à sa hiérarchie et aux membres autorisés, et la refuser à un autre consultant (EX-LIV-031, EX-LIV-032) | Système | RG-LIV-08 | À corriger |
+| Contrats | Déclarer la route de lecture d'un contrat au contrat d'accès (EX-LIV-033) | Système | RG-LIV-08 | À corriger |
+| Contrats | Faire signer un contrat de mission par la direction générale (EX-LIV-034) | Direction générale | RG-LIV-10 | Non vérifié |
+| Contrats | Signaler un contrat à l'approche de son terme (EX-LIV-035) | Système | RG-LIV-08 | Non vérifié |
+| Consultant | Présenter au consultant ses tâches, son contrat, le plan du projet, ses livrables attendus et soumis (EX-LIV-040) | Consultant | RG-LIV-08 | Partiel |
+| Consultant | Faire remonter sur son accueil ses livrables en retard (EX-LIV-041) | Consultant | RG-LIV-05 | À corriger |
+| Consultant | Limiter la lecture des livrables au périmètre de la personne (EX-LIV-042) | Système | RG-LIV-09 | Non vérifié |
+
+### Ce qui manque aujourd'hui
+
+Sur vingt-neuf exigences, dix-sept ont été confrontées : une est tenue, une l'est en partie, treize ne le sont pas, deux n'existent pas. La seule qui tienne est celle qui fait le moins peur : la validation engage bien une tranche. Tout ce qui devrait la protéger manque. Un livrable peut n'être lié à rien, puisque projet, activité du plan et contrat sont trois champs facultatifs. Aucun type de livrable n'existe. La table n'a aucune colonne de fichier : le consultant remet en deux clics, zéro champ, zéro pièce, et aucun document n'est lié. Le valideur reçoit un statut et deux événements sans commentaire, puis engage une tranche : quarante pour cent, sept mille deux cents dollars dans la démonstration. La ligne disparaît de la liste de celui qui vient de remettre, la remise répond sans un mot, et la fenêtre se démonte. Le serveur expose la correction d'un livrable, mais la fiche ne la propose pas. Enfin un consultant invité lit intégralement le contrat d'un autre : montant, échéancier, termes de référence ; et la route n'est pas déclarée au contrat d'accès. L'accueil du consultant annonce zéro tâche ouverte alors qu'un livrable est en retard de la veille. Douze exigences ne sont pas vérifiées. La liste des types de livrables est une décision attendue du maître d'ouvrage : les deux exigences correspondantes ne peuvent pas être closes avant elle.
+
+## Module Partenaires
+
+L'Agence travaille avec des tiers : le ministère de tutelle, des bailleurs et partenaires au développement, des collectivités, des entreprises. Le module tient l'annuaire de ces partenaires, une fiche par partenaire, et les accords conclus avec eux : conventions, avenants, pièces. Un accord engage l'Agence ; il est donc signé par la direction générale, ou par le directeur général adjoint en intérim déclaré, par le circuit du signataire, et numéroté à son entrée en vigueur.
+
+Le module est aussi la porte des interfaces extérieures. Le ministère de tutelle, la Cour des comptes et le collège des commissaires aux comptes sont des destinataires : un document qui leur est transmis sort de l'institution comme tout courrier sortant, mais eux ne sont pas des acteurs du système. Certains partenaires sont confidentiels ; la direction les lit en lecture seule, leurs gestionnaires les gèrent, un agent ne les voit pas. Le montant d'un accord est un champ sensible.
+
+### Les acteurs du module
+
+<!-- fiche -->
+| Acteur | Rôle dans le module |
+|---|---|
+| Gestionnaire des partenariats | Tient l'annuaire, prépare les accords, gère les partenaires confidentiels |
+| Point focal | Interlocuteur de l'Agence pour un partenaire |
+| Direction générale | Signe les accords ; lit les partenaires confidentiels, en lecture seule |
+| Cabinet | Lit comme la direction générale ; ne signe pas |
+| Agent | Consulte les partenaires et accords de son périmètre |
+
+### Le cycle de vie
+
+Un partenaire est actif, peut être suspendu puis réactivé, et finit clos ; la clôture est refusée tant qu'un accord est en vigueur sur sa fiche. Deux fiches du même partenaire se fusionnent, la fiche absorbée renvoyant vers la fiche gardée, qui doit être active. Un accord est préparé, passe au signataire, y est signé par la direction générale, puis entre en vigueur, ce qui lui donne son numéro, à condition que toutes ses parties soient actives. Il prend fin par résiliation ou par échéance. Un avenant suit le même cycle mais ne peut exister sans un accord parent en vigueur ; si le parent cesse de l'être avant la signature, l'avenant est remis en préparation avec un message explicite, ou retiré du circuit avec un motif.
+
+```
+PARTENAIRE :  ACTIF <--> SUSPENDU --> CLOS     (cloture refusée si un accord est en vigueur)
+                 +-- fusion --> fiche absorbee (renvoie vers la fiche gardee, qui doit etre ACTIVE)
+
+ACCORD :   PREPARATION --> SIGNATURE --> EN VIGUEUR --> RESILIE | ECHU
+                              |               |
+                              |               +--> AVENANT (meme cycle ; le parent doit etre en vigueur)
+                              +-- signe par la DG ; numerote a l'entree en vigueur
+```
+
+### Les règles de gestion
+
+<!-- matrice -->
+| N° | Règle | Origine |
+|---|---|---|
+| RG-PAR-01 | Il y a un seul annuaire : une fiche par partenaire. | Fonctionnement de l'Agence |
+| RG-PAR-02 | Un accord engage l'Agence : il est signé par la direction générale, ou par le DGA en intérim déclaré. | Loi |
+| RG-PAR-03 | Un accord est numéroté à son entrée en vigueur. | Fonctionnement de l'Agence |
+| RG-PAR-04 | Un avenant modifie un accord en vigueur ; il ne peut exister sans parent en vigueur. | Fonctionnement de l'Agence |
+| RG-PAR-05 | Une fiche qui porte un accord en vigueur ne se clôt pas. | Métier |
+| RG-PAR-06 | Un accord en vigueur n'a pas de partie close ou suspendue. | Métier |
+| RG-PAR-07 | Un partenaire confidentiel se lit par la direction, en lecture seule, et par ses gestionnaires ; non par un agent. | Fonctionnement de l'Agence |
+| RG-PAR-08 | La fiche d'un partenaire ne liste que les accords et pièces du périmètre de celui qui la lit. | Qualité |
+| RG-PAR-09 | Une résiliation traite les avenants en cours. | Métier |
+| RG-PAR-10 | Le montant d'un accord est un champ sensible. | Qualité |
+
+### Le tableau des fonctions
+
+<!-- matrice -->
+| @@ Module Partenaires | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
+| Annuaire | Tenir une seule fiche par partenaire et distinguer actif, suspendu et clos (EX-PAR-001, EX-PAR-002) | Gestionnaire des partenariats | RG-PAR-01 | Non vérifié |
+| Annuaire | Refuser de clore une fiche qui porte un accord en vigueur (EX-PAR-003) | Système | RG-PAR-05 | Existant |
+| Annuaire | Refuser de fusionner vers une fiche qui n'est pas active (EX-PAR-004) | Système | RG-PAR-01 | À corriger |
+| Annuaire | Journaliser une fusion avec les deux fiches concernées (EX-PAR-005) | Système | EX-TRA-007 | Non vérifié |
+| Annuaire | Tenir pour chaque partenaire ses contacts et un point focal (EX-PAR-010) | Gestionnaire des partenariats | RG-PAR-01 | Non vérifié |
+| Annuaire | Retrouver un partenaire par la recherche générale (EX-PAR-009) | Tout agent | RG-PAR-08 | À corriger |
+| Annuaire | Refuser une date antérieure à 1900 ou un montant hors bornes par une erreur de saisie (EX-PAR-011) | Système | EX-TRA-051 | Non vérifié |
+| Confidentialité | Refuser de lier un partenaire que l'auteur du lien ne peut pas lire (EX-PAR-006) | Système | RG-PAR-07 | À corriger |
+| Confidentialité | Réserver la lecture d'un partenaire confidentiel à la direction et aux gestionnaires (EX-PAR-007) | Système | RG-PAR-07 | Non vérifié |
+| Confidentialité | Limiter la fiche aux accords et pièces du périmètre de la personne (EX-PAR-008) | Système | RG-PAR-08 | Non vérifié |
+| Accords | Enregistrer un accord avec parties, objet, dates, montant et devise (EX-PAR-020) | Gestionnaire des partenariats | RG-PAR-03 | Non vérifié |
+| Accords | Numéroter un accord à son entrée en vigueur (EX-PAR-021) | Système | RG-PAR-03 | Non vérifié |
+| Accords | Faire signer un accord par la direction générale ; nommer Signé par la personne qui signe (EX-PAR-022, EX-PAR-023) | Direction générale | RG-PAR-02 | À corriger |
+| Accords | Refuser l'entrée en vigueur d'un accord dont une partie n'est pas active (EX-PAR-024) | Système | RG-PAR-06 | Existant |
+| Avenants | Refuser l'entrée en vigueur d'un avenant dont le parent n'est pas en vigueur (EX-PAR-025) | Système | RG-PAR-04 | Partiel |
+| Avenants | Traiter les avenants en circuit quand un accord est résilié (EX-PAR-026) | Système | RG-PAR-09 | À corriger |
+| Avenants | Remettre en préparation, avec un message explicite, un avenant dont le parent cesse d'être en vigueur avant sa signature (EX-PAR-027) | Système | RG-PAR-04 | À corriger |
+| Avenants | Supprimer ou rejeter un avenant au signataire, avec un motif (EX-PAR-028) | Gestionnaire des partenariats | RG-PAR-04 | À corriger |
+| Suivi | Journaliser l'entrée en vigueur, l'avenant et la résiliation (EX-PAR-029) | Système | EX-TRA-007 | Non vérifié |
+| Suivi | Signaler un accord à l'approche de son échéance (EX-PAR-030) | Système | RG-PAR-03 | Non vérifié |
+| Suivi | Masquer le montant d'un accord à qui n'en a pas le droit (EX-PAR-031) | Système | RG-PAR-10 | Non vérifié |
+
+### Ce qui manque aujourd'hui
+
+Sur vingt-trois exigences, dix ont été confrontées : deux sont tenues, une l'est en partie, sept ne le sont pas. Deux règles de fond tiennent : on ne clôt pas une fiche qui porte un accord en vigueur, et on n'active pas un accord dont une partie est close ou suspendue. Le reste du cycle des avenants est cassé. La résiliation d'un accord ne regarde pas les avenants en cours : l'avenant reste au statut signature, la direction générale a signé un acte sans effet, et il ne peut plus ni entrer en vigueur, ni être supprimé, ni être rejeté. Le contrôle du parent n'a lieu qu'à la signature, après que la direction générale a signé. La fusion transfère les parties vers la fiche gardée sans regarder son état. Un partenaire confidentiel figure dans la liste, son nom est livré, puis le lien est refusé. La recherche générale ne couvre ni les partenaires ni les accords. Le mot Signataire désigne la personne qui signe dans l'écran des accords, alors qu'il désigne le circuit partout ailleurs. Treize exigences ne sont pas vérifiées, dont la numérotation d'un accord et le masque du montant.
+
+## Module Risques
+
+Une entité sait ce qui peut l'empêcher de tenir son plan, et elle le suit sans demander la permission de la direction générale. Le module tient le registre des risques de l'Agence : chacun avec sa probabilité, son impact, sa portée, son responsable et sa parade. La direction générale lit l'ensemble. Le module tient aussi les indicateurs qui mesurent la tenue du plan : un indicateur se calcule quand sa source est dans le système, il se saisit sinon, et le droit de le gérer est distinct du droit sur les risques.
+
+La portée d'un risque borne ce que son auteur peut exercer. Un chef de cellule ne crée pas de risque « Agence entière » : il n'est pas devant un bouton de trop, il est devant une proposition qui n'a pas de sens dans son monde. Une parade a une échéance, et cette échéance se relance : un risque dont la parade est écrite et jamais relancée est un risque que personne ne suit.
+
+### Les acteurs du module
+
+<!-- fiche -->
+| Acteur | Rôle dans le module |
+|---|---|
+| Responsable d'un risque | Met à jour la parade et l'état |
+| Chef d'entité | Déclare et suit les risques de son entité et des projets de son périmètre |
+| Directrice générale, directeur général adjoint | Lisent tout le registre ; seuls habilités aux risques Agence entière |
+| Détenteur du droit sur les indicateurs | Définit les indicateurs et saisit les mesures ; droit distinct, direction générale et DGA |
+| Agent | Voit ses risques et ceux de ses activités |
+
+### Le cycle de vie
+
+Un risque est identifié avec sa portée — une entité, un projet ou l'Agence entière — et son responsable. Il passe en traitement quand sa parade est écrite avec une échéance, que le système relance avant la date. Il est mitigé quand il porte au moins une mesure, le système refusant de le marquer mitigé sinon. Il est clos quand il n'a plus lieu d'être, et un risque clos ne se modifie plus. Les risques d'un projet privé sont exclus du registre commun.
+
+```
+IDENTIFIE --> EN TRAITEMENT --> MITIGE --> CLOS
+ (portee,      (parade ecrite,    (au moins   (non modifiable)
+  responsable)  echeance relancee)  une mesure)
+
+INDICATEUR : defini (unite, cible, source) --> mesure (date obligatoire) --> calcule si la source est dans le systeme
+```
+
+### Les règles de gestion
+
+<!-- matrice -->
+| N° | Règle | Origine |
+|---|---|---|
+| RG-RIS-01 | Un risque a une portée : une entité, un projet, ou l'Agence entière. | Fonctionnement de l'Agence |
+| RG-RIS-02 | La portée d'un risque se limite à ce que son auteur peut exercer ; un chef de cellule ne crée pas de risque Agence entière. | Fonctionnement de l'Agence |
+| RG-RIS-03 | Un risque a un responsable. | Métier |
+| RG-RIS-04 | Une parade a une échéance, et cette échéance se relance. | Métier |
+| RG-RIS-05 | Un risque mitigé porte au moins une mesure. | Métier |
+| RG-RIS-06 | Un risque clos ne se modifie plus. | Métier |
+| RG-RIS-07 | Le registre ne s'ouvre pas aux projets privés hors du cercle du projet. | Qualité |
+| RG-RIS-08 | Un indicateur se calcule quand sa source est dans le système ; il se saisit sinon. | Métier |
+| RG-RIS-09 | Le droit sur les indicateurs est distinct du droit sur les risques. | Fonctionnement de l'Agence |
+
+### Le tableau des fonctions
+
+<!-- matrice -->
+| @@ Module Risques | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
+| Déclaration | Déclarer un risque avec probabilité, impact, portée et responsable (EX-RIS-001) | Chef d'entité | RG-RIS-01 | Non vérifié |
+| Déclaration | Ne proposer à une personne que les portées qu'elle peut exercer (EX-RIS-002) | Chef d'entité | RG-RIS-02 | À corriger |
+| Déclaration | Refuser à un chef d'entité un risque de portée Agence entière (EX-RIS-003) | Système | RG-RIS-02 | À corriger |
+| Visibilité | Limiter la lecture du registre aux entités et projets que la personne peut lire (EX-RIS-004) | Système | RG-RIS-07 | Non vérifié |
+| Visibilité | Exclure du registre commun les risques d'un projet privé (EX-RIS-005) | Système | RG-RIS-07 | Non vérifié |
+| Suivi | Mettre à jour la parade et l'état d'un risque (EX-RIS-006) | Responsable du risque | RG-RIS-03 | Non vérifié |
+| Suivi | Calculer la criticité à partir de la probabilité et de l'impact (EX-RIS-007) | Système | RG-RIS-01 | Non vérifié |
+| Suivi | Présenter à la direction générale la matrice des risques de son périmètre (EX-RIS-008) | Direction générale | RG-RIS-01 | Non vérifié |
+| Suivi | Journaliser le changement de responsable, de cotation et de clôture (EX-RIS-009) | Système | EX-TRA-007 | Non vérifié |
+| Parade | Saisir et afficher l'échéance de la parade sur la fiche du risque (EX-RIS-010, EX-RIS-011) | Responsable du risque | RG-RIS-04 | À corriger |
+| Parade | Relancer le responsable avant l'échéance de la parade (EX-RIS-012) | Système | RG-RIS-04 | À construire |
+| Parade | Refuser de marquer mitigé un risque sans mesure ; refuser de modifier un risque clos (EX-RIS-013, EX-RIS-014) | Système | RG-RIS-05, RG-RIS-06 | Non vérifié |
+| Indicateurs | Définir un indicateur avec son unité, sa cible et sa source (EX-RIS-020) | Détenteur du droit | RG-RIS-09 | Non vérifié |
+| Indicateurs | Refuser une date de mesure inexistante par un message de saisie, et une mesure sans date (EX-RIS-021, EX-RIS-022) | Système | EX-TRA-051 | Non vérifié |
+| Indicateurs | Calculer un indicateur depuis sa source quand elle est dans le système (EX-RIS-023) | Système | RG-RIS-08 | Non vérifié |
+| Indicateurs | Réserver la gestion des indicateurs aux détenteurs du droit distinct (EX-RIS-024) | Système | RG-RIS-09 | Non vérifié |
+
+### Ce qui manque aujourd'hui
+
+Sur dix-neuf exigences, cinq ont été confrontées : quatre ne sont pas tenues, une n'existe pas. Le module propose ce que l'Agence interdit : l'interface lit le droit, jamais l'étendue, et un risque Agence entière est proposé à un chef de cellule, l'aide du champ l'y invitant. La parade a une échéance que le serveur porte, valide et renvoie, mais que l'interface ne montre ni ne permet de saisir. Et la relance n'existe pas : le mécanisme de rappels n'a aucune source risque, de sorte qu'une parade écrite n'est jamais relancée. C'est le défaut le plus lourd, parce qu'il vide de son sens ce que l'Agence attend d'un registre de risques. Quatorze exigences ne sont pas vérifiées, dont les indicateurs, leur calcul et leur droit distinct, que personne n'a encore confrontés à l'existant.
+
+## Module Ressources humaines
+
+L'Agence compte environ cent quatre-vingt-douze agents, dispersés sur six pools et deux fuseaux horaires. Le service des ressources humaines tient leurs dossiers, enregistre les arrivées et les sorties, suit les congés et les intérims. Le module porte les données les plus protégées du système : dossiers personnels, contrats, santé. Il ne remplace ni la paie ni la comptabilité, qui sont outillées ailleurs ; il en est l'amont.
+
+Un principe le gouverne : ce qu'on sait d'une personne ne sort pas du cercle de ceux qui doivent le savoir. Le secret médical en est la catégorie la plus fermée, et il est de loi : la nature et le motif d'un congé de maladie ne sont lisibles que de l'agent et du service des ressources humaines. Même la hiérarchie et la direction générale voient « absence » et des dates, jamais davantage. L'intérimaire, qui remplace l'agent pendant son congé, ne sait rien de sa nature. Ce secret doit tenir par toutes les voies : liste, fiche, notification, retour d'écriture, export, journal.
+
+### Les acteurs du module
+
+<!-- fiche -->
+| Acteur | Rôle dans le module |
+|---|---|
+| Service des ressources humaines | Tient les dossiers, pose les sorties, lit le détail d'un congé |
+| Agent | Lit son propre dossier ; demande ses congés ; désigne son intérimaire |
+| Chef d'entité | Décide les congés de son équipe ; lit la partie administrative du dossier de ses agents |
+| Directrice générale, directeur général adjoint | Lisent ; décident quand aucun chef n'existe au-dessus de la demande |
+| Intérimaire | Remplace l'agent pendant son congé ; ne sait rien de sa nature |
+| Responsable informatique | Crée les comptes ; ne lit ni dossiers RH ni pilotage |
+
+### Le cycle de vie
+
+Trois cycles se tiennent côte à côte. L'agent arrive : l'arrivée se contrôle en entier avant que quoi que ce soit soit créé, puis le compte est invité et activé. Il est actif jusqu'à ce que sa sortie soit posée ; la sortie suspend le compte, révoque les sessions, clôt l'affectation, refuse avec un motif les demandes de congé en cours et retire ou réaffecte les intérims ; posée par erreur, elle s'annule avec un motif et une trace, et le compte et l'affectation se rouvrent. Le congé est demandé, puis approuvé ou refusé par un décideur qui n'est ni l'auteur ni le saisisseur ; à défaut de chef, la demande remonte à la direction générale. L'absence, enfin, s'affiche comme absence et dates, rien de plus.
+
+```
+AGENT :   ARRIVEE --> INVITE --> ACTIF --> SORTIE POSEE --> SORTI
+          (controles)  (compte)              |   ^
+                                             +---+  annulation (motif, journal)
+
+CONGE :   DEMANDE --> APPROUVE --> PRIS
+                 +--> REFUSE
+          (decideur : ni l'auteur ni le saisisseur ; a defaut de chef, la DG)
+
+ABSENCE : affichee "absence" + dates ; nature et motif d'un conge de maladie : agent et RH seulement
+```
+
+### Les règles de gestion
+
+<!-- matrice -->
+| N° | Règle | Origine |
+|---|---|---|
+| RG-RH-01 | Tout agent a un dossier et un compte ; un consultant a un compte, sans dossier d'agent. | Fonctionnement de l'Agence |
+| RG-RH-02 | Un contractuel, un stagiaire et un consultant ont une date de fin. | Fonctionnement de l'Agence |
+| RG-RH-03 | Une arrivée se contrôle en entier avant que quoi que ce soit soit créé. | Métier |
+| RG-RH-04 | Une sortie suspend le compte, révoque les sessions, clôt l'affectation et règle les congés et les intérims de l'agent. | Fonctionnement de l'Agence |
+| RG-RH-05 | Une sortie posée par erreur s'annule, avec un motif et une trace. | Métier |
+| RG-RH-06 | La nature et le motif d'un congé de maladie ne sont lisibles que de l'agent et du service RH. | Loi |
+| RG-RH-07 | Un jour de congé est un jour ouvré qui n'est pas férié ; les jours fériés de l'Agence sont un référentiel. | Fonctionnement de l'Agence |
+| RG-RH-08 | Chaque nature de congé a un droit annuel ; une demande qui le dépasse est refusée. | Fonctionnement de l'Agence |
+| RG-RH-09 | Le décideur d'un congé n'est ni son auteur ni son saisisseur ; sans décideur, la demande remonte à la direction générale. | Métier |
+| RG-RH-10 | Le décideur se détermine à la lecture, non à la création. | Métier |
+| RG-RH-11 | Les notes et évaluations RH sont réservées au service RH. | Fonctionnement de l'Agence |
+| RG-RH-12 | L'annuaire n'expose que les informations professionnelles : nom, fonction, entité, adresse professionnelle. | Qualité |
+
+### Le tableau des fonctions
+
+<!-- matrice -->
+| @@ Module Ressources humaines | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
+| Dossier | Tenir pour chaque agent un dossier : identité, fonction, entité, affectation, contrat (EX-RH-001) | Service RH | RG-RH-01 | Non vérifié |
+| Dossier | Réserver la modification des notes et évaluations au service RH, et limiter un chef à la partie administrative (EX-RH-008, EX-RH-009) | Service RH, chef d'entité | RG-RH-11 | Non vérifié |
+| Dossier | N'exposer dans l'annuaire que les informations professionnelles (EX-RH-010) | Système | RG-RH-12 | Non vérifié |
+| Dossier | Signaler à 90 puis 30 jours le terme des contrats (EX-RH-011) | Service RH | RG-RH-02 | Non vérifié |
+| Arrivée | Refuser l'arrivée d'un contractuel, d'un stagiaire ou d'un consultant sans date de fin (EX-RH-002) | Système | RG-RH-02 | Non vérifié |
+| Arrivée | N'enrôler un agent qu'après tous les contrôles, sans compte, membre ni avis après un refus (EX-RH-003, EX-RH-004) | Système | RG-RH-03 | À corriger |
+| Arrivée | Offrir un seul chemin pour faire entrer une personne, le formulaire qui demande entité et fonction (EX-RH-005) | Service RH | RG-RH-03 | À corriger |
+| Arrivée | Annoncer à la création du compte la seconde étape ; réafficher et corriger l'entité et la fonction d'une invitation en attente (EX-RH-006, EX-RH-007) | Service RH | RG-RH-03 | À corriger |
+| Sortie | Poser la date de sortie d'un agent (EX-RH-020) | Service RH | RG-RH-04 | Non vérifié |
+| Sortie | Suspendre le compte, révoquer les sessions et clore l'affectation d'un agent sorti (EX-RH-021) | Système | RG-RH-04 | Existant |
+| Sortie | Refuser avec motif les demandes de congé en cours d'un agent sorti (EX-RH-022) | Système | RG-RH-04 | À corriger |
+| Sortie | Retirer ou réaffecter les intérims que tenait un agent sorti (EX-RH-023) | Système | RG-RH-04 | À corriger |
+| Sortie | Annuler une sortie avec un motif obligatoire et rouvrir compte et affectation (EX-RH-024, EX-RH-025) | Service RH | RG-RH-05 | À construire |
+| Sortie | Journaliser la pose et l'annulation d'une sortie (EX-RH-026) | Système | EX-TRA-007 | Non vérifié |
+| Sortie | Refuser la sortie du dernier administrateur du système (EX-RH-027) | Système | RG-RH-04 | Non vérifié |
+| Congés | Demander un congé avec nature, dates et, s'il y a lieu, un motif (EX-RH-030) | Agent | RG-RH-07 | Non vérifié |
+| Congés | Refuser une date inexistante par un message de saisie et borner la durée d'une demande (EX-RH-031, EX-RH-032) | Système | EX-TRA-051 | À corriger |
+| Congés | Exclure du décompte les jours fériés, tenus dans un référentiel (EX-RH-033, EX-RH-034) | Système | RG-RH-07 | À corriger |
+| Congés | Tenir un droit annuel par nature et refuser une demande qui dépasse le solde, en indiquant le solde restant (EX-RH-035, EX-RH-036) | Système | RG-RH-08 | À corriger |
+| Congés | Refuser une demande dont le décompte est de zéro jour (EX-RH-037) | Système | RG-RH-07 | À corriger |
+| Congés | Répartir sur leurs exercices les jours d'une demande à cheval sur deux exercices (EX-RH-038) | Système | RG-RH-08 | À corriger |
+| Décision | Refuser qu'un auteur ou un saisisseur décide sa propre demande (EX-RH-039) | Système | RG-RH-09 | Existant |
+| Décision | Remonter à la direction générale une demande sans décideur possible (EX-RH-040) | Système | RG-RH-09 | À corriger |
+| Décision | Recalculer le décideur à la lecture quand le chef a changé (EX-RH-041) | Système | RG-RH-10 | À corriger |
+| Décision | Désigner son intérimaire pour la durée d'un congé (EX-RH-042) | Agent | RG-RH-04 | Non vérifié |
+| Secret médical | Écrire ni la nature ni le motif d'un congé de maladie dans une notification, intitulée demande une absence pour le chef (EX-RH-050, EX-RH-054) | Système | RG-RH-06 | À corriger |
+| Secret médical | Ne pas l'écrire dans la valeur de retour d'une écriture (EX-RH-051) | Système | RG-RH-06 | À corriger |
+| Secret médical | Ne pas l'écrire dans un export ni dans le journal d'administration (EX-RH-052, EX-RH-053) | Système | RG-RH-06 | Non vérifié |
+| Secret médical | Ne pas nommer la nature du congé à l'intérimaire (EX-RH-055) | Système | RG-RH-06 | À corriger |
+| Secret médical | Montrer à toute autre personne absence et les dates seules (EX-RH-056) | Système | RG-RH-06 | Partiel |
+
+### Ce qui manque aujourd'hui
+
+Sur trente-neuf exigences, vingt-six ont été confrontées : deux sont tenues, une l'est en partie, dix-neuf ne le sont pas, quatre n'existent pas. C'est le module où l'écart touche le plus de monde. Le secret médical, qui est de loi, fuit : l'avis au chef écrit le type du congé dans son titre et le motif en clair dans son corps, l'intérimaire se voit nommer la nature du congé, et la décision renvoie la ligne non masquée ; le masque ne couvre que la lecture directe, la liste et le résumé. L'arrivée crée le compte, le lien et le membre, et prévient les administrateurs avant d'avoir fait les contrôles, et il existe deux formulaires d'arrivée dont le second ne demande ni entité ni fonction. La sortie est posée mais n'est pas réglée : les demandes de congé restent ouvertes chez un chef, l'agent sorti demeure intérimaire d'autres personnes, et une sortie posée par erreur ne s'annule pas. Le calcul des congés compte tous les lundis aux vendredis, sans jours fériés, sans droit annuel, sans plafond de solde ; une demande du samedi au dimanche donne zéro jour et passe ; une date inexistante fait répondre le serveur par une erreur ; une période sans borne fait des millions d'itérations. Le décideur est figé à la création et jamais recalculé, et s'il est le seul détenteur du droit de gestion, personne ne reçoit rien. Treize exigences ne sont pas vérifiées, dont les exports et le journal d'administration au regard du secret médical.
+
+## Module Organisation
+
+La forme de l'Agence n'est pas un organigramme décoratif. Elle commande trois choses : l'autonomie des entités, le périmètre de chaque chef, et le fuseau horaire. La direction générale est tenue par une directrice générale et un seul directeur général adjoint. Quatre services lui sont rattachés : la cellule de communication, la cellule NTIC, la cellule de conformité et le secrétariat de direction. Sous elle viennent les directions centrales, avec leurs divisions et leurs bureaux ; enfin l'Agence est présente dans le pays par six pools territoriaux, chacun couvrant plusieurs provinces et dirigé par un directeur de pool.
+
+Le module tient cette structure : les entités, leurs types, leurs chefs, leurs équipes, les personnes qui y sont affectées, et l'étendue de ce que chacun peut exercer. Deux sièges de pool ne sont pas à la même heure, Kinshasa à UTC+1 et Lubumbashi à UTC+2 : « aujourd'hui » n'est pas le même jour partout, et le fuseau se porte donc par l'entité. Le Conseil d'administration et le collège des commissaires aux comptes ne sont pas outillés : leurs actes entrent dans le système, ils n'y délibèrent pas.
+
+### Les acteurs du module
+
+<!-- fiche -->
+| Acteur | Rôle dans le module |
+|---|---|
+| Responsable informatique | Administre la structure : crée, rattache, nomme les chefs, gère les fonctions et les types |
+| Service RH | Affecte les personnes ; tient leurs dossiers |
+| Chef d'entité, directeur de pool | Dirige son entité et les entités rattachées ; gère son équipe |
+| Directrice générale | Lit toute la structure |
+| Agent, stagiaire | Lit son entité, son responsable, l'annuaire professionnel |
+
+### Le cycle de vie
+
+La structure est un arbre : elle n'a pas d'états, seul l'arrivant en a un, décrit au module Ressources humaines. Chaque entité a un seul parent, un type tiré d'un référentiel fermé et un chef ; une entité de type pool a un directeur de pool. On ne nomme chef qu'une personne dont le profil le permet ; nul ne se nomme chef de son propre chef et nul ne remplace un chef de rang supérieur. Le fuseau se porte par l'institution et se surcharge par l'entité. Une équipe est un groupe de travail transversal, elle n'est pas une entité.
+
+```
+Agence (institution)
+ +- Direction generale -- DG, DGA -- Secretariat de direction, Cellule de communication,
+ |                                    Cellule NTIC, Cellule de conformite
+ +- Directions centrales -- directeur -- Divisions -- Bureaux
+ +- Pools territoriaux (6) -- directeur de pool -- Representations provinciales, Antennes
+
+Fuseau : institution --> surcharge par l'entite (Kinshasa UTC+1, Lubumbashi UTC+2)
+```
+
+### Les règles de gestion
+
+<!-- matrice -->
+| N° | Règle | Origine |
+|---|---|---|
+| RG-ORG-01 | La structure est un arbre d'entités dont la racine est l'institution. | Fonctionnement de l'Agence |
+| RG-ORG-02 | Le type d'une entité se prend dans un référentiel fermé. | Fonctionnement de l'Agence |
+| RG-ORG-03 | Il y a un seul directeur général adjoint. | Fonctionnement de l'Agence |
+| RG-ORG-04 | Chaque entité a un chef ; une entité de type pool a un directeur de pool. | Fonctionnement de l'Agence |
+| RG-ORG-05 | On ne nomme chef qu'une personne dont le profil le permet. | Fonctionnement de l'Agence |
+| RG-ORG-06 | Nul ne se nomme chef de son propre chef ; nul ne remplace un chef de rang supérieur. | Qualité |
+| RG-ORG-07 | Un chef d'entité se limite à son entité, aux entités rattachées et aux endroits où il a été invité. | Fonctionnement de l'Agence |
+| RG-ORG-08 | Le périmètre est une dimension distincte du droit : avoir un droit ne dit pas pour quelle entité. | Fonctionnement de l'Agence |
+| RG-ORG-09 | Une entité est autonome dans son fonctionnement : ce qui se décide dans une entité se décide dans cette entité. | Fonctionnement de l'Agence |
+| RG-ORG-10 | Le fuseau horaire se porte par l'institution et se surcharge par l'entité. | Fonctionnement de l'Agence |
+| RG-ORG-11 | Le Conseil d'administration et le collège des commissaires aux comptes ne sont pas outillés. | Loi |
+| RG-ORG-12 | Une équipe est un groupe de travail transversal ; ce n'est pas une entité. | Fonctionnement de l'Agence |
+
+### Le tableau des fonctions
+
+<!-- matrice -->
+| @@ Module Organisation | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
+| Types et fonctions | Tenir les types d'entité dans un référentiel fermé, modifiable dans les paramètres sans toucher au code (EX-ORG-001) | Responsable informatique | RG-ORG-02 | Non vérifié |
+| Types et fonctions | Offrir le type d'entité Division (EX-ORG-002) | Responsable informatique | RG-ORG-02 | À construire |
+| Types et fonctions | Offrir le type d'entité Bureau (EX-ORG-003) | Responsable informatique | RG-ORG-02 | À construire |
+| Types et fonctions | Offrir le type d'entité Pool (EX-ORG-004) | Responsable informatique | RG-ORG-02 | À construire |
+| Types et fonctions | Offrir la fonction de directeur de pool (EX-ORG-005) | Responsable informatique | RG-ORG-04 | À construire |
+| Types et fonctions | Refuser un second directeur général adjoint (EX-ORG-006) | Système | RG-ORG-03 | Non vérifié |
+| Types et fonctions | N'offrir au catalogue des profils qu'un seul profil de directeur général adjoint (EX-ORG-007) | Responsable informatique | RG-ORG-03 | À corriger |
+| Structure | Rattacher une entité à un seul parent et refuser un rattachement qui crée un cycle (EX-ORG-010, EX-ORG-011) | Système | RG-ORG-01 | Non vérifié |
+| Structure | Créer, renommer et rattacher les entités (EX-ORG-012) | Responsable informatique | RG-ORG-01 | Non vérifié |
+| Chefs | Refuser de nommer chef une personne dont le profil ne le permet pas (EX-ORG-013) | Système | RG-ORG-05 | Existant |
+| Chefs | Refuser qu'une personne se nomme chef ou remplace un chef de rang supérieur (EX-ORG-014, EX-ORG-015) | Système | RG-ORG-06 | Non vérifié |
+| Chefs | Ne proposer dans le sélecteur de chef que des personnes que le serveur acceptera (EX-ORG-016) | Responsable informatique | EX-TRA-013 | À corriger |
+| Chefs | Compter le responsable d'une entité parmi ses membres (EX-ORG-017) | Système | RG-ORG-04 | Non vérifié |
+| Chefs | Nommer le responsable en tête de l'écran d'entité, avec un moyen de le joindre (EX-ORG-018) | Tout agent | RG-ORG-04 | À corriger |
+| Chefs | Désigner l'intérimaire d'un chef d'entité (EX-ORG-019) | Chef d'entité | RG-ORG-04 | À construire |
+| Périmètre | Contrôler l'étendue d'un droit comme le droit lui-même (EX-ORG-030) | Système | RG-ORG-08 | À corriger |
+| Périmètre | N'offrir à un chef, dans ses formulaires, que les entités de son périmètre (EX-ORG-031) | Chef d'entité | RG-ORG-07 | Non vérifié |
+| Périmètre | Inviter une personne dans une entité ou un espace pour étendre son périmètre (EX-ORG-032) | Chef d'entité | RG-ORG-07 | Non vérifié |
+| Fuseau | Porter un fuseau pour l'institution et le surcharger pour une entité (EX-ORG-040, EX-ORG-041) | Responsable informatique | RG-ORG-10 | À construire |
+| Fuseau | Calculer aujourd'hui, en retard et cette semaine dans le fuseau de l'entité (EX-ORG-042) | Système | RG-ORG-10 | À corriger |
+| Équipes | Constituer une équipe transversale et laisser son responsable la gérer (EX-ORG-050, EX-ORG-051) | Chef d'entité | RG-ORG-12 | Non vérifié |
+| Équipes | Dire à un arrivant, sur son premier écran, ce qu'on attend de lui et à qui il s'adresse (EX-ORG-052) | Stagiaire, agent | RG-ORG-04 | À corriger |
+| Équipes | Distinguer visiblement une équipe d'une entité (EX-ORG-053) | Tous | RG-ORG-12 | Non vérifié |
+| Hors périmètre | N'offrir aucun écran de délibération du conseil d'administration ni du collège des commissaires aux comptes (EX-ORG-054) | Système | RG-ORG-11 | Non vérifié |
+
+### Ce qui manque aujourd'hui
+
+Sur vingt-huit exigences, quatorze ont été confrontées : une est tenue, six ne le sont pas, sept n'existent pas. Le référentiel connaît institution, direction générale, direction, département, service, cellule, représentation provinciale et antenne ; il ne connaît ni division, ni bureau, ni pool. Le secrétariat de direction, qui est une division de la direction générale, ne peut donc pas être représenté pour ce qu'il est, et les six pools territoriaux n'existent pas dans le système, ni la fonction de directeur de pool. Aucun fuseau n'existe : l'Agence a pourtant des sièges à deux heures différentes, et à zéro heure trente à Kinshasa, un serveur en temps universel date de la veille. L'intérim d'un chef d'entité manque, et le catalogue des profils ne reflète pas l'unicité du directeur général adjoint. L'écran d'entité ne nomme jamais son responsable, alors que le serveur le renvoie ; un stagiaire ne sait pas à qui demander. Le sélecteur de chef propose dix-sept personnes dont cinq seront refusées, soit vingt-neuf pour cent de choix voués au refus. Enfin l'interface lit le droit et jamais l'étendue : le périmètre, qui est la définition même de la fonction d'un chef, n'est pas contrôlé de bout en bout. Quatorze exigences ne sont pas vérifiées.
+
+## Module Administration
+
+Dans l'Agence, trois fonctions sont distinctes et aucune ne donne accès aux données des deux autres : piloter, c'est la direction générale ; administrer la plateforme, c'est le responsable informatique ; gérer les personnes, ce sont les ressources humaines. La directrice générale est propriétaire technique du système et ne règle ni la messagerie ni les profils, parce que ce n'est pas son travail. Le responsable informatique administre l'outil et ne voit ni le pilotage, ni les décisions, ni le courrier confidentiel. Un compte peut cumuler tous les pouvoirs techniques et peu de droits métier, et l'inverse.
+
+Le module tient donc ce qui permet à l'outil de fonctionner sans que personne y voie trop : les demandes d'accès, les comptes, les profils de fonction et leurs droits, la messagerie sortante, les paramètres et les référentiels, et le journal d'audit. Ce journal est ce que la direction générale relit pour s'assurer que les administrateurs n'ont pas changé leurs propres droits. Il ne s'écrit qu'après l'exécution, ne porte aucun contenu de dossier RH, et la liste des genres d'actes qu'il consigne s'allonge sans jamais raccourcir.
+
+### Les acteurs du module
+
+<!-- fiche -->
+| Acteur | Rôle dans le module |
+|---|---|
+| Responsable informatique | Crée les comptes, administre profils, structure, messagerie, règles IA ; aucun droit métier de direction |
+| Administrateur système | État du système, sessions, journal d'audit |
+| Directrice générale | Relit le journal des administrateurs ; ne règle pas la messagerie ni les profils |
+| Service RH | Lit les demandes d'accès d'agents ; tient les dossiers |
+| Demandeur d'accès | Demande un compte ; en reçoit la réponse |
+
+### Le cycle de vie
+
+Une demande d'accès est approuvée ou refusée ; elle ne reste pas en attente. Un refus porte un motif et la personne en est avertie. Une demande approuvée donne un compte invité, puis actif ; un compte actif peut être suspendu, et un compte suspendu ne se connecte pas. La sortie d'un agent, décrite au module Ressources humaines, ferme le cycle. Les profils et les droits n'ont pas d'états mais une règle : nul ne s'accorde un droit, ne change son propre profil, ni n'attribue un profil supérieur à ce qu'il peut lui-même attribuer. Tout acte d'administration est journalisé, avec son auteur et sa date, une fois exécuté.
+
+```
+DEMANDE D'ACCES --> APPROUVEE --> INVITE --> ACTIF <--> SUSPENDU --> SORTI
+       |                                                   (voir Ressources humaines)
+       +--> REFUSEE (motif ; avis a la personne)
+
+JOURNAL : acte execute --> journalise (auteur, date, avant/apres) --> relu par la DG (droits sensibles)
+```
+
+### Les règles de gestion
+
+<!-- matrice -->
+| N° | Règle | Origine |
+|---|---|---|
+| RG-ADM-01 | Les droits d'une personne découlent de son profil de fonction, non de son rang technique. | Fonctionnement de l'Agence |
+| RG-ADM-02 | Nul ne s'accorde un droit ni ne change son propre profil. | Qualité |
+| RG-ADM-03 | Tout droit sensible accordé est signalé à qui relit le journal des administrateurs. | Qualité |
+| RG-ADM-04 | Un administrateur ne connaît jamais le mot de passe d'autrui et ne reçoit pas le lien d'activation d'un compte de rang supérieur. | Qualité |
+| RG-ADM-05 | Une demande d'accès est approuvée ou refusée ; elle ne reste pas en attente indéfiniment. | Métier |
+| RG-ADM-06 | Un compte suspendu ne se connecte pas. | Qualité |
+| RG-ADM-07 | Tout acte d'administration est journalisé, et seulement une fois exécuté. | Qualité |
+| RG-ADM-08 | La liste des genres d'actes journalisés s'allonge ; elle ne raccourcit jamais. | Fonctionnement de l'Agence |
+| RG-ADM-09 | Le journal d'administration ne porte aucun contenu de dossier RH. | Qualité |
+| RG-ADM-10 | Un référentiel fermé ne s'allonge que par son gestionnaire. | Qualité |
+
+### Le tableau des fonctions
+
+<!-- matrice -->
+| @@ Module Administration | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
+| Demandes d'accès | Approuver une demande d'accès (EX-ADM-001) | Responsable informatique | RG-ADM-05 | Non vérifié |
+| Demandes d'accès | Refuser une demande d'accès avec un motif (EX-ADM-002) | Responsable informatique | RG-ADM-05 | À corriger |
+| Demandes d'accès | Informer la personne dont la demande est refusée (EX-ADM-003) | Système | RG-ADM-05 | À corriger |
+| Demandes d'accès | Signaler à l'administrateur les demandes qui attendent (EX-ADM-004) | Système | RG-ADM-05 | À corriger |
+| Comptes | Refuser la connexion d'un compte suspendu (EX-ADM-005) | Système | RG-ADM-06 | Non vérifié |
+| Comptes | Ne remettre à un administrateur ni le mot de passe ni le lien de réinitialisation d'un autre compte (EX-ADM-006) | Système | RG-ADM-04 | Non vérifié |
+| Comptes | Refuser d'attribuer un profil supérieur à ce que l'administrateur peut attribuer (EX-ADM-007) | Système | RG-ADM-04 | Non vérifié |
+| Profils et droits | Attribuer à chaque profil l'ensemble de ses droits de consultation et d'action (EX-ADM-010) | Responsable informatique | RG-ADM-01 | Non vérifié |
+| Profils et droits | Donner au profil Lecture seule les droits de consultation que son nom annonce (EX-ADM-011) | Responsable informatique | RG-ADM-01 | À corriger |
+| Profils et droits | Refuser qu'une personne s'accorde un droit ou change son propre profil (EX-ADM-012) | Système | RG-ADM-02 | Partiel |
+| Profils et droits | Journaliser toute modification d'un profil, avant et après, et signaler l'attribution d'un droit sensible (EX-ADM-013, EX-ADM-014) | Système | RG-ADM-03 | Partiel |
+| Profils et droits | Permettre à la direction générale de relire le journal des administrateurs (EX-ADM-015) | Direction générale | RG-ADM-03 | Non vérifié |
+| Matrice des droits | Figer l'en-tête et la première colonne de la matrice (EX-ADM-016) | Responsable informatique | RG-ADM-01 | À corriger |
+| Matrice des droits | Rechercher un droit et filtrer la matrice par groupe de droits (EX-ADM-017, EX-ADM-018) | Responsable informatique | RG-ADM-01 | À corriger |
+| Matrice des droits | Modifier un droit sur place, depuis la matrice, pour qui en a le droit (EX-ADM-019) | Responsable informatique | RG-ADM-01 | À corriger |
+| Messagerie | Réserver le réglage de la messagerie sortante au responsable informatique (EX-ADM-030) | Responsable informatique | RG-ADM-01 | Non vérifié |
+| Messagerie | Chiffrer le mot de passe de la messagerie et ne jamais le réafficher (EX-ADM-031) | Système | RG-ADM-04 | Non vérifié |
+| Paramètres | Régler l'adresse du serveur de temps et le fuseau de l'institution (EX-ADM-032) | Responsable informatique | EX-TRA-020 | À construire |
+| Paramètres | Gérer les référentiels sans toucher au code : types d'entité, de réunion, jours fériés, types de livrable (EX-ADM-033) | Responsable informatique | RG-ADM-10 | Partiel |
+| Paramètres | Réserver l'ajout d'une valeur d'un référentiel fermé à son gestionnaire (EX-ADM-034) | Système | RG-ADM-10 | Non vérifié |
+| Journal | Journaliser tout acte d'administration, avec auteur et date, et n'y écrire aucun contenu de dossier RH (EX-ADM-040, EX-ADM-041) | Système | RG-ADM-07, RG-ADM-09 | Non vérifié |
+| Journal | Filtrer le journal par acteur, genre d'acte et date (EX-ADM-042) | Administrateur système | RG-ADM-07 | Non vérifié |
+| Journal | Exporter le journal (EX-ADM-043) | Administrateur système | RG-ADM-07 | Non vérifié |
+| Journal | Ne jamais retirer un genre d'acte de la liste des actes journalisés (EX-ADM-044) | Système | RG-ADM-08 | Non vérifié |
+
+### Ce qui manque aujourd'hui
+
+Sur vingt-sept exigences, treize ont été confrontées : aucune n'est tenue, quatre le sont en partie, huit ne le sont pas, une n'existe pas. Une demande d'accès peut être approuvée, jamais refusée : la route existe, aucun bouton ne la porte ; la personne n'est pas avertie, et la demande reste en attente indéfiniment. Le profil Lecture seule n'a aucun des cinquante-huit droits, donc aucun des dix modules de suivi : quelqu'un à qui l'on a ouvert l'outil pour qu'il suive n'a rien à suivre. Le détenteur du droit de gestion des profils peut ajouter à son propre profil n'importe lequel des cinquante-huit droits ; la journalisation et le signalement de cet acte à qui relit le journal ne sont pas établis. La matrice des droits, outil quotidien du responsable informatique, n'a ni recherche, ni filtre, ni en-tête figé ; vérifier puis changer un droit coûte deux écrans et six clics. Il n'existe aucune horloge de référence ni aucun fuseau configurable, et plusieurs valeurs de référentiel manquent. Quatorze exigences ne sont pas vérifiées, parmi lesquelles le journal lui-même, dont dépend la confiance qu'on peut avoir dans tout le reste.
+
+## Module Coéquipiers IA
+
+L'Agence accepte des coéquipiers IA à une condition, qui est la règle de l'outil : l'IA propose, un humain décide. Une proposition n'a aucun effet avant la validation d'un humain. L'IA lit avec les droits de la personne qui la lance, jamais plus ; elle n'agit jamais comme une personne et n'occupe aucune fonction humaine : ni signataire, ni chargé d'exécution, ni rapporteur, ni intervenant, ni décideur. Le module tient ce que l'IA propose, ce qui attend une validation, les règles d'automatisation qui la déclenchent et les exécutions qui en résultent.
+
+Dans une institution où l'écrit fait foi, deux conséquences en découlent. Une proposition qui attend un décideur qu'elle n'a pas ne doit pas rester en suspens pour toujours : elle expire, libère la tâche et prévient. Une validation humaine ne s'inscrit jamais au journal avant que l'action ait réellement eu lieu : une approbation inscrite à tort est pire que pas d'approbation du tout.
+
+### Les acteurs du module
+
+<!-- fiche -->
+| Acteur | Rôle dans le module |
+|---|---|
+| Personne qui lance | Demande une intervention ; l'IA lit avec ses droits, jamais plus |
+| Approbateur | Valide ou refuse une proposition ; n'est jamais la personne visée par elle |
+| Auteur d'une règle | Écrit la consigne ; la règle s'exécute sous ses droits |
+| Chef de projet | Est prévenu quand une proposition n'a aucun décideur |
+| Responsable informatique | Administre les règles et le fournisseur |
+| Coéquipier IA | Propose ; n'agit jamais comme une personne |
+
+### Le cycle de vie
+
+Une intervention, lancée par une personne ou déclenchée par une règle, produit une proposition. Si aucun décideur n'est possible, aucune attente n'est ouverte et le chef de projet est prévenu. Sinon la proposition attend un approbateur, qui ne peut être la personne qu'elle vise. Approuvée, elle est exécutée, attribuée à l'approbateur avec la mention qu'elle a été proposée par un coéquipier IA, et seulement alors journalisée. Refusée, elle arrête l'intervention. Au bout d'un délai défini, une attente expire : la tâche est libérée et le demandeur est prévenu.
+
+```
+INTERVENTION --> PROPOSITION --> EN ATTENTE --> APPROUVEE --> EXECUTEE --> JOURNALISEE
+                      |              |
+                      |              +--> REFUSEE (arrete l'intervention)
+                      |              +--> EXPIREE (delai ; tache liberee ; demandeur prevenu)
+                      |
+                      +-- aucun decideur possible : pas d'attente ouverte ; le chef de projet est prevenu
+```
+
+### Les règles de gestion
+
+<!-- matrice -->
+| N° | Règle | Origine |
+|---|---|---|
+| RG-IA-01 | Une proposition de l'IA n'a d'effet qu'après validation humaine. | Fonctionnement de l'Agence |
+| RG-IA-02 | L'IA lit avec les droits de la personne qui la lance, jamais plus. | Fonctionnement de l'Agence |
+| RG-IA-03 | L'IA n'agit jamais comme une personne. | Fonctionnement de l'Agence |
+| RG-IA-04 | L'IA n'occupe aucune fonction humaine : ni signataire, ni chargé d'exécution, ni rapporteur, ni décideur. | Fonctionnement de l'Agence |
+| RG-IA-05 | La personne visée par une proposition ne la valide pas. | Fonctionnement de l'Agence |
+| RG-IA-06 | Une proposition sans décideur possible n'ouvre pas d'attente. | Métier |
+| RG-IA-07 | Une attente expire au bout d'un délai défini. | Métier |
+| RG-IA-08 | Une règle s'exécute sous les droits de qui a écrit sa consigne en vigueur. | Qualité |
+| RG-IA-09 | Un refus arrête l'intervention. | Fonctionnement de l'Agence |
+| RG-IA-10 | Le journal n'enregistre que ce qui a été exécuté. | Qualité |
+| RG-IA-11 | L'IA demande la permission avant chaque lecture envoyée à un service extérieur. | Fonctionnement de l'Agence |
+
+### Le tableau des fonctions
+
+<!-- matrice -->
+| @@ Module Coéquipiers IA | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
+| Validation humaine | Attendre la validation d'un humain avant toute écriture proposée par un coéquipier IA (EX-IA-001) | Approbateur | RG-IA-01 | Non vérifié |
+| Validation humaine | N'inscrire approuvée au journal qu'après l'exécution de l'action (EX-IA-002) | Système | RG-IA-10 | À corriger |
+| Validation humaine | Refuser, avec un motif, l'approbation d'une proposition dont l'attente n'existe plus, sans écrire ni journaliser (EX-IA-003, EX-IA-004) | Système | RG-IA-10 | À corriger |
+| Validation humaine | Refuser qu'une personne valide une proposition qui la vise (EX-IA-005) | Système | RG-IA-05 | Non vérifié |
+| Validation humaine | Recalculer les décideurs d'une proposition modifiée avant sa validation (EX-IA-006) | Système | RG-IA-05 | Non vérifié |
+| Validation humaine | Arrêter l'intervention quand la proposition est refusée (EX-IA-007) | Système | RG-IA-09 | Non vérifié |
+| Validation humaine | Attribuer toute écriture issue d'une validation à l'approbateur, avec la mention de la proposition par un coéquipier IA (EX-IA-008) | Système | RG-IA-03 | Non vérifié |
+| Sans décideur | Ne pas ouvrir d'attente pour une proposition sans décideur possible (EX-IA-010) | Système | RG-IA-06 | À corriger |
+| Sans décideur | Prévenir le chef du projet quand une proposition n'a aucun décideur possible (EX-IA-011) | Système | RG-IA-06 | À corriger |
+| Expiration | Faire expirer une attente au bout d'un délai défini (EX-IA-012) | Système | RG-IA-07 | À corriger |
+| Expiration | Libérer la tâche à l'expiration d'une attente (EX-IA-013) | Système | RG-IA-07 | À corriger |
+| Expiration | Informer le demandeur quand une attente expire (EX-IA-014) | Système | RG-IA-07 | Non vérifié |
+| Expiration | Dire pourquoi une intervention n'a pas pu démarrer (EX-IA-015) | Système | RG-IA-07 | À corriger |
+| Règles | Exécuter une règle sous les droits de qui a écrit sa consigne en vigueur et réaffecter l'auteur à celui qui la modifie (EX-IA-020, EX-IA-021) | Auteur d'une règle | RG-IA-08 | À corriger |
+| Règles | Exiger de l'éditeur d'une règle le droit que la règle fait exercer (EX-IA-022) | Système | RG-IA-08 | À corriger |
+| Règles | Journaliser la création et la modification d'une règle, consigne avant et après (EX-IA-023) | Système | EX-TRA-007 | À corriger |
+| Limites | Refuser qu'un coéquipier IA tienne une fonction humaine (EX-IA-030) | Système | RG-IA-04 | Non vérifié |
+| Limites | Limiter la lecture d'un coéquipier IA aux droits de la personne qui le lance (EX-IA-031) | Système | RG-IA-02 | Non vérifié |
+| Limites | Demander la permission avant chaque lecture envoyée à un service extérieur (EX-IA-032) | Personne qui lance | RG-IA-11 | Non vérifié |
+| Limites | Chiffrer la clé du fournisseur d'IA et ne jamais la réafficher (EX-IA-033) | Système | RG-IA-11 | Non vérifié |
+| Consultation | Appliquer le filtre des projets lisibles avant la limite de pagination des exécutions (EX-IA-040) | Système | RG-IA-02 | À corriger |
+| Consultation | Présenter à une personne les exécutions des projets qu'elle lit (EX-IA-041) | Tout agent | RG-IA-02 | Non vérifié |
+
+### Ce qui manque aujourd'hui
+
+Treize exigences ont été confrontées sur vingt-quatre, et treize ne sont pas tenues : c'est le module où le constat est le plus net, aucune exigence vérifiée n'y est tenue. La règle fondatrice, que le journal ne dise que le vrai, est violée : une approbation est inscrite au journal avant que le système cherche l'attente en mémoire ; si elle n'existe plus après un redémarrage, la ligne devient expirée et la réponse est un succès. Une proposition sans décideur attend indéfiniment et verrouille la tâche, qui est alors fermée à toute nouvelle intervention ; personne n'est prévenu quand la liste des approbateurs est vide, et le démarrage d'une intervention refusée ne dit pas pourquoi, si bien que les règles qui s'y déclenchent échouent sans bruit. Une règle modifiée garde les droits de son premier auteur ; un administrateur de projet sans le droit de déléguer à l'IA peut réécrire la consigne ; la création et la modification d'une règle ne sont pas journalisées. Enfin le filtre des projets lisibles s'applique après la pagination : un agent dont les projets sont peu actifs ne voit aucune exécution. Onze exigences ne sont pas vérifiées, dont l'interdiction faite à l'IA de tenir une fonction humaine, qui est pourtant la règle de la maison.
+
+## Module Documents
+
+L'Agence travaille sur l'acte écrit, numéroté, daté, signé, classé, et le module Documents tient les pièces que tous les autres manipulent : les documents déposés dans un dossier, un partenaire, un accord, un courrier ou une réunion ; les modèles à partir desquels le système génère un document ; les archives, où l'écrit validé est conservé ; les exports des registres. Le secrétariat de direction y finalise les sortants et classe ; la direction générale y consulte les archives.
+
+Le module garantit trois choses. Un document validé ou signé est figé et ne se supprime pas. L'accès à un document suit celui de l'objet qui le porte : qui ne peut pas lire le dossier ne lit pas ses pièces, et qui n'a aucun droit d'écriture sur lui n'y dépose rien. Enfin on produit un document à partir d'un modèle plutôt que de le retaper : on dépose le modèle avec ses en-têtes, la personne saisit les informations variables, le système génère. Le module est aussi le lieu des actes d'amont du conseil d'administration : états financiers approuvés, budget arrêté, cadre organique entrent comme documents de référence, jamais comme délibérations. Les annexes volumineuses du courrier sont reportées par le maître d'ouvrage et ne sont pas spécifiées ici.
+
+### Les acteurs du module
+
+<!-- fiche -->
+| Acteur | Rôle dans le module |
+|---|---|
+| Déposant | Dépose une pièce dans l'objet où il tient un rôle d'écriture |
+| Lecteur | Lit les pièces de l'objet qu'il a le droit de lire |
+| Gestionnaire des modèles | Dépose et met à jour les modèles et leurs en-têtes |
+| Secrétariat de direction | Finalise un sortant, numérote, imprime, classe |
+| Direction générale | Consulte les archives ; signe |
+| Tout agent concerné | Génère un document à partir d'un modèle |
+
+### Le cycle de vie
+
+Un document est déposé dans un objet porteur et décrit par son type, ses dates de production et d'expiration, sa référence. S'il est remplacé, l'ancienne version est conservée. Validé ou signé, il est figé, puis classé : le registre dit alors qui l'a classé et à quel dossier il se rattache. Un modèle suit un autre chemin : on le dépose, la personne saisit ses champs, le document est généré, puis il entre dans le circuit du signataire. Les archives forment un registre unique, que le secrétariat, la direction générale et le projet consultent chacun sous leur vue.
+
+```
+DEPOSE --> (decrit : type, dates, reference) --> VALIDE / SIGNE --> FIGE --> CLASSE (archive)
+   |                                                                            |
+   +-- remplace : l'ancienne version est conservee         qui l'a classe, a quel dossier
+
+MODELE --> saisie des champs --> DOCUMENT GENERE --> circuit du signataire
+```
+
+### Les règles de gestion
+
+<!-- matrice -->
+| N° | Règle | Origine |
+|---|---|---|
+| RG-DOC-01 | Un document est rangé dans un objet porteur et décrit par un type. | Fonctionnement de l'Agence |
+| RG-DOC-02 | L'accès à un document suit celui de son objet porteur. | Qualité |
+| RG-DOC-03 | Un document validé ou signé est figé. | Fonctionnement de l'Agence |
+| RG-DOC-04 | On dépose un modèle avec ses en-têtes ; la personne saisit ; le système génère. | Fonctionnement de l'Agence |
+| RG-DOC-05 | La finalisation d'un sortant, numéro et impression, revient au secrétariat. | Fonctionnement de l'Agence |
+| RG-DOC-06 | Un registre archivé est unique ; secrétariat, direction générale et projet en sont des vues. | Fonctionnement de l'Agence |
+| RG-DOC-07 | Un export est tracé et ne contient rien qui soit masqué à la vue. | Qualité |
+| RG-DOC-08 | Les actes d'amont du conseil entrent comme documents de référence ; leur délibération reste hors du système. | Loi |
+
+### Le tableau des fonctions
+
+<!-- matrice -->
+| @@ Module Documents | | | | |
+|---|---|---|---|---|
+| Sous-module | Fonction | Acteurs | Règle appliquée | État |
+| Pièces | Ranger tout document dans un seul objet porteur et le décrire par un type d'un référentiel (EX-DOC-001, EX-DOC-002) | Déposant | RG-DOC-01 | Non vérifié |
+| Pièces | Renseigner la date de production, la date d'expiration et la référence ; signaler les documents expirés (EX-DOC-003, EX-DOC-004) | Déposant | RG-DOC-01 | Non vérifié |
+| Pièces | Appliquer à un document le droit de lecture de son objet porteur (EX-DOC-005) | Système | RG-DOC-02 | Non vérifié |
+| Pièces | Refuser le dépôt à toute personne sans droit d'écriture sur l'objet porteur (EX-DOC-006) | Système | RG-DOC-02 | À corriger |
+| Pièces | Ne jamais renvoyer le contenu binaire d'un document dans une liste (EX-DOC-007) | Système | RG-DOC-02 | Non vérifié |
+| Pièces | Permettre l'aperçu d'un document PDF, image, Word, Excel ou texte sans le télécharger (EX-DOC-008) | Lecteur | RG-DOC-02 | Non vérifié |
+| Pièces | Conserver l'ancienne version d'un document remplacé (EX-DOC-009) | Système | RG-DOC-03 | Non vérifié |
+| Pièces | Figer un document dès qu'il est validé ou signé, et refuser la suppression d'un document signé (EX-DOC-010, EX-DOC-011) | Système | RG-DOC-03 | Non vérifié |
+| Modèles | Déposer un modèle de document avec ses en-têtes (EX-DOC-020) | Gestionnaire des modèles | RG-DOC-04 | À construire |
+| Modèles | Saisir les informations variables d'un modèle dans des champs (EX-DOC-021) | Tout agent concerné | RG-DOC-04 | À construire |
+| Modèles | Générer un document à partir d'un modèle et des informations saisies (EX-DOC-022) | Tout agent concerné | RG-DOC-04 | À construire |
+| Modèles | Réserver la gestion des modèles à leurs gestionnaires (EX-DOC-023) | Système | RG-DOC-04 | Non vérifié |
+| Modèles | Offrir la génération à tout module qui produit un document : courrier, convention, note (EX-DOC-024) | Tout agent concerné | RG-DOC-04 | Non vérifié |
+| Modèles | Réserver au secrétariat la finalisation d'un sortant généré (EX-DOC-025) | Secrétariat de direction | RG-DOC-05 | À construire |
+| Exports | Exporter les registres en Excel, PDF, Word ou CSV, dans la charte de l'Agence (EX-DOC-030) | Tout utilisateur du registre | RG-DOC-07 | Non vérifié |
+| Exports | Journaliser chaque export (EX-DOC-031) | Système | RG-DOC-07 | Non vérifié |
+| Exports | Neutraliser toute formule contenue dans une cellule exportée (EX-DOC-032) | Système | RG-DOC-07 | Non vérifié |
+| Exports | N'écrire dans un export aucune donnée masquée à la vue (EX-DOC-033) | Système | RG-DOC-07 | Non vérifié |
+| Archives | Tenir un registre unique des documents archivés, avec qui a classé et à quel dossier (EX-DOC-040) | Secrétariat de direction | RG-DOC-06 | Partiel |
+| Archives | Présenter les archives en trois vues, secrétariat, direction générale, projet, d'un même registre (EX-DOC-041) | Secrétariat, direction | RG-DOC-06 | À construire |
+| Documents de référence | Conserver les états financiers approuvés comme document de référence (EX-DOC-050) | Direction générale | RG-DOC-08 | À construire |
+| Documents de référence | Conserver le budget arrêté comme cadre d'exécution consultable (EX-DOC-051) | Direction générale | RG-DOC-08 | À construire |
+| Documents de référence | Consulter le cadre organique dans l'outil, sous réserve de la décision du maître d'ouvrage (EX-DOC-052) | Tout agent | RG-DOC-08 | À construire |
+
+### Ce qui manque aujourd'hui
+
+Sur vingt-six exigences, dix ont été confrontées : aucune n'est tenue, une l'est en partie, une ne l'est pas, huit n'existent pas. Ce module est celui où l'on trouve le plus d'absences nettes : aucun modèle de document n'existe, donc ni dépôt de modèle, ni champs, ni génération, et la finalisation d'un sortant n'est pas un rôle du secrétariat. Les courriers se classent, mais sans registre unifié ni rattachement explicite, et les trois archives dont l'Agence parle ne sont pas les vues d'un même registre. Aucun état financier approuvé, aucun budget arrêté n'entre comme document de référence ; l'outil ignore le cadre organique. Ce qui existe est fragile : un compte en lecture seule a déposé un document dans un dossier de projet et le serveur a répondu que tout allait bien, parce qu'aucune règle d'écriture n'existe sur les documents de dossier. Seize exigences ne sont pas vérifiées, dont la plus grave pour un registre d'actes : on ne sait pas si un document signé est vraiment figé et protégé de la suppression, ni si un export respecte les masques de la vue.

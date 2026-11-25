@@ -326,27 +326,33 @@ export function Checkbox({
   onChange,
   size = 18,
   label,
+  disabled,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   size?: number;
   label?: string;
+  /** Sans le droit de modifier, la case se voit mais ne se coche pas : elle ne fait pas semblant. */
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       role="checkbox"
+      disabled={disabled}
       aria-checked={checked}
+      aria-disabled={disabled}
       aria-label={label ?? (checked ? "Marquer non terminée" : "Marquer terminée")}
       onClick={(e) => {
         e.stopPropagation();
-        onChange(!checked);
+        if (!disabled) onChange(!checked);
       }}
       className={cn(
         "group/cb inline-flex shrink-0 items-center justify-center rounded-full border transition-all duration-200",
         checked
           ? "border-success bg-success text-on-success"
           : "border-line-strong text-transparent hover:border-success hover:text-success",
+        disabled && "cursor-not-allowed opacity-50 hover:border-line-strong hover:text-transparent",
       )}
       style={{ width: size, height: size }}
     >

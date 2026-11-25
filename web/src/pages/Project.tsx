@@ -62,7 +62,16 @@ export interface ViewProps {
   project: ProjectDetail;
   tasks: Task[];
   aiActive: Set<string>;
+  /** Modifier la fiche du projet : rôle d'éditeur et droit « projects.edit ». */
   canEdit: boolean;
+  /** Créer une tâche : rôle d'éditeur et droit « tasks.create ». */
+  canAddTask: boolean;
+  /** Modifier une tâche : rôle d'éditeur et droit « tasks.edit ». */
+  canEditTask: boolean;
+  /** Gérer les sections : rôle d'éditeur et droit « sections.manage ». */
+  canSections: boolean;
+  /** Faire travailler l'IA (point d'avancement, extraction, suggestions) : rôle d'éditeur et droit « ai.delegate ». */
+  canDelegate: boolean;
 }
 
 const VIEWS = [
@@ -86,6 +95,7 @@ export function ProjectPage() {
   const { data: runs } = useRuns({ projectId: id });
   const shell = useShell();
   const qc = useQueryClient();
+  const can = useCan();
   const [statusOpen, setStatusOpen] = useState(false);
   const aiActive = useMemo(
     () => new Set((runs ?? []).filter((r) => isActive(r.status) && r.task_id).map((r) => r.task_id!)),
@@ -99,20 +109,34 @@ export function ProjectPage() {
         <Spinner />
       </div>
     );
-  const canEdit = project.role === "editor" || project.role === "admin";
+  // Le serveur exige les deux : le rôle sur le projet et le droit du profil (services.ts). L'interface compose
+  // les mêmes conditions, pour ne proposer aucun geste qu'il refuserait (règle 5.1.3 du système de design).
+  const editor = project.role === "editor" || project.role === "admin";
+  const canEdit = editor && can("projects.edit");
+  const canAddTask = editor && can("tasks.create");
+  const canEditTask = editor && can("tasks.edit");
+  const canSections = editor && can("sections.manage");
+  // Tout ce qui fait travailler l'IA sur le projet passe par « ai.delegate » (ai/engine.ts) : point d'avancement,
+  // extraction de tâches depuis des notes, amélioration d'une description, suggestion de sous-tâches.
+  const canDelegate = editor && can("ai.delegate");
+  /** Rend vrai si le serveur a accepté : un appelant ne doit jamais annoncer une réussite qui n'a pas eu lieu. */
   const patch = (body: Record<string, unknown>) =>
     api.patch(`/api/projects/${project.id}`, body).then(
       () => {
         qc.invalidateQueries({ queryKey: ["project", project.id] });
         qc.invalidateQueries({ queryKey: ["projects"] });
+        return true;
       },
-      (e) => toast.error(e.message),
+      (e) => {
+        toast.error(e.message);
+        return false;
+      },
     );
-  const props: ViewProps = { project, tasks, aiActive, canEdit };
+  const props: ViewProps = { project, tasks, aiActive, canEdit, canAddTask, canEditTask, canSections, canDelegate };
   const unitBoard = project.kind === "unit";
   const views = unitBoard ? VIEWS.filter((v) => ["list", "board", "calendar", "timeline"].includes(v.id)) : VIEWS;
   const addTask = async () => {
-    if (!canEdit) return;
+    if (!canAddTask) return;
     const t = await api.post<Task>("/api/tasks", { project_id: project.id, title: "Nouvelle tâche" }).catch((e) => {
       toast.error(e.message);
       return null;
@@ -131,8 +155,11 @@ export function ProjectPage() {
           <span className="flex-1">
             Ce projet est archivé : il n'apparaît plus dans la barre latérale ni dans les recherches.
           </span>
-          {project.role === "admin" && (
-            <Button size="sm" onClick={() => patch({ archived: false }).then(() => toast.success("Projet restauré"))}>
+          {project.role === "admin" && can("projects.archive") && (
+            <Button
+              size="sm"
+              onClick={() => patch({ archived: false }).then((ok) => ok && toast.success("Projet restauré"))}
+            >
               Restaurer
             </Button>
           )}
@@ -213,12 +240,12 @@ export function ProjectPage() {
           <div className="flex flex-wrap items-center gap-2">
             {!unitBoard && <Members project={project} />}
             {!unitBoard && <ProjectMenu project={project} />}
-            {canEdit && !unitBoard && (
+            {canEdit && canDelegate && !unitBoard && (
               <Button variant="ai" icon={<Sparkles className="size-3.5" />} onClick={() => setStatusOpen(true)}>
                 Point d'avancement
               </Button>
             )}
-            {canEdit && (
+            {canAddTask && canDelegate && (
               <Button
                 variant="ai"
                 icon={<Wand2 className="size-3.5" />}
@@ -228,7 +255,7 @@ export function ProjectPage() {
                 Notes → tâches
               </Button>
             )}
-            {canEdit && (
+            {canAddTask && (
               <Button variant="primary" icon={<Plus className="size-3.5" />} onClick={addTask}>
                 Tâche
               </Button>
@@ -392,7 +419,9 @@ function Members({ project }: { project: ProjectDetail }) {
   const users = useUserMap();
   const { data: all } = useUsers();
   const qc = useQueryClient();
-  const isAdmin = project.role === "admin";
+  const can = useCan();
+  // Le serveur demande le rôle d'administrateur du projet et le droit « projects.members » (services.ts)
+  const isAdmin = project.role === "admin" && can("projects.members");
   const set = (userId: string, role: Role | null) =>
     api.put(`/api/projects/${project.id}/members/${userId}`, { role }).then(
       () => qc.invalidateQueries({ queryKey: ["project", project.id] }),

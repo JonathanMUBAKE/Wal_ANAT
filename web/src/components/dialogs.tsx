@@ -115,7 +115,11 @@ export function NewProjectDialog() {
         open={shell.newProject}
         onOpenChange={shell.setNewProject}
         title="Nouveau projet"
-        description="Vous en serez administrateur. Ajoutez ensuite vos coéquipiers, humains et IA."
+        description={
+          can("ai.delegate")
+            ? "Vous en serez administrateur. Ajoutez ensuite vos coéquipiers, humains et IA."
+            : "Vous en serez administrateur. Ajoutez ensuite les personnes qui y travaillent."
+        }
         footer={
           <>
             {can("projects.import") && (
@@ -270,8 +274,12 @@ export function NewProjectDialog() {
 /** Notes en vrac → tâches, grâce à l'IA, avec relecture avant création. */
 export function QuickAddDialog() {
   const shell = useShell();
+  const can = useCan();
   const { data: projects } = useProjects();
   const editable = projects?.filter((p) => p.role === "editor" || p.role === "admin") ?? [];
+  // Extraire des tâches d'un texte fait travailler l'IA (ai/engine.ts, parseTasks) et crée ensuite des tâches :
+  // le serveur demande « ai.delegate » et « tasks.create ». Sans l'un des deux, le dialogue n'existe pas.
+  const ouvrable = can("ai.delegate") && can("tasks.create");
   const [projectId, setProjectId] = useState<string | null>(null);
   const { data: project } = useProject(projectId ?? undefined);
   const users = useUserMap();
@@ -323,7 +331,7 @@ export function QuickAddDialog() {
   const patch = (i: number, p: Partial<ParsedTask>) => setItems(items!.map((x, j) => (j === i ? { ...x, ...p } : x)));
   return (
     <Dialog
-      open={shell.quickAdd.open}
+      open={shell.quickAdd.open && ouvrable}
       onOpenChange={(v) => !v && shell.closeQuickAdd()}
       width={680}
       title={
@@ -445,6 +453,9 @@ export function StatusUpdateDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const can = useCan();
+  // Le point d'avancement est rédigé par l'IA (ai/engine.ts, projectStatus) : le serveur demande « ai.delegate ».
+  const ouvrable = can("ai.delegate") && can("projects.edit");
   const [p, setP] = useState<StatusProposal | null>(null);
   const [loading, setLoading] = useState(false);
   const qc = useQueryClient();
@@ -497,7 +508,7 @@ export function StatusUpdateDialog({
     );
   return (
     <Dialog
-      open={open}
+      open={open && ouvrable}
       onOpenChange={onOpenChange}
       width={620}
       title={

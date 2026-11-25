@@ -16,7 +16,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { Avatar, Button, Markdown, cn } from "./ui";
-import { useDecide, useMe, useRun, useUserMap } from "@/lib/hooks";
+import { useCan, useDecide, useMe, useRun, useUserMap } from "@/lib/hooks";
 import { ago, pl } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { AiApproval, AiRun, AiStep } from "@/lib/types";
@@ -121,9 +121,13 @@ export function ApprovalCard({ a, compact }: { a: AiApproval; compact?: boolean 
   const users = useUserMap();
   const decide = useDecide();
   const { data: me } = useMe();
+  const can = useCan();
   const agent = users.get(a.agent_id);
   // La personne visée par la proposition ne la valide pas elle-même (thème 2, I-4)
   const targeted = !!me && (a.target_ids ?? []).includes(me.id);
+  // Décider exige le droit « ai.approve » (ai/engine.ts) : une demande née de l'assistant est listée à son auteur
+  // sans ce contrôle, alors que le serveur le réclame au moment de décider. Sans le droit, pas de boutons.
+  const decides = can("ai.approve");
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(String(a.input.body ?? ""));
   const [decided, setDecided] = useState<null | boolean>(null);
@@ -176,7 +180,12 @@ export function ApprovalCard({ a, compact }: { a: AiApproval; compact?: boolean 
               Cette proposition vous concerne : une autre personne habilitée l'autorise ou la refuse.
             </p>
           )}
-          {pending && !targeted && (
+          {pending && !targeted && !decides && (
+            <p className="mt-2 text-[12.5px] text-muted">
+              Valider les actions de l'IA ne relève pas de votre profil : une personne habilitée décide.
+            </p>
+          )}
+          {pending && !targeted && decides && (
             <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
               <Button
                 size="sm"

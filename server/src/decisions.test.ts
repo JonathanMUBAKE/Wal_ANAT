@@ -101,6 +101,32 @@ describe("registre des décisions : une décision est figée, seule l'exécution
     expect((await g.api("u_alice", "GET", `/api/decisions/${d.id}`)).body.content).toBe("Le cabinet Géo est retenu.");
   });
 
+  /*
+   * Le drapeau que lit le tiroir. `can.execute` couvrait deux pas d'un coup — « Passer en cours », ouvert au
+   * secrétariat, et « Déclarer exécutée », réservé au chargé — si bien que l'assistante de direction se voyait
+   * proposer une déclaration que le serveur refusait (constat d'un testeur). Les deux pas se disent séparément.
+   */
+  it("distingue, dans la fiche d'une décision, le passage en cours de la déclaration d'exécution", async () => {
+    const d = (await decide({ owner_id: "u_karim", due_on: day(10) })).body;
+    const url = `/api/decisions/${d.id}/execution`;
+    await g.api("u_alice", "POST", `/api/decisions/${d.id}/confirm`);
+
+    // Le secrétariat (decisions.record) fait passer en cours, mais ne déclare pas à la place du chargé
+    const vueAlice = (await g.api("u_alice", "GET", `/api/decisions/${d.id}`)).body;
+    expect(vueAlice.can.start).toBe(true);
+    expect(vueAlice.can.declare).toBe(false);
+    expect((await g.api("u_alice", "PATCH", url, { status: "executee", note: "Non" })).status).toBe(403);
+    expect((await g.api("u_alice", "PATCH", url, { status: "en_cours" })).body.status).toBe("en_cours");
+
+    // Le chargé déclare : son drapeau est ouvert, et « passer en cours » n'a plus lieu d'être
+    const vueKarim = (await g.api("u_karim", "GET", `/api/decisions/${d.id}`)).body;
+    expect(vueKarim.can.declare).toBe(true);
+    expect(vueKarim.can.start).toBe(false);
+    expect(
+      (await g.api("u_karim", "PATCH", url, { status: "executee", note: "Fait" })).body.execution_declared_by,
+    ).toBe("u_karim");
+  });
+
   it("le chargé d'exécution la fait avancer ; une autre personne ne le peut pas ; exécutée, elle est close", async () => {
     const d = (await decide({ owner_id: "u_karim", due_on: day(10) })).body;
     const url = `/api/decisions/${d.id}/execution`;

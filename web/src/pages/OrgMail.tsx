@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { Button, CARD, Chip, Hint, Spinner, cn } from "@/components/ui";
-import { useMailConfig, useMailLog, useServiceAddresses } from "@/lib/hooks";
+import { useCan, useMailConfig, useMailLog, useServiceAddresses } from "@/lib/hooks";
 import { api } from "@/lib/api";
 import type { MailConfig, ServiceAddress, SmtpSecurity } from "@/lib/types";
 
@@ -31,13 +31,16 @@ const field =
 /** Onglet « Messagerie » de l'organisation : serveur SMTP, domaine, adresses de service par niveau. */
 export function OrgMail({ orgName, primaryDomain = "" }: { orgName: string; primaryDomain?: string }) {
   const { data: cfg, isLoading } = useMailConfig();
+  const can = useCan();
+  // Configurer la messagerie relève du droit « org.mail » (mail.ts) : sans lui, cet onglet se lit seulement.
+  const editable = can("org.mail");
   if (isLoading) return <Spinner />;
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[420px_minmax(0,1fr)]">
-      <SmtpForm cfg={cfg ?? null} orgName={orgName} primary={primaryDomain} />
+      <SmtpForm cfg={cfg ?? null} orgName={orgName} primary={primaryDomain} editable={editable} />
       <div className="min-w-0 space-y-5">
         {cfg ? (
-          <Addresses domain={cfg.domain} />
+          <Addresses domain={cfg.domain} editable={editable} />
         ) : (
           <section className="rounded-2xl border border-dashed border-line-strong p-8 text-center">
             <AtSign className="mx-auto size-6 text-faint" />
@@ -55,7 +58,18 @@ export function OrgMail({ orgName, primaryDomain = "" }: { orgName: string; prim
   );
 }
 
-function SmtpForm({ cfg, orgName, primary }: { cfg: MailConfig | null; orgName: string; primary: string }) {
+function SmtpForm({
+  cfg,
+  orgName,
+  primary,
+  editable,
+}: {
+  cfg: MailConfig | null;
+  orgName: string;
+  primary: string;
+  /** Droit « org.mail » : sans lui, ni enregistrement ni test ne sont proposés. */
+  editable: boolean;
+}) {
   const qc = useQueryClient();
   const [f, setF] = useState(() => init(cfg, orgName, primary));
   const [saving, setSaving] = useState(false);
@@ -264,16 +278,20 @@ function SmtpForm({ cfg, orgName, primary }: { cfg: MailConfig | null; orgName: 
           {result.ok ? "E-mail de test envoyé : vérifiez votre boîte de réception." : result.error}
         </p>
       )}
-      <div className="flex flex-wrap justify-end gap-2">
-        {cfg && (
-          <Button icon={<Send className="size-3.5" />} loading={testing} onClick={test}>
-            Envoyer un test
+      {editable ? (
+        <div className="flex flex-wrap justify-end gap-2">
+          {cfg && (
+            <Button icon={<Send className="size-3.5" />} loading={testing} onClick={test}>
+              Envoyer un test
+            </Button>
+          )}
+          <Button variant="primary" loading={saving} disabled={!valid} onClick={save}>
+            Enregistrer
           </Button>
-        )}
-        <Button variant="primary" loading={saving} disabled={!valid} onClick={save}>
-          Enregistrer
-        </Button>
-      </div>
+        </div>
+      ) : (
+        <Hint>Configurer la messagerie relève du droit « Configurer la messagerie ».</Hint>
+      )}
     </section>
   );
 }
@@ -298,7 +316,7 @@ function init(cfg: MailConfig | null, orgName: string, primary = "") {
 
 const LEVEL_ICON = { org: Building2, unit: Network, team: Users };
 
-function Addresses({ domain }: { domain: string }) {
+function Addresses({ domain, editable }: { domain: string; editable: boolean }) {
   const { data, isLoading } = useServiceAddresses();
   const groups: [string, ServiceAddress[]][] = [
     ["Organisation", (data ?? []).filter((a) => a.target_type === "org")],
@@ -330,7 +348,7 @@ function Addresses({ domain }: { domain: string }) {
                   {title}
                 </h3>
                 {list.map((a) => (
-                  <AddressRow key={a.id} a={a} domain={domain} />
+                  <AddressRow key={a.id} a={a} domain={domain} editable={editable} />
                 ))}
               </div>
             ),
@@ -340,7 +358,7 @@ function Addresses({ domain }: { domain: string }) {
   );
 }
 
-function AddressRow({ a, domain }: { a: ServiceAddress; domain: string }) {
+function AddressRow({ a, domain, editable }: { a: ServiceAddress; domain: string; editable: boolean }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [local, setLocal] = useState(a.local_part);
@@ -416,14 +434,16 @@ function AddressRow({ a, domain }: { a: ServiceAddress; domain: string }) {
           >
             <Copy className="size-3.5" />
           </button>
-          <button
-            aria-label={`Modifier l'adresse de ${a.name}`}
-            title="Modifier"
-            onClick={() => setEditing(true)}
-            className="rounded-md p-1.5 text-faint hover:bg-hover hover:text-fg"
-          >
-            <Pencil className="size-3.5" />
-          </button>
+          {editable && (
+            <button
+              aria-label={`Modifier l'adresse de ${a.name}`}
+              title="Modifier"
+              onClick={() => setEditing(true)}
+              className="rounded-md p-1.5 text-faint hover:bg-hover hover:text-fg"
+            >
+              <Pencil className="size-3.5" />
+            </button>
+          )}
         </span>
       )}
     </div>

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button, IconButton, cn } from "./ui";
 import { AttachmentPreview, attachmentUrl } from "./AttachmentPreview";
-import { useMe, useUserMap } from "@/lib/hooks";
+import { useCan, useMe, useUserMap } from "@/lib/hooks";
 import { ago } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { Attachment, TaskDetail } from "@/lib/types";
@@ -40,7 +40,9 @@ export function Attachments({ t }: { t: TaskDetail }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
-  const canUpload = t.role !== "viewer";
+  const can = useCan();
+  // Le serveur exige le rôle sur le projet et le droit du profil (attachments.ts) : l'interface compose les deux
+  const canUpload = t.role !== "viewer" && can("attachments.upload");
   const list = t.attachments.filter((a) => !a.comment_id);
 
   const send = async (files: File[]) => {
@@ -117,7 +119,13 @@ export function Attachments({ t }: { t: TaskDetail }) {
       ) : (
         <ul className="divide-y divide-line">
           {list.map((a) => (
-            <AttachmentRow key={a.id} a={a} taskId={t.id} isAdmin={t.role === "admin"} />
+            <AttachmentRow
+              key={a.id}
+              a={a}
+              taskId={t.id}
+              isAdmin={t.role === "admin"}
+              canDelete={can("attachments.delete")}
+            />
           ))}
         </ul>
       )}
@@ -125,7 +133,18 @@ export function Attachments({ t }: { t: TaskDetail }) {
   );
 }
 
-export function AttachmentRow({ a, taskId, isAdmin }: { a: Attachment; taskId: string; isAdmin: boolean }) {
+export function AttachmentRow({
+  a,
+  taskId,
+  isAdmin,
+  canDelete = true,
+}: {
+  a: Attachment;
+  taskId: string;
+  isAdmin: boolean;
+  /** Droit « attachments.delete » du profil : le serveur le demande en plus de l'appartenance (attachments.ts). */
+  canDelete?: boolean;
+}) {
   const users = useUserMap();
   const { data: me } = useMe();
   const qc = useQueryClient();
@@ -197,7 +216,7 @@ export function AttachmentRow({ a, taskId, isAdmin }: { a: Attachment; taskId: s
           >
             <Download className="size-3.5" />
           </a>
-          {(a.uploader_id === me?.id || isAdmin) && (
+          {canDelete && (a.uploader_id === me?.id || isAdmin) && (
             <IconButton size="sm" label={`Supprimer ${a.filename}`} onClick={() => setConfirming(true)}>
               <Trash2 className="size-3.5" />
             </IconButton>

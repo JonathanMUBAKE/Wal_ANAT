@@ -1036,13 +1036,21 @@ export class Services {
       )?.role ?? null
     );
   }
+  /**
+   * Gère-t-on cette équipe ? Le responsable d'une équipe la gère (EQ-1) ; « gérer les équipes » vaut pour celles de
+   * l'institution qui ne sont pas privées : une équipe privée se gère par ses responsables et les administrateurs
+   * généralistes (lot S). L'interface ne peut pas deviner ce rang — il suppose un rôle owner/admin sans profil de
+   * fonction — donc la fiche de l'équipe le lui dit (`can_manage`) et le refus suit la même règle, ici.
+   */
+  async managesTeam(actorId: string, t: Team) {
+    if (await this.administersAll(actorId, t.org_id)) return true;
+    if ((await this.teamRole(actorId, t.id)) === "lead") return true;
+    return t.visibility !== "private" && (await this.permissionsOf(actorId, t.org_id)).includes("teams.manage");
+  }
   private async requireTeamManager(actorId: string, teamId: string) {
     const t = await this.teamRow(teamId);
     await this.requireOrg(actorId, t.org_id);
-    // Le responsable d'une équipe la gère (EQ-1) ; « gérer les équipes » vaut pour celles de l'institution qui ne sont
-    // pas privées : une équipe privée se gère par ses responsables et les administrateurs généralistes (lot S)
-    if ((await this.administersAll(actorId, t.org_id)) || (await this.teamRole(actorId, teamId)) === "lead") return t;
-    if (t.visibility !== "private" && (await this.permissionsOf(actorId, t.org_id)).includes("teams.manage")) return t;
+    if (await this.managesTeam(actorId, t)) return t;
     throw forbidden("Réservé aux responsables de l'équipe");
   }
   async team(actorId: string, teamId: string) {
@@ -1064,7 +1072,7 @@ export class Services {
             [teamId],
           )
         : [];
-    return { ...visible, members, projects, requests };
+    return { ...visible, members, projects, requests, can_manage: await this.managesTeam(actorId, t) };
   }
   async createTeam(
     actorId: string,

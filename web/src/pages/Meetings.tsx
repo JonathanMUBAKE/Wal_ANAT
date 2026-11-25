@@ -726,6 +726,39 @@ export function MeetingPage() {
   const [reopening, setReopening] = useState(false);
   const [notHeld, setNotHeld] = useState(false);
   const [reopenReason, setReopenReason] = useState("");
+  /** Adresse qu'on allait rejoindre quand le brouillon a retenu le départ : nulle tant que personne ne part. */
+  const [sortie, setSortie] = useState<string | null>(null);
+  /*
+   * Règle 5.2.4 : des champs ouverts et modifiés ne se ferment pas sans confirmation. Le tiroir la tenait déjà
+   * (components/drawer.tsx) ; ni la navigation ni le rechargement — et un compte rendu monte à une centaine de
+   * champs pour un seul « Enregistrer ». On retient donc les deux, tant que le brouillon est modifié.
+   *
+   * `useBlocker` de react-router exigerait un routeur de données, et l'application est montée sur
+   * `<BrowserRouter>` : on retient le clic lui-même, en phase de capture, avant que le lien n'agisse. Les boutons
+   * Précédent et Suivant du navigateur restent hors de portée — il faudrait le routeur de données pour eux.
+   */
+  useEffect(() => {
+    if (!dirty) return;
+    // Le navigateur n'affiche que sa propre formule : on ne peut qu'armer le garde-fou, pas en choisir le texte.
+    const retenirLeDepart = (e: BeforeUnloadEvent) => e.preventDefault();
+    const retenirLeLien = (e: MouseEvent) => {
+      // On ne retient qu'un clic ordinaire : ni clic du milieu, ni ouverture dans un nouvel onglet.
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const lien = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!lien || lien.target === "_blank" || lien.hasAttribute("download")) return;
+      const url = new URL(lien.href, window.location.href);
+      if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setSortie(url.pathname + url.search);
+    };
+    window.addEventListener("beforeunload", retenirLeDepart);
+    document.addEventListener("click", retenirLeLien, true);
+    return () => {
+      window.removeEventListener("beforeunload", retenirLeDepart);
+      document.removeEventListener("click", retenirLeLien, true);
+    };
+  }, [dirty]);
   useEffect(() => {
     if (m) {
       setDraft(structuredClone(m));
@@ -1768,6 +1801,20 @@ export function MeetingPage() {
           {(a) => <Input {...a} autoFocus value={delegateName} onChange={(e) => setDelegateName(e.target.value)} />}
         </Field>
       </Dialog>
+      {/* La phrase est celle du tiroir (components/drawer.tsx) : une seule formule dans toute la maison. */}
+      <ConfirmDialog
+        open={!!sortie}
+        onOpenChange={(v) => !v && setSortie(null)}
+        title="Abandonner les modifications ?"
+        description="Les modifications saisies n'ont pas été enregistrées. Si vous fermez, elles seront perdues."
+        confirmLabel="Abandonner"
+        onConfirm={() => {
+          const vers = sortie;
+          setSortie(null);
+          setDirty(false);
+          if (vers) nav(vers);
+        }}
+      />
       <ConfirmDialog
         open={removing}
         onOpenChange={setRemoving}

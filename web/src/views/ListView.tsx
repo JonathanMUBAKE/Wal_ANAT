@@ -11,7 +11,7 @@ import { useShell } from "@/lib/shell";
 import { api } from "@/lib/api";
 import type { ViewProps } from "@/pages/Project";
 
-export function ListView({ project, tasks, aiActive, canEdit }: ViewProps) {
+export function ListView({ project, tasks, aiActive, canAddTask, canEditTask, canSections }: ViewProps) {
   const users = useUserMap();
   const shell = useShell();
   const update = useUpdateTask();
@@ -48,7 +48,7 @@ export function ListView({ project, tasks, aiActive, canEdit }: ViewProps) {
               open={!collapsed[s.id]}
               onToggle={() => setCollapsed({ ...collapsed, [s.id]: !collapsed[s.id] })}
               aside={
-                canEdit ? (
+                canSections ? (
                   <SectionMenu
                     section={s}
                     sections={project.sections}
@@ -67,18 +67,18 @@ export function ListView({ project, tasks, aiActive, canEdit }: ViewProps) {
                     t={t}
                     assignee={t.assignee_id ? users.get(t.assignee_id) : null}
                     aiActive={aiActive.has(t.id)}
-                    canEdit={canEdit}
+                    canEdit={canEditTask}
                     onOpen={() => shell.openTask(t.id)}
                     onToggle={(v) => update.mutate({ id: t.id, completed: v })}
                   />
                 ))}
-                {canEdit && <InlineAdd projectId={project.id} sectionId={s.id} />}
+                {canAddTask && <InlineAdd projectId={project.id} sectionId={s.id} />}
               </div>
             )}
           </section>
         );
       })}
-      {canEdit && (
+      {canSections && (
         <div className="flex items-center gap-2 px-4 py-4 sm:px-8">
           <Plus className="size-4 text-faint" />
           <input

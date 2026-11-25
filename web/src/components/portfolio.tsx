@@ -328,7 +328,7 @@ function ArbitrationDrawer({ id, list, onClose }: { id: string; list: Arbitratio
   const [due, setDue] = useState("");
   const [busy, setBusy] = useState(false);
   if (!a) return null;
-  const canDecide = a.status === "en_attente" && can("decisions.record") && a.requested_by !== me?.id;
+  const canDecide = a.status === "en_attente" && can("decisions.confirm") && a.requested_by !== me?.id;
   const act = async (path: string, body: unknown, msg: string) => {
     setBusy(true);
     try {
@@ -534,8 +534,9 @@ export function ProjectArbitrations({
         </ul>
       ) : (
         <Hint className="px-5 pb-5">
-          Une question que le projet ne peut pas trancher seul ? Demandez un arbitrage : options, recommandation, et la
-          DG décide.
+          {canAsk
+            ? "Une question que le projet ne peut pas trancher seul ? Demandez un arbitrage : options, recommandation, et la DG décide."
+            : "Aucun arbitrage demandé."}
         </Hint>
       )}
       {asking && <AskDialog base={base} onClose={() => setAsking(false)} />}

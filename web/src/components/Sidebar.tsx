@@ -280,6 +280,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </NavSection>
       </div>
 
+      {can("ai.assistant") && (
       <div className="border-t border-line p-3">
         <button
           onClick={() => shell.openAssistant()}
@@ -297,6 +298,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </span>
         </button>
       </div>
+      )}
     </div>
   );
 }
@@ -305,6 +307,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 export function TopBar({ onMenu }: { onMenu: () => void }) {
   const shell = useShell();
   const nav = useNavigate();
+  const can = useCan();
   const { data: notifs } = useNotifications();
   const unread = notifs?.filter((n) => !n.read).length ?? 0;
   const box =
@@ -326,14 +329,16 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
         </span>
       </button>
       <div className="ml-auto flex items-center gap-2">
-        <button
-          aria-label="Assistant IA"
-          title="Assistant IA"
-          onClick={() => shell.openAssistant()}
-          className={cn(box, "hidden sm:flex")}
-        >
-          <Sparkles className="size-[18px] text-ai-fg" />
-        </button>
+        {can("ai.assistant") && (
+          <button
+            aria-label="Assistant IA"
+            title="Assistant IA"
+            onClick={() => shell.openAssistant()}
+            className={cn(box, "hidden sm:flex")}
+          >
+            <Sparkles className="size-[18px] text-ai-fg" />
+          </button>
+        )}
         <button
           aria-label="Boîte de réception"
           title="Boîte de réception"

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { ArrowRight, Pencil, Plus, Trash2, Zap } from "lucide-react";
 import { Avatar, Button, CARD, ConfirmDialog, Dialog, Empty, Hint, IconButton, cn } from "@/components/ui";
 import { RUN_STATUS, RunTimeline } from "@/components/ai";
-import { useAgents, useRules, useRuns, useUserMap } from "@/lib/hooks";
+import { useAgents, useCan, useRules, useRuns, useUserMap } from "@/lib/hooks";
 import { useShell } from "@/lib/shell";
 import { ago, pl } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -26,7 +26,10 @@ export function AutomationsView({ project }: ViewProps) {
   const [editing, setEditing] = useState<Partial<AiRule> | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [openRun, setOpenRun] = useState<string | null>(null);
-  const isAdmin = project.role === "admin";
+  const can = useCan();
+  // Le serveur demande le rôle d'administrateur du projet et le droit « ai.rules » (ai/engine.ts)
+  const administreLeProjet = project.role === "admin";
+  const isAdmin = administreLeProjet && can("ai.rules");
   const save = async (r: Partial<AiRule>) => {
     await api.post(`/api/projects/${project.id}/ai/rules`, r).then(
       () => {
@@ -63,7 +66,11 @@ export function AutomationsView({ project }: ViewProps) {
         {!rules?.length ? (
           <div className="rounded-2xl border border-dashed border-line-strong">
             <Empty icon={<Zap className="size-7" />} title="Aucune règle">
-              Par exemple : « Quand une tâche arrive dans En revue, Nova vérifie qu'elle a des critères de test ».
+              {isAdmin
+                ? "Par exemple : « Quand une tâche arrive dans En revue, Nova vérifie qu'elle a des critères de test »."
+                : administreLeProjet
+                  ? "Gérer les règles IA ne relève pas de votre profil."
+                  : "Les règles IA de ce projet se règlent par ses administrateurs."}
             </Empty>
           </div>
         ) : (

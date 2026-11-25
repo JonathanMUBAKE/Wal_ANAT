@@ -253,6 +253,8 @@ export class Plans {
       revisions,
       reviews: await new PlanReviews(this.svc).ofPlan(id),
       can: {
+        // Préparer ce plan : le suivi d'une activité s'ouvre aussi à son responsable, que l'interface connaît
+        prepare,
         edit: p.status === "draft" && prepare,
         submit: p.status === "draft" && prepare,
         approve: p.status === "submitted" && perms.includes("plans.approve") && p.submitted_by !== actorId,

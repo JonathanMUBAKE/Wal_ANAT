@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { Avatar, Button, Empty, cn, Hint } from "@/components/ui";
 import { LineBadge, TaskGroupHeader, TaskLine, TaskRow } from "@/components/TaskRow";
 import { DueChip } from "@/components/pickers";
-import { useMe, useMyTasks, useMyUnits, useProjects, useStageTask, useUpdateTask, useUserMap } from "@/lib/hooks";
+import { useCan, useMe, useMyTasks, useMyUnits, useProjects, useStageTask, useUpdateTask, useUserMap } from "@/lib/hooks";
 import { api } from "@/lib/api";
 import type { UnitBoard } from "@/lib/types";
 import { GiveTask } from "./Unit";
@@ -150,6 +150,7 @@ const DUE_FOR: Record<string, () => string | null> = {
 };
 
 export function MyTasksPage() {
+  const can = useCan();
   const { data: me } = useMe();
   const { data: tasks } = useMyTasks();
   const { data: projects } = useProjects();
@@ -259,7 +260,7 @@ export function MyTasksPage() {
                 </option>
               ))}
             </select>
-            {home && (
+            {home && can("tasks.create") && (
               <Button variant="primary" icon={<Plus className="size-3.5" />} onClick={newTask}>
                 Tâche
               </Button>
@@ -322,6 +323,10 @@ export function MyTasksPage() {
           tasks={[...open, ...givenTasks]}
           aiActive={NO_AI}
           canEdit={false}
+          canAddTask={false}
+          canEditTask={false}
+          canSections={false}
+          canDelegate={false}
         />
         </div>
       )}

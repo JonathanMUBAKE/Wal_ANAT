@@ -236,16 +236,19 @@ function PersonalHome() {
                     >
                       {p.name}
                     </Link>
-                    {(p.role === "editor" || p.role === "admin") && (
+                    {(p.role === "editor" || p.role === "admin") && can("projects.archive") && (
                       <Button
                         size="sm"
                         onClick={() =>
                           api
                             .patch(`/api/projects/${p.id}`, { archived: false })
-                            .then(() => {
-                              qc.invalidateQueries({ queryKey: ["projects"] });
-                              toast.success("Projet restauré");
-                            })
+                            .then(
+                              () => {
+                                qc.invalidateQueries({ queryKey: ["projects"] });
+                                toast.success("Projet restauré");
+                              },
+                              (e) => toast.error((e as Error).message),
+                            )
                         }
                       >
                         Restaurer
@@ -328,7 +331,7 @@ function PersonalHome() {
                 <h2 className="text-[15px] font-semibold">Assistant IA</h2>
               </div>
               <div className="mt-3 flex flex-col gap-1.5">
-                {["Qu'est-ce qui est en retard, et pourquoi ?"].map((q) => (
+                {(can("ai.assistant") ? ["Qu'est-ce qui est en retard, et pourquoi ?"] : []).map((q) => (
                   <button
                     key={q}
                     onClick={() => shell.openAssistant(q)}
@@ -337,6 +340,7 @@ function PersonalHome() {
                     {q}
                   </button>
                 ))}
+                {can("ai.delegate") && can("tasks.create") && (
                 <Button
                   variant="ai"
                   className="mt-1"
@@ -345,6 +349,7 @@ function PersonalHome() {
                 >
                   Créer des tâches à partir de notes
                 </Button>
+                )}
               </div>
             </div>
           </section>

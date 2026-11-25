@@ -105,6 +105,39 @@ describe("plans de travail", () => {
     });
     expect(r.body.activities[0]).toMatchObject({ progress: 40, actual_value: 1, budget_spent: 200 });
   });
+  /*
+   * Le bouton « Suivi » d'une activité : le serveur accepte la saisie de son responsable, ou de qui prépare le plan
+   * (plans.manage sur l'entité, ou plans.manage_all). L'interface ne proposait ce bouton que sur l'état du plan,
+   * sans aucun test de droit — constat d'un testeur sous le profil « Responsable informatique ». La fiche du plan
+   * porte donc `can.prepare`, que l'interface compose avec le responsable de la ligne.
+   */
+  it("dit dans la fiche du plan qui peut en préparer le suivi, et le refus suit le drapeau", async () => {
+    const p = await approved();
+    const activite = p.activities[0].id as string;
+    // u_alice prépare le plan de cette entité : le drapeau est ouvert, la saisie passe
+    const vueAlice = (await g.api("u_alice", "GET", `/api/plans/${p.id}`)).body;
+    expect(vueAlice.can.prepare).toBe(true);
+    expect(
+      (await g.api("u_alice", "PATCH", `/api/plan-activities/${activite}/progress`, { progress: 10, comment: "Point" }))
+        .status,
+    ).toBe(200);
+    // u_hugo, simple agent, ne prépare rien et n'est responsable d'aucune activité : saisie refusée, et s'il lit
+    // le plan, le drapeau le lui dit (selon l'entité, la fiche peut déjà lui être fermée : les deux se valent).
+    await g.promote("u_hugo", "Agent");
+    const vueHugo = await g.api("u_hugo", "GET", `/api/plans/${p.id}`);
+    if (vueHugo.status === 200) expect(vueHugo.body.can.prepare).toBe(false);
+    else expect([403, 404]).toContain(vueHugo.status);
+    expect(
+      (await g.api("u_hugo", "PATCH", `/api/plan-activities/${activite}/progress`, { progress: 20, comment: "Non" }))
+        .status,
+    ).toBe(403);
+    // u_karim est responsable de l'activité : il saisit son avancement sans préparer le plan
+    expect(
+      (await g.api("u_karim", "PATCH", `/api/plan-activities/${activite}/progress`, { progress: 30, comment: "Fait" }))
+        .status,
+    ).toBe(200);
+  });
+
   it("un plan retourné repasse en préparation avec le motif", async () => {
     const p = await plan();
     await g.api("u_alice", "POST", `/api/plans/${p.id}/activities`, full);

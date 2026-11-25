@@ -8,7 +8,7 @@ import { useShell } from "@/lib/shell";
 import { priorityMeta, todayIso, pl } from "@/lib/format";
 import type { ViewProps } from "@/pages/Project";
 
-export function CalendarView({ project, tasks, canEdit }: ViewProps) {
+export function CalendarView({ project, tasks, canAddTask }: ViewProps) {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const users = useUserMap();
   const shell = useShell();
@@ -102,7 +102,7 @@ export function CalendarView({ project, tasks, canEdit }: ViewProps) {
                   >
                     {format(d, "d")}
                   </span>
-                  {canEdit && (
+                  {canAddTask && (
                     <button
                       aria-label="Ajouter une tâche ce jour"
                       onClick={() =>

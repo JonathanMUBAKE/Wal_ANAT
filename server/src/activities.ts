@@ -283,6 +283,25 @@ export class Activities {
         `UPDATE agency_activities SET ${sets.join(", ")}, updated_at = now() WHERE id = $${vals.length}`,
         vals,
       );
+      // Qui a ouvert ce dossier, et quand : l'ancienne et la nouvelle valeur des champs qui engagent (S2.2).
+      // Le titre n'est pas recopié : celui d'une activité confidentielle ne doit pas se lire au journal.
+      const changed: Record<string, { from: unknown; to: unknown }> = {};
+      const before = a as unknown as Record<string, unknown>;
+      for (const k of ["confidential", "lead_id", "health", "plan_activity_id"] as const) {
+        if (patch[k] === undefined) continue;
+        const to = k === "confidential" || k === "health" ? patch[k] : (patch[k] ?? null);
+        if (to !== before[k]) changed[k] = { from: before[k] ?? null, to };
+      }
+      if (Object.keys(changed).length)
+        await this.svc.log(actorId, "activity.updated", { orgId: a.org_id, data: { id, ...changed } });
+      if (leadChanged && patch.lead_id && patch.lead_id !== actorId)
+        await this.svc.notify(patch.lead_id, a.org_id, {
+          kind: "activity.assigned",
+          category: "projets",
+          title: `Activité confiée : ${a.title}`,
+          body: "Vous en êtes désormais le responsable.",
+          actor_id: actorId,
+        });
     }
     return this.get(actorId, id);
   }
@@ -308,6 +327,10 @@ export class Activities {
       "INSERT INTO activity_followups (id, org_id, activity_id, text, responsible_id, due_on) VALUES ($1,$2,$3,$4,$5,$6)",
       [uid("sui"), a.org_id, id, i.text.trim(), i.responsible_id ?? null, i.due_on ?? null],
     );
+    await this.svc.log(actorId, "activity.followup.added", {
+      orgId: a.org_id,
+      data: { id, responsible_id: i.responsible_id ?? null, due_on: i.due_on ?? null },
+    });
     if (i.responsible_id && i.responsible_id !== actorId)
       await this.svc.notify(i.responsible_id, a.org_id, {
         kind: "activity.followup",
@@ -327,6 +350,10 @@ export class Activities {
     if (f.responsible_id !== actorId && a.lead_id !== actorId)
       await this.svc.requirePerm(actorId, a.org_id, "agenda.manage");
     await this.svc.db.query("UPDATE activity_followups SET done = $1 WHERE id = $2", [done, followupId]);
+    await this.svc.log(actorId, done ? "activity.followup.done" : "activity.followup.reopened", {
+      orgId: a.org_id,
+      data: { id: f.activity_id, followup: followupId },
+    });
     return this.get(actorId, f.activity_id);
   }
 

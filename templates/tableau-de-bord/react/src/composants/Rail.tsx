@@ -22,7 +22,7 @@ export function RailApplications({ groupeActif, surChoixGroupe, replie, basculer
 }) {
   return (
     <nav
-      className="w-[48px] shrink-0 bg-rail border-r border-bordure flex flex-col items-center py-2 gap-1 sans-impression"
+      className="w-[62px] shrink-0 bg-rail border-r border-bordure flex flex-col items-center py-2 sans-impression"
       aria-label="Domaines"
     >
       <div className="w-[26px] h-[26px] rounded-[6px] grid place-items-center text-[11px] font-bold text-white mb-2 shrink-0"
@@ -30,6 +30,8 @@ export function RailApplications({ groupeActif, surChoixGroupe, replie, basculer
         AN
       </div>
 
+      <div className="flex-1 min-h-0 w-full overflow-y-auto flex flex-col items-center gap-[2px] px-[3px]
+                      [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {NAVIGATION.map((g) => {
         const actif = g.groupe === groupeActif;
         return (
@@ -37,21 +39,22 @@ export function RailApplications({ groupeActif, surChoixGroupe, replie, basculer
             key={g.groupe} type="button" title={g.groupe} aria-label={g.groupe} aria-current={actif ? "true" : undefined}
             onClick={() => surChoixGroupe(g.groupe)}
             className={cx(
-              "relative w-[34px] h-[34px] rounded-[4px] grid place-items-center transi group",
+              "relative w-[56px] py-[6px] rounded-[4px] grid place-items-center gap-[3px] transi shrink-0",
               actif ? "bg-accent-voile text-accent" : "text-encre-3 hover:bg-survol hover:text-encre",
             )}
           >
-            {actif && <i className="absolute -left-2 top-1/2 -translate-y-1/2 w-[3px] h-[16px] rounded-r-[3px] bg-accent" />}
+            {actif && <i className="absolute -left-[3px] top-1/2 -translate-y-1/2 w-[3px] h-[20px] rounded-r-[3px] bg-accent" />}
             <Icone nom={g.icone} />
-            <span className="pointer-events-none absolute left-[42px] z-70 px-[8px] py-[4px] rounded-[4px] bg-surface border border-bordure shadow-flottant
-                             text-[12px] whitespace-nowrap opacity-0 group-hover:opacity-100 transi text-encre">
+            <span className={cx("text-[9px] leading-[11px] text-center px-[2px] w-full truncate",
+              actif ? "font-semibold" : "")}>
               {g.groupe}
             </span>
           </button>
         );
       })}
+      </div>
 
-      <div className="mt-auto flex flex-col items-center gap-1">
+      <div className="mt-1 pt-2 border-t border-bordure w-full flex flex-col items-center gap-1 shrink-0">
         <button type="button" title="Rechercher (Ctrl + K)" aria-label="Rechercher" onClick={ouvrirPalette}
                 className="w-[34px] h-[34px] rounded-[4px] grid place-items-center text-encre-3 hover:bg-survol hover:text-encre transi">
           <Icone nom="recherche" />

@@ -37,9 +37,9 @@ export function Disponibilite() {
       </div>
 
       {sousEngagement.length > 0 && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-[4px] mb-4 bg-critique-voile border border-critique/40 anim-apparait">
+        <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-critique-voile border border-critique/40 anim-apparait">
           <Pastille ton="critique" pulse />
-          <div className="flex-1 min-w-0 text-[13px]">
+          <div className="flex-1 min-w-[min(100%,220px)] text-[13px]">
             <b>{sousEngagement.length} service{sousEngagement.length > 1 ? "s sont" : " est"} sous l'engagement de service.</b>{" "}
             <span className="text-encre-2">
               {sousEngagement.map((s) => `${s.nom} (${s.taux90.toFixed(2)} % pour ${s.engagement} % promis)`).join(", ")}.

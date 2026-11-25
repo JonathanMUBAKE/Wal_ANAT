@@ -111,9 +111,9 @@ export function Anomalies() {
 
       {critiques.length > 0 && (
         <Apparition className="mb-4">
-          <div className="flex items-start gap-3 px-4 py-3 rounded-[4px] bg-critique-voile border border-critique/40">
+          <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] bg-critique-voile border border-critique/40">
             <Icone nom="bouclier" className="text-critique mt-[2px]" />
-            <div className="flex-1 min-w-0 text-[13px]">
+            <div className="flex-1 min-w-[min(100%,220px)] text-[13px]">
               <b>{critiques[0].titre}</b>{" "}
               <span className="text-encre-2">{critiques[0].effet}</span>
               {critiques[0].correctif && (

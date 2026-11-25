@@ -166,9 +166,9 @@ export function ActionsCritiques() {
 
       {alertes.length > 0 && (
         <Apparition className="mb-4">
-          <div className="flex items-start gap-3 px-4 py-3 rounded-[4px] bg-critique-voile border border-critique/40">
+          <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] bg-critique-voile border border-critique/40">
             <Icone nom="corbeille" className="text-critique mt-[2px]" />
-            <div className="flex-1 min-w-0 text-[13px]">
+            <div className="flex-1 min-w-[min(100%,220px)] text-[13px]">
               <b>{alertes[0].libelle} — {alertes[0].volume}.</b>{" "}
               <span className="text-encre-2">
                 Par {alertes[0].auteur} ({alertes[0].role.toLowerCase()}), {alertes[0].quand}, depuis

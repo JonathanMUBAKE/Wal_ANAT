@@ -160,9 +160,9 @@ export function Signataire() {
 
       {delegations.filter((d) => d.active).map((d) => (
         <Apparition key={d.de} className="mb-4">
-          <div className="flex items-start gap-3 px-4 py-3 rounded-[4px] bg-vigilance-voile border border-vigilance/40">
+          <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] bg-vigilance-voile border border-vigilance/40">
             <Icone nom="cle" className="text-vigilance mt-[2px]" />
-            <div className="flex-1 min-w-0 text-[13px]">
+            <div className="flex-1 min-w-[min(100%,220px)] text-[13px]">
               <b>Délégation de signature en cours.</b>{" "}
               <span className="text-encre-2">
                 {d.de} a délégué à {d.a} — {d.portee.toLowerCase()} — du {d.du} au {d.au} ({d.motif.toLowerCase()}).

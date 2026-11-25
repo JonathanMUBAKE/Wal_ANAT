@@ -91,9 +91,9 @@ export function MCP() {
       </div>
 
       {nouveaux.length > 0 && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-[4px] mb-4 bg-vigilance-voile border border-vigilance/40 anim-apparait">
+        <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-vigilance-voile border border-vigilance/40 anim-apparait">
           <Icone nom="branche" className="text-vigilance mt-[2px]" />
-          <div className="flex-1 min-w-0 text-[13px]">
+          <div className="flex-1 min-w-[min(100%,220px)] text-[13px]">
             <b>{nouveaux.length} outils sont apparus sur des connecteurs déjà déclarés.</b>{" "}
             <span className="text-encre-2">
               {nouveaux.map((n) => `${n.o.nom} (${n.c.nom})`).join(", ")}. Ils n'ont jamais été

@@ -137,15 +137,15 @@ export function Apercu({ aller }: { aller: (cle: string) => void }) {
   return (
     <>
       {incident && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-[4px] mb-4 bg-critique-voile border border-critique/40 anim-apparait">
+        <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-critique-voile border border-critique/40 anim-apparait">
           <Icone nom="alerte" className="text-critique mt-[2px]" />
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-[min(100%,240px)]">
             <div className="text-[13px] font-semibold">Incident P1 — latence de la passerelle d'entrée</div>
             <div className="text-[12px] text-encre-2 mt-[2px]">
               Détecté il y a 14 min · 3 services touchés · astreinte notifiée · <span className="font-mono">INC-2048</span>
             </div>
           </div>
-          <div className="flex gap-2 shrink-0 flex-wrap items-center">
+          <div className="flex gap-2 flex-wrap items-center">
             <Bouton taille="s" icone="check" onClick={() => ui.message("INC-2048 acquitté — vous en êtes responsable.", "bon")} enfants="Acquitter" />
             <Bouton taille="s" ton="principal" onClick={() => aller("alertes")} enfants="Ouvrir la fiche" />
             <Bouton taille="s" ton="fantome" icone="croix" aria-label="Masquer" onClick={() => poserIncident(false)} />

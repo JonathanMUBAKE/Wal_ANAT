@@ -132,9 +132,9 @@ export function Sessions() {
       </div>
 
       {aVerifier > 0 && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-[4px] mb-4 bg-vigilance-voile border border-vigilance/40 anim-apparait">
+        <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-vigilance-voile border border-vigilance/40 anim-apparait">
           <Icone nom="bouclier" className="text-vigilance mt-[2px]" />
-          <div className="flex-1 min-w-0 text-[13px]">
+          <div className="flex-1 min-w-[min(100%,220px)] text-[13px]">
             <b>{aVerifier} session{aVerifier > 1 ? "s sont ouvertes" : " est ouverte"} hors du réseau de l'Agence.</b>{" "}
             <span className="text-encre-2">Ce n'est pas anormal en télétravail, mais cela mérite un regard quand le deuxième facteur n'est pas vérifié.</span>
           </div>

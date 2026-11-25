@@ -169,9 +169,9 @@ export function Decisions() {
 
       {enRetard.length > 0 && (
         <Apparition className="mb-4">
-          <div className="flex items-start gap-3 px-4 py-3 rounded-[4px] bg-critique-voile border border-critique/40">
+          <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] bg-critique-voile border border-critique/40">
             <Icone nom="balance" className="text-critique mt-[2px]" />
-            <div className="flex-1 min-w-0 text-[13px]">
+            <div className="flex-1 min-w-[min(100%,220px)] text-[13px]">
               <b>{enRetard.length} décisions ont dépassé leur échéance.</b>{" "}
               <span className="text-encre-2">
                 Une décision en retard n'est pas une tâche en retard : elle a été prise en séance ou par

@@ -167,9 +167,9 @@ export function Services() {
       </div>
 
       {sousDimensionnes.length > 0 && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-[4px] mb-4 bg-vigilance-voile border border-vigilance/40 anim-apparait">
+        <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-vigilance-voile border border-vigilance/40 anim-apparait">
           <Icone nom="alerte" className="text-vigilance mt-[2px]" />
-          <div className="flex-1 min-w-0 text-[13px]">
+          <div className="flex-1 min-w-[min(100%,220px)] text-[13px]">
             <b>{sousDimensionnes.length} service{sousDimensionnes.length > 1 ? "s tournent" : " tourne"} avec moins d'instances que prévu.</b>{" "}
             <span className="text-encre-2">{sousDimensionnes.map((s) => s.nom).join(", ")} — la charge tient, mais il n'y a plus de marge.</span>
           </div>

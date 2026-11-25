@@ -64,9 +64,9 @@ export function ModelesMessages() {
       </div>
 
       {refuses > 0 && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-[4px] mb-4 bg-critique-voile border border-critique/40 anim-apparait">
+        <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-critique-voile border border-critique/40 anim-apparait">
           <Icone nom="discussion" className="text-critique mt-[2px]" />
-          <div className="flex-1 min-w-0 text-[13px]">
+          <div className="flex-1 min-w-[min(100%,220px)] text-[13px]">
             <b>Un modèle WhatsApp a été refusé.</b>{" "}
             <span className="text-encre-2">{modeles.find((m) => m.etat === "refusé")?.motifRefus}</span>
           </div>

@@ -148,3 +148,25 @@ describe("documents des dossiers", () => {
     expect((await g.api(b.who, "GET", `/api/dossier-documents/${t.body.id}/preview`)).status).toBe(404);
   });
 });
+
+describe("le dépôt suit le rôle tenu sur le projet", () => {
+  it("un compte « Lecture seule » ne dépose que s'il est éditeur du projet ; sans rôle, le dossier n'existe pas", async () => {
+    await g.ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_hugo'");
+    await g.promote("u_hugo", "Lecture seule");
+    const prj = await g.project();
+    const depot = () => up("u_hugo", "project", prj, { nature: "autre", other_label: "Note" });
+    // Aucun rôle sur le projet : le dossier n'existe pas pour lui
+    expect((await depot()).status).toBe(404);
+    // Lecteur : il lit, il ne dépose pas
+    await g.api("u_alice", "PUT", `/api/projects/${prj}/members/u_hugo`, { role: "viewer" });
+    expect((await list("u_hugo", "project", prj)).status).toBe(200);
+    expect((await list("u_hugo", "project", prj)).body.can.add).toBe(false);
+    expect((await depot()).status).toBe(403);
+    // Commentateur : même chose, commenter n'est pas déposer
+    await g.api("u_alice", "PUT", `/api/projects/${prj}/members/u_hugo`, { role: "commenter" });
+    expect((await depot()).status).toBe(403);
+    // Éditeur : il dépose
+    await g.api("u_alice", "PUT", `/api/projects/${prj}/members/u_hugo`, { role: "editor" });
+    expect((await depot()).status).toBe(200);
+  });
+});

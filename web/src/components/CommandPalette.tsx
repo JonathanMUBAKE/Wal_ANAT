@@ -49,7 +49,7 @@ export function CommandPalette() {
   const item =
     "flex h-10 cursor-default select-none items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] text-fg data-[selected=true]:bg-hover";
   const group =
-    "[&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:pt-2.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-faint";
+    "[&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:pt-2.5 [&_[cmdk-group-heading]]:text-[11.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-faint";
 
   return (
     <Command.Dialog
@@ -58,7 +58,10 @@ export function CommandPalette() {
       label="Palette de commandes"
       shouldFilter={!results}
       overlayClassName="fixed inset-0 z-50 bg-black/25 backdrop-blur-[2px] dark:bg-black/60"
-      contentClassName={cn(MODAL, "fixed left-1/2 top-[12vh] z-50 w-[calc(100vw-24px)] max-w-[620px] -translate-x-1/2 overflow-hidden")}
+      contentClassName={cn(
+        MODAL,
+        "fixed left-1/2 top-[12vh] z-50 w-[calc(100vw-24px)] max-w-[620px] -translate-x-1/2 overflow-hidden",
+      )}
     >
       <div className="flex items-center gap-2.5 border-b border-line px-4">
         <Search className="size-4 text-faint" />

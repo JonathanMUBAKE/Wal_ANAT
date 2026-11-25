@@ -11,7 +11,7 @@ import {
 import { AlertTriangle, Check, ChevronRight, CircleDashed, Clock, type LucideIcon, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { CARD, Hint, cn } from "./ui";
+import { CARD, Hint, cn, repere } from "./ui";
 import { TabBar } from "./tabs";
 import { useRowMenu } from "@/lib/context-menu";
 
@@ -129,13 +129,20 @@ export const Section = ({
   className?: string;
 }) => (
   <section className={cn(CARD, className)}>
-    {title && (
-      <div className="flex items-center justify-between gap-2 px-5 pb-1 pt-4">
-        <h2 className="text-[15px] font-medium tracking-[-0.01em]">{title}</h2>
-        {aside}
-      </div>
+    {/* Une rubrique se ferme sur un filet, comme dans le tiroir (DrawerSection) : l'espace seul laissait deviner
+        où le titre s'arrêtait et où le contenu commençait. Le filet est celui de la maison, --line, sans épaisseur
+        nouvelle ; la carte est alors découpée en en-tête et en corps, et ce sont eux qui portent les marges. */}
+    {title ? (
+      <>
+        <div className="flex items-center justify-between gap-2 border-b border-line px-5 py-2.5">
+          <h2 className="text-[15px] font-medium tracking-[-0.01em]">{title}</h2>
+          {aside}
+        </div>
+        <div className="pt-2">{children}</div>
+      </>
+    ) : (
+      children
     )}
-    {children}
   </section>
 );
 
@@ -152,10 +159,7 @@ export function Status({ label, tone = "neutral" }: { label: string; tone?: Tone
   const { cls } = TONES[tone];
   return (
     <span
-      className={cn(
-        "inline-flex h-6 items-center whitespace-nowrap rounded-md px-2 text-[12.5px] font-medium",
-        cls,
-      )}
+      className={cn("inline-flex h-6 items-center whitespace-nowrap rounded-md px-2 text-[12.5px] font-medium", cls)}
     >
       {label}
     </span>
@@ -190,11 +194,30 @@ export function StatCard({
   strong?: boolean;
 }) {
   return (
-    <div className={cn("card-hover min-w-0 p-3.5", strong ? "rounded-2xl border border-danger/40 bg-danger-soft shadow-sm" : CARD)}>
+    <div
+      className={cn(
+        "card-hover min-w-0 p-3.5",
+        strong ? "rounded-2xl border border-danger/40 bg-danger-soft shadow-sm" : CARD,
+      )}
+    >
       <p className="truncate text-[13px] font-medium">{label}</p>
       <p className="mt-3 flex items-center gap-2.5">
-        {icon && <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4", STAT_TILE[tone])}>{icon}</span>}
-        <span className={cn("text-[22px] font-medium leading-none tracking-[-0.02em] tabular", (strong || tone === "danger") && "text-danger")}>
+        {icon && (
+          <span
+            className={cn(
+              "flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4",
+              STAT_TILE[tone],
+            )}
+          >
+            {icon}
+          </span>
+        )}
+        <span
+          className={cn(
+            "text-[22px] font-medium leading-none tracking-[-0.02em] tabular",
+            (strong || tone === "danger") && "text-danger",
+          )}
+        >
           {typeof value === "number" ? <CountUp value={value} duration={700} /> : value}
         </span>
       </p>
@@ -280,11 +303,7 @@ export function Table({ head, children }: { head: ReactNode[]; children: ReactNo
         <thead>
           <tr className="text-left">
             {head.map((h, i) => (
-              <th
-                key={i}
-                scope="col"
-                className="text-left"
-              >
+              <th key={i} scope="col" className="text-left">
                 {h}
               </th>
             ))}
@@ -330,7 +349,8 @@ export const Td = ({ children, className, wrap }: { children?: ReactNode; classN
     className={cn(wrap && "wrap", className)}
     title={!wrap && typeof children === "string" && children.length > 40 ? children : undefined}
   >
-    {children}
+    {/* Un numéro, une date, un montant passent en chasse fixe tabulaire : la colonne s'aligne (voir `repere`). */}
+    {repere(children)}
   </td>
 );
 
@@ -346,7 +366,12 @@ export function Tabs<T extends string>({
   return (
     <div className="mx-auto w-full max-w-[1480px] px-4 sm:px-8">
       {/* Les onglets passent à la ligne dès la tablette ; ils ne défilent que sur téléphone (E-10) */}
-      <TabBar value={value} onChange={onChange} items={items} className="border-b border-line sm:flex-wrap sm:overflow-visible" />
+      <TabBar
+        value={value}
+        onChange={onChange}
+        items={items}
+        className="border-b border-line sm:flex-wrap sm:overflow-visible"
+      />
     </div>
   );
 }

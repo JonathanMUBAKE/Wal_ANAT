@@ -37,6 +37,25 @@ export const MODAL = "rounded-2xl border border-line bg-panel shadow-lg";
 /** Panneau latéral (tiroir, assistant) : plein écran sur téléphone, parcelle détachée à partir de la tablette. */
 export const PANEL = "border-line bg-panel shadow-lg sm:rounded-2xl sm:border";
 
+// ------------------------------------------------------------------ repères de registre
+/*
+ * Nos écrans sont des registres : ils sont pleins de numéros officiels (ENT/2026/0142), de dates (23/11/2026),
+ * de matricules et de montants. Écrits dans la chasse du texte courant, ces repères flottent d'une ligne à
+ * l'autre ; en chasse fixe tabulaire, ils se rangent en colonne et se comparent sans les lire. La reconnaissance
+ * se fait ici, une fois, pour tout ce qui passe par une cellule de tableau ou par la valeur d'un fait : aucune
+ * page n'a à le savoir. Un texte ordinaire n'est jamais touché.
+ */
+const REPERE = /^(?:\d[\dh\s.,:'/-]*(?:\s?(?:%|€|\$|[A-Z]{2,4}))?|[A-Z0-9]{2,8}(?:[/-][A-Z0-9]{1,8}){1,4})$/u;
+/**
+ * Vrai si la valeur est un repère : une chaîne courte faite de chiffres (date « 23/11/2026 », heure « 16 h 00 »,
+ * montant, pourcentage) ou un numéro officiel à segments (« ENT/2026/0142 », « 0007/ANAT/DG »). Une phrase, un nom
+ * ou un libellé contiennent d'autres lettres : ils ne sont jamais touchés.
+ */
+export const estRepere = (v: ReactNode): v is string =>
+  typeof v === "string" && v.trim().length > 0 && v.trim().length <= 32 && REPERE.test(v.trim());
+/** Pose la chasse fixe sur un repère et laisse tout le reste exactement en l'état. */
+export const repere = (v: ReactNode): ReactNode => (estRepere(v) ? <span className="repere">{v}</span> : v);
+
 // ------------------------------------------------------------------ boutons
 type Variant = "primary" | "secondary" | "ghost" | "ai" | "danger";
 type Size = "sm" | "md" | "lg";
@@ -347,12 +366,16 @@ export function Empty({
   children?: ReactNode;
   action?: ReactNode;
 }) {
+  // Rien ne flotte : la liste vide se range sur la marge de la carte, à la place qu'occuperait la première ligne,
+  // et dit en deux phrases ce qui manque et quoi faire (docs/DESIGN-SYSTEM.md § 5.6, règle 16).
   return (
-    <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
-      {icon && <div className="mb-1 text-faint">{icon}</div>}
-      <p className="font-serif text-[18px] leading-tight text-fg">{title}</p>
-      {children && <p className="max-w-sm text-[13px] text-muted">{children}</p>}
-      {action && <div className="mt-2">{action}</div>}
+    <div className="flex items-start gap-3 px-5 py-8">
+      {icon && <span className="mt-px shrink-0 text-faint [&_svg]:size-[18px]">{icon}</span>}
+      <div className="min-w-0">
+        <p className="text-[13.5px] font-semibold text-fg">{title}</p>
+        {children && <p className="mt-1 max-w-[62ch] text-[13px] text-muted">{children}</p>}
+        {action && <div className="mt-3">{action}</div>}
+      </div>
     </div>
   );
 }
@@ -434,9 +457,7 @@ export function MenuSub({ label, icon, children }: { label: ReactNode; icon?: Re
   );
 }
 export const MenuLabel = ({ children }: { children: ReactNode }) => (
-  <DM.Label className="px-2 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wider text-faint">
-    {children}
-  </DM.Label>
+  <DM.Label className="px-2 pb-1 pt-1.5 text-[11.5px] font-medium text-faint">{children}</DM.Label>
 );
 
 export const Popover = PO.Root;
@@ -487,7 +508,10 @@ export function Dialog({
       <DI.Portal>
         <DI.Overlay className="overlay-in fixed inset-0 z-50 bg-night/35 backdrop-blur-[3px] dark:bg-black/60" />
         <DI.Content
-          className={cn(MODAL, "dialog-in fixed left-1/2 top-[8vh] z-50 flex max-h-[84vh] w-[calc(100vw-24px)] -translate-x-1/2 flex-col overflow-hidden outline-none")}
+          className={cn(
+            MODAL,
+            "dialog-in fixed left-1/2 top-[8vh] z-50 flex max-h-[84vh] w-[calc(100vw-24px)] -translate-x-1/2 flex-col overflow-hidden outline-none",
+          )}
           style={{ maxWidth: width }}
         >
           <div className="flex items-start gap-3 border-b border-line px-5 pb-3.5 pt-4">
@@ -561,7 +585,15 @@ export function ConfirmDialog({
  * Explication repliée (écrans sobres, 20/11/2026) : une seule ligne discrète précédée d'une icône ; un clic ou une
  * pression du doigt affiche le texte entier. L'explication reste disponible sans encombrer l'écran.
  */
-export function Hint({ children, className, iconOnly }: { children: ReactNode; className?: string; iconOnly?: boolean }) {
+export function Hint({
+  children,
+  className,
+  iconOnly,
+}: {
+  children: ReactNode;
+  className?: string;
+  iconOnly?: boolean;
+}) {
   return (
     <PO.Root>
       <PO.Trigger asChild>

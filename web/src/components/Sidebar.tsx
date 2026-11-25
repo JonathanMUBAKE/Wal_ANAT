@@ -56,7 +56,11 @@ export function Logo({ size = 26 }: { size?: number }) {
   );
 }
 
-/** Section de navigation titrée en petites capitales, repliable et mémorisée sur le poste. */
+/**
+ * Section de navigation repliable, mémorisée sur le poste. Son intitulé s'écrit comme on l'écrit en français,
+ * « Suivi-évaluation » et non « SUIVI-ÉVALUATION » : les capitales espacées suppriment la silhouette des mots et
+ * obligent à les épeler, alors que la place de l'intitulé, sa taille et sa couleur disent déjà que c'est un titre.
+ */
 function NavSection({
   title,
   children,
@@ -87,7 +91,7 @@ function NavSection({
             }
           }}
           aria-expanded={open}
-          className="flex flex-1 items-center justify-between text-[11px] font-medium uppercase tracking-[0.07em] text-faint hover:text-muted"
+          className="flex flex-1 items-center justify-between text-[11.5px] font-medium text-faint hover:text-muted"
         >
           {title}
           <ChevronDown className={cn("size-3.5 transition-transform", !open && "-rotate-90")} />
@@ -191,7 +195,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             />
           )}
           <Icon
-            className={cn("relative size-[18px] shrink-0", ai && !isActive && "text-ai-fg", !isActive && !ai && "text-muted")}
+            className={cn(
+              "relative size-[18px] shrink-0",
+              ai && !isActive && "text-ai-fg",
+              !isActive && !ai && "text-muted",
+            )}
             strokeWidth={isActive ? 2.1 : 1.75}
           />
           <span className="relative flex-1 truncate">{label}</span>
@@ -232,7 +240,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
         {/* Architecture : voir docs/ARCHITECTURE-INFORMATION.md — une information, un seul domicile */}
         <NavSection title="Pilotage">
-          
           {(can("agenda.view") || can("projects.create")) && link("/activites", Briefcase, "Portefeuille")}
           {(can("decisions.view") || can("decisions.record")) &&
             show.decisions &&

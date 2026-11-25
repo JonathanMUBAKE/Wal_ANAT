@@ -28,7 +28,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { CARD, cn } from "./ui";
+import { CARD, cn, repere } from "./ui";
 import { useRowMenu } from "@/lib/context-menu";
 
 /* Cadastre — briques des collections : en-tête, barre d'outils, filtres, tableau, kanban, calendrier.
@@ -214,12 +214,7 @@ export function GroupedTable<T>({
                 <span className="text-[12.5px] tabular text-faint">{g.rows.length}</span>
               </div>
               {open && (
-                <div
-                  className="grid-scroll relative"
-                  tabIndex={0}
-                  role="group"
-                  aria-label="Tableau défilant"
-                >
+                <div className="grid-scroll relative" tabIndex={0} role="group" aria-label="Tableau défilant">
                   <table className="grid-table table-fixed" style={{ minWidth: 760 }}>
                     <colgroup>
                       {bulk && <col style={{ width: 40 }} />}
@@ -247,11 +242,7 @@ export function GroupedTable<T>({
                           </th>
                         )}
                         {columns.map((c) => (
-                          <th
-                            key={c.key}
-                            scope="col"
-                            className="text-left"
-                          >
+                          <th key={c.key} scope="col" className="text-left">
                             {c.label}
                           </th>
                         ))}
@@ -270,7 +261,11 @@ export function GroupedTable<T>({
                           <tr
                             key={id}
                             onClick={() => onOpen?.(r)}
-                            onContextMenu={rowMenu({ open: onOpen && (() => onOpen(r)), href: rowHref?.(r), reference: rowRef?.(r) })}
+                            onContextMenu={rowMenu({
+                              open: onOpen && (() => onOpen(r)),
+                              href: rowHref?.(r),
+                              reference: rowRef?.(r),
+                            })}
                             className={cn(
                               "group border-t border-line transition-colors",
                               onOpen && "cursor-pointer",
@@ -284,7 +279,7 @@ export function GroupedTable<T>({
                             )}
                             {columns.map((c) => (
                               <td key={c.key} className={cn("truncate px-3 py-2.5 align-middle", c.className)}>
-                                {c.render(r)}
+                                {repere(c.render(r))}
                               </td>
                             ))}
                             {actions && (
@@ -438,7 +433,15 @@ export function SearchField({
 }
 
 // ------------------------------------------------------------------ filtres
-export function FilterPanel({ children, onClear, active }: { children: ReactNode; onClear: () => void; active: number }) {
+export function FilterPanel({
+  children,
+  onClear,
+  active,
+}: {
+  children: ReactNode;
+  onClear: () => void;
+  active: number;
+}) {
   return (
     <aside className={cn(CARD, "rise-in w-full shrink-0 self-start p-3 lg:w-[236px]")}>
       <div className="flex items-center justify-between px-2 pb-2 pt-1">
@@ -461,7 +464,7 @@ export function FilterGroup({ title, children }: { title: string; children: Reac
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between px-2.5 py-2 text-[11px] font-medium uppercase tracking-[0.08em] text-faint hover:text-muted"
+        className="flex w-full items-center justify-between px-2.5 py-2 text-[11.5px] font-medium text-faint hover:text-muted"
       >
         {title}
         <ChevronDown className={cn("size-3.5 transition-transform", !open && "-rotate-90")} />
@@ -538,9 +541,7 @@ export const Badge = ({ tone, label, count }: { tone: BadgeTone; label: string; 
 
 /** Numéro officiel : se lit comme un tampon, jamais tronqué. */
 export const Seal = ({ children }: { children: ReactNode }) => (
-  <span className="whitespace-nowrap font-mono text-[12px] text-muted">
-    {children}
-  </span>
+  <span className="repere whitespace-nowrap text-[12px] text-muted">{children}</span>
 );
 
 // ------------------------------------------------------------------ tableau de données
@@ -588,7 +589,9 @@ export function DataTable<T>({
     return [...rows].sort((a, b) => {
       const x = get(a);
       const y = get(b);
-      return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "fr")) * sort!.dir;
+      return (
+        (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "fr")) * sort!.dir
+      );
     });
   }, [rows, sort, columns]);
   const pages = Math.max(1, Math.ceil(sorted.length / size));
@@ -652,7 +655,9 @@ export function DataTable<T>({
                   >
                     {c.sort ? (
                       <button
-                        onClick={() => setSort(on ? (sort!.dir === 1 ? { key: c.key, dir: -1 } : null) : { key: c.key, dir: 1 })}
+                        onClick={() =>
+                          setSort(on ? (sort!.dir === 1 ? { key: c.key, dir: -1 } : null) : { key: c.key, dir: 1 })
+                        }
                         className={cn("inline-flex items-center gap-1 hover:text-fg", on && "text-fg")}
                       >
                         {c.label}
@@ -672,11 +677,7 @@ export function DataTable<T>({
                   </th>
                 );
               })}
-              {actions && (
-                <th className="text-right">
-                  Actions
-                </th>
-              )}
+              {actions && <th className="text-right">Actions</th>}
             </tr>
           </thead>
           <tbody className="stagger">
@@ -687,7 +688,11 @@ export function DataTable<T>({
                 <tr
                   key={id}
                   onClick={() => onOpen?.(r)}
-                  onContextMenu={rowMenu({ open: onOpen && (() => onOpen(r)), href: rowHref?.(r), reference: rowRef?.(r) })}
+                  onContextMenu={rowMenu({
+                    open: onOpen && (() => onOpen(r)),
+                    href: rowHref?.(r),
+                    reference: rowRef?.(r),
+                  })}
                   className={cn(
                     "group border-t border-line transition-colors",
                     onOpen && "cursor-pointer",
@@ -701,7 +706,7 @@ export function DataTable<T>({
                   )}
                   {columns.map((c) => (
                     <td key={c.key} className={cn("px-3 py-3 align-middle first:pl-5", c.className)}>
-                      {c.render(r)}
+                      {repere(c.render(r))}
                     </td>
                   ))}
                   {actions && (
@@ -861,12 +866,22 @@ export function MiniMonth({
   return (
     <div className={cn(CARD, "p-4")}>
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-[15px] font-semibold capitalize tracking-[-0.02em]">{format(month, "MMMM yyyy", { locale: fr })}</p>
+        <p className="text-[15px] font-semibold capitalize tracking-[-0.02em]">
+          {format(month, "MMMM yyyy", { locale: fr })}
+        </p>
         <span className="flex">
-          <button aria-label="Mois précédent" onClick={() => setMonth(addMonths(month, -1))} className="rounded-full p-1.5 text-muted hover:bg-hover">
+          <button
+            aria-label="Mois précédent"
+            onClick={() => setMonth(addMonths(month, -1))}
+            className="rounded-full p-1.5 text-muted hover:bg-hover"
+          >
             <ChevronLeft className="size-4" />
           </button>
-          <button aria-label="Mois suivant" onClick={() => setMonth(addMonths(month, 1))} className="rounded-full p-1.5 text-muted hover:bg-hover">
+          <button
+            aria-label="Mois suivant"
+            onClick={() => setMonth(addMonths(month, 1))}
+            className="rounded-full p-1.5 text-muted hover:bg-hover"
+          >
             <ChevronRight className="size-4" />
           </button>
         </span>
@@ -899,7 +914,11 @@ export function MiniMonth({
               <span
                 className={cn(
                   "flex size-8 items-center justify-center rounded-full transition-colors",
-                  sel ? "bg-primary font-semibold text-on-primary" : k === today ? "font-semibold text-primary ring-1 ring-primary/40" : "hover:bg-hover",
+                  sel
+                    ? "bg-primary font-semibold text-on-primary"
+                    : k === today
+                      ? "font-semibold text-primary ring-1 ring-primary/40"
+                      : "hover:bg-hover",
                 )}
               >
                 {format(d, "d")}
@@ -1123,7 +1142,10 @@ export function TimeGrid({
                   {bands.map((b) => (
                     <div
                       key={b.from}
-                      className={cn("border-t border-line", b.folded && "bg-[color-mix(in_oklab,var(--fg)_3%,transparent)]")}
+                      className={cn(
+                        "border-t border-line",
+                        b.folded && "bg-[color-mix(in_oklab,var(--fg)_3%,transparent)]",
+                      )}
                       style={{ height: heightOf(b) }}
                     >
                       {/* La demi-heure : un filet plus discret, inutile sur une bande repliée */}
@@ -1165,7 +1187,9 @@ export function TimeGrid({
                           {e.title}
                         </p>
                         {h >= 40 && <p className="truncate text-[11.5px] leading-snug opacity-85">{time}</p>}
-                        {h >= 92 && e.subtitle && <p className="truncate text-[11.5px] leading-snug opacity-70">{e.subtitle}</p>}
+                        {h >= 92 && e.subtitle && (
+                          <p className="truncate text-[11.5px] leading-snug opacity-70">{e.subtitle}</p>
+                        )}
                       </button>
                     );
                   })}
@@ -1286,5 +1310,9 @@ export function MonthGrid({
   );
 }
 
-export const weekOf = (d: Date) => eachDayOfInterval({ start: startOfWeek(d, { weekStartsOn: 1 }), end: addDays(startOfWeek(d, { weekStartsOn: 1 }), 6) });
+export const weekOf = (d: Date) =>
+  eachDayOfInterval({
+    start: startOfWeek(d, { weekStartsOn: 1 }),
+    end: addDays(startOfWeek(d, { weekStartsOn: 1 }), 6),
+  });
 export { parseISO };

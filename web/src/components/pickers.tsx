@@ -71,7 +71,7 @@ export function AssigneePicker({
           ))}
           {ais.length > 0 && (
             <>
-              <div className="mt-1 flex items-center gap-1.5 px-2 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-ai-fg">
+              <div className="mt-1 flex items-center gap-1.5 px-2 pb-1 pt-2 text-[11.5px] font-medium text-ai-fg">
                 <Sparkles className="size-3" />
                 Coéquipiers IA
               </div>

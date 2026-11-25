@@ -197,6 +197,18 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
 .font-serif { font-weight: 600; letter-spacing: -0.035em; font-style: normal; }
 }
 
+/*
+ * Repère de registre (24/11/2026) : numéro officiel, date, matricule, montant, pourcentage. Posés en chasse fixe
+ * tabulaire, ces valeurs s'alignent d'une ligne à l'autre et se comparent d'un coup d'œil, comme dans un registre
+ * tenu à la main. Rien de neuf n'est déclaré ici : seule la famille --font-mono, déjà au jeu, remplace la famille
+ * courante ; la taille, la couleur et la graisse restent celles du texte qui l'entoure.
+ */
+.repere {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+
 /* Barres de défilement discrètes */
 * { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
 

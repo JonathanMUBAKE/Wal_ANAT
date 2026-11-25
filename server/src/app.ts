@@ -924,16 +924,16 @@ export async function buildApp(opts: AppOptions = {}) {
       if (!agent.is_ai) throw forbidden("Ce membre n'est pas un coéquipier IA");
       if (!(await svc.projectRole(agent.id, t.project_id)))
         throw forbidden(`${agent.name} n'a pas accès à ce projet. Ajoutez-le aux membres du projet.`);
-      return {
-        run_id: await ai.start({
-          agentId: agent.id,
-          kind: "task",
-          taskId: t.id,
-          projectId: t.project_id,
-          requestedBy: me(req),
-          instructions,
-        }),
-      };
+      const started = await ai.startOrReason({
+        agentId: agent.id,
+        kind: "task",
+        taskId: t.id,
+        projectId: t.project_id,
+        requestedBy: me(req),
+        instructions,
+      });
+      if ("reason" in started) throw new HttpError(409, started.reason);
+      return { run_id: started.id };
     });
     r.post("/api/ai/chat", { onRequest: aiLimit }, async (req) => {
       const b = z

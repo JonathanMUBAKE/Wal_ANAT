@@ -111,6 +111,8 @@ export class AiEngine {
     return isExternal(this.provider);
   }
   private controllers = new Map<string, AbortController>();
+  /** Au-delà, une proposition restée sans réponse expire : la tâche n'est pas fermée à l'IA pour toujours (S3.4). */
+  approvalTimeoutMs = 48 * 3600_000;
   private timer: NodeJS.Timeout | null = null;
   private closing = false;
   /** Exécutions en cours de traitement (pour attendre la fin proprement, notamment en test). */
@@ -295,15 +297,44 @@ export class AiEngine {
   // ======================================================================
   // Exécutions
   // ======================================================================
-  async start(o: StartOpts): Promise<string | null> {
+  /** Pourquoi une tâche n'accepte pas de nouvelle intervention, ou null si elle est libre (S3.4). */
+  async busyReason(taskId: string): Promise<string | null> {
+    const active = await this.svc.db.one<{ status: string }>(
+      "SELECT status FROM ai_runs WHERE task_id = $1 AND status IN ('queued','running','waiting_approval') ORDER BY created_at LIMIT 1",
+      [taskId],
+    );
+    if (!active) return null;
+    return active.status === "waiting_approval"
+      ? "Une intervention de l'IA est déjà en attente de validation sur cette tâche. Décidez de sa proposition (Validations IA), ou annulez l'intervention, avant d'en lancer une autre."
+      : "Une intervention de l'IA est déjà en cours sur cette tâche. Attendez sa fin, ou annulez-la, avant d'en lancer une autre.";
+  }
+  /** Comme `start`, mais dit pourquoi rien n'est lancé. */
+  async startOrReason(o: StartOpts): Promise<{ id: string } | { reason: string }> {
     // Une seule intervention à la fois par tâche, quel que soit le coéquipier : deux IA ne proposent pas la même action (I-3)
     if (o.taskId && o.kind !== "assistant") {
-      const active = await this.svc.db.one(
-        "SELECT id FROM ai_runs WHERE task_id = $1 AND status IN ('queued','running','waiting_approval')",
-        [o.taskId],
-      );
-      if (active) return null;
+      const reason = await this.busyReason(o.taskId);
+      if (reason) return { reason };
     }
+    return { id: await this.launch(o) };
+  }
+  /** Une demande écartée ne reste pas silencieuse : la personne qui l'a faite, si elle est humaine, en lit le motif (S3.4). */
+  async start(o: StartOpts): Promise<string | null> {
+    const r = await this.startOrReason(o);
+    if ("id" in r) return r.id;
+    if (o.requestedBy && o.taskId && !(await this.isAi(o.requestedBy))) {
+      const orgId = o.projectId ? await this.svc.orgOfProject(o.projectId) : null;
+      await this.svc.notify(o.requestedBy, orgId, {
+        kind: "ai.busy",
+        category: "ia",
+        title: "L'IA n'a pas pris cette demande",
+        body: r.reason,
+        task_id: o.taskId,
+        project_id: o.projectId ?? null,
+      });
+    }
+    return null;
+  }
+  private async launch(o: StartOpts): Promise<string> {
     const orgId = o.projectId ? await this.svc.orgOfProject(o.projectId) : null;
     await this.assertQuota(orgId);
     const id = uid("run");
@@ -414,7 +445,15 @@ export class AiEngine {
         const ok = await this.checkpoint(runId, ctx, approverIds, "read_context", { task: o.taskId }, o.projectId, o.taskId, ctl.signal);
         if (!ok.ok) {
           if (ctl.signal.aborted) throw new CancelledError();
-          await this.finish(runId, "done", "Intervention arrêtée : l'envoi de la tâche au service d'IA extérieur a été refusé.");
+          await this.finish(
+            runId,
+            "done",
+            ok.noDecider
+              ? "Intervention arrêtée : personne n'est habilité à autoriser l'envoi de la tâche au service d'IA extérieur. Le chef du projet a été prévenu."
+              : ok.expired
+                ? "Intervention arrêtée : l'envoi de la tâche au service d'IA extérieur n'a reçu aucune réponse dans le délai."
+                : "Intervention arrêtée : l'envoi de la tâche au service d'IA extérieur a été refusé.",
+          );
           return;
         }
       }
@@ -524,6 +563,15 @@ export class AiEngine {
             o.hint.taskId ?? null,
             o.signal,
           );
+          if (!decision.ok && (decision.noDecider || decision.expired)) {
+            const what = await this.tools.describe(o.ctx, b.name, input);
+            const why = decision.noDecider
+              ? `Intervention arrêtée : personne n'est habilité à valider la proposition « ${what} ». Le chef du projet a été prévenu ; relancez l'IA une fois un décideur désigné.`
+              : `Intervention arrêtée : la proposition « ${what} » n'a reçu aucune réponse dans le délai. Relancez l'IA sur la tâche si elle est toujours utile.`;
+            await this.updateStep(stepId, "rejected", decision.noDecider ? "Aucun décideur possible" : "Délai de réponse dépassé");
+            if (o.signal.aborted) throw new CancelledError();
+            return why;
+          }
           if (!decision.ok && decision.stop) {
             // Un refus arrête l'intervention (I-2) : le coéquipier ne poursuit pas avec d'autres propositions
             await this.updateStep(stepId, "rejected", "Refusé par un humain : intervention arrêtée");
@@ -581,6 +629,19 @@ export class AiEngine {
     for (const u of ids) if (!o.projectId || (orgId && (await this.canDecide(u, orgId, o.projectId)))) out.push(u);
     return out;
   }
+  /** Le chef du projet, ou à défaut ses administrateurs, ou à défaut la personne qui a lancé l'IA : quelqu'un doit le savoir (S3.4). */
+  private async projectChiefs(projectId: string | null, requestedBy: string | null): Promise<string[]> {
+    const out = new Set<string>();
+    if (projectId) {
+      const p = await this.svc.db.one<{ owner_id: string | null }>("SELECT owner_id FROM projects WHERE id = $1", [projectId]);
+      if (p?.owner_id && !(await this.isAi(p.owner_id))) out.add(p.owner_id);
+      if (!out.size)
+        for (const m of await this.svc.members(projectId))
+          if (m.role === "admin" && !(await this.isAi(m.user_id))) out.add(m.user_id);
+    }
+    if (!out.size && requestedBy && !(await this.isAi(requestedBy))) out.add(requestedBy);
+    return [...out];
+  }
   /** Peut valider ou refuser une proposition sur ce projet : droit « ai.approve » et rôle d'éditeur au moins (I-5). */
   private async canDecide(userId: string, orgId: string, projectId: string) {
     if (!(await this.svc.permissionsOf(userId, orgId)).includes("ai.approve")) return false;
@@ -596,12 +657,36 @@ export class AiEngine {
     projectId: string | null,
     taskId: string | null,
     signal: AbortSignal,
-  ): Promise<{ ok: boolean; stop?: boolean; by?: string; input: Record<string, unknown> }> {
+  ): Promise<{
+    ok: boolean;
+    stop?: boolean;
+    by?: string;
+    input: Record<string, unknown>;
+    /** Aucune personne habilitée n'a pu être sollicitée : l'attente n'a pas été ouverte (S3.4). */
+    noDecider?: boolean;
+    /** Personne n'a répondu dans le délai : la proposition est tombée (S3.4). */
+    expired?: boolean;
+  }> {
     const id = uid("apr");
     const summary = await this.tools.describe(ctx, tool, input);
     const run = await this.getRun(runId);
     // Les personnes visées par la proposition ne la valident pas elles-mêmes (I-4) ; l'assistant reste à son auteur
     const targets = run.kind === "assistant" ? [] : await this.tools.targets(ctx, tool, input);
+    // Sans décideur possible, ouvrir l'attente fermerait la tâche à l'IA sans que personne ne le sache (S3.4)
+    if (run.kind !== "assistant" && approverIds.filter((x) => !targets.includes(x)).length === 0) {
+      const agent = await this.svc.user(ctx.actorId);
+      for (const u of await this.projectChiefs(projectId, run.requested_by))
+        await this.svc.notify(u, ctx.orgId, {
+          kind: "ai.no_decider",
+          category: "ia",
+          title: `${agent.name} n'a pas pu soumettre sa proposition`,
+          body: `Personne n'est habilité à valider « ${summary} » (droit « valider l'IA » et rôle d'éditeur sur le projet). Donnez ce droit à une personne du projet, puis relancez l'IA sur la tâche.`,
+          task_id: taskId,
+          project_id: projectId,
+          actor_id: ctx.actorId,
+        });
+      return { ok: false, stop: true, noDecider: true, input };
+    }
     await this.svc.db.query(
       `INSERT INTO ai_approvals (id, run_id, agent_id, task_id, project_id, tool, input, summary, status, target_ids) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending',$9)`,
       [id, runId, ctx.actorId, taskId, projectId, tool, JSON.stringify(input), summary, JSON.stringify(targets)],
@@ -623,14 +708,32 @@ export class AiEngine {
     this.bus.emit({ type: "ai.approval", approvalId: id, runId, projectId, taskId });
     return new Promise((resolve) => {
       const onAbort = () => {
+        clearTimeout(timeout);
         this.waiters.delete(id);
         void this.svc.db
           .query("UPDATE ai_approvals SET status = 'expired' WHERE id = $1 AND status = 'pending'", [id])
           .finally(() => resolve({ ok: false, input }));
       };
       signal.addEventListener("abort", onAbort, { once: true });
+      // Une attente sans réponse finit par tomber : la tâche se rouvre à l'IA (S3.4)
+      const timeout = setTimeout(() => {
+        if (!this.waiters.has(id)) return;
+        signal.removeEventListener("abort", onAbort);
+        this.waiters.delete(id);
+        void (async () => {
+          const expired = await this.svc.db.one(
+            "UPDATE ai_approvals SET status = 'expired' WHERE id = $1 AND status = 'pending' RETURNING id",
+            [id],
+          );
+          if (expired) await this.setStatus(runId, "running");
+          this.bus.emit({ type: "ai.approval", approvalId: id, runId, projectId, taskId });
+          resolve({ ok: false, stop: true, expired: true, input });
+        })();
+      }, this.approvalTimeoutMs);
+      timeout.unref();
       // La personne qui valide peut avoir retouché l'action : on relit l'input enregistré.
       this.waiters.set(id, (ok, stop, by) => {
+        clearTimeout(timeout);
         signal.removeEventListener("abort", onAbort);
         void (async () => {
           await this.setStatus(runId, "running");

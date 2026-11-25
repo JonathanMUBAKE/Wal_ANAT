@@ -517,6 +517,12 @@ const TABLE = [
     url: `/api/hr/agents/${await X.agent()}/exit`,
     body: { exit_on: "2030-01-01", reason: "retraite" },
   })),
+  R_("POST", "/api/hr/agents/:id/exit/cancel", async (X) => {
+    const user = await X.agent();
+    // Une sortie future est posée : c'est elle que l'on annule
+    await X.db.query("UPDATE agent_records SET exit_on = '2030-01-01', exit_reason = 'retraite' WHERE org_id = $1 AND user_id = $2", [X.org, user]);
+    return { url: `/api/hr/agents/${user}/exit/cancel`, body: { reason: "Saisie par erreur" } };
+  }),
   R_("GET", "/api/hr/deadlines"),
   R_("POST", "/api/hr/me/corrections", async (X) => {
     await X.db.query(

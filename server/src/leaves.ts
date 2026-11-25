@@ -371,6 +371,53 @@ export class Leaves {
     return (await this.perms(actorId, l.org_id)).manage;
   }
 
+  /**
+   * Sortie d'un agent (S3.2) : ses demandes encore ouvertes ou à venir sont refusées avec un motif, et il cesse d'être
+   * l'intérimaire de qui que ce soit. Les titulaires sont prévenus, avec le masque habituel des absences.
+   */
+  async settleExit(actorId: string | null, orgId: string, userId: string, exitOn: string) {
+    const note = `Refus automatique : l'agent quitte l'Agence le ${frDate(exitOn)}`;
+    const own = await this.svc.db.query<Leave & { user_name: string }>(
+      `SELECT ${COLS} FROM ${FROM} WHERE l.org_id = $1 AND l.user_id = $2 AND l.status IN ('demande', 'approuve') AND l.end_on >= $3::date`,
+      [orgId, userId, exitOn],
+    );
+    for (const l of own) {
+      await this.svc.db.query(
+        "UPDATE agent_leaves SET status = 'refuse', decided_by = $3, decided_at = now(), decision_note = $4, updated_at = now() WHERE org_id = $1 AND id = $2",
+        [orgId, l.id, actorId, note],
+      );
+      await this.svc.log(actorId ?? userId, "leave.refused_on_exit", { orgId, data: { leave_id: l.id, user_id: userId } });
+      for (const to of new Set([l.approver_id, l.interim_id].filter((x): x is string => !!x && x !== actorId))) {
+        const seen = await this.seenBy(to, orgId, l);
+        await this.svc.notify(to, orgId, {
+          kind: "leave.cancelled",
+          title: `${l.user_name} quitte l'Agence : ${seen.what} est refusé`,
+          body: note,
+          actor_id: actorId,
+          link: "/conges",
+        });
+      }
+    }
+    const covered = await this.svc.db.query<Leave & { user_name: string }>(
+      `SELECT ${COLS} FROM ${FROM} WHERE l.org_id = $1 AND l.interim_id = $2 AND l.status IN ('demande', 'approuve') AND l.end_on >= $3::date`,
+      [orgId, userId, exitOn],
+    );
+    const gone = (await this.svc.userOrNull(userId))?.name ?? "L'intérimaire";
+    for (const l of covered) {
+      await this.svc.db.query("UPDATE agent_leaves SET interim_id = NULL, updated_at = now() WHERE org_id = $1 AND id = $2", [orgId, l.id]);
+      await this.svc.log(actorId ?? userId, "leave.interim_removed", { orgId, data: { leave_id: l.id, interim: userId } });
+      const seen = await this.seenBy(l.user_id, orgId, l);
+      await this.svc.notify(l.user_id, orgId, {
+        kind: "leave.interim_removed",
+        title: `Votre intérimaire quitte l'Agence : ${seen.what}`,
+        body: `${gone} part le ${frDate(exitOn)} et ne peut plus assurer votre intérim. Désignez-en un autre auprès de votre chef ou du service des ressources humaines.`,
+        actor_id: actorId,
+        link: "/conges",
+      });
+    }
+    return { refused: own.length, interims: covered.length };
+  }
+
   async cancel(actorId: string, orgId: string, id: string, input: z.infer<typeof Cancel>) {
     const l = await this.row(orgId, id);
     if (!(await this.canRead(actorId, l))) throw forbidden("Cette demande ne vous est pas ouverte");

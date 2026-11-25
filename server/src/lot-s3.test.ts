@@ -214,3 +214,78 @@ describe("S3.3 : un agent n'est enrôlé qu'une fois son dossier validé", () =>
     expect(await traces()).toEqual(before);
   });
 });
+
+describe("S3.2 : la sortie d'un agent règle ses congés et intérims, et se défait", () => {
+  let unit: string;
+  const day = (offset = 0) => {
+    const d = new Date(Date.now() + offset * 864e5);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  beforeEach(async () => {
+    [unit] = await g.units(1);
+    await g.ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id IN ('u_hugo', 'u_karim')");
+    await g.ctx.db.query("UPDATE org_units SET manager_id = 'u_karim' WHERE id = $1", [unit]);
+    await g.ctx.db.query("UPDATE org_members SET unit_id = $1 WHERE org_id = $2 AND user_id IN ('u_hugo', 'u_karim')", [unit, g.org]);
+    await g.promote("u_hugo", "Agent");
+    await g.promote("u_karim", "Chef d'entité");
+    for (const [id, last] of [["u_hugo", "Lukusa"], ["u_karim", "Banza"]] as const)
+      expect(
+        (await g.api("u_alice", "POST", "/api/hr/agents", { user_id: id, last_name: last, status: "fonctionnaire", function_title: "Chargé", unit_id: unit, hired_on: "2015-01-06" })).status,
+      ).toBe(200);
+  });
+  const leave = async (who: string, over: Record<string, unknown> = {}) => {
+    const r = await g.api(who, "POST", "/api/leaves", { kind: "conge_annuel", start_on: day(20), end_on: day(25), ...over });
+    expect(r.body.error ?? r.status).toBe(200);
+    return r.body.id as string;
+  };
+  const leaveRow = (id: string) => g.ctx.db.one<Any>("SELECT status, interim_id, decision_note FROM agent_leaves WHERE id = $1", [id]);
+  const exit = (who = "u_alice", over: Record<string, unknown> = {}) =>
+    g.api(who, "POST", "/api/hr/agents/u_hugo/exit", { exit_on: day(), reason: "demission", ...over });
+
+  it("après la sortie : aucune demande de l'agent n'attend plus chez un chef, ses intérims sont retirés et leurs titulaires prévenus", async () => {
+    const own = await leave("u_hugo");
+    const approved = await leave("u_hugo", { start_on: day(40), end_on: day(41) });
+    expect((await g.api("u_alice", "POST", `/api/leaves/${approved}/decide`, { approve: true })).status).toBe(200);
+    const chiefs = await leave("u_karim", { interim_id: "u_hugo" });
+    expect((await exit()).status).toBe(200);
+    for (const id of [own, approved]) {
+      const l = await leaveRow(id);
+      expect(l.status).toBe("refuse");
+      expect(l.decision_note).toMatch(/sortie|quitte/i);
+    }
+    const open = await g.ctx.db.query<Any>("SELECT id FROM agent_leaves WHERE user_id = 'u_hugo' AND status IN ('demande', 'approuve')");
+    expect(open).toHaveLength(0);
+    expect((await leaveRow(chiefs)).interim_id).toBeNull();
+    const avis = await g.ctx.db.query<Any>("SELECT * FROM notifications WHERE user_id = 'u_karim' AND kind = 'leave.interim_removed'");
+    expect(avis).toHaveLength(1);
+    expect(avis[0].body).toMatch(/intérim/i);
+  });
+
+  it("une sortie posée par erreur s'annule avec un motif : compte actif, affectation rouverte, deux actes au journal", async () => {
+    expect((await exit()).status).toBe(200);
+    expect((await g.ctx.db.one<Any>("SELECT status FROM users WHERE id = 'u_hugo'"))!.status).toBe("suspended");
+    const url = "/api/hr/agents/u_hugo/exit/cancel";
+    expect((await g.api("u_karim", "POST", url, { reason: "Erreur de saisie" })).status).toBe(403);
+    expect((await g.api("u_alice", "POST", url, {})).status).toBe(400);
+    expect((await g.api("u_alice", "POST", url, { reason: " " })).status).toBe(400);
+    const r = await g.api("u_alice", "POST", url, { reason: "Date saisie pour le mauvais agent" });
+    expect(r.status).toBe(200);
+    expect(r.body.exit_on).toBeNull();
+    expect(r.body.assignments.filter((a: Any) => !a.ended_on)).toHaveLength(1);
+    expect((await g.ctx.db.one<Any>("SELECT status FROM users WHERE id = 'u_hugo'"))!.status).toBe("active");
+    const acts = await g.ctx.db.query<Any>("SELECT kind, data FROM activity WHERE kind IN ('hr.agent.exit', 'hr.agent.exit_cancelled') ORDER BY created_at, id");
+    expect(acts.map((a) => a.kind).sort()).toEqual(["hr.agent.exit", "hr.agent.exit_cancelled"]);
+    expect(acts.find((a) => a.kind === "hr.agent.exit_cancelled").data.reason).toBe("Date saisie pour le mauvais agent");
+    // Rien à annuler : 409 ; et la sortie peut être reposée correctement
+    expect((await g.api("u_alice", "POST", url, { reason: "Encore" })).status).toBe(409);
+    expect((await exit("u_alice", { exit_on: day(30) })).status).toBe(200);
+  });
+
+  it("une sortie future non encore appliquée s'annule aussi, sans toucher au compte", async () => {
+    expect((await exit("u_alice", { exit_on: day(30) })).status).toBe(200);
+    const r = await g.api("u_alice", "POST", "/api/hr/agents/u_hugo/exit/cancel", { reason: "Départ reporté" });
+    expect(r.status).toBe(200);
+    expect(r.body.exit_on).toBeNull();
+    expect((await g.ctx.db.one<Any>("SELECT status FROM users WHERE id = 'u_hugo'"))!.status).toBe("active");
+  });
+});

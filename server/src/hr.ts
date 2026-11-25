@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { uid } from "./db.js";
+import { Leaves } from "./leaves.js";
 import type { Provisioning } from "./auth/provisioning.js";
 import type { RequestInfo } from "./auth/service.js";
 import { HttpError, badRequest, forbidden, localDate, notFound, type Services } from "./services.js";
@@ -72,6 +73,9 @@ const Exit = z.object({
   exit_on: date,
   reason: z.enum(EXIT_REASONS, { message: "Motif de sortie inconnu" }),
   reference: txt(300).optional(),
+});
+const CancelExit = z.object({
+  reason: txt(2000).min(3, "Le motif de l'annulation est obligatoire : dites pourquoi la sortie est annulée"),
 });
 const Training = z.object({
   title: txt(300).min(1, "L'intitulé de la formation est obligatoire"),
@@ -538,7 +542,51 @@ export class Hr {
     return this.get(actorId, orgId, userId);
   }
 
-  /** Effets de la sortie, une seule fois : affectation close, compte suspendu, chef prévenu. */
+  /**
+   * Une sortie posée par erreur se défait (S3.2) : motif obligatoire, journal ; si elle était déjà appliquée, le compte est
+   * rouvert et l'affectation close par la sortie reprend. Les congés refusés et les intérims retirés ne sont pas rétablis :
+   * l'agent et ses collègues les redemandent.
+   */
+  async cancelExit(actorId: string, orgId: string, userId: string, i: z.infer<typeof CancelExit>) {
+    await this.requireWrite(actorId, orgId, userId);
+    const r = await this.svc.db.one<{ exit_on: string | null; applied: boolean; reason: string | null; last_name: string }>(
+      "SELECT to_char(exit_on, 'YYYY-MM-DD') AS exit_on, exit_applied AS applied, exit_reason AS reason, last_name FROM agent_records WHERE org_id = $1 AND user_id = $2",
+      [orgId, userId],
+    );
+    if (!r) throw notFound("Dossier d'agent introuvable");
+    if (!r.exit_on) throw new HttpError(409, "Aucune sortie n'est enregistrée pour cet agent : il n'y a rien à annuler");
+    await this.svc.db.tx(async (q) => {
+      await q.query(
+        "UPDATE agent_records SET exit_on = NULL, exit_reason = NULL, exit_reference = '', exit_applied = FALSE, exited_by = NULL, updated_at = now() WHERE org_id = $1 AND user_id = $2",
+        [orgId, userId],
+      );
+      if (r.applied) {
+        await q.query(
+          "UPDATE agent_assignments SET ended_on = NULL WHERE id = (SELECT id FROM agent_assignments WHERE org_id = $1 AND user_id = $2 AND ended_on = $3::date ORDER BY started_on DESC, created_at DESC LIMIT 1)",
+          [orgId, userId, r.exit_on],
+        );
+        await q.query("UPDATE users SET status = 'active' WHERE id = $1 AND status = 'suspended'", [userId]);
+      }
+    });
+    await this.svc.log(actorId, "hr.agent.exit_cancelled", {
+      orgId,
+      data: { user_id: userId, name: r.last_name, was_on: r.exit_on, was_reason: r.reason, applied: r.applied, reason: i.reason },
+    });
+    if (r.applied) {
+      const chief = await this.chiefOf(orgId, userId);
+      const name = (await this.svc.userOrNull(userId))?.name ?? r.last_name;
+      if (chief && chief !== actorId)
+        await this.svc.notify(chief, orgId, {
+          kind: "hr.exit_cancelled",
+          title: `La sortie de ${name} est annulée`,
+          body: `Son compte est rouvert et son affectation reprend. Motif : ${i.reason}`,
+          actor_id: actorId,
+        });
+    }
+    return this.get(actorId, orgId, userId);
+  }
+
+  /** Effets de la sortie, une seule fois : affectation close, compte suspendu, congés et intérims réglés, chef prévenu. */
   private async applyExit(orgId: string, userId: string, actorId: string | null) {
     const r = await this.svc.db.one<{ exit_on: string; applied: boolean; last_name: string }>(
       "SELECT to_char(exit_on, 'YYYY-MM-DD') AS exit_on, exit_applied AS applied, last_name FROM agent_records WHERE org_id = $1 AND user_id = $2",
@@ -554,6 +602,7 @@ export class Hr {
       await q.query("UPDATE users SET status = 'suspended' WHERE id = $1 AND status <> 'suspended'", [userId]);
       await q.query("UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL", [userId]);
     });
+    await new Leaves(this.svc).settleExit(actorId, orgId, userId, r.exit_on);
     const name = (await this.svc.userOrNull(userId))?.name ?? r.last_name;
     const open = await this.svc.db.query<{ key: string; title: string }>(
       `SELECT p.key || '-' || t.number AS key, t.title FROM tasks t JOIN projects p ON p.id = t.project_id
@@ -810,6 +859,9 @@ export function hrRoutes(r: FastifyInstance, hr: Hr) {
   // Thème 6 : sortie, échéances, demandes de correction, formations et évaluations
   r.post<Id>("/api/hr/agents/:id/exit", async (req) =>
     hr.exit(req.userId, req.orgId, req.params.id, Exit.parse(req.body)),
+  );
+  r.post<Id>("/api/hr/agents/:id/exit/cancel", async (req) =>
+    hr.cancelExit(req.userId, req.orgId, req.params.id, CancelExit.parse(req.body)),
   );
   r.get("/api/hr/deadlines", async (req) => hr.deadlines(req.userId, req.orgId));
   r.post("/api/hr/me/corrections", async (req) =>

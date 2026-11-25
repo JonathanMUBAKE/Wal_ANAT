@@ -391,6 +391,15 @@ Le plus gros lot. Le modèle a été repris avec Jonathan le 25 novembre.
         pas repartir avec le même `0007`. Soit le rang n'est attribué qu'au serveur, et un courrier saisi
         hors ligne porte un numéro provisoire jusqu'à la synchronisation, soit chaque poste tient une plage
         réservée. **À trancher avant d'écrire la moindre ligne.**
+      - **(e) L'heure est celle de la RDC, pas celle de la machine.** `localDate()`
+        (`services.ts:181-183`) lit l'horloge du serveur — `getFullYear/getMonth/getDate` — sans aucun
+        fuseau configuré nulle part. Sur un serveur réglé en UTC, Kinshasa est en avance d'une heure :
+        entre minuit et une heure du matin à Kinshasa, le système date encore de la veille. Un courrier
+        enregistré à 00 h 30 prend la date **et le rang** de la veille. Et la RDC a **deux fuseaux** —
+        Kinshasa à UTC+1, Lubumbashi à UTC+2 — alors que l'Agence a des représentations provinciales et
+        des antennes : « aujourd'hui » n'est pas le même jour partout. Le fuseau doit être porté par
+        l'institution (et au besoin par l'entité), et l'heure vérifiée sur une source sûre quand une
+        connexion existe.
       - **(d) Pas de rattrapage mécanique des rappels.** Après un long arrêt, deux mois d'échéances expirent
         d'un coup : si les relances de deux jours se rejouent, chacun reçoit trente avis le même matin et
         personne ne les lit. Le retour produit **un seul récapitulatif de rattrapage**.

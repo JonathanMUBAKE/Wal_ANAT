@@ -367,9 +367,23 @@ Le plus gros lot. Le modèle a été repris avec Jonathan le 25 novembre.
       Prévoir une délégation datée, qui s'ouvre et se ferme seule.
 - [ ] **X9. Les modèles de courrier** : aucun n'existe. Déposer un modèle (en-têtes compris), la personne
       saisit, le système génère ; la finalisation — numéros, impression — revient au secrétariat.
-- [ ] **X10. La numérotation** : `ENT/2026/0142` est **calculé** (sens, année, rang) et n'admet aucun suffixe.
-      Il faut un numéro principal stocké et un **numéro secondaire** (174A, 174B) pour les insertions.
-      *La logique de génération doit être donnée par Jonathan avant toute écriture.*
+- [ ] **X10. La numérotation** (donnée par Jonathan le 25 novembre 2026). Quatre chiffres, `0001`, puis
+      `0002`, et ainsi de suite : le rang suit simplement le nombre de courriers, à l'entrée comme à la
+      sortie. Le premier courrier du 1er janvier de l'exercice porte `0001`, et **le compteur se
+      réinitialise tout seul au changement d'année**. Entre deux rangs on peut insérer un **numéro
+      secondaire** : `0001A`, `0001B`. Aujourd'hui `ENT/2026/0142` est **calculé** (sens, année, rang) et
+      n'admet aucun suffixe : il faut un numéro principal stocké et un suffixe à côté.
+- [ ] **X11. Un calendrier embarqué, qui marche hors ligne.** Le système doit savoir seul qu'un mois ou une
+      année a commencé, avec ou sans connexion. Jonathan demande d'embarquer le calendrier jusqu'en 2099.
+      **Les deux vraies difficultés sont ailleurs, et il ne faut pas les coder à moitié :**
+      *(a)* **l'horloge**, pas le calendrier — l'arithmétique des dates jusqu'en 2099 tient en quelques
+      lignes, mais la date d'un poste hors ligne peut être fausse ou reculée ; il faut donc une horloge de
+      référence conservée par le serveur, qui n'avance jamais à rebours, et qui se recale à la reconnexion
+      en journalisant l'écart ;
+      *(b)* **l'unicité du rang** quand plusieurs postes enregistrent hors ligne : deux courriers ne doivent
+      pas repartir avec le même `0007`. Soit le rang n'est attribué qu'au serveur, et un courrier saisi hors
+      ligne porte un numéro provisoire jusqu'à la synchronisation, soit chaque poste tient une plage
+      réservée. À trancher avant d'écrire la moindre ligne.
 - [ ] **X11. Antidater** est déjà permis et parfaitement silencieux (seule une date future est refusée). Cela
       doit alerter à la saisie et entrer au journal.
 - [ ] **X12. Les archives** : un seul registre, où chaque courrier porte qui l'a classé et à quel dossier il

@@ -178,3 +178,60 @@ describe("fins de contrat", () => {
     expect((await notes("u_hugo")).filter((n: Any) => n.kind === "hr.deadline")).toHaveLength(0);
   });
 });
+
+// Secret médical : la nature et le motif d'un congé de maladie ne sortent par aucune voie vers le chef ou l'intérimaire
+describe("secret médical : toutes les voies passent par le même masque", () => {
+  const MOTIF = "Opération du genou, certificat du docteur";
+  const toutLire = async (user: string) =>
+    JSON.stringify(await g.ctx.db.query("SELECT title, body FROM notifications WHERE user_id = $1", [user]));
+
+  it("l'avis au chef, l'intérimaire et la réponse de decide ne disent ni la maladie ni le motif", async () => {
+    const r = await ask("u_hugo", {
+      kind: "maladie",
+      start_on: day(10),
+      end_on: day(12),
+      reason: MOTIF,
+      interim_id: "u_ines",
+    });
+    expect(r.status).toBe(200);
+    // Le chef reçoit un avis qui parle d'une absence
+    const chef = await toutLire("u_karim");
+    expect(chef).not.toMatch(/maladie/i);
+    expect(chef).not.toContain("genou");
+    expect(chef).toMatch(/absence/i);
+
+    const ok = await g.api("u_karim", "POST", `/api/leaves/${r.body.id}/decide`, { approve: true });
+    expect(ok.status).toBe(200);
+    expect(ok.body.kind).toBe("absence");
+    expect(ok.body.reason).toBe("");
+    expect(JSON.stringify(ok.body)).not.toMatch(/maladie|genou/i);
+
+    const interim = await toutLire("u_ines");
+    expect(interim).not.toMatch(/maladie/i);
+    expect(interim).not.toContain("genou");
+
+    // L'agent, lui, garde le détail de sa propre situation
+    const agent = await g.api("u_hugo", "GET", `/api/leaves/${r.body.id}`);
+    expect(agent.body.kind).toBe("maladie");
+  });
+
+  it("l'absence saisie par le service RH ne montre pas la maladie à l'intérimaire, ni à l'annulation", async () => {
+    const r = await ask("u_alice", {
+      kind: "maladie",
+      start_on: day(5),
+      end_on: day(6),
+      user_id: "u_hugo",
+      reason: MOTIF,
+      interim_id: "u_ines",
+    });
+    expect(r.status).toBe(200);
+    expect(await toutLire("u_ines")).not.toMatch(/maladie|genou/i);
+    // Le service RH voit le détail dans sa propre réponse
+    expect(r.body.kind).toBe("maladie");
+
+    const c = await g.api("u_hugo", "POST", `/api/leaves/${r.body.id}/cancel`, { note: "" });
+    expect([200, 400, 403]).toContain(c.status);
+    expect(await toutLire("u_ines")).not.toMatch(/maladie|genou/i);
+    expect(await toutLire("u_karim")).not.toMatch(/maladie|genou/i);
+  });
+});

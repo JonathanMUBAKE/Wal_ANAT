@@ -99,6 +99,18 @@ export class Leaves {
     );
   }
 
+  /** Ce que `to` a le droit de lire d'une demande : le même masque que les écrans, pour tout ce qui sort en notification. */
+  private async seenBy<T extends { user_id: string; kind: string; reason?: string; start_on: string; end_on: string }>(
+    to: string,
+    orgId: string,
+    l: T,
+  ) {
+    const [shown] = await this.mask(to, orgId, [l]);
+    const label = shown.kind === "absence" ? "Absence" : LEAVE_LABELS[shown.kind as keyof typeof LEAVE_LABELS];
+    const what = `${label} du ${frDate(l.start_on)} au ${frDate(l.end_on)}`;
+    return { what, reason: shown.reason ?? "", row: shown };
+  }
+
   private async perms(actorId: string, orgId: string) {
     const p = await this.svc.permissionsOf(actorId, orgId);
     return { view: p.includes("hr.view") || p.includes("hr.manage"), manage: p.includes("hr.manage") };
@@ -291,30 +303,34 @@ export class Leaves {
         actor_id: actorId,
         link: "/conges",
       });
-      await this.notifyInterim(actorId, l, what);
+      await this.notifyInterim(actorId, l);
     } else {
       for (const to of approver ? [approver] : await this.hrManagers(orgId))
-        if (to !== actorId)
+        if (to !== actorId) {
+          const seen = await this.seenBy(to, orgId, l);
           await this.svc.notify(to, orgId, {
             kind: "leave.requested",
-            title: `${l.user_name} demande : ${what}`,
-            body: `${l.days} jour(s) ouvré(s)${input.reason ? ` · ${input.reason}` : ""}. À valider ou refuser.`,
+            title: `${l.user_name} demande : ${seen.what}`,
+            body: `${l.days} jour(s) ouvré(s)${seen.reason ? ` · ${seen.reason}` : ""}. À valider ou refuser.`,
             actor_id: actorId,
             link: "/conges?onglet=valider",
           });
+        }
     }
-    return l;
+    return (await this.mask(actorId, orgId, [l]))[0];
   }
 
-  private async notifyInterim(actorId: string, l: Leave & { user_name: string }, what: string) {
-    if (l.interim_id && l.interim_id !== actorId)
+  private async notifyInterim(actorId: string, l: Leave & { user_name: string }) {
+    if (l.interim_id && l.interim_id !== actorId) {
+      const seen = await this.seenBy(l.interim_id, l.org_id, l);
       await this.svc.notify(l.interim_id, l.org_id, {
         kind: "leave.interim",
         title: `Vous assurez l'intérim de ${l.user_name}`,
-        body: what,
+        body: seen.what,
         actor_id: actorId,
         link: "/conges",
       });
+    }
   }
 
   async decide(actorId: string, orgId: string, id: string, input: z.infer<typeof Decide>) {
@@ -345,8 +361,8 @@ export class Leaves {
       actor_id: actorId,
       link: "/conges",
     });
-    if (input.approve) await this.notifyInterim(actorId, after, what);
-    return after;
+    if (input.approve) await this.notifyInterim(actorId, after);
+    return (await this.mask(actorId, orgId, [after]))[0];
   }
 
   private async canCancel(actorId: string, l: Leave) {
@@ -367,14 +383,14 @@ export class Leaves {
       [orgId, id, input.note ?? ""],
     );
     await this.svc.log(actorId, "leave.cancelled", { orgId, data: { leave_id: id, user_id: l.user_id } });
-    const what = `${LEAVE_LABELS[l.kind]} du ${frDate(l.start_on)} au ${frDate(l.end_on)}`;
     const told = new Set<string>();
     for (const to of [l.status === "approuve" ? (l.decided_by ?? l.approver_id) : l.approver_id, l.interim_id])
       if (to && to !== actorId && !told.has(to)) {
         told.add(to);
+        const seen = await this.seenBy(to, orgId, l);
         await this.svc.notify(to, orgId, {
           kind: "leave.cancelled",
-          title: `${l.user_name} a annulé : ${what}`,
+          title: `${l.user_name} a annulé : ${seen.what}`,
           body: input.note || undefined,
           actor_id: actorId,
           link: "/conges",
@@ -383,12 +399,12 @@ export class Leaves {
     if (l.user_id !== actorId)
       await this.svc.notify(l.user_id, orgId, {
         kind: "leave.cancelled",
-        title: `Votre demande a été annulée : ${what}`,
+        title: `Votre demande a été annulée : ${(await this.seenBy(l.user_id, orgId, l)).what}`,
         body: input.note || undefined,
         actor_id: actorId,
         link: "/conges",
       });
-    return this.row(orgId, id);
+    return (await this.mask(actorId, orgId, [await this.row(orgId, id)]))[0];
   }
 }
 

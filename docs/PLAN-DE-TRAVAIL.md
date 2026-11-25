@@ -659,6 +659,24 @@ redécouvrir ce qui est déjà au plan. Ils lisent d'abord ce document.
   code, n'ouvrent un navigateur que pour vérifier ce qu'ils viennent d'écrire, et ne lancent aucun
   sous-agent.
 
+### Les compétences à appeler, phase par phase
+
+Elles sont déjà installées sur le poste ; rien à ajouter. Chaque agent invoque celle de sa phase **avant**
+d'écrire, pas après.
+
+| Phase | Compétence | Ce qu'elle apporte ici |
+|---|---|---|
+| 0.2 — les briques | `design:design-system` | Audit d'un système de design : noms incohérents, valeurs écrites en dur, variantes d'un composant. C'est exactement le lot T. |
+| 1 à 4 — le sérieux | `security-review`, puis `/code-review` | Revue de sécurité des changements de la branche ; relecture de correction avant de passer au lot suivant. |
+| 3 — les états sans issue | `engineering:debug` | Reproduire, isoler, diagnostiquer : l'avenant bloqué et la proposition IA qui n'expire jamais sont des états à reproduire avant d'être corrigés. |
+| 5 — le temps | `engineering:architecture` | Écrire la décision (ADR) sur l'horloge, le fuseau de la RDC et la numérotation, avec ses compromis. Ces choix doivent être justifiés noir sur blanc, pas découverts dans le code six mois plus tard. |
+| 6 — le courrier | `engineering:system-design`, puis `engineering:testing-strategy` | Le modèle « un courrier, N états » est une refonte de données : à concevoir avant d'écrire. Puis le plan de tests du module. |
+| 7 et 8 | `engineering:testing-strategy` | Réunions et livrables changent des règles de validation : les tests d'abord. |
+| 9 — l'interface | `design:accessibility-review`, `design:design-critique` | L'application est à zéro manquement WCAG ; elle doit y rester. La critique de design sert pour « Mes tâches » et la matrice des droits. |
+| 10 — le vocabulaire | `design:ux-copy` | Nommer les boutons, les messages d'erreur, les états vides, et les trois objets qui s'appellent aujourd'hui « décision ». |
+| 11 — la vérification | les testeurs, puis `/code-review` | Sur ce qui a été corrigé seulement. |
+| transversal | `engineering:documentation`, `/simplify` | Tenir `docs/MODELE-INSTITUTIONNEL.md` à jour ; nettoyer la réutilisation après chaque lot. |
+
 ---
 
 ## 4. Décisions ouvertes (à trancher par Jonathan)

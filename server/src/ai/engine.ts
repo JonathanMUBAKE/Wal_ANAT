@@ -885,6 +885,11 @@ export class AiEngine {
   async saveRule(userId: string, input: Partial<AiRule> & { project_id: string }) {
     await this.svc.require(userId, input.project_id, "admin");
     await this.svc.projectPerm(userId, input.project_id, "ai.rules");
+    // La règle agira sous les droits de son dernier auteur : qui l'écrit doit pouvoir confier du travail à l'IA (S2.3)
+    if (!(await this.mayDelegate(userId, input.project_id)))
+      throw forbidden(
+        "Une règle IA s'exécute sous les droits de son auteur : il vous manque le droit « Confier du travail à l'IA ». Demandez-le à l'administrateur de l'organisation.",
+      );
     if (input.auto_approve)
       throw badRequest(
         "La validation automatique n'existe plus : l'IA propose, un humain valide chacune de ses actions",
@@ -908,7 +913,7 @@ export class AiEngine {
       const r = await this.getRule(input.id);
       if (r.project_id !== input.project_id) throw forbidden();
       await this.svc.db.query(
-        "UPDATE ai_rules SET name=$1, trigger=$2, section_id=$3, agent_id=$4, instructions=$5, auto_approve=$6, enabled=$7 WHERE id=$8",
+        "UPDATE ai_rules SET name=$1, trigger=$2, section_id=$3, agent_id=$4, instructions=$5, auto_approve=$6, enabled=$7, created_by=$9 WHERE id=$8",
         [
           input.name,
           input.trigger,
@@ -918,8 +923,20 @@ export class AiEngine {
           !!input.auto_approve,
           input.enabled !== false,
           input.id,
+          userId,
         ],
       );
+      await this.svc.log(userId, "rule.updated", {
+        projectId: r.project_id,
+        data: {
+          rule: r.id,
+          name: input.name,
+          instructions: { from: r.instructions, to: input.instructions },
+          author: { from: r.created_by, to: userId },
+          agent: { from: r.agent_id, to: agent.id },
+          enabled: { from: r.enabled, to: input.enabled !== false },
+        },
+      });
       return this.getRule(input.id);
     }
     const id = uid("rul");
@@ -938,6 +955,10 @@ export class AiEngine {
         userId,
       ],
     );
+    await this.svc.log(userId, "rule.created", {
+      projectId: input.project_id,
+      data: { rule: id, name: input.name, instructions: input.instructions, agent: agent.id },
+    });
     return this.getRule(id);
   }
   async deleteRule(userId: string, ruleId: string, projectId: string) {

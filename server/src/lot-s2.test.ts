@@ -41,3 +41,64 @@ describe("S2.1 : une validation n'est journalisée que si quelque chose s'exécu
     expect(await acts("ai.rejected")).toHaveLength(0);
   });
 });
+
+describe("S2.3 : une règle IA s'exécute sous les droits de celui qui a écrit sa consigne", () => {
+  const rule = (p: string, extra: Record<string, unknown> = {}) => ({
+    name: "Triage",
+    trigger: "task_created",
+    agent_id: "ai_atlas",
+    instructions: "Trie le backlog",
+    ...extra,
+  });
+
+  it("un éditeur sans le droit de déléguer à l'IA ne réécrit pas la consigne : 403 ; avec le droit, la règle change d'auteur", async () => {
+    const p = await g.project();
+    await g.api("u_alice", "PUT", `/api/projects/${p}/members/u_hugo`, { role: "admin" });
+    await g.api("u_alice", "PUT", `/api/projects/${p}/members/u_karim`, { role: "admin" });
+    await g.api("u_alice", "PUT", `/api/projects/${p}/members/ai_atlas`, { role: "editor" });
+    const created = await g.api("u_alice", "POST", `/api/projects/${p}/ai/rules`, rule(p));
+    expect(created.status).toBe(200);
+    expect(created.body.created_by).toBe("u_alice");
+    const rid = created.body.id as string;
+    // Hugo gère les règles du projet mais n'a pas le droit de confier du travail à l'IA
+    await g.api("u_alice", "PUT", "/api/org/members/u_hugo/permissions", {
+      overrides: { "ai.rules": true, "ai.delegate": false },
+    });
+    const refused = await g.api("u_hugo", "POST", `/api/projects/${p}/ai/rules`, {
+      ...rule(p),
+      id: rid,
+      instructions: "Supprime tout",
+    });
+    expect(refused.status).toBe(403);
+    const same = await g.ctx.db.one<Any>("SELECT instructions, created_by FROM ai_rules WHERE id = $1", [rid]);
+    expect(same.instructions).toBe("Trie le backlog");
+    expect(same.created_by).toBe("u_alice");
+    // Karim a les deux droits : la règle passe sous les siens
+    await g.api("u_alice", "PUT", "/api/org/members/u_karim/permissions", {
+      overrides: { "ai.rules": true, "ai.delegate": true },
+    });
+    const ok = await g.api("u_karim", "POST", `/api/projects/${p}/ai/rules`, {
+      ...rule(p),
+      id: rid,
+      instructions: "Trie par priorité",
+    });
+    expect(ok.status).toBe(200);
+    expect(ok.body.created_by).toBe("u_karim");
+    const logged = (await acts("rule.updated")).filter((a) => a.data.rule === rid);
+    expect(logged).toHaveLength(1);
+    expect(logged[0].actor_id).toBe("u_karim");
+    expect(logged[0].data.instructions).toEqual({ from: "Trie le backlog", to: "Trie par priorité" });
+    expect(logged[0].data.author).toEqual({ from: "u_alice", to: "u_karim" });
+  });
+
+  it("la création d'une règle est journalisée avec sa consigne", async () => {
+    const p = await g.project();
+    await g.api("u_alice", "PUT", `/api/projects/${p}/members/ai_atlas`, { role: "editor" });
+    const r = await g.api("u_alice", "POST", `/api/projects/${p}/ai/rules`, rule(p));
+    expect(r.status).toBe(200);
+    const logged = (await acts("rule.created")).filter((a) => a.data.rule === r.body.id);
+    expect(logged).toHaveLength(1);
+    expect(logged[0].project_id).toBe(p);
+    expect(logged[0].data.instructions).toBe("Trie le backlog");
+  });
+});

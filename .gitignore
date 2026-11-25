@@ -17,3 +17,6 @@ desktop/release/
 
 # Copies de travail créées pour les sessions parallèles : Biome y voyait une seconde configuration racine
 .claude/worktrees/
+
+# Dossier Google : le HTML est régénéré par scripts/dossier-vers-html.mjs
+docs/google-doc/dossier.html

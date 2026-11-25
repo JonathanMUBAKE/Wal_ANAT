@@ -134,7 +134,8 @@ describe("F-5 : les contrats se lisent selon son périmètre", () => {
     await g.ctx.db.query("UPDATE org_units SET manager_id = 'u_karim' WHERE id = $1", [mine]);
     await g.promote("u_karim", "Chef d'entité");
     const proj = (await g.api("u_alice", "POST", "/api/projects", { name: "Projet d'une autre direction" })).body;
-    await g.ctx.db.query("UPDATE projects SET unit_id = $1 WHERE id = $2", [other, proj.id]);
+    // Projet ouvert à l'équipe : un projet naît privé sans équipe choisie (S1.6), et le pilotage ne lit que le non privé
+    await g.ctx.db.query("UPDATE projects SET unit_id = $1, access = 'team' WHERE id = $2", [other, proj.id]);
     const c = await g.api("u_alice", "POST", "/api/contracts", {
       project_id: proj.id,
       consultant_name: "Cabinet fictif",

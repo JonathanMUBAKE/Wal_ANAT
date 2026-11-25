@@ -638,6 +638,33 @@ export class Agreements {
         });
       return;
     }
+    // Le parent a pu cesser d'être en vigueur pendant le circuit : l'avenant ne reste pas en l'air, il revient en préparation (S3.1)
+    try {
+      await this.assertParentLive(a);
+    } catch (e) {
+      if (!(e instanceof HttpError)) throw e;
+      await this.svc.db.query(
+        "UPDATE agreements SET state = 'preparation', sign_document_id = NULL, updated_at = now() WHERE id = $1 AND state = 'signature'",
+        [a.id],
+      );
+      const why = `${e.message}. L'avenant revient en préparation : supprimez-le, ou rouvrez l'accord principal avant de le renvoyer au parapheur.`;
+      await this.history(
+        this.svc.db,
+        a.org_id,
+        a.parties.map((p) => p.id),
+        actorId,
+        `Avenant signé sans effet, de retour en préparation : ${a.title}. ${e.message}.`,
+      );
+      for (const u of new Set([a.focal_id, a.created_by].filter((x): x is string => !!x)))
+        await this.svc.notify(u, a.org_id, {
+          kind: "agreement.blocked",
+          title: `Avenant signé mais sans effet : ${a.title}`,
+          body: why,
+          actor_id: actorId,
+        });
+      await this.svc.log(actorId, "agreement.amendment_blocked", { orgId: a.org_id, data: { id: a.id, parent: a.parent_id } });
+      return;
+    }
     await this.enter(a, actorId, today(), null, false);
   }
 
@@ -787,6 +814,16 @@ export class Agreements {
     if (!isRealDate(i.ended_on) || (a.signed_on && i.ended_on < a.signed_on))
       throw badRequest("Date de résiliation invalide");
     if (i.ended_on > today()) throw badRequest("Une résiliation se constate : sa date ne peut pas être dans le futur");
+    // Un avenant au signataire serait signé sans pouvoir prendre effet, et ne pourrait plus ni entrer en vigueur ni se supprimer (S3.1)
+    const inCircuit = await this.svc.db.query<{ amendment_no: number | null; title: string }>(
+      "SELECT amendment_no, title FROM agreements WHERE parent_id = $1 AND state = 'signature' ORDER BY amendment_no",
+      [id],
+    );
+    if (inCircuit.length)
+      throw new HttpError(
+        409,
+        `Résiliation impossible : ${inCircuit.length > 1 ? "des avenants sont" : "un avenant est"} au parapheur (${inCircuit.map((v) => `avenant n° ${v.amendment_no ?? "?"} « ${v.title} »`).join(", ")}). Faites-le rejeter par son signataire, ou attendez sa signature, puis résiliez l'accord.`,
+      );
     await this.svc.db.tx(async (q) => {
       await q.query(
         "UPDATE agreements SET state = 'resilie', ended_on = $1, ended_reason = $2, updated_at = now() WHERE id = $3",

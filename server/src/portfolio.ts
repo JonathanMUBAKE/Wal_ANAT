@@ -81,6 +81,24 @@ const FROM = `project_arbitrations a LEFT JOIN projects p ON p.id = a.project_id
  * ses raisons écrites. C'est la santé de référence partout : revue de portefeuille, tableau de bord DG, vue par
  * direction (docs/FONCTIONNEMENT-PAR-MODULE.md, I-10). La santé déclarée par le chef de projet reste affichée à côté.
  */
+/**
+ * Le seul masque du budget : les montants d'un projet restent à ceux qu'il concerne ; la santé et ses raisons
+ * non budgétaires restent lisibles. Toute route qui renvoie des raisons passe ici (revue, santé, et les suivantes).
+ */
+export async function maskBudgetReasons<T extends { id: string; reasons: string[]; budget?: unknown }>(
+  svc: Services,
+  actorId: string,
+  orgId: string,
+  rows: T[],
+) {
+  for (const r of rows)
+    if (!(await svc.seesBudget(actorId, orgId, r.id))) {
+      if ("budget" in r) r.budget = { planned: null, spent: null, consumed: null };
+      r.reasons = r.reasons.filter((x) => !x.startsWith("budget"));
+    }
+  return rows;
+}
+
 export async function assessProjects(
   svc: Services,
   projects: Awaited<ReturnType<Services["listProjects"]>>,
@@ -195,11 +213,7 @@ export class Portfolio {
     const projects = await this.svc.listProjects(actorId, orgId);
     const rows = await assessProjects(this.svc, projects, now);
     // Les montants d'un projet restent à ceux qu'il concerne (lot S) : la santé et ses raisons restent lisibles
-    for (const r of rows)
-      if (!(await this.svc.seesBudget(actorId, orgId, r.id))) {
-        r.budget = { planned: null, spent: null, consumed: null };
-        r.reasons = r.reasons.filter((x) => !x.startsWith("budget"));
-      }
+    await maskBudgetReasons(this.svc, actorId, orgId, rows);
     rows.sort(
       (a, b) =>
         Number(b.divergent) - Number(a.divergent) ||
@@ -226,6 +240,7 @@ export class Portfolio {
   /** L'état calculé de chaque projet lisible, avec le déclaré : la même santé sur toutes les pages (F-1). */
   async health(actorId: string, orgId: string) {
     const rows = await assessProjects(this.svc, await this.svc.listProjects(actorId, orgId), today());
+    await maskBudgetReasons(this.svc, actorId, orgId, rows);
     return rows.map((r) => ({
       id: r.id,
       health_computed: r.health_computed,

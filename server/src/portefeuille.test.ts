@@ -251,3 +251,35 @@ describe("une seule santé, un seul retard", () => {
     expect(d.stats.tasks).toMatchObject({ open: 1, overdue: 1 });
   });
 });
+
+describe("le budget d'un projet ne sort par aucune route de santé", () => {
+  it("un lecteur sans droit budgétaire ne reçoit aucune raison budgétaire, ni de la revue ni de la santé", async () => {
+    await g.login("u_chloe");
+    const team = (await g.api("u_alice", "POST", "/api/teams", { name: "Équipe ouverte (essai)", visibility: "public" }))
+      .body;
+    const p = (await g.api("u_alice", "POST", "/api/projects", { name: "Projet à budget (essai)", team_id: team.id }))
+      .body.id as string;
+    await g.ctx.db.query("UPDATE projects SET access = 'team' WHERE id = $1", [p]);
+    await g.ctx.db.query("DELETE FROM memberships WHERE project_id = $1 AND user_id = 'u_chloe'", [p]);
+    await g.api("u_alice", "PUT", `/api/projects/${p}/governance`, { budget_planned: 1000, budget_spent: 1500 });
+    // Chloé lit le projet mais n'a ni rôle, ni entité, ni droit de pilotage : le budget ne la concerne pas
+    expect(await g.ctx.svc.seesBudget("u_chloe", g.org, p)).toBe(false);
+
+    const sante = (await g.api("u_chloe", "GET", "/api/projects/health")).body as Any[];
+    const ligne = sante.find((x) => x.id === p);
+    expect(ligne).toBeDefined();
+    expect(ligne.reasons.join(" ")).not.toMatch(/budget/i);
+    expect(JSON.stringify(ligne)).not.toMatch(/150|1500/);
+
+    // La direction, elle, lit la raison budgétaire
+    const dg = (await g.api("u_alice", "GET", "/api/projects/health")).body as Any[];
+    expect(dg.find((x) => x.id === p).reasons.join(" ")).toMatch(/budget/i);
+  });
+
+  it("les deux routes passent par le même masque", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync(new URL("./portfolio.ts", import.meta.url), "utf8");
+    const appels = src.match(/maskBudgetReasons/g) ?? [];
+    expect(appels.length).toBeGreaterThanOrEqual(3); // la définition, review() et health()
+  });
+});

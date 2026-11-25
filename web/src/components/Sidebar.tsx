@@ -281,23 +281,23 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {can("ai.assistant") && (
-      <div className="border-t border-line p-3">
-        <button
-          onClick={() => shell.openAssistant()}
-          className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-ai-soft"
-        >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[conic-gradient(from_200deg,var(--ai),var(--highlight),var(--ai))] text-white">
-            <Sparkles className="size-4" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[13px] font-medium">Assistant IA</span>
-            <span className="block truncate text-[11.5px] text-muted">
-              Il propose, vous décidez
-              {aiStatus?.provider === "anthropic" ? "" : " · démo"}
+        <div className="border-t border-line p-3">
+          <button
+            onClick={() => shell.openAssistant()}
+            className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-ai-soft"
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[conic-gradient(from_200deg,var(--ai),var(--highlight),var(--ai))] text-white">
+              <Sparkles className="size-4" />
             </span>
-          </span>
-        </button>
-      </div>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-medium">Assistant IA</span>
+              <span className="block truncate text-[11.5px] text-muted">
+                Il propose, vous décidez
+                {aiStatus?.provider === "anthropic" ? "" : " · démo"}
+              </span>
+            </span>
+          </button>
+        </div>
       )}
     </div>
   );

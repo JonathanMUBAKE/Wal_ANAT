@@ -373,17 +373,27 @@ Le plus gros lot. Le modèle a été repris avec Jonathan le 25 novembre.
       réinitialise tout seul au changement d'année**. Entre deux rangs on peut insérer un **numéro
       secondaire** : `0001A`, `0001B`. Aujourd'hui `ENT/2026/0142` est **calculé** (sens, année, rang) et
       n'admet aucun suffixe : il faut un numéro principal stocké et un suffixe à côté.
-- [ ] **X11. Un calendrier embarqué, qui marche hors ligne.** Le système doit savoir seul qu'un mois ou une
-      année a commencé, avec ou sans connexion. Jonathan demande d'embarquer le calendrier jusqu'en 2099.
-      **Les deux vraies difficultés sont ailleurs, et il ne faut pas les coder à moitié :**
-      *(a)* **l'horloge**, pas le calendrier — l'arithmétique des dates jusqu'en 2099 tient en quelques
-      lignes, mais la date d'un poste hors ligne peut être fausse ou reculée ; il faut donc une horloge de
-      référence conservée par le serveur, qui n'avance jamais à rebours, et qui se recale à la reconnexion
-      en journalisant l'écart ;
-      *(b)* **l'unicité du rang** quand plusieurs postes enregistrent hors ligne : deux courriers ne doivent
-      pas repartir avec le même `0007`. Soit le rang n'est attribué qu'au serveur, et un courrier saisi hors
-      ligne porte un numéro provisoire jusqu'à la synchronisation, soit chaque poste tient une plage
-      réservée. À trancher avant d'écrire la moindre ligne.
+- [ ] **X16. Le temps, hors ligne.** Jonathan demande un calendrier embarqué jusqu'en 2099, pour que le
+      système sache seul qu'un mois ou une année a commencé, avec ou sans connexion. L'arithmétique des
+      dates n'est pas la difficulté ; quatre points le sont, et aucun ne doit être codé à moitié.
+      - **(a) Ne jamais réinitialiser le compteur.** Question de Jonathan : « si le système ne tourne pas
+        pendant deux mois ? » Une réinitialisation déclenchée au 1er janvier échoue en silence si la machine
+        est éteinte ce jour-là. Le rang n'est donc pas un compteur : c'est *le n-ième courrier de son
+        année*, calculé à l'enregistrement (le plus grand rang de cette année, plus un). Le premier courrier
+        de 2027 porte `0001` parce qu'aucun courrier de 2027 n'existe, pas parce qu'un travail a tourné.
+        Rien à déclencher, rien qui puisse être manqué, quelle que soit la durée de l'arrêt.
+      - **(b) L'horloge est un plancher, pas une vérité.** Elle dit « il est au moins telle date ». Un saut
+        **en avant** est toujours accepté — c'est à quoi ressemble un arrêt de deux mois. Un **recul** est
+        refusé. De l'intérieur, on ne peut pas distinguer un vrai arrêt d'une horloge reculée : il faut donc
+        enregistrer l'écart, l'afficher au redémarrage (« le système n'a pas tourné depuis le …, la machine
+        annonce le … »), et se recaler sur une source sûre dès qu'une connexion revient, en journalisant.
+      - **(c) L'unicité du rang** quand plusieurs postes enregistrent hors ligne : deux courriers ne doivent
+        pas repartir avec le même `0007`. Soit le rang n'est attribué qu'au serveur, et un courrier saisi
+        hors ligne porte un numéro provisoire jusqu'à la synchronisation, soit chaque poste tient une plage
+        réservée. **À trancher avant d'écrire la moindre ligne.**
+      - **(d) Pas de rattrapage mécanique des rappels.** Après un long arrêt, deux mois d'échéances expirent
+        d'un coup : si les relances de deux jours se rejouent, chacun reçoit trente avis le même matin et
+        personne ne les lit. Le retour produit **un seul récapitulatif de rattrapage**.
 - [ ] **X11. Antidater** est déjà permis et parfaitement silencieux (seule une date future est refusée). Cela
       doit alerter à la saisie et entrer au journal.
 - [ ] **X12. Les archives** : un seul registre, où chaque courrier porte qui l'a classé et à quel dossier il

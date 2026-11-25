@@ -11,13 +11,37 @@
 
 ## 1. Ce qu'est l'Agence, et pourquoi sa forme compte
 
-L'Agence Nationale d'Aménagement du Territoire est un établissement public congolais. Elle est dirigée
-par une **directrice générale**, assistée d'un ou plusieurs **directeurs généraux adjoints**. Sous elle
-vivent des **directions** et des **cellules**, et sous celles-ci des **divisions** et des **bureaux**,
-qui prennent la forme de services. Le **secrétariat** est une division de la direction générale. Le
-**service courrier** se tient à la réception, physiquement, là où les gens entrent. L'Agence a aussi des
-**représentations provinciales** et des **antennes**, dispersées dans un pays grand comme l'Europe de
-l'Ouest et qui s'étend sur deux fuseaux horaires.
+L'Agence Nationale d'Aménagement du Territoire est un établissement public congolais, **placé sous la
+tutelle du Ministère de l'Aménagement du Territoire**, aux côtés de trois structures sœurs — FONAT,
+ONAT, CTCAT. Sa mission est l'assistance technique à l'État et aux provinces : diagnostic, outils de
+planification, modernisation des villes. Elle travaille sur 2,3 millions de km² et 145 territoires, avec
+quelque **192 agents**.
+
+Son sommet n'est pas la direction générale. Au-dessus siège un **Conseil d'administration**, présidé, et
+composé d'administrateurs ; à côté, un **Collège des commissaires aux comptes**. Le conseil tient des
+sessions, prend des résolutions, valide les états financiers — qui sont ensuite transmis à la **Cour des
+comptes**. Les décisions du conseil redescendent dans l'Agence sous forme de mesures à appliquer et de
+tableaux de suivi.
+
+La **direction générale** est tenue par une **directrice générale** et **un** directeur général adjoint.
+Un seul. Au-dessous, il n'y a que des **directeurs** et des **chefs de cellule**.
+
+Quatre **services sont rattachés à la direction générale** : la Cellule de communication, la Cellule
+NTIC, la Cellule de conformité, et le **Secrétariat de direction** — vingt personnes, dont la charge est
+« coordination administrative, **gestion du courrier** et support logistique ». C'est donc le plus gros
+service rattaché, et le courrier est son métier. Le **service courrier** se tient à la réception,
+physiquement, là où les gens entrent.
+
+Viennent ensuite les **directions centrales** — Planification spatiale, Modernisation des villes —
+chacune tenue par un directeur, et sous elles des **divisions** et des **bureaux**, qui prennent la forme
+de services.
+
+Enfin l'Agence est présente dans tout le pays par des **pools territoriaux**, six au total, chacun
+couvrant plusieurs provinces et dirigé par un **directeur de pool**. Le Pool Grand Ouest siège à Kinshasa
+et couvre cinq provinces ; le Pool Grand Katanga siège à **Lubumbashi** et en couvre quatre. Ces deux
+sièges ne sont pas à la même heure : Kinshasa est à UTC+1, Lubumbashi à UTC+2. Ce n'est pas une
+curiosité géographique — c'est la raison pour laquelle « aujourd'hui » n'est pas le même jour partout
+dans l'Agence.
 
 Cette forme n'est pas un organigramme décoratif. Elle commande trois choses.
 
@@ -38,9 +62,21 @@ le reste de l'institution **prépare** ; une seule personne **engage**.
 
 ### Ce que ça veut dire pour le code
 
-- Les types d'entité doivent couvrir ce qui existe : il manque **Division** et **Bureau**.
+- Les types d'entité doivent couvrir ce qui existe : il manque **Division**, **Bureau** et **Pool**.
+  Le référentiel connaît aujourd'hui Institution, Direction générale, Direction, Département, Service,
+  Cellule, Représentation provinciale, Antenne.
+- **Le Conseil d'administration n'existe nulle part dans le modèle**, alors qu'il est au-dessus de la
+  direction générale, qu'il tient des sessions, prend des résolutions et valide les états financiers.
+  Ses décisions redescendent comme des charges à exécuter, exactement comme celles d'une réunion. À
+  trancher : une entité d'un type propre, ou un objet à part.
+- Le **Collège des commissaires aux comptes** et la **Cour des comptes** sont des destinataires
+  extérieurs d'actes de l'Agence. Un document qui leur est transmis sort de l'institution.
+- Il y a **un seul** directeur général adjoint. Les profils du catalogue doivent le refléter.
+- Les fonctions à nommer : directeur, chef de cellule, **directeur de pool**.
 - L'autonomie d'une entité est un principe de conception, pas une permission : ce qui se décide dans une
   entité se décide **dans** cette entité.
+- Deux fuseaux dans la même organisation, avec deux sièges réels : le fuseau se porte par l'entité, pas
+  seulement par l'institution.
 - « Le périmètre » est une dimension à part entière, distincte du droit. Avoir le droit de rédiger une
   fiche d'attributions ne dit pas **pour quelle entité**.
 - Le droit de signer au nom de l'Agence ne peut pas être un droit permanent qu'on donne et qu'on oublie
@@ -327,7 +363,11 @@ d'approbation du tout.
 
 Ce document est la mise au propre de ce que Jonathan a décrit en conversation les 24 et 25 novembre 2026,
 complété par la structure d'un compte rendu réel de l'Agence — dont **aucun contenu** n'a été repris, ni
-ici, ni dans le dépôt, ni dans les données de démonstration. Les décisions prises figurent aussi dans
+ici, ni dans le dépôt, ni dans les données de démonstration — et par le site public de l'Agence,
+**https://anat.gouv.cd** (pages « Organigramme » et « Écosystème », consultées le 25 novembre 2026),
+d'où viennent la composition de la haute gouvernance, les services rattachés, les directions centrales,
+les pools territoriaux et les effectifs. Les noms des personnes figurant sur ce site public ne sont pas
+repris ici : le dépôt ne porte aucune donnée nominative de l'Agence. Les décisions prises figurent aussi dans
 `docs/PLAN-DE-TRAVAIL.md` (§ 3 bis) et dans le dossier `docs/INTERVENTIONS.md`.
 
 Huit points restent à trancher ; ils sont listés à la fin de `docs/INTERVENTIONS.md`.

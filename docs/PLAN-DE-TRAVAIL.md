@@ -255,6 +255,187 @@ Concrètement :
 
 **Fait (lot S, première partie, 19/11/2026)** : menu limité à ce qui concerne chacun ; plans et partenaires limités au périmètre (la liste de choix des formulaires reste complète) ; comptes rendus du comité de direction lisibles des chefs ; budgets des projets réservés à la direction, au cabinet, aux chefs de l'entité porteuse et aux membres ; projet d'entité lisible de ses chefs même privé ; fiche partenaire limitée aux accords du périmètre. Tests : `server/src/lot-s.test.ts`. Restent les étapes 1 (inventaire automatique), 2 (garde unique), 5 (matrice par profil métier) et 7 (nouvelle passe des agents testeurs).
 
+---
+
+## 3 bis. Lots issus de la campagne des six testeurs et des décisions du 24-25 novembre 2026
+
+> Six agents testeurs ont parcouru l'application au navigateur, un par profil (Agent, Assistant(e) de
+> direction, Chef d'entité, DG, Responsable informatique, profils démunis). Leurs constats, puis les
+> décisions de modèle prises avec Jonathan les 24 et 25 novembre, donnent les lots ci-dessous.
+> **L'ordre est celui du rapport effet/coût**, sauf le lot T qui conditionne tous les autres.
+
+### Lot T — Les fonctionnalités sont des briques (principe, à poser avant le reste)
+
+Une fonctionnalité s'écrit **une fois** et s'appelle là où on en a besoin. Un composant « tâche » se
+comporte de la même façon à l'accueil, dans un projet, dans « Mon entité », au courrier et dans une
+réunion. Il n'affiche pas forcément les mêmes données : ce qui varie, c'est **le niveau d'accès de la
+personne** et **le module où la brique est posée** — jamais le comportement, jamais une réécriture.
+
+- [ ] **T1.** Écrire la règle dans `docs/DESIGN-SYSTEM.md` : toute fonctionnalité réutilisée est une brique
+      paramétrée par le contexte (module) et par les droits, jamais recopiée.
+- [ ] **T2.** La brique « tâche » : un seul composant de ligne, un seul tiroir, un seul formulaire de
+      création, quels que soient l'écran et l'origine (projet, entité, réunion, courrier, décision).
+- [ ] **T3.** Inventaire et suppression des doublons déjà repérés : trois composants `Card` locaux qui
+      refont `Section` (`pages/Pilotage.tsx`, `pages/Account.tsx`, `components/unit-dashboard.tsx`), deux
+      implémentations de grille de mois, deux formulaires d'arrivée d'une personne (`/admin` et `/org`).
+- [ ] **T4.** Une brique « ce qu'on me demande » : une seule liste des charges d'une personne, quelle que
+      soit l'origine — tâche de projet, action de réunion, courrier pour traitement, décision à exécuter.
+
+### Lot U — Ce que le serveur calcule et que l'écran jette
+
+Le travail est déjà fait côté serveur ; il n'est pas branché. Meilleur rapport effet/coût de la campagne,
+relevé par trois profils.
+
+- [ ] **U1.** Le brief du matin : `/api/pilotage` construit `brief` (cinq phrases prêtes) et le renvoie ;
+      `pages/Pilotage.tsx` le déclare dans son type et ne l'affiche nulle part. Idem pour
+      `recommendations.late_list`, `late_deliverables`, `open_gaps`, `ending_contracts`, `recent_decisions`.
+- [ ] **U2.** L'accueil d'un consultant annonce « Rien à l'horizon » alors qu'un livrable est en retard, et
+      `useLateDeliverables` existe déjà.
+- [ ] **U3.** L'écran d'une entité ne nomme jamais son responsable, que `/api/units/:id/board` renvoie.
+- [ ] **U4.** L'échéance d'une parade au risque (`mitigation_due_on`) est portée, validée et renvoyée par le
+      serveur, absente de l'interface — et aucun rappel n'a de source « risque ».
+- [ ] **U5.** `service_code` est accepté par la route de numérotation et jamais envoyé par l'écran : tous les
+      comptes rendus portent « DIR », quelle que soit l'entité.
+
+### Lot V — Dire ce qui est fait
+
+Règle 5.5.14 du système de design, non tenue sur des actes engageants. La correction la moins chère du lot.
+
+- [ ] **V1.** Au signataire, « Enregistrer le brouillon », « Lancer le circuit » et « Approuver » sont muets.
+- [ ] **V2.** La remise d'un livrable répond 200 sans un mot, la fenêtre se démonte, et la ligne disparaît de
+      la liste de celui qui vient de remettre.
+- [ ] **V3.** Revue des autres actions engageantes : aucune ne se termine sans un retour écrit.
+
+### Lot W — Ce qui n'est pas permis n'est pas proposé (suite du lot S)
+
+- [ ] **W1.** Les listes de personnes ignorent le périmètre : 17 noms pour une cellule de 2, 18 agents pour
+      imputer un courrier quelle que soit l'entité, 17 candidats chefs d'entité dont 5 seront refusés. Le bon
+      patron existe déjà : « Confier une tâche » depuis Mon entité.
+- [ ] **W2.** La barre latérale n'ouvre une entrée que sur un droit **d'agir**. Un droit de consultation ne
+      vaut qu'une sonde : l'entrée paraît si le module contient déjà quelque chose, jamais parce qu'on a le
+      droit de le lire. `attributions.view` n'a aucun chemin, même après usage. Aligner sur `show.mail`, qui
+      teste `correspondence.view` directement, et écrire le principe dans le système de design.
+- [ ] **W3.** La recherche globale promet « une réunion, un dossier, une personne » et ne cherche que tâches
+      et projets ; et `shouldFilter={!results}` tombe à faux dès qu'une réponse vide arrive, si bien que
+      « Aucun résultat » ne s'affiche jamais. Le filtre est une ligne ; l'étendue est un travail serveur.
+- [ ] **W4.** Le périmètre d'un chef d'entité : il se limite à son entité et aux endroits où il est invité.
+      L'interface lit le droit mais jamais l'étendue (risque « Agence entière », fiche d'attributions de
+      n'importe quelle entité).
+
+### Lot X — Le courrier, entrant et sortant
+
+Le plus gros lot. Le modèle a été repris avec Jonathan le 25 novembre.
+
+- [ ] **X1. Un seul enregistrement.** Aujourd'hui le courrier est enregistré trois fois sur papier (service
+      courrier, secrétariat, antichambre). Dans l'outil : une seule entrée, à la réception.
+- [ ] **X2. Un état par personne et par entité.** Le courrier ne porte aujourd'hui qu'un `assignee_id`, au
+      singulier. Il faut que le même courrier soit, au même moment, *à dispatcher* pour le secrétariat,
+      *à transmettre* pour l'antichambre, *pour lecture* pour les uns et *pour traitement* pour les autres.
+- [ ] **X3. Deux mentions : « Pour traitement » et « Pour information »**, cumulables sur une même personne.
+      (L'usage français dit « pour attribution » ; écarté tant que « Attributions » désigne autre chose.)
+- [ ] **X4. Un courrier pour traitement crée une tâche** liée au courrier, avec son échéance — même brique
+      que les actions de réunion (voir T4).
+- [ ] **X5. L'étiquette et l'accusé de réception** : une étiquette imprimable à coller sur le document,
+      portant le numéro et les informations d'enregistrement. Rien de tel n'existe.
+- [ ] **X6. Le circuit passe par le signataire** : un courrier n'y entre jamais aujourd'hui. L'annotation de
+      la DG sur un entrant, et le projet de réponse sortant, empruntent le même chemin — visa, puis signature.
+- [ ] **X7. Deux phases pour le sortant** : préparation (l'auteur et l'antichambre écrivent) puis signature
+      (texte figé). Sans cela, la garantie « contenu intact depuis l'entrée dans le circuit » ne vaut plus rien.
+- [ ] **X8. La DG seule engage l'Agence**, le DGA en intérim. Or `signature.institution` n'appartient qu'au
+      profil DG et aucune délégation n'existe : il faudrait donner le droit au DGA et penser à le reprendre.
+      Prévoir une délégation datée, qui s'ouvre et se ferme seule.
+- [ ] **X9. Les modèles de courrier** : aucun n'existe. Déposer un modèle (en-têtes compris), la personne
+      saisit, le système génère ; la finalisation — numéros, impression — revient au secrétariat.
+- [ ] **X10. La numérotation** : `ENT/2026/0142` est **calculé** (sens, année, rang) et n'admet aucun suffixe.
+      Il faut un numéro principal stocké et un **numéro secondaire** (174A, 174B) pour les insertions.
+      *La logique de génération doit être donnée par Jonathan avant toute écriture.*
+- [ ] **X11. Antidater** est déjà permis et parfaitement silencieux (seule une date future est refusée). Cela
+      doit alerter à la saisie et entrer au journal.
+- [ ] **X12. Les archives** : un seul registre, où chaque courrier porte qui l'a classé et à quel dossier il
+      se rattache. Les trois archives citées (secrétariat, DG, par projet) en sont trois vues.
+- [ ] **X13. Les rappels** : tous les deux jours, et « en retard » au bout d'une semaine. Aujourd'hui un seul
+      rappel part, et seulement une fois l'échéance atteinte ; l'escalade au chef d'entité se produit une fois.
+- [ ] **X14.** « Répondre » n'existe pas sur un courrier entrant ; le registre n'a ni recherche ni filtre ;
+      ses cinq compteurs ne sont pas cliquables ; il n'y a pas d'« Enregistrer et suivant ».
+- [ ] **X15.** Les annexes (limite de l'ordre de 3 Mo, ou un espace externe) : **remis à plus tard par Jonathan.**
+
+### Lot Y — Les réunions
+
+- [ ] **Y1. La DG et les DGA ne valident pas les comptes rendus des entités.** Chaque entité valide les
+      siens. `meetings.validate` comme droit personnel détenu par deux personnes ne correspond à rien.
+- [ ] **Y2. L'adoption est collégiale, à la séance suivante**, pour une réunion d'entité comme pour la
+      réunion des directions.
+- [ ] **Y3. L'adoption peut se faire avec modifications, consignées.**
+- [ ] **Y4. Tous les présents amendent le projet** entre la séance et son adoption, avec trace de qui a
+      écrit quoi.
+- [ ] **Y5. Le rapporteur** programme, prend note de chaque point et rédige — il ne décide pas. L'animateur
+      est aussi le maître du temps. Les **intervenants** développent les sujets. L'interface appelle
+      aujourd'hui « Rapporteur » l'intervenant d'un point : l'inverse du sens de la maison.
+- [ ] **Y6. Le compte rendu d'une réunion des directions se lit par tous les agents.** La règle de visibilité
+      accrochée au libellé (`meeting_type ILIKE 'Comité de direction%'`) disparaît.
+- [ ] **Y7. « Réunion des directions »**, jamais « Comité de direction ».
+- [ ] **Y8. Le type de réunion devient un référentiel fermé.** Champ libre aujourd'hui, il commande par
+      égalité exacte de chaîne la numérotation, le chaînage des séries, le report des recommandations et une
+      règle de confidentialité : trois séries sur quatre deviennent orphelines sur une faute de frappe.
+- [ ] **Y9. L'ordre du jour se saisit à la programmation**, pas derrière « Modifier le compte rendu » d'une
+      séance qui n'a pas eu lieu.
+- [ ] **Y10. Une action décidée en séance est une recommandation **et** une tâche** pour la personne
+      (voir T4), avec rappel au responsable avant l'échéance.
+
+### Lot Z — Les livrables
+
+- [ ] **Z1. Un livrable est rattaché à quelque chose** — activité du plan, projet ou mission sous contrat,
+      selon son type. Aujourd'hui les trois rattachements sont facultatifs : il peut n'être lié à rien.
+- [ ] **Z2. Pas de remise sans fichier.** La table n'a aucune colonne de document ; on remet en deux clics
+      et le valideur engage une tranche de paiement sur un statut.
+- [ ] **Z3. On peut corriger un livrable.** Le serveur expose la route et calcule `can.edit` ; aucun écran ne
+      le lit. Une faute de frappe oblige à en créer un autre.
+- [ ] **Z4. Les types de livrables** : à établir avec les directions. *Liste attendue de Jonathan.*
+- [ ] **Z5.** Un consultant voit ses tâches, son contrat, le plan de travail, les livrables attendus et ceux
+      soumis avec leur état.
+
+### Lot AA — Ce qui touche à la confidentialité et au modèle
+
+- [ ] **AA1.** Sous « Lecture seule », zéro droit, un compte dépose un document dans un dossier de projet et
+      le serveur répond 200. C'est le rôle tenu sur le projet qui doit gouverner les documents du dossier.
+- [ ] **AA2.** Un consultant invité lit intégralement le contrat de mission d'un autre. Un contrat se lit par
+      ceux que le projet concerne.
+- [ ] **AA3.** Un projet créé depuis l'accueil naît avec trois éditeurs que personne n'a choisis, dont la
+      direction générale. L'accès suit l'équipe choisie, et personne si aucune — logique Asana.
+- [ ] **AA4.** « Lecture seule » porte les droits de consultation que son nom annonce.
+- [ ] **AA5.** Ajouter **Division** et **Bureau** aux types d'entité (Institution, Direction générale,
+      Direction, Département, Service, Cellule, Représentation provinciale, Antenne aujourd'hui). Se règle
+      dans les paramètres.
+- [ ] **AA6.** Les attributions d'une entité se rédigent selon le **cadre organique**, que l'outil ignore.
+- [ ] **AA7.** `POST /api/admin/users/:id/reject` existe sans aucun bouton : une demande d'accès peut être
+      approuvée, jamais refusée.
+
+### Lot AB — Vocabulaire
+
+- [ ] **AB1.** « Parapheur » devient **« Signataire »** : 232 occurrences dans le dépôt, route `/parapheur`
+      comprise. Les clés de droits sont déjà `signature.*`, donc aucune migration.
+- [ ] **AB2.** Le champ « Signataire » d'un accord — la **personne** — devient « Signé par », pour qu'un mot
+      ne désigne pas deux choses.
+- [ ] **AB3.** « Décision » désigne aujourd'hui quatre choses sur trois écrans : arbitrage de dossier,
+      décision à confirmer, exécution déclarée. Trois objets distincts, à renommer, et chaque renvoi pointe
+      sur la liste qu'il compte.
+
+### Lot AC — Écrans à refondre
+
+- [ ] **AC1. « Mes tâches »** ne permet pas de préparer sa semaine : rien de déplaçable en calendrier comme
+      en tableau, un seul filtre, aucun tri, 28 clics pour replanifier 7 tâches. C'est l'écran qu'un agent
+      ouvre tous les matins.
+- [ ] **AC2. La matrice 13 profils × 58 droits** : 3,6 écrans de haut, en-tête non figé, première colonne non
+      figée, aucune recherche, et un onglet en lecture seule qui renvoie sans lien vers l'éditeur.
+- [ ] **AC3. L'arrivée d'une personne** ne peut pas se finir en une fois et rien ne le dit ; l'entité et la
+      fonction saisies à la création ne sont réaffichées nulle part.
+- [ ] **AC4. La règle 5.2.4 partout** : seul l'éditeur de compte rendu est protégé. Les autres formulaires de
+      page restent à passer en revue — une quinzaine d'écrans, dont beaucoup n'auront rien à faire parce que
+      le tiroir les couvre déjà. Demande la conversion en routeur de données (`createBrowserRouter`), qui
+      couvrirait aussi les boutons Précédent et Suivant.
+
+---
+
 ## 4. Décisions ouvertes (à trancher par Jonathan)
 
 | N° | Question | Proposition par défaut |

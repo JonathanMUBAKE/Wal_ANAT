@@ -135,3 +135,23 @@ describe("les membres du dossier voient ses pièces", () => {
     expect(r.body.error).toMatch(/archiv/);
   });
 });
+
+describe("un contrat de mission ne se lit que par ceux que le projet concerne", () => {
+  it("deux consultants du même projet lisent chacun le leur, pas celui de l'autre", async () => {
+    await g.login("u_chloe");
+    await g.ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id IN ('u_hugo', 'u_karim', 'u_chloe')");
+    const monContrat = (await contract({ user_id: "u_hugo", title: "Mission de Didier", amount: 18000, supervisor_id: "u_alice" })).body;
+    const sonContrat = (await contract({ user_id: "u_karim", title: "Mission de Fiston", amount: 7000, supervisor_id: "u_alice" })).body;
+    for (const u of ["u_hugo", "u_karim", "u_chloe"]) await g.api("u_alice", "PUT", `/api/projects/${prj}/members/${u}`, { role: "viewer" });
+
+    const ids = async (who: string, q = `?project_id=${prj}`) =>
+      ((await g.api(who, "GET", `/api/contracts${q}`)).body as { id: string }[]).map((c) => c.id);
+    expect(await ids("u_hugo")).toEqual([monContrat.id]);
+    expect(await ids("u_karim")).toEqual([sonContrat.id]);
+    expect(await ids("u_hugo", "")).toEqual([monContrat.id]);
+    // Un membre du projet qui n'est pas consultant lit les engagements du dossier
+    expect((await ids("u_chloe")).sort()).toEqual([monContrat.id, sonContrat.id].sort());
+    // Le montant de l'autre ne sort nulle part dans la réponse du consultant
+    expect(JSON.stringify((await g.api("u_hugo", "GET", `/api/contracts?project_id=${prj}`)).body)).not.toContain("7000");
+  });
+});

@@ -438,6 +438,14 @@ export class Deliverables {
     if (!c) throw notFound("Mission introuvable");
     return c;
   }
+  /** Un consultant : invité extérieur, ou titulaire d'un contrat de mission. Son périmètre se borne à son propre contrat. */
+  private async isConsultant(actorId: string, orgId: string) {
+    if ((await this.svc.orgRole(actorId, orgId)) === "guest") return true;
+    return !!(await this.svc.db.one("SELECT 1 FROM consultant_contracts WHERE org_id = $1 AND user_id = $2 LIMIT 1", [
+      orgId,
+      actorId,
+    ]));
+  }
   /** Contrats : le service gestionnaire voit tout ; les membres d'un projet voient ceux de leur dossier. */
   async contracts(actorId: string, orgId: string, f: { project_id?: string } = {}) {
     if (!(await this.svc.orgRole(actorId, orgId))) throw forbidden("Vous n'appartenez pas à cette organisation");
@@ -449,7 +457,8 @@ export class Deliverables {
       await this.assertProject(orgId, f.project_id, "Un contrat");
       if (!all) {
         if (!(await this.seesProject(actorId, f.project_id))) throw forbidden("Vous n'avez pas accès à ce projet");
-        all = true;
+        // Un consultant lit son contrat, pas celui des autres consultants du même projet
+        all = !(await this.isConsultant(actorId, orgId));
       }
     }
     return this.svc.db.query<

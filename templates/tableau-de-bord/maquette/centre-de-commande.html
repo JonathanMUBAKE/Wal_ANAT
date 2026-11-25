@@ -1,0 +1,2811 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="sombre" data-densite="normale">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Centre de commande</title>
+<meta name="description" content="Gabarit de tableau de bord d'administration système — autonome, sans dépendance de build.">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+<style>
+/* =========================================================================
+   CENTRE DE COMMANDE — gabarit de référence
+   Palette de séries validée (écart CVD >= 8, écart vision normale >= 15).
+   Sombre par défaut ; le clair est une déclinaison choisie, pas une inversion.
+   ========================================================================= */
+
+:root {
+  color-scheme: dark;
+
+  /* --- Surfaces ------------------------------------------------------- */
+  --fond:        #121211;
+  --surface:     #1a1a19;
+  --surface-2:   #212120;
+  --surface-3:   #2a2a28;
+  --survol:      #2f2f2d;
+  --bordure:     #333331;
+  --bordure-2:   #434340;
+  --rail-fond:   #161615;
+
+  /* --- Encres --------------------------------------------------------- */
+  --encre:       #f0efec;
+  --encre-2:     #c3c2b7;
+  --encre-3:     #8b8a82;
+  --encre-4:     #6a6963;
+
+  /* --- Accent (identité du produit : la seule couleur à remplacer) ----- */
+  --accent:      #3987e5;
+  --accent-fort: #5598e7;
+  --accent-voile: rgba(57, 135, 229, .16);
+  --accent-encre: #ffffff;
+
+  /* --- Séries (ordre fixe, jamais recyclé) ----------------------------- */
+  --serie-1: #3987e5;  /* bleu    */
+  --serie-2: #d95926;  /* orange  */
+  --serie-3: #199e70;  /* aqua    */
+  --serie-4: #c98500;  /* jaune   */
+  --serie-5: #d55181;  /* magenta */
+  --serie-6: #0ca30c;  /* vert    */
+  --serie-7: #9085e9;  /* violet  */
+  --serie-8: #e66767;  /* rouge   */
+
+  /* --- Rampe séquentielle bleue (magnitude continue) ------------------- */
+  --rampe-1: #b7d3f6;
+  --rampe-2: #86b6ef;
+  --rampe-3: #6da7ec;
+  --rampe-4: #3987e5;
+  --rampe-5: #256abf;
+  --rampe-6: #184f95;
+
+  /* --- États (réservés : jamais réutilisés comme série) ---------------- */
+  --bon:      #0ca30c;
+  --vigilance:#fab219;
+  --serieux:  #ec835a;
+  --critique: #d03b3b;
+  --bon-voile:      rgba(12, 163, 12, .14);
+  --vigilance-voile:rgba(250, 178, 25, .14);
+  --serieux-voile:  rgba(236, 131, 90, .14);
+  --critique-voile: rgba(208, 59, 59, .14);
+
+  /* --- Mesures -------------------------------------------------------- */
+  --rail:      250px;
+  --barre:     56px;
+  --r:         10px;
+  --r-s:       7px;
+  --r-xs:      5px;
+  --pas:       16px;
+  --pas-carte: 18px;
+  --ombre:     0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  --ombre-haute: 0 24px 60px -16px rgba(0,0,0,.7), 0 0 0 1px var(--bordure);
+  --police: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --transition: 140ms cubic-bezier(.4,0,.2,1);
+}
+
+:root[data-theme="clair"] {
+  color-scheme: light;
+  --fond:        #f4f4f2;
+  --surface:     #fcfcfb;
+  --surface-2:   #f7f7f5;
+  --surface-3:   #eeeeea;
+  --survol:      #e8e8e3;
+  --bordure:     #e0dfda;
+  --bordure-2:   #cdccc5;
+  --rail-fond:   #1a1a19;   /* le rail reste sombre : ancrage visuel constant */
+
+  --encre:       #0b0b0b;
+  --encre-2:     #52514e;
+  --encre-3:     #78776f;
+  --encre-4:     #96958c;
+
+  --accent:      #2a78d6;
+  --accent-fort: #1c5cab;
+  --accent-voile: rgba(42, 120, 214, .10);
+
+  --serie-1: #2a78d6;
+  --serie-2: #eb6834;
+  --serie-3: #1baf7a;
+  --serie-4: #eda100;
+  --serie-5: #e87ba4;
+  --serie-6: #008300;
+  --serie-7: #6250d6;
+  --serie-8: #e34948;
+
+  --rampe-1: #cde2fb;
+  --rampe-2: #9ec5f4;
+  --rampe-3: #6da7ec;
+  --rampe-4: #2a78d6;
+  --rampe-5: #256abf;
+  --rampe-6: #184f95;
+
+  --ombre: 0 1px 2px rgba(16,16,14,.06), 0 8px 24px -14px rgba(16,16,14,.18);
+  --ombre-haute: 0 24px 60px -16px rgba(16,16,14,.28), 0 0 0 1px var(--bordure);
+}
+
+:root[data-densite="compacte"] { --pas: 12px; --pas-carte: 13px; --barre: 48px; }
+
+/* --- Socle ------------------------------------------------------------ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--police);
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--fond);
+  color: var(--encre);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: none; cursor: pointer; }
+a { color: var(--accent); text-decoration: none; }
+svg.i { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+svg.i-s { width: 15px; height: 15px; }
+svg.i-l { width: 22px; height: 22px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.tab-num { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--accent-fort); outline-offset: 2px; border-radius: var(--r-xs); }
+::selection { background: var(--accent-voile); }
+.visuellement-cache {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Barres de défilement discrètes */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--bordure-2); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: var(--encre-4); background-clip: content-box; }
+
+/* =========================================================================
+   STRUCTURE
+   ========================================================================= */
+.app { display: grid; grid-template-columns: var(--rail) 1fr; height: 100vh; }
+:root[data-rail="replie"] { --rail: 68px; }
+.zone { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.contenu { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: var(--pas); }
+.contenu > .vue { display: none; }
+.contenu > .vue.active { display: block; animation: apparait 180ms ease-out; }
+@keyframes apparait { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* =========================================================================
+   RAIL LATÉRAL
+   ========================================================================= */
+.rail {
+  background: var(--rail-fond);
+  border-right: 1px solid var(--bordure);
+  display: flex; flex-direction: column;
+  min-width: 0; color: var(--encre-2);
+  transition: width var(--transition);
+}
+:root[data-theme="clair"] .rail { --bordure: #2a2a28; --encre: #f0efec; --encre-2: #c3c2b7; --encre-3: #8b8a82; --survol: #2a2a28; color: #c3c2b7; }
+
+.rail-tete { display: flex; align-items: center; gap: 8px; height: var(--barre); padding: 0 10px 0 12px; border-bottom: 1px solid var(--bordure); }
+.orga { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; padding: 5px 6px; border-radius: var(--r-s); transition: background var(--transition); }
+.orga:hover { background: var(--survol); }
+.orga-pastille { width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, var(--accent), var(--serie-7)); display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff; flex: 0 0 auto; }
+.orga-texte { min-width: 0; flex: 1; text-align: left; }
+.orga-nom { font-size: 13px; font-weight: 600; color: var(--encre); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.orga-sous { font-size: 11px; color: var(--encre-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rail-replier { color: var(--encre-3); padding: 6px; border-radius: var(--r-xs); flex: 0 0 auto; }
+.rail-replier:hover { background: var(--survol); color: var(--encre); }
+
+.rail-recherche { margin: 10px 12px 6px; display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: var(--r-s); background: var(--survol); border: 1px solid transparent; color: var(--encre-3); font-size: 13px; width: calc(100% - 24px); }
+.rail-recherche:hover { border-color: var(--bordure-2); color: var(--encre-2); }
+.rail-recherche kbd { margin-left: auto; }
+kbd { font-family: var(--mono); font-size: 10.5px; padding: 2px 5px; border-radius: 4px; background: rgba(255,255,255,.07); border: 1px solid var(--bordure); color: var(--encre-3); line-height: 1.3; }
+:root[data-theme="clair"] .contenu kbd, :root[data-theme="clair"] .superposition kbd { background: var(--surface-3); border-color: var(--bordure); color: var(--encre-2); }
+
+.rail-nav { flex: 1; overflow-y: auto; padding: 6px 10px 12px; }
+.rail-groupe + .rail-groupe { margin-top: 14px; }
+.rail-titre { font-size: 10.5px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-4); padding: 0 8px 6px; }
+.rail-lien { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 8px; border-radius: var(--r-s); color: var(--encre-2); font-size: 13.5px; text-align: left; position: relative; transition: background var(--transition), color var(--transition); }
+.rail-lien:hover { background: var(--survol); color: var(--encre); }
+.rail-lien[aria-current="page"] { background: var(--survol); color: var(--encre); font-weight: 550; }
+.rail-lien[aria-current="page"]::before { content: ""; position: absolute; left: -10px; top: 50%; transform: translateY(-50%); width: 3px; height: 18px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.rail-lien .etiq { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pastille { min-width: 19px; height: 19px; padding: 0 6px; border-radius: 10px; background: var(--surface-3); color: var(--encre-2); font-size: 11px; font-weight: 600; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
+.pastille.critique { background: var(--critique); color: #fff; }
+.pastille.vigilance { background: var(--vigilance); color: #1a1a19; }
+
+.rail-pied { border-top: 1px solid var(--bordure); padding: 8px 10px; }
+.rail-compte { display: flex; align-items: center; gap: 9px; width: 100%; padding: 6px; border-radius: var(--r-s); }
+.rail-compte:hover { background: var(--survol); }
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--surface-3); color: var(--encre); display: grid; place-items: center; font-size: 11.5px; font-weight: 650; flex: 0 0 auto; border: 1px solid var(--bordure-2); }
+.avatar.sm { width: 24px; height: 24px; font-size: 10.5px; }
+.rail-compte-txt { min-width: 0; flex: 1; text-align: left; }
+.rail-compte-nom { font-size: 13px; color: var(--encre); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rail-compte-role { font-size: 11px; color: var(--encre-3); }
+
+/* Rail replié : on ne garde que les icônes */
+:root[data-rail="replie"] .orga-texte,
+:root[data-rail="replie"] .rail-titre,
+:root[data-rail="replie"] .rail-lien .etiq,
+:root[data-rail="replie"] .rail-lien .pastille,
+:root[data-rail="replie"] .rail-compte-txt,
+:root[data-rail="replie"] .rail-recherche span,
+:root[data-rail="replie"] .rail-recherche kbd { display: none; }
+:root[data-rail="replie"] .rail-tete { padding: 0 10px; }
+:root[data-rail="replie"] .rail-replier { display: none; }
+:root[data-rail="replie"] .rail-lien, :root[data-rail="replie"] .rail-recherche { justify-content: center; padding-left: 0; padding-right: 0; }
+:root[data-rail="replie"] .rail-groupe + .rail-groupe { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--bordure); }
+:root[data-rail="replie"] .rail-lien[data-compte]::after { content: ""; position: absolute; top: 5px; right: 11px; width: 6px; height: 6px; border-radius: 50%; background: var(--critique); }
+
+/* =========================================================================
+   BARRE SUPÉRIEURE
+   ========================================================================= */
+.barre-sup {
+  height: var(--barre); flex: 0 0 auto;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 var(--pas); background: var(--surface);
+  border-bottom: 1px solid var(--bordure);
+}
+.fil { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--encre-3); min-width: 0; }
+.fil b { color: var(--encre); font-weight: 600; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fil-sep { color: var(--encre-4); }
+.pousse { margin-left: auto; }
+.barre-outils { display: flex; align-items: center; gap: 6px; }
+.sep-v { width: 1px; height: 22px; background: var(--bordure); margin: 0 3px; }
+
+.recherche-glob { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; min-width: 230px; border-radius: var(--r-s); background: var(--surface-2); border: 1px solid var(--bordure); color: var(--encre-3); font-size: 13px; }
+.recherche-glob:hover { border-color: var(--bordure-2); }
+.recherche-glob kbd { margin-left: auto; }
+
+/* --- Boutons ---------------------------------------------------------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 32px; padding: 0 11px; border-radius: var(--r-s); font-size: 13px; font-weight: 500; border: 1px solid var(--bordure); background: var(--surface-2); color: var(--encre); white-space: nowrap; transition: background var(--transition), border-color var(--transition), color var(--transition); }
+.btn:hover { background: var(--survol); border-color: var(--bordure-2); }
+.btn:active { transform: translateY(.5px); }
+.btn[disabled] { opacity: .45; pointer-events: none; }
+.btn.principal { background: var(--accent); border-color: var(--accent); color: var(--accent-encre); }
+.btn.principal:hover { background: var(--accent-fort); border-color: var(--accent-fort); }
+.btn.danger { background: var(--critique); border-color: var(--critique); color: #fff; }
+.btn.danger:hover { filter: brightness(1.08); }
+.btn.fantome { background: transparent; border-color: transparent; color: var(--encre-2); }
+.btn.fantome:hover { background: var(--survol); color: var(--encre); }
+.btn.icone { width: 32px; padding: 0; }
+.btn.sm { height: 27px; padding: 0 8px; font-size: 12.5px; }
+.btn.sm.icone { width: 27px; }
+.btn.actif { background: var(--accent-voile); border-color: var(--accent); color: var(--accent-fort); }
+
+.segments { display: inline-flex; background: var(--surface-2); border: 1px solid var(--bordure); border-radius: var(--r-s); padding: 2px; gap: 2px; }
+.segments button { height: 26px; padding: 0 10px; border-radius: var(--r-xs); font-size: 12.5px; color: var(--encre-3); font-weight: 500; }
+.segments button:hover { color: var(--encre); }
+.segments button[aria-pressed="true"] { background: var(--surface); color: var(--encre); box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+
+.cloche { position: relative; }
+.cloche-point { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--critique); border: 2px solid var(--surface); }
+
+/* --- Menus déroulants -------------------------------------------------- */
+.enveloppe-menu { position: relative; }
+.menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 60;
+  min-width: 212px; padding: 5px; border-radius: var(--r);
+  background: var(--surface); border: 1px solid var(--bordure);
+  box-shadow: var(--ombre-haute); display: none;
+}
+.menu.ouvert { display: block; animation: apparait 120ms ease-out; }
+.menu-titre { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--encre-4); padding: 7px 9px 5px; }
+.menu-item { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 9px; border-radius: var(--r-xs); font-size: 13px; color: var(--encre); text-align: left; }
+.menu-item:hover { background: var(--survol); }
+.menu-item.danger { color: var(--critique); }
+.menu-item .raccourci { margin-left: auto; color: var(--encre-4); font-size: 11px; font-family: var(--mono); }
+.menu-trait { height: 1px; background: var(--bordure); margin: 5px 0; }
+
+/* =========================================================================
+   CARTES & GRILLE
+   ========================================================================= */
+.carte { background: var(--surface); border: 1px solid var(--bordure); border-radius: var(--r); box-shadow: var(--ombre); }
+.carte-tete { display: flex; align-items: center; gap: 10px; padding: var(--pas-carte) var(--pas-carte) 0; }
+.carte-titre { font-size: 13.5px; font-weight: 600; letter-spacing: -.005em; }
+.carte-sous { font-size: 12px; color: var(--encre-3); }
+.carte-corps { padding: var(--pas-carte); }
+.grille { display: grid; gap: var(--pas); }
+.g-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.c-3 { grid-column: span 3; } .c-4 { grid-column: span 4; } .c-5 { grid-column: span 5; }
+.c-6 { grid-column: span 6; } .c-7 { grid-column: span 7; } .c-8 { grid-column: span 8; } .c-12 { grid-column: span 12; }
+.pile { display: flex; flex-direction: column; gap: var(--pas); }
+.rangee { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* --- Bandeau d'alerte -------------------------------------------------- */
+.bandeau { display: flex; align-items: flex-start; gap: 12px; padding: 13px 15px; border-radius: var(--r); border: 1px solid; margin-bottom: var(--pas); }
+.bandeau.critique { background: var(--critique-voile); border-color: color-mix(in srgb, var(--critique) 45%, transparent); }
+.bandeau.vigilance { background: var(--vigilance-voile); border-color: color-mix(in srgb, var(--vigilance) 45%, transparent); }
+.bandeau-icone { flex: 0 0 auto; margin-top: 1px; }
+.bandeau.critique .bandeau-icone { color: var(--critique); }
+.bandeau.vigilance .bandeau-icone { color: var(--vigilance); }
+.bandeau-corps { flex: 1; min-width: 0; }
+.bandeau-titre { font-weight: 600; font-size: 13.5px; margin-bottom: 2px; }
+.bandeau-texte { font-size: 12.5px; color: var(--encre-2); }
+.bandeau-actions { display: flex; gap: 7px; flex-shrink: 0; align-items: center; }
+
+/* --- Jetons d'état ----------------------------------------------------- */
+.jeton { display: inline-flex; align-items: center; gap: 5px; height: 21px; padding: 0 8px; border-radius: 11px; font-size: 11.5px; font-weight: 550; background: var(--surface-3); color: var(--encre-2); white-space: nowrap; }
+.jeton .point { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
+.jeton.bon { background: var(--bon-voile); color: var(--bon); }
+.jeton.vigilance { background: var(--vigilance-voile); color: var(--vigilance); }
+.jeton.serieux { background: var(--serieux-voile); color: var(--serieux); }
+.jeton.critique { background: var(--critique-voile); color: var(--critique); }
+.jeton.neutre { background: var(--surface-3); color: var(--encre-3); }
+:root[data-theme="clair"] .jeton.vigilance { color: #8a5d00; }
+:root[data-theme="clair"] .jeton.serieux { color: #a14520; }
+
+.delta { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.delta.hausse { color: var(--bon); }
+.delta.baisse { color: var(--critique); }
+.delta.plat { color: var(--encre-3); }
+:root[data-theme="clair"] .delta.hausse { color: #006300; }
+
+/* --- Cartes d'indicateur ---------------------------------------------- */
+.ind-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(166px, 1fr)); gap: var(--pas); margin-bottom: var(--pas); }
+.ind { position: relative; padding: 14px 15px 10px; overflow: hidden; }
+.ind-etiq { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; letter-spacing: .055em; text-transform: uppercase; color: var(--encre-3); margin-bottom: 7px; }
+.ind-etiq svg { color: var(--encre-4); }
+.ind-valeur { font-size: 26px; font-weight: 680; letter-spacing: -.025em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ind-valeur .unite { font-size: 14px; font-weight: 550; color: var(--encre-3); margin-left: 2px; }
+.ind-rangee { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ind-pied { display: block; margin-top: 4px; font-size: 11.5px; color: var(--encre-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ind-etincelle { height: 30px; margin: 6px -3px -4px; }
+.ind-objectif { height: 3px; border-radius: 2px; background: var(--surface-3); margin-top: 9px; overflow: hidden; }
+.ind-objectif i { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+
+/* --- Graphiques -------------------------------------------------------- */
+.graph-tete { display: flex; align-items: flex-start; gap: 10px; padding: var(--pas-carte) var(--pas-carte) 0; }
+.graph-outils { margin-left: auto; display: flex; align-items: center; gap: 5px; }
+.graph-boite { position: relative; padding: 12px var(--pas-carte) var(--pas-carte); height: 268px; }
+.graph-boite.haute { height: 320px; }
+.graph-boite.basse { height: 200px; }
+.legende { display: flex; flex-wrap: wrap; gap: 6px 15px; padding: 10px var(--pas-carte) 0; }
+.legende-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--encre-2); cursor: pointer; user-select: none; }
+.legende-item.eteint { opacity: .4; text-decoration: line-through; }
+.legende-puce { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; }
+.legende-val { color: var(--encre); font-weight: 600; font-variant-numeric: tabular-nums; }
+.tableau-donnees { display: none; padding: 0 var(--pas-carte) var(--pas-carte); max-height: 240px; overflow: auto; }
+.tableau-donnees.visible { display: block; }
+
+/* --- Flotte de serveurs ------------------------------------------------ */
+.flotte { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: 11px; }
+.noeud { border: 1px solid var(--bordure); border-radius: var(--r-s); padding: 12px; background: var(--surface-2); transition: border-color var(--transition); }
+.noeud:hover { border-color: var(--bordure-2); }
+.noeud.alerte { border-color: color-mix(in srgb, var(--critique) 55%, transparent); background: var(--critique-voile); }
+.noeud-tete { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.noeud-nom { font-family: var(--mono); font-size: 12.5px; font-weight: 600; }
+.noeud-meta { font-size: 11px; color: var(--encre-3); }
+.jauge + .jauge { margin-top: 7px; }
+.jauge-tete { display: flex; justify-content: space-between; font-size: 11px; color: var(--encre-3); margin-bottom: 3px; }
+.jauge-tete b { color: var(--encre-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.jauge-piste { height: 4px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.jauge-piste i { display: block; height: 100%; border-radius: 3px; background: var(--accent); transition: width 400ms ease-out; }
+.jauge-piste i.vigilance { background: var(--vigilance); }
+.jauge-piste i.critique { background: var(--critique); }
+
+/* --- Files de travail -------------------------------------------------- */
+.progression { height: 5px; border-radius: 3px; background: var(--surface-3); overflow: hidden; min-width: 90px; }
+.progression i { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width 600ms ease-out; }
+.progression i.bon { background: var(--bon); }
+.progression i.critique { background: var(--critique); }
+
+/* =========================================================================
+   TABLEAU DE DONNÉES AVANCÉ
+   ========================================================================= */
+.tbl-outils { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: var(--pas-carte); border-bottom: 1px solid var(--bordure); }
+.champ { display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 10px; border-radius: var(--r-s); background: var(--surface-2); border: 1px solid var(--bordure); color: var(--encre-3); }
+.champ:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-voile); }
+.champ input { background: none; border: none; outline: none; width: 100%; min-width: 60px; font-size: 13px; color: var(--encre); }
+.champ input::placeholder { color: var(--encre-4); }
+.champ.large { min-width: 250px; }
+select.champ { appearance: none; padding-right: 26px; background-image: linear-gradient(45deg, transparent 50%, var(--encre-3) 50%), linear-gradient(135deg, var(--encre-3) 50%, transparent 50%); background-position: calc(100% - 14px) 14px, calc(100% - 9px) 14px; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; color: var(--encre); font-size: 13px; cursor: pointer; }
+:root[data-densite="compacte"] select.champ { background-position: calc(100% - 14px) 12px, calc(100% - 9px) 12px; }
+
+.tbl-enveloppe { overflow: auto; max-height: 560px; }
+table.tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+table.tbl thead th {
+  position: sticky; top: 0; z-index: 3;
+  background: var(--surface-2); text-align: left; white-space: nowrap;
+  padding: 9px 12px; font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--encre-3);
+  border-bottom: 1px solid var(--bordure); user-select: none;
+}
+table.tbl thead th.triable { cursor: pointer; }
+table.tbl thead th.triable:hover { color: var(--encre); }
+table.tbl thead th .fleche { opacity: 0; margin-left: 4px; display: inline-block; transition: opacity var(--transition); }
+table.tbl thead th[aria-sort] .fleche { opacity: 1; color: var(--accent); }
+table.tbl tbody td { padding: 9px 12px; border-bottom: 1px solid var(--bordure); vertical-align: middle; }
+:root[data-densite="compacte"] table.tbl tbody td { padding: 5px 12px; }
+:root[data-densite="compacte"] table.tbl thead th { padding: 6px 12px; }
+table.tbl tbody tr { transition: background 90ms linear; cursor: pointer; }
+table.tbl tbody tr:hover { background: var(--surface-2); }
+table.tbl tbody tr.selectionnee { background: var(--accent-voile); }
+table.tbl tbody tr:last-child td { border-bottom: none; }
+table.tbl td.num, table.tbl th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.col-case { width: 38px; padding-right: 0 !important; }
+.cellule-ident { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.cellule-ident > span:last-child { display: flex; flex-direction: column; }
+.cellule-ident .nom { display: block; font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cellule-ident .sous { display: block; font-size: 11.5px; color: var(--encre-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.actions-ligne { display: flex; gap: 2px; justify-content: flex-end; opacity: 0; transition: opacity var(--transition); }
+table.tbl tbody tr:hover .actions-ligne, table.tbl tbody tr:focus-within .actions-ligne { opacity: 1; }
+
+input[type="checkbox"].case {
+  appearance: none; width: 15px; height: 15px; border-radius: 4px;
+  border: 1.5px solid var(--bordure-2); background: var(--surface);
+  display: grid; place-items: center; cursor: pointer; flex: 0 0 auto;
+  transition: background var(--transition), border-color var(--transition);
+}
+input[type="checkbox"].case:checked, input[type="checkbox"].case:indeterminate { background: var(--accent); border-color: var(--accent); }
+input[type="checkbox"].case:checked::after { content: ""; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+input[type="checkbox"].case:indeterminate::after { content: ""; width: 8px; height: 2px; background: #fff; border-radius: 1px; }
+
+.tbl-pied { display: flex; align-items: center; gap: 10px; padding: 10px var(--pas-carte); border-top: 1px solid var(--bordure); font-size: 12.5px; color: var(--encre-3); flex-wrap: wrap; }
+.pagination { display: flex; align-items: center; gap: 3px; margin-left: auto; }
+.pagination button { min-width: 28px; height: 28px; padding: 0 7px; border-radius: var(--r-xs); font-size: 12.5px; color: var(--encre-2); font-variant-numeric: tabular-nums; }
+.pagination button:hover:not([disabled]) { background: var(--survol); color: var(--encre); }
+.pagination button[aria-current="true"] { background: var(--accent); color: var(--accent-encre); font-weight: 600; }
+.pagination button[disabled] { opacity: .35; pointer-events: none; }
+
+/* --- Barre d'actions groupées (flottante) ------------------------------ */
+.barre-lot {
+  position: fixed; bottom: 22px; left: 50%; z-index: 70;
+  transform: translate(-50%, 120%); opacity: 0; pointer-events: none;
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px 9px 15px; border-radius: 13px;
+  background: var(--surface); border: 1px solid var(--bordure-2);
+  box-shadow: var(--ombre-haute);
+  transition: transform 220ms cubic-bezier(.2,.9,.3,1.2), opacity 180ms;
+}
+.barre-lot.visible { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+.barre-lot .compte { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.barre-lot .compte span { color: var(--accent-fort); }
+
+/* --- États vides ------------------------------------------------------- */
+.vide { display: grid; place-items: center; text-align: center; padding: 56px 24px; gap: 4px; }
+.vide-icone { width: 44px; height: 44px; border-radius: 13px; background: var(--surface-2); border: 1px solid var(--bordure); display: grid; place-items: center; color: var(--encre-3); margin-bottom: 10px; }
+.vide h3 { font-size: 14.5px; font-weight: 600; }
+.vide p { font-size: 13px; color: var(--encre-3); max-width: 380px; margin-bottom: 12px; }
+
+/* =========================================================================
+   EXPLORATEUR DE JOURNAUX
+   ========================================================================= */
+.journal { font-family: var(--mono); font-size: 12px; line-height: 1.75; max-height: 520px; overflow: auto; background: var(--fond); border-radius: var(--r-s); border: 1px solid var(--bordure); }
+.journal-ligne { display: grid; grid-template-columns: 86px 62px 128px 1fr; gap: 12px; padding: 3px 12px; border-left: 2px solid transparent; }
+.journal-ligne:hover { background: var(--surface-2); }
+.journal-ligne .horo { color: var(--encre-4); }
+.journal-ligne .src { color: var(--encre-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.journal-ligne .msg { color: var(--encre-2); overflow-wrap: anywhere; }
+.journal-ligne .niv { font-weight: 700; font-size: 10.5px; letter-spacing: .05em; }
+.journal-ligne[data-niveau="ERREUR"] { border-left-color: var(--critique); }
+.journal-ligne[data-niveau="ERREUR"] .niv { color: var(--critique); }
+.journal-ligne[data-niveau="ERREUR"] .msg { color: var(--encre); }
+.journal-ligne[data-niveau="ALERTE"] { border-left-color: var(--vigilance); }
+.journal-ligne[data-niveau="ALERTE"] .niv { color: var(--vigilance); }
+.journal-ligne[data-niveau="INFO"] .niv { color: var(--accent); }
+.journal-ligne[data-niveau="DEBUG"] .niv { color: var(--encre-4); }
+.journal-ligne[data-niveau="DEBUG"] .msg { color: var(--encre-3); }
+.filtres-puces { display: flex; gap: 6px; flex-wrap: wrap; }
+.puce { height: 27px; padding: 0 10px; border-radius: 14px; border: 1px solid var(--bordure); background: var(--surface-2); color: var(--encre-3); font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; }
+.puce:hover { border-color: var(--bordure-2); color: var(--encre); }
+.puce[aria-pressed="true"] { background: var(--accent-voile); border-color: var(--accent); color: var(--accent-fort); font-weight: 550; }
+
+/* =========================================================================
+   MATRICE DES DROITS
+   ========================================================================= */
+.matrice { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.matrice th, .matrice td { padding: 8px 10px; border-bottom: 1px solid var(--bordure); }
+.matrice thead th { position: sticky; top: 0; background: var(--surface-2); z-index: 2; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--encre-3); font-weight: 600; text-align: center; }
+.matrice thead th:first-child { text-align: left; }
+.matrice tbody th { text-align: left; font-weight: 500; color: var(--encre-2); white-space: nowrap; }
+.matrice tbody th small { display: block; font-weight: 400; font-size: 11px; color: var(--encre-4); }
+.matrice td { text-align: center; }
+.matrice tbody tr:hover { background: var(--surface-2); }
+.droit { width: 74px; height: 26px; border-radius: var(--r-xs); font-size: 11.5px; font-weight: 600; border: 1px solid var(--bordure); background: var(--surface-2); color: var(--encre-4); transition: all var(--transition); }
+.droit:hover { border-color: var(--bordure-2); }
+.droit[data-etat="lecture"] { background: var(--accent-voile); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent-fort); }
+.droit[data-etat="complet"] { background: var(--bon-voile); border-color: color-mix(in srgb, var(--bon) 45%, transparent); color: var(--bon); }
+.droit[data-verrou="1"] { opacity: .55; cursor: not-allowed; }
+:root[data-theme="clair"] .droit[data-etat="complet"] { color: #006300; }
+
+/* =========================================================================
+   SUPERPOSITIONS : voile, palette, modale, tiroir, notifications, toasts
+   ========================================================================= */
+.voile { position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,.55); backdrop-filter: blur(2px); display: none; }
+.voile.ouvert { display: block; animation: fondu 140ms ease-out; }
+@keyframes fondu { from { opacity: 0; } to { opacity: 1; } }
+
+.palette { position: fixed; top: 14vh; left: 50%; transform: translateX(-50%); z-index: 90; width: min(620px, calc(100vw - 32px)); border-radius: 13px; background: var(--surface); border: 1px solid var(--bordure-2); box-shadow: var(--ombre-haute); overflow: hidden; display: none; }
+.palette.ouverte { display: block; animation: monte 160ms cubic-bezier(.2,.9,.3,1.05); }
+@keyframes monte { from { opacity: 0; transform: translateX(-50%) translateY(-8px) scale(.985); } to { opacity: 1; transform: translateX(-50%) none; } }
+.palette-saisie { display: flex; align-items: center; gap: 11px; padding: 14px 16px; border-bottom: 1px solid var(--bordure); }
+.palette-saisie input { flex: 1; background: none; border: none; outline: none; font-size: 15px; color: var(--encre); }
+.palette-saisie input::placeholder { color: var(--encre-4); }
+.palette-liste { max-height: 48vh; overflow-y: auto; padding: 6px; }
+.palette-groupe { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--encre-4); padding: 9px 10px 5px; }
+.palette-item { display: flex; align-items: center; gap: 11px; width: 100%; padding: 8px 10px; border-radius: var(--r-s); font-size: 13.5px; color: var(--encre-2); text-align: left; }
+.palette-item .ic { color: var(--encre-3); }
+.palette-item .sous { color: var(--encre-4); font-size: 12px; }
+.palette-item[data-actif="1"] { background: var(--accent-voile); color: var(--encre); }
+.palette-item[data-actif="1"] .ic { color: var(--accent-fort); }
+.palette-pied { display: flex; gap: 14px; padding: 9px 14px; border-top: 1px solid var(--bordure); font-size: 11.5px; color: var(--encre-4); }
+.palette-pied span { display: inline-flex; align-items: center; gap: 5px; }
+
+.modale { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 90; width: min(460px, calc(100vw - 32px)); border-radius: 13px; background: var(--surface); border: 1px solid var(--bordure-2); box-shadow: var(--ombre-haute); display: none; }
+.modale.ouverte { display: block; animation: monte 160ms cubic-bezier(.2,.9,.3,1.05); }
+.modale-corps { padding: 20px 20px 16px; }
+.modale-icone { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 13px; }
+.modale-icone.danger { background: var(--critique-voile); color: var(--critique); }
+.modale-icone.vigilance { background: var(--vigilance-voile); color: var(--vigilance); }
+.modale-icone.info { background: var(--accent-voile); color: var(--accent-fort); }
+.modale h2 { font-size: 16px; font-weight: 650; margin-bottom: 6px; }
+.modale p { font-size: 13.5px; color: var(--encre-2); }
+.modale-garde { margin-top: 15px; }
+.modale-garde label { display: block; font-size: 12.5px; color: var(--encre-3); margin-bottom: 6px; }
+.modale-garde code { font-family: var(--mono); color: var(--encre); background: var(--surface-3); padding: 1px 5px; border-radius: 4px; }
+.modale-pied { display: flex; justify-content: flex-end; gap: 8px; padding: 13px 20px; border-top: 1px solid var(--bordure); background: var(--surface-2); border-radius: 0 0 13px 13px; }
+
+.tiroir { position: fixed; top: 0; right: 0; bottom: 0; z-index: 90; width: min(460px, 100vw); background: var(--surface); border-left: 1px solid var(--bordure); box-shadow: var(--ombre-haute); transform: translateX(100%); transition: transform 240ms cubic-bezier(.3,.9,.3,1); display: flex; flex-direction: column; }
+.tiroir.ouvert { transform: none; }
+.tiroir-tete { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-bottom: 1px solid var(--bordure); }
+.tiroir-corps { flex: 1; overflow-y: auto; padding: 16px; }
+.tiroir-pied { padding: 12px 16px; border-top: 1px solid var(--bordure); display: flex; gap: 8px; background: var(--surface-2); }
+.onglets { display: flex; gap: 2px; border-bottom: 1px solid var(--bordure); padding: 0 16px; }
+.onglets button { padding: 9px 11px; font-size: 13px; color: var(--encre-3); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.onglets button:hover { color: var(--encre); }
+.onglets button[aria-selected="true"] { color: var(--encre); border-bottom-color: var(--accent); font-weight: 550; }
+.def { display: grid; grid-template-columns: 124px 1fr; gap: 9px 14px; font-size: 13px; }
+.def dt { color: var(--encre-3); }
+.def dd { color: var(--encre); overflow-wrap: anywhere; }
+
+.panneau-notifs { position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; width: min(380px, calc(100vw - 24px)); border-radius: var(--r); background: var(--surface); border: 1px solid var(--bordure); box-shadow: var(--ombre-haute); display: none; overflow: hidden; }
+.panneau-notifs.ouvert { display: block; animation: apparait 120ms ease-out; }
+.notif { display: flex; gap: 11px; padding: 11px 14px; border-bottom: 1px solid var(--bordure); text-align: left; width: 100%; }
+.notif:hover { background: var(--surface-2); }
+.notif-pastille { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex: 0 0 auto; }
+.notif-titre { font-size: 13px; font-weight: 550; margin-bottom: 1px; }
+.notif-texte { font-size: 12.5px; color: var(--encre-3); }
+.notif-quand { font-size: 11px; color: var(--encre-4); margin-top: 3px; }
+
+.toasts { position: fixed; bottom: 18px; right: 18px; z-index: 100; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.toast { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--bordure-2); box-shadow: var(--ombre-haute); font-size: 13px; min-width: 252px; animation: glisse 200ms cubic-bezier(.2,.9,.3,1.1); }
+.toast.sortie { animation: sort 180ms ease-in forwards; }
+@keyframes glisse { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@keyframes sort { to { opacity: 0; transform: translateX(16px); } }
+.toast .ic.bon { color: var(--bon); } .toast .ic.critique { color: var(--critique); } .toast .ic.info { color: var(--accent-fort); }
+.toast .annuler { margin-left: auto; font-size: 12.5px; font-weight: 600; color: var(--accent-fort); padding: 3px 6px; border-radius: 5px; }
+.toast .annuler:hover { background: var(--accent-voile); }
+
+/* =========================================================================
+   ADAPTATIF & IMPRESSION
+   ========================================================================= */
+@media (max-width: 1180px) {
+  .c-3, .c-4, .c-5 { grid-column: span 6; }
+  .c-7, .c-8 { grid-column: span 12; }
+}
+@media (max-width: 880px) {
+  :root { --rail: 0px; }
+  .rail { position: fixed; z-index: 85; width: 250px; height: 100%; transform: translateX(-100%); transition: transform 220ms cubic-bezier(.3,.9,.3,1); }
+  :root[data-rail="ouvert-mobile"] .rail { transform: none; }
+  .app { grid-template-columns: 1fr; }
+  .c-3, .c-4, .c-5, .c-6, .c-7, .c-8 { grid-column: span 12; }
+  .recherche-glob { display: none; }
+  .ind-grille { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .barre-lot { left: 12px; right: 12px; transform: translateY(120%); width: auto; }
+  .barre-lot.visible { transform: none; }
+}
+.bouton-menu-mobile { display: none; }
+@media (max-width: 880px) { .bouton-menu-mobile { display: inline-flex; } }
+
+@media print {
+  :root { --fond: #fff; --surface: #fff; --encre: #000; }
+  .rail, .barre-outils, .barre-lot, .tbl-outils, .graph-outils, .toasts { display: none !important; }
+  .app { grid-template-columns: 1fr; height: auto; }
+  body, .contenu { overflow: visible; height: auto; }
+  .carte { break-inside: avoid; box-shadow: none; border-color: #ccc; }
+  .vue { display: block !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- =======================================================================
+     BIBLIOTHÈQUE D'ICÔNES — tracés en ligne, aucune dépendance externe.
+     Usage : <svg class="i"><use href="#ic-serveur"></use></svg>
+     ======================================================================= -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<defs>
+<symbol id="ic-grille" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+<symbol id="ic-pouls" viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></symbol>
+<symbol id="ic-rapport" viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M19 8v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7z"/><path d="M9 13h6M9 17h4"/></symbol>
+<symbol id="ic-serveur" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></symbol>
+<symbol id="ic-tache" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="ic-file" viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></symbol>
+<symbol id="ic-fusee" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></symbol>
+<symbol id="ic-terminal" viewBox="0 0 24 24"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></symbol>
+<symbol id="ic-trace" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></symbol>
+<symbol id="ic-alerte" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+<symbol id="ic-horloge" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="ic-utilisateurs" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></symbol>
+<symbol id="ic-bouclier" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+<symbol id="ic-moniteur" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+<symbol id="ic-cle" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="3.5"/><path d="m10 13 8-8 3 3-2 2-2-2-2 2 2 2-3 3-2-2"/></symbol>
+<symbol id="ic-reglages" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+<symbol id="ic-prise" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/><path d="M11 7h4a2 2 0 0 1 2 2v4"/></symbol>
+<symbol id="ic-base" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></symbol>
+<symbol id="ic-audit" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.3 1.3L6.6 5"/><path d="m3 12 1.3 1.3L6.6 11"/><path d="m3 18 1.3 1.3L6.6 17"/></symbol>
+<symbol id="ic-recherche" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></symbol>
+<symbol id="ic-cloche" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+<symbol id="ic-soleil" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+<symbol id="ic-lune" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+<symbol id="ic-chevron-bas" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="ic-chevron-gauche" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+<symbol id="ic-chevron-droite" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+<symbol id="ic-selecteur" viewBox="0 0 24 24"><path d="m8 9 4-4 4 4M8 15l4 4 4-4"/></symbol>
+<symbol id="ic-croix" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+<symbol id="ic-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="ic-telecharger" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+<symbol id="ic-filtre" viewBox="0 0 24 24"><path d="M21 4H3l7.2 8.6V19l3.6 2v-8.4L21 4z"/></symbol>
+<symbol id="ic-colonnes" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></symbol>
+<symbol id="ic-points" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/></symbol>
+<symbol id="ic-rafraichir" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></symbol>
+<symbol id="ic-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></symbol>
+<symbol id="ic-lecture" viewBox="0 0 24 24"><path d="m6 4 14 8-14 8z"/></symbol>
+<symbol id="ic-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+<symbol id="ic-check-cercle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="ic-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+<symbol id="ic-tendance-haut" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+<symbol id="ic-tendance-bas" viewBox="0 0 24 24"><path d="m3 7 6 6 4-4 8 8"/><path d="M15 17h6v-6"/></symbol>
+<symbol id="ic-clavier" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M9 13h6"/></symbol>
+<symbol id="ic-deconnexion" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+<symbol id="ic-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+<symbol id="ic-eclair" viewBox="0 0 24 24"><path d="M13 2 3 14h8l-1 8 10-12h-8z"/></symbol>
+<symbol id="ic-monnaie" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9.2A3.2 3.2 0 0 0 12 7.8c-1.6 0-2.9.8-2.9 2s1.3 1.7 2.9 2 2.9.8 2.9 2-1.3 2-2.9 2A3.2 3.2 0 0 1 9 14.4"/><path d="M12 6.3v1.5M12 16.2v1.5"/></symbol>
+<symbol id="ic-escalade" viewBox="0 0 24 24"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></symbol>
+<symbol id="ic-puissance" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></symbol>
+<symbol id="ic-oeil" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="ic-corbeille" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="m6 7 1 13h10l1-13"/><path d="M9 7V4h6v3"/></symbol>
+<symbol id="ic-boite" viewBox="0 0 24 24"><path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.73l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></symbol>
+</defs>
+</svg>
+
+<div class="app">
+
+<!-- =======================================================================
+     RAIL LATÉRAL — sections groupées, badges de compte, repli en icônes
+     ======================================================================= -->
+<aside class="rail" id="rail">
+  <div class="rail-tete">
+    <div class="enveloppe-menu" style="flex:1;min-width:0">
+      <button class="orga" id="btn-orga" aria-haspopup="menu" aria-expanded="false" title="Changer d'organisation">
+        <span class="orga-pastille">AN</span>
+        <span class="orga-texte">
+          <span class="orga-nom">Organisation</span>
+          <span class="orga-sous">Production · 4 espaces</span>
+        </span>
+        <svg class="i i-s"><use href="#ic-selecteur"></use></svg>
+      </button>
+      <div class="menu" id="menu-orga" role="menu" style="left:0;right:auto;min-width:230px">
+        <div class="menu-titre">Organisations</div>
+        <button class="menu-item" role="menuitem"><span class="orga-pastille" style="width:20px;height:20px;border-radius:6px;font-size:9px">AN</span>Organisation<svg class="i i-s" style="margin-left:auto;color:var(--accent)"><use href="#ic-check"></use></svg></button>
+        <button class="menu-item" role="menuitem"><span class="orga-pastille" style="width:20px;height:20px;border-radius:6px;font-size:9px;background:linear-gradient(135deg,var(--serie-3),var(--serie-4))">RE</span>Recette</button>
+        <button class="menu-item" role="menuitem"><span class="orga-pastille" style="width:20px;height:20px;border-radius:6px;font-size:9px;background:linear-gradient(135deg,var(--serie-2),var(--serie-8))">BA</span>Bac à sable</button>
+        <div class="menu-trait"></div>
+        <button class="menu-item" role="menuitem"><svg class="i i-s"><use href="#ic-plus"></use></svg>Nouvelle organisation</button>
+      </div>
+    </div>
+    <button class="rail-replier" id="btn-replier" title="Replier le rail (Ctrl + B)" aria-label="Replier le rail">
+      <svg class="i i-s"><use href="#ic-chevron-gauche"></use></svg>
+    </button>
+  </div>
+
+  <button class="rail-recherche" data-action="palette" title="Palette de commandes">
+    <svg class="i i-s"><use href="#ic-recherche"></use></svg>
+    <span>Rechercher…</span>
+    <kbd>Ctrl K</kbd>
+  </button>
+
+  <nav class="rail-nav" id="rail-nav" aria-label="Navigation principale"></nav>
+
+  <div class="rail-pied">
+    <div class="enveloppe-menu">
+      <button class="rail-compte" id="btn-compte" aria-haspopup="menu" aria-expanded="false">
+        <span class="avatar">AD</span>
+        <span class="rail-compte-txt">
+          <span class="rail-compte-nom">Awa Diallo</span>
+          <span class="rail-compte-role">Administratrice système</span>
+        </span>
+        <svg class="i i-s" style="color:var(--encre-3)"><use href="#ic-selecteur"></use></svg>
+      </button>
+      <div class="menu" id="menu-compte" role="menu" style="bottom:calc(100% + 6px);top:auto;left:0;right:auto">
+        <div class="menu-titre">Awa Diallo</div>
+        <button class="menu-item" role="menuitem"><svg class="i i-s"><use href="#ic-utilisateurs"></use></svg>Mon profil</button>
+        <button class="menu-item" role="menuitem" data-action="raccourcis"><svg class="i i-s"><use href="#ic-clavier"></use></svg>Raccourcis clavier<span class="raccourci">?</span></button>
+        <button class="menu-item" role="menuitem" data-action="theme"><svg class="i i-s"><use href="#ic-lune"></use></svg>Changer de thème</button>
+        <div class="menu-trait"></div>
+        <button class="menu-item danger" role="menuitem"><svg class="i i-s"><use href="#ic-deconnexion"></use></svg>Se déconnecter</button>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="zone">
+
+<!-- =======================================================================
+     BARRE SUPÉRIEURE
+     ======================================================================= -->
+<header class="barre-sup">
+  <button class="btn fantome icone bouton-menu-mobile" id="btn-menu-mobile" aria-label="Ouvrir le menu">
+    <svg class="i"><use href="#ic-menu"></use></svg>
+  </button>
+
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span id="fil-section">Pilotage</span>
+    <span class="fil-sep">/</span>
+    <b id="fil-page">Vue d'ensemble</b>
+  </nav>
+
+  <div class="barre-outils pousse">
+    <button class="recherche-glob" data-action="palette">
+      <svg class="i i-s"><use href="#ic-recherche"></use></svg>
+      <span>Rechercher un serveur, un compte, une action…</span>
+      <kbd>Ctrl K</kbd>
+    </button>
+
+    <div class="sep-v"></div>
+
+    <div class="segments" role="group" aria-label="Période observée" id="periodes">
+      <button type="button" data-periode="24h" aria-pressed="true">24 h</button>
+      <button type="button" data-periode="7j" aria-pressed="false">7 j</button>
+      <button type="button" data-periode="30j" aria-pressed="false">30 j</button>
+      <button type="button" data-periode="90j" aria-pressed="false">90 j</button>
+    </div>
+
+    <button class="btn icone" id="btn-actualiser" title="Actualiser maintenant (R)" aria-label="Actualiser">
+      <svg class="i i-s"><use href="#ic-rafraichir"></use></svg>
+    </button>
+    <button class="btn sm" id="btn-auto" aria-pressed="false" title="Rafraîchissement automatique toutes les 10 secondes">
+      <svg class="i i-s"><use href="#ic-lecture"></use></svg>
+      <span id="auto-etiq">Auto</span>
+    </button>
+    <span class="carte-sous mono" id="horo-maj" style="min-width:104px;text-align:right">à l'instant</span>
+
+    <div class="sep-v"></div>
+
+    <div class="enveloppe-menu">
+      <button class="btn fantome icone cloche" id="btn-notifs" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+        <svg class="i"><use href="#ic-cloche"></use></svg>
+        <span class="cloche-point" id="cloche-point"></span>
+      </button>
+      <div class="panneau-notifs" id="panneau-notifs">
+        <div class="rangee" style="padding:11px 14px;border-bottom:1px solid var(--bordure)">
+          <strong style="font-size:13.5px">Notifications</strong>
+          <button class="btn fantome sm pousse" data-action="tout-lu">Tout marquer comme lu</button>
+        </div>
+        <div id="liste-notifs" style="max-height:340px;overflow-y:auto"></div>
+        <div style="padding:9px 14px;border-top:1px solid var(--bordure);text-align:center">
+          <button class="btn fantome sm" data-aller="alertes">Ouvrir le centre d'alertes</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn fantome icone" data-action="theme" id="btn-theme" title="Basculer clair / sombre (T)" aria-label="Basculer le thème">
+      <svg class="i" id="icone-theme"><use href="#ic-soleil"></use></svg>
+    </button>
+
+    <div class="enveloppe-menu">
+      <button class="btn fantome icone" id="btn-vue-options" aria-haspopup="menu" aria-expanded="false" aria-label="Options d'affichage">
+        <svg class="i"><use href="#ic-points"></use></svg>
+      </button>
+      <div class="menu" id="menu-vue-options" role="menu">
+        <div class="menu-titre">Affichage</div>
+        <button class="menu-item" role="menuitem" data-action="densite"><svg class="i i-s"><use href="#ic-colonnes"></use></svg>Densité <span class="raccourci" id="etat-densite">normale</span></button>
+        <button class="menu-item" role="menuitem" data-action="plein-ecran"><svg class="i i-s"><use href="#ic-grille"></use></svg>Plein écran<span class="raccourci">F</span></button>
+        <div class="menu-trait"></div>
+        <div class="menu-titre">Exporter</div>
+        <button class="menu-item" role="menuitem" data-action="export-csv"><svg class="i i-s"><use href="#ic-telecharger"></use></svg>Données affichées (CSV)</button>
+        <button class="menu-item" role="menuitem" onclick="window.print()"><svg class="i i-s"><use href="#ic-rapport"></use></svg>Imprimer / PDF<span class="raccourci">Ctrl P</span></button>
+        <div class="menu-trait"></div>
+        <button class="menu-item" role="menuitem" data-action="maintenance"><svg class="i i-s"><use href="#ic-puissance"></use></svg>Mode maintenance…</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- =======================================================================
+     CONTENU
+     ======================================================================= -->
+<main class="contenu" id="contenu">
+
+<!-- ------------------------------ VUE : APERÇU ------------------------- -->
+<section class="vue active" id="vue-apercu" data-vue="apercu">
+
+  <div class="bandeau critique" id="bandeau-incident">
+    <svg class="i i-l bandeau-icone"><use href="#ic-alerte"></use></svg>
+    <div class="bandeau-corps">
+      <div class="bandeau-titre">Incident P1 en cours — latence de la passerelle de paiement</div>
+      <div class="bandeau-texte">
+        Détecté il y a 14 min · 3 services touchés · astreinte notifiée (Awa K.) ·
+        <span class="mono">INC-2048</span>
+      </div>
+    </div>
+    <div class="bandeau-actions">
+      <button class="btn sm" data-action="acquitter"><svg class="i i-s"><use href="#ic-check"></use></svg>Acquitter</button>
+      <button class="btn sm" data-action="escalader"><svg class="i i-s"><use href="#ic-escalade"></use></svg>Escalader</button>
+      <button class="btn sm principal" data-action="ouvrir-incident">Ouvrir la fiche</button>
+      <button class="btn fantome sm icone" data-action="fermer-bandeau" aria-label="Masquer"><svg class="i i-s"><use href="#ic-croix"></use></svg></button>
+    </div>
+  </div>
+
+  <!-- Indicateurs de tête -->
+  <div class="ind-grille" id="indicateurs"></div>
+
+  <!-- Graphiques -->
+  <div class="grille g-12" style="margin-bottom:var(--pas)">
+    <div class="carte c-8">
+      <div class="graph-tete">
+        <div>
+          <div class="carte-titre">Charge de la plateforme</div>
+          <div class="carte-sous">Requêtes par minute, par famille de service</div>
+        </div>
+        <div class="graph-outils">
+          <button class="btn fantome sm" data-table="charge" aria-pressed="false">Voir les données</button>
+          <button class="btn fantome sm icone" data-action="exporter-graph" data-graph="charge" aria-label="Exporter"><svg class="i i-s"><use href="#ic-telecharger"></use></svg></button>
+        </div>
+      </div>
+      <div class="legende" id="legende-charge"></div>
+      <div class="graph-boite"><canvas id="g-charge"></canvas></div>
+      <div class="tableau-donnees" id="td-charge"></div>
+    </div>
+
+    <div class="carte c-4">
+      <div class="graph-tete">
+        <div>
+          <div class="carte-titre">Latence de réponse</div>
+          <div class="carte-sous">Percentiles, en millisecondes</div>
+        </div>
+        <div class="graph-outils">
+          <button class="btn fantome sm" data-table="latence" aria-pressed="false">Voir les données</button>
+        </div>
+      </div>
+      <div class="legende" id="legende-latence"></div>
+      <div class="graph-boite"><canvas id="g-latence"></canvas></div>
+      <div class="tableau-donnees" id="td-latence"></div>
+    </div>
+
+    <div class="carte c-5">
+      <div class="graph-tete">
+        <div>
+          <div class="carte-titre">Volume par service</div>
+          <div class="carte-sous">Part des requêtes sur la période</div>
+        </div>
+      </div>
+      <div class="graph-boite basse"><canvas id="g-services"></canvas></div>
+    </div>
+
+    <div class="carte c-3">
+      <div class="graph-tete">
+        <div>
+          <div class="carte-titre">Réponses par famille</div>
+          <div class="carte-sous">Codes HTTP</div>
+        </div>
+      </div>
+      <div class="graph-boite basse"><canvas id="g-codes"></canvas></div>
+      <div class="legende" id="legende-codes" style="padding-top:0"></div>
+    </div>
+
+    <div class="carte c-4">
+      <div class="carte-tete"><div><div class="carte-titre">Files de travail</div><div class="carte-sous">Traitements en cours et en attente</div></div></div>
+      <div class="carte-corps" style="padding-top:12px" id="files-travail"></div>
+    </div>
+  </div>
+
+  <!-- Flotte -->
+  <div class="carte" style="margin-bottom:var(--pas)">
+    <div class="graph-tete">
+      <div>
+        <div class="carte-titre">Flotte de serveurs</div>
+        <div class="carte-sous"><span id="flotte-resume">—</span></div>
+      </div>
+      <div class="graph-outils">
+        <button class="btn sm" data-action="ajouter-noeud"><svg class="i i-s"><use href="#ic-plus"></use></svg>Ajouter un nœud</button>
+        <button class="btn sm" data-aller="services">Tout voir<svg class="i i-s"><use href="#ic-chevron-droite"></use></svg></button>
+      </div>
+    </div>
+    <div class="carte-corps" style="padding-top:13px"><div class="flotte" id="flotte"></div></div>
+  </div>
+
+  <!-- Journal d'audit en direct -->
+  <div class="carte">
+    <div class="graph-tete">
+      <div>
+        <div class="carte-titre">Journal d'audit</div>
+        <div class="carte-sous">Toute action sensible est tracée : qui, quoi, quand, depuis où</div>
+      </div>
+      <div class="graph-outils">
+        <button class="btn fantome sm" data-aller="audit">Tout le journal<svg class="i i-s"><use href="#ic-chevron-droite"></use></svg></button>
+      </div>
+    </div>
+    <div class="tbl-enveloppe" style="max-height:290px">
+      <table class="tbl" id="tbl-audit">
+        <thead><tr><th>Horodatage</th><th>Auteur</th><th>Action</th><th>Cible</th><th>Origine</th><th class="num">Résultat</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- --------------------- VUE : UTILISATEURS (table avancée) ------------ -->
+<section class="vue" id="vue-utilisateurs" data-vue="utilisateurs">
+  <div class="carte">
+    <div class="tbl-outils">
+      <div class="champ large">
+        <svg class="i i-s"><use href="#ic-recherche"></use></svg>
+        <input type="search" id="u-recherche" placeholder="Nom, adresse, identifiant…" aria-label="Rechercher un compte">
+      </div>
+      <select class="champ" id="u-role" aria-label="Filtrer par rôle">
+        <option value="">Tous les rôles</option>
+      </select>
+      <select class="champ" id="u-statut" aria-label="Filtrer par statut">
+        <option value="">Tous les statuts</option>
+        <option value="actif">Actif</option>
+        <option value="invite">Invité</option>
+        <option value="suspendu">Suspendu</option>
+      </select>
+      <select class="champ" id="u-espace" aria-label="Filtrer par espace">
+        <option value="">Tous les espaces</option>
+      </select>
+      <button class="btn icone" id="u-raz" title="Réinitialiser les filtres" aria-label="Réinitialiser les filtres">
+        <svg class="i i-s"><use href="#ic-croix"></use></svg>
+      </button>
+
+      <div class="pousse"></div>
+
+      <div class="enveloppe-menu">
+        <button class="btn" id="btn-colonnes" aria-haspopup="menu" aria-expanded="false">
+          <svg class="i i-s"><use href="#ic-colonnes"></use></svg>Colonnes
+        </button>
+        <div class="menu" id="menu-colonnes" role="menu"></div>
+      </div>
+      <button class="btn" data-action="export-utilisateurs"><svg class="i i-s"><use href="#ic-telecharger"></use></svg>Exporter</button>
+      <button class="btn principal" data-action="inviter"><svg class="i i-s"><use href="#ic-plus"></use></svg>Inviter</button>
+    </div>
+
+    <div class="tbl-enveloppe">
+      <table class="tbl" id="tbl-utilisateurs">
+        <thead><tr id="u-entetes"></tr></thead>
+        <tbody id="u-corps"></tbody>
+      </table>
+      <div class="vide" id="u-vide" hidden>
+        <div class="vide-icone"><svg class="i i-l"><use href="#ic-recherche"></use></svg></div>
+        <h3>Aucun compte ne correspond</h3>
+        <p>Élargissez la recherche ou retirez un filtre pour retrouver des résultats.</p>
+        <button class="btn" id="u-vide-raz">Réinitialiser les filtres</button>
+      </div>
+    </div>
+
+    <div class="tbl-pied">
+      <span id="u-compteur">—</span>
+      <select class="champ" id="u-taille" style="height:28px" aria-label="Lignes par page">
+        <option value="10">10 par page</option>
+        <option value="25" selected>25 par page</option>
+        <option value="50">50 par page</option>
+      </select>
+      <div class="pagination" id="u-pagination"></div>
+    </div>
+  </div>
+</section>
+
+<!-- --------------------- VUE : JOURNAUX -------------------------------- -->
+<section class="vue" id="vue-journaux" data-vue="journaux">
+  <div class="carte">
+    <div class="tbl-outils">
+      <div class="champ large">
+        <svg class="i i-s"><use href="#ic-recherche"></use></svg>
+        <input type="search" id="j-recherche" placeholder="Filtrer les lignes (texte libre, service, identifiant de requête…)" aria-label="Filtrer les journaux">
+      </div>
+      <div class="filtres-puces" id="j-niveaux" role="group" aria-label="Niveaux de gravité">
+        <button class="puce" data-niveau="ERREUR" aria-pressed="true"><span class="jeton critique" style="height:auto;padding:0;background:none"><span class="point"></span></span>Erreur</button>
+        <button class="puce" data-niveau="ALERTE" aria-pressed="true"><span class="jeton vigilance" style="height:auto;padding:0;background:none"><span class="point"></span></span>Alerte</button>
+        <button class="puce" data-niveau="INFO" aria-pressed="true">Info</button>
+        <button class="puce" data-niveau="DEBUG" aria-pressed="false">Débogage</button>
+      </div>
+      <div class="pousse"></div>
+      <button class="btn sm" id="j-flux" aria-pressed="true"><svg class="i i-s"><use href="#ic-pause"></use></svg><span>Flux en direct</span></button>
+      <button class="btn sm" data-action="export-journaux"><svg class="i i-s"><use href="#ic-telecharger"></use></svg>Exporter</button>
+    </div>
+    <div class="carte-corps">
+      <div class="journal" id="journal" role="log" aria-live="polite" aria-relevant="additions"></div>
+      <div class="rangee" style="margin-top:11px">
+        <span class="carte-sous" id="j-compteur">—</span>
+        <span class="pousse carte-sous">Cliquez une ligne pour ouvrir le contexte complet de la requête.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- --------------------- VUE : RÔLES ET DROITS ------------------------- -->
+<section class="vue" id="vue-droits" data-vue="droits">
+  <div class="carte">
+    <div class="graph-tete">
+      <div>
+        <div class="carte-titre">Matrice des droits</div>
+        <div class="carte-sous">Le serveur reste seul juge : cette matrice décrit ce que l'interface demande, pas ce qu'elle accorde.</div>
+      </div>
+      <div class="graph-outils">
+        <span class="jeton vigilance" id="droits-etat" hidden><span class="point"></span>Modifications non enregistrées</span>
+        <button class="btn sm" id="btn-droits-annuler" disabled>Annuler</button>
+        <button class="btn sm principal" id="btn-droits-enregistrer" disabled><svg class="i i-s"><use href="#ic-check"></use></svg>Enregistrer</button>
+      </div>
+    </div>
+    <div class="carte-corps">
+      <p class="carte-sous" style="margin-bottom:12px">
+        Trois états par case : <b style="color:var(--encre-2)">aucun</b> · <b style="color:var(--accent-fort)">lecture</b> ·
+        <b style="color:var(--bon)">complet</b>. Les cases grisées sont imposées par le rôle et ne se modifient pas.
+      </p>
+      <div class="tbl-enveloppe" style="max-height:520px">
+        <table class="matrice" id="matrice-droits"><thead></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- --------------------- VUE : ALERTES --------------------------------- -->
+<section class="vue" id="vue-alertes" data-vue="alertes">
+  <div class="ind-grille" id="alertes-indicateurs"></div>
+  <div class="carte">
+    <div class="tbl-outils">
+      <div class="filtres-puces" id="a-filtres" role="group" aria-label="Filtrer par gravité">
+        <button class="puce" data-gravite="" aria-pressed="true">Toutes</button>
+        <button class="puce" data-gravite="critique" aria-pressed="false">P1 critique</button>
+        <button class="puce" data-gravite="serieux" aria-pressed="false">P2 sérieux</button>
+        <button class="puce" data-gravite="vigilance" aria-pressed="false">P3 vigilance</button>
+      </div>
+      <div class="pousse"></div>
+      <button class="btn sm" data-action="silence"><svg class="i i-s"><use href="#ic-pause"></use></svg>Mettre en sourdine</button>
+      <button class="btn sm" data-action="regles-alerte"><svg class="i i-s"><use href="#ic-reglages"></use></svg>Règles de déclenchement</button>
+    </div>
+    <div class="tbl-enveloppe">
+      <table class="tbl" id="tbl-alertes">
+        <thead><tr><th>Gravité</th><th>Alerte</th><th>Service</th><th>Depuis</th><th>Astreinte</th><th class="num">Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- --------------------- VUE : GABARIT VIDE ---------------------------- -->
+<!-- Toute entrée de navigation sans vue dédiée retombe ici. C'est le patron
+     d'état vide à recopier pour chaque nouvelle page du produit.          -->
+<section class="vue" id="vue-gabarit" data-vue="gabarit">
+  <div class="carte">
+    <div class="vide">
+      <div class="vide-icone"><svg class="i i-l"><use href="#ic-boite"></use></svg></div>
+      <h3 id="gabarit-titre">Page à construire</h3>
+      <p id="gabarit-texte">Cette entrée du rail n'a pas encore d'écran. Recopiez une des vues existantes — tableau, explorateur, matrice — et branchez-la ici.</p>
+      <div class="rangee" style="justify-content:center">
+        <button class="btn principal"><svg class="i i-s"><use href="#ic-plus"></use></svg>Créer la page</button>
+        <button class="btn" data-aller="apercu">Revenir à la vue d'ensemble</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+</div><!-- /zone -->
+</div><!-- /app -->
+
+<!-- =======================================================================
+     SUPERPOSITIONS
+     ======================================================================= -->
+<div class="voile" id="voile"></div>
+
+<!-- Palette de commandes : navigation + actions, au clavier -->
+<div class="palette superposition" id="palette" role="dialog" aria-modal="true" aria-label="Palette de commandes">
+  <div class="palette-saisie">
+    <svg class="i i-l" style="color:var(--encre-3)"><use href="#ic-recherche"></use></svg>
+    <input type="text" id="palette-champ" placeholder="Aller à une page ou lancer une action…" autocomplete="off" spellcheck="false">
+    <kbd>Échap</kbd>
+  </div>
+  <div class="palette-liste" id="palette-liste" role="listbox"></div>
+  <div class="palette-pied">
+    <span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span>
+    <span><kbd>Entrée</kbd> lancer</span>
+    <span><kbd>Échap</kbd> fermer</span>
+  </div>
+</div>
+
+<!-- Modale de confirmation générique (avec garde-fou de saisie) -->
+<div class="modale superposition" id="modale" role="dialog" aria-modal="true" aria-labelledby="modale-titre">
+  <div class="modale-corps">
+    <div class="modale-icone danger" id="modale-icone"><svg class="i i-l"><use href="#ic-alerte"></use></svg></div>
+    <h2 id="modale-titre">Confirmer</h2>
+    <p id="modale-texte"></p>
+    <div class="modale-garde" id="modale-garde" hidden>
+      <label for="modale-saisie">Pour confirmer, saisissez <code id="modale-mot"></code></label>
+      <div class="champ"><input type="text" id="modale-saisie" autocomplete="off" spellcheck="false"></div>
+    </div>
+  </div>
+  <div class="modale-pied">
+    <button class="btn" id="modale-annuler">Annuler</button>
+    <button class="btn danger" id="modale-valider">Confirmer</button>
+  </div>
+</div>
+
+<!-- Tiroir de détail -->
+<aside class="tiroir" id="tiroir" role="dialog" aria-modal="false" aria-labelledby="tiroir-titre" aria-hidden="true">
+  <div class="tiroir-tete">
+    <div style="flex:1;min-width:0">
+      <div class="carte-titre" id="tiroir-titre">Détail</div>
+      <div class="carte-sous" id="tiroir-sous"></div>
+    </div>
+    <button class="btn fantome icone" id="tiroir-fermer" aria-label="Fermer le panneau"><svg class="i"><use href="#ic-croix"></use></svg></button>
+  </div>
+  <div class="onglets" id="tiroir-onglets" role="tablist"></div>
+  <div class="tiroir-corps" id="tiroir-corps"></div>
+  <div class="tiroir-pied" id="tiroir-pied"></div>
+</aside>
+
+<!-- Barre d'actions groupées -->
+<div class="barre-lot" id="barre-lot" role="toolbar" aria-label="Actions sur la sélection">
+  <span class="compte"><span id="lot-compte">0</span> sélectionné(s)</span>
+  <div class="sep-v"></div>
+  <button class="btn sm" data-lot="suspendre"><svg class="i i-s"><use href="#ic-pause"></use></svg>Suspendre</button>
+  <button class="btn sm" data-lot="reactiver"><svg class="i i-s"><use href="#ic-lecture"></use></svg>Réactiver</button>
+  <button class="btn sm" data-lot="mdp"><svg class="i i-s"><use href="#ic-cle"></use></svg>Réinitialiser le mot de passe</button>
+  <button class="btn sm" data-lot="role"><svg class="i i-s"><use href="#ic-bouclier"></use></svg>Changer de rôle</button>
+  <button class="btn sm" data-lot="export"><svg class="i i-s"><use href="#ic-telecharger"></use></svg>Exporter</button>
+  <button class="btn sm danger" data-lot="supprimer"><svg class="i i-s"><use href="#ic-corbeille"></use></svg>Supprimer</button>
+  <button class="btn fantome sm icone" data-lot="vider" aria-label="Vider la sélection"><svg class="i i-s"><use href="#ic-croix"></use></svg></button>
+</div>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   1. DONNÉES — tout est simulé ici. Pour brancher le vrai système, remplacez
+      le contenu de `D` par la réponse de vos routes et appelez `App.rendu()`.
+   ========================================================================= */
+
+const alea = (() => { let s = 20261125; return () => (s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296; })();
+const entre = (a, b) => a + alea() * (b - a);
+const choix = (t) => t[Math.floor(alea() * t.length)];
+
+/* --- Navigation : une seule source pour le rail, le fil et la palette --- */
+const NAV = [
+  { groupe: "Pilotage", entrees: [
+    { cle: "apercu",   nom: "Vue d'ensemble", icone: "ic-grille" },
+    { cle: "activite", nom: "Activité",       icone: "ic-pouls" },
+    { cle: "rapports", nom: "Rapports",       icone: "ic-rapport" },
+  ]},
+  { groupe: "Exploitation", entrees: [
+    { cle: "services",    nom: "Services",     icone: "ic-serveur", compte: 42 },
+    { cle: "taches",      nom: "Tâches",       icone: "ic-tache", compte: 7 },
+    { cle: "files",       nom: "Files d'attente", icone: "ic-file" },
+    { cle: "deploiements",nom: "Déploiements", icone: "ic-fusee", compte: 3 },
+  ]},
+  { groupe: "Observabilité", entrees: [
+    { cle: "journaux",      nom: "Journaux",      icone: "ic-terminal" },
+    { cle: "traces",        nom: "Traces",        icone: "ic-trace" },
+    { cle: "alertes",       nom: "Alertes",       icone: "ic-alerte", compte: 2, ton: "critique" },
+    { cle: "disponibilite", nom: "Disponibilité", icone: "ic-horloge" },
+  ]},
+  { groupe: "Accès", entrees: [
+    { cle: "utilisateurs", nom: "Utilisateurs",   icone: "ic-utilisateurs" },
+    { cle: "droits",       nom: "Rôles et droits",icone: "ic-bouclier" },
+    { cle: "sessions",     nom: "Sessions",       icone: "ic-moniteur" },
+    { cle: "jetons",       nom: "Jetons d'API",   icone: "ic-cle" },
+  ]},
+  { groupe: "Système", entrees: [
+    { cle: "parametres",   nom: "Paramètres",   icone: "ic-reglages" },
+    { cle: "integrations", nom: "Intégrations", icone: "ic-prise" },
+    { cle: "sauvegardes",  nom: "Sauvegardes",  icone: "ic-base" },
+    { cle: "audit",        nom: "Journal d'audit", icone: "ic-audit" },
+  ]},
+];
+const VUES_REELLES = new Set(["apercu", "utilisateurs", "journaux", "droits", "alertes"]);
+
+/* --- Séries temporelles ------------------------------------------------ */
+function serie(n, base, amplitude, tendance = 0) {
+  const out = []; let v = base;
+  for (let i = 0; i < n; i++) {
+    v += entre(-amplitude, amplitude) + tendance;
+    const heure = i % 24;
+    const jour = 0.55 + 0.45 * Math.sin(((heure - 4) / 24) * Math.PI * 2);
+    out.push(Math.max(0, Math.round(v * jour)));
+  }
+  return out;
+}
+const HEURES = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0") + ":00");
+
+const D = {
+  charge: {
+    etiquettes: HEURES,
+    series: [
+      { nom: "Applicatif web", couleur: "--serie-1", valeurs: serie(24, 2400, 160) },
+      { nom: "API publique",   couleur: "--serie-2", valeurs: serie(24, 1500, 120) },
+      { nom: "Traitements",    couleur: "--serie-3", valeurs: serie(24, 620, 70) },
+    ],
+  },
+  latence: {
+    etiquettes: HEURES,
+    series: [
+      { nom: "p50", rampe: 2, valeurs: serie(24, 58, 5) },
+      { nom: "p95", rampe: 4, valeurs: serie(24, 180, 16) },
+      { nom: "p99", rampe: 5, valeurs: serie(24, 410, 42) },
+    ],
+  },
+  services: [
+    { nom: "passerelle-api", v: 128400 }, { nom: "service-comptes", v: 96200 },
+    { nom: "service-documents", v: 71800 }, { nom: "moteur-recherche", v: 54300 },
+    { nom: "service-notifications", v: 38900 }, { nom: "service-export", v: 21400 },
+  ],
+  codes: [
+    { nom: "2xx — succès", v: 412380, couleur: "--serie-1" },
+    { nom: "3xx — redirections", v: 28140, couleur: "--serie-2" },
+    { nom: "4xx — erreurs client", v: 9470, couleur: "--serie-3" },
+    { nom: "5xx — erreurs serveur", v: 1286, couleur: "--serie-4" },
+  ],
+  files: [
+    { nom: "Indexation documentaire", etat: "en cours", fait: 68, total: 100, debit: "1 240/min" },
+    { nom: "Envoi des notifications", etat: "en cours", fait: 92, total: 100, debit: "860/min" },
+    { nom: "Export comptable mensuel", etat: "en attente", fait: 0, total: 100, debit: "—" },
+    { nom: "Purge des sessions expirées", etat: "échoué", fait: 41, total: 100, debit: "arrêté" },
+  ],
+};
+
+/* --- Flotte ------------------------------------------------------------ */
+D.flotte = ["web-01","web-02","web-03","api-01","api-02","trav-01","bdd-01","cache-01"].map((nom, i) => {
+  const cpu = Math.round(entre(12, 94)), ram = Math.round(entre(30, 92)), disque = Math.round(entre(20, 88));
+  const pire = Math.max(cpu, ram, disque);
+  return {
+    nom, region: choix(["eu-ouest-1", "eu-ouest-3", "af-sud-1"]),
+    role: nom.startsWith("bdd") ? "Base de données" : nom.startsWith("cache") ? "Cache" : nom.startsWith("api") ? "API" : nom.startsWith("trav") ? "Traitements" : "Web",
+    cpu, ram, disque,
+    etat: pire > 90 ? "critique" : pire > 78 ? "vigilance" : "bon",
+    duree: Math.round(entre(3, 240)) + " j",
+    version: "v" + (4 + (i % 2)) + "." + (i % 7) + "." + (i % 4),
+  };
+});
+
+/* --- Comptes ----------------------------------------------------------- */
+const PRENOMS = ["Awa","Fabrice","Fatou","Moussa","Chantal","Idriss","Léa","Samuel","Nadia","Pierre","Aminata","Victor","Sarah","Oumar","Claire","Thomas","Rokia","Hugo","Mariam","Paul","Esther","Karim","Lucie","Daniel"];
+const NOMS = ["Diallo","Mbaye","Traoré","Ndiaye","Kouassi","Bakayoko","Martin","Sow","Camara","Dubois","Cissé","Fall","Leroy","Diop","Bernard","Keita","Moreau","Touré","Rousseau","Barry"];
+const ROLES = ["Administrateur système","Administrateur","Gestionnaire","Opérateur","Analyste","Lecteur","Auditeur"];
+const ESPACES = ["Production","Recette","Bac à sable","Partenaires"];
+
+D.utilisateurs = Array.from({ length: 134 }, (_, i) => {
+  const p = choix(PRENOMS), n = choix(NOMS);
+  const statut = alea() < .78 ? "actif" : alea() < .6 ? "invite" : "suspendu";
+  return {
+    id: "U-" + String(1000 + i),
+    nom: p + " " + n,
+    courriel: (p[0] + n).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "") + "@exemple.org",
+    role: choix(ROLES),
+    espace: choix(ESPACES),
+    statut,
+    deuxFacteurs: alea() < .64,
+    sessions: Math.round(entre(0, 6)),
+    derniere: Math.round(entre(0, 72)),
+    cree: new Date(Date.now() - Math.round(entre(20, 1200)) * 864e5).toISOString().slice(0, 10),
+  };
+});
+
+/* --- Journaux ---------------------------------------------------------- */
+const SOURCES = ["passerelle-api","service-comptes","service-documents","moteur-recherche","ordonnanceur","service-export"];
+const MESSAGES = {
+  ERREUR: ["échec de connexion à la base : délai dépassé après 5000 ms","réponse 500 renvoyée au client (requête abandonnée)","le lot d'export s'est interrompu : fichier source introuvable","la limite de débit du fournisseur externe est atteinte"],
+  ALERTE: ["temps de réponse au-delà du seuil (p95 = 842 ms)","file d'attente au-dessus de 5 000 messages","certificat expirant dans 9 jours","reprise automatique après un échec isolé"],
+  INFO: ["démarrage du service, 8 ouvriers prêts","déploiement terminé en 54 s","sauvegarde quotidienne écrite (4,2 Gio)","configuration rechargée sans interruption"],
+  DEBUG: ["cache atteint pour la clé util:1042","requête SQL exécutée en 12 ms","trace émise vers le collecteur","verrou acquis sur la ressource lot-2048"],
+};
+let compteurJournal = 0;
+function ligneJournal(decalage = 0) {
+  const r = alea();
+  const niveau = r < .07 ? "ERREUR" : r < .2 ? "ALERTE" : r < .78 ? "INFO" : "DEBUG";
+  const d = new Date(Date.now() - decalage * 1000);
+  return {
+    id: ++compteurJournal,
+    horo: d.toTimeString().slice(0, 8),
+    niveau,
+    source: choix(SOURCES),
+    message: choix(MESSAGES[niveau]),
+    requete: "req_" + Math.floor(alea() * 1e9).toString(36),
+  };
+}
+D.journaux = Array.from({ length: 160 }, (_, i) => ligneJournal(160 - i)).reverse();
+
+/* --- Audit, alertes, notifications ------------------------------------- */
+const ACTIONS_AUDIT = [
+  ["Suspension d'un compte","utilisateur U-1042"], ["Modification des droits","rôle Gestionnaire"],
+  ["Création d'un jeton d'API","jeton tok_7d21"], ["Redémarrage d'un service","api-02"],
+  ["Export de données","134 comptes"], ["Connexion refusée","2 facteurs invalide"],
+  ["Restauration d'une sauvegarde","bdd-01"], ["Mise en maintenance","web-03"],
+];
+D.audit = Array.from({ length: 24 }, (_, i) => {
+  const a = choix(ACTIONS_AUDIT);
+  return {
+    horo: new Date(Date.now() - i * Math.round(entre(60, 900)) * 1000).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
+    auteur: choix(PRENOMS) + " " + choix(NOMS)[0] + ".",
+    action: a[0], cible: a[1],
+    origine: Math.floor(entre(10, 200)) + "." + Math.floor(entre(0, 255)) + "." + Math.floor(entre(0, 255)) + "." + Math.floor(entre(1, 254)),
+    resultat: alea() < .88 ? "accepté" : "refusé",
+  };
+});
+
+D.alertes = [
+  { gravite: "critique", titre: "Latence de la passerelle de paiement", service: "passerelle-api", depuis: "14 min", astreinte: "Awa K.", code: "INC-2048" },
+  { gravite: "critique", titre: "Espace disque sous 8 % sur bdd-01", service: "bdd-01", depuis: "41 min", astreinte: "Moussa T.", code: "INC-2047" },
+  { gravite: "serieux", titre: "Taux d'erreur 5xx au-dessus de 1 %", service: "service-documents", depuis: "1 h 12", astreinte: "Awa K.", code: "INC-2045" },
+  { gravite: "vigilance", titre: "Certificat TLS expirant dans 9 jours", service: "passerelle-api", depuis: "3 h", astreinte: "—", code: "ALE-881" },
+  { gravite: "vigilance", titre: "File de notifications au-dessus du seuil", service: "service-notifications", depuis: "22 min", astreinte: "—", code: "ALE-882" },
+];
+
+D.notifications = [
+  { ton: "critique", titre: "Incident P1 ouvert", texte: "Latence de la passerelle de paiement · INC-2048", quand: "il y a 14 min", lu: false },
+  { ton: "vigilance", titre: "Seuil disque atteint", texte: "bdd-01 est sous 8 % d'espace libre", quand: "il y a 41 min", lu: false },
+  { ton: "bon", titre: "Déploiement réussi", texte: "service-comptes v4.2.1 en production", quand: "il y a 1 h", lu: true },
+  { ton: "neutre", titre: "Sauvegarde terminée", texte: "Instantané quotidien écrit (4,2 Gio)", quand: "il y a 3 h", lu: true },
+];
+
+/* --- Droits ------------------------------------------------------------ */
+D.roles = ["Administrateur système", "Administrateur", "Gestionnaire", "Opérateur", "Lecteur"];
+D.permissions = [
+  { groupe: "Comptes", nom: "Créer et inviter", cle: "comptes.creer" },
+  { groupe: "Comptes", nom: "Suspendre et supprimer", cle: "comptes.suspendre" },
+  { groupe: "Comptes", nom: "Réinitialiser les accès", cle: "comptes.acces" },
+  { groupe: "Exploitation", nom: "Redémarrer un service", cle: "exploit.redemarrer" },
+  { groupe: "Exploitation", nom: "Déployer en production", cle: "exploit.deployer" },
+  { groupe: "Exploitation", nom: "Ouvrir une console", cle: "exploit.console" },
+  { groupe: "Données", nom: "Exporter des données", cle: "donnees.exporter" },
+  { groupe: "Données", nom: "Restaurer une sauvegarde", cle: "donnees.restaurer" },
+  { groupe: "Sécurité", nom: "Modifier les rôles", cle: "secu.roles" },
+  { groupe: "Sécurité", nom: "Lire le journal d'audit", cle: "secu.audit" },
+];
+D.droits = {};
+D.permissions.forEach(p => {
+  D.droits[p.cle] = D.roles.map((r, i) => {
+    if (i === 0) return { etat: "complet", verrou: true };
+    if (r === "Lecteur") return { etat: p.cle === "secu.audit" ? "lecture" : "aucun", verrou: false };
+    const n = alea();
+    return { etat: n < .3 ? "aucun" : n < .65 ? "lecture" : "complet", verrou: false };
+  });
+});
+</script>
+
+<script>
+"use strict";
+/* =========================================================================
+   2. SOCLE — sélecteurs, formats, superpositions, thème, navigation
+   ========================================================================= */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const racine = document.documentElement;
+const jeton = (nom) => getComputedStyle(racine).getPropertyValue(nom).trim();
+
+/* --- Formats (français : espace fine insécable, virgule décimale) ------- */
+const NF = (d = 0) => new Intl.NumberFormat("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+function fmt(v, type = "nombre", d) {
+  switch (type) {
+    case "compact":
+      if (Math.abs(v) >= 1e6) return NF(1).format(v / 1e6) + " M";
+      if (Math.abs(v) >= 1e3) return NF(1).format(v / 1e3) + " k";
+      return NF(0).format(v);
+    case "pourcent": return NF(d ?? 2).format(v) + " %";
+    case "ms":       return NF(0).format(v) + " ms";
+    case "euro":     return NF(0).format(v) + " €";
+    case "octets": { const u = ["o","Kio","Mio","Gio","Tio"]; let i = 0; while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; } return NF(i ? 1 : 0).format(v) + " " + u[i]; }
+    default:         return NF(d ?? 0).format(v);
+  }
+}
+const echappe = (s) => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const icone = (id, cls = "i i-s") => `<svg class="${cls}"><use href="#${id}"></use></svg>`;
+
+/* --- Préférences persistées -------------------------------------------- */
+const Pref = {
+  lire(c, d) { try { return localStorage.getItem("cdc." + c) ?? d; } catch { return d; } },
+  ecrire(c, v) { try { localStorage.setItem("cdc." + c, v); } catch {} },
+};
+
+/* --- Toasts ------------------------------------------------------------- */
+let toastId = 0;
+function toast(texte, ton = "info", options = {}) {
+  const el = document.createElement("div");
+  el.className = "toast";
+  const ic = ton === "bon" ? "ic-check-cercle" : ton === "critique" ? "ic-alerte" : "ic-info";
+  el.innerHTML = `<span class="ic ${ton}">${icone(ic, "i")}</span><span>${echappe(texte)}</span>`;
+  if (options.annuler) {
+    const b = document.createElement("button");
+    b.className = "annuler"; b.textContent = "Annuler";
+    b.onclick = () => { options.annuler(); retirer(); };
+    el.appendChild(b);
+  }
+  $("#toasts").appendChild(el);
+  const id = ++toastId;
+  const minuteur = setTimeout(retirer, options.duree ?? 4200);
+  function retirer() {
+    clearTimeout(minuteur);
+    el.classList.add("sortie");
+    setTimeout(() => el.remove(), 200);
+  }
+  return id;
+}
+
+/* --- Voile partagé par les superpositions ------------------------------- */
+const voile = $("#voile");
+let fermeturesVoile = [];
+function montrerVoile(auFermer) {
+  fermeturesVoile.push(auFermer);
+  voile.classList.add("ouvert");
+}
+function cacherVoile() {
+  fermeturesVoile.forEach(f => f && f());
+  fermeturesVoile = [];
+  voile.classList.remove("ouvert");
+}
+voile.addEventListener("click", cacherVoile);
+
+/* --- Modale de confirmation (promesse) ---------------------------------- */
+function confirmer({ titre, texte, bouton = "Confirmer", ton = "danger", mot = null }) {
+  return new Promise((resoudre) => {
+    const m = $("#modale");
+    $("#modale-titre").textContent = titre;
+    $("#modale-texte").textContent = texte;
+    $("#modale-valider").textContent = bouton;
+    $("#modale-valider").className = "btn " + (ton === "danger" ? "danger" : "principal");
+    $("#modale-icone").className = "modale-icone " + ton;
+    $("#modale-icone").innerHTML = icone(ton === "danger" ? "ic-alerte" : ton === "vigilance" ? "ic-puissance" : "ic-info", "i i-l");
+
+    const garde = $("#modale-garde"), saisie = $("#modale-saisie"), valider = $("#modale-valider");
+    garde.hidden = !mot;
+    if (mot) {
+      $("#modale-mot").textContent = mot;
+      saisie.value = ""; valider.disabled = true;
+      saisie.oninput = () => { valider.disabled = saisie.value.trim() !== mot; };
+    } else { valider.disabled = false; }
+
+    m.classList.add("ouverte");
+    montrerVoile(fermer);
+    setTimeout(() => (mot ? saisie : valider).focus(), 60);
+
+    function fermer(resultat = false) {
+      m.classList.remove("ouverte");
+      valider.onclick = null; $("#modale-annuler").onclick = null; saisie.oninput = null;
+      resoudre(resultat);
+    }
+    valider.onclick = () => { fermer(true); cacherVoile(); };
+    $("#modale-annuler").onclick = cacherVoile;
+  });
+}
+
+/* --- Tiroir de détail ---------------------------------------------------- */
+function ouvrirTiroir({ titre, sous, onglets, pied = "" }) {
+  const t = $("#tiroir");
+  $("#tiroir-titre").textContent = titre;
+  $("#tiroir-sous").innerHTML = sous || "";
+  $("#tiroir-pied").innerHTML = pied;
+  const barre = $("#tiroir-onglets"), corps = $("#tiroir-corps");
+  barre.innerHTML = onglets.map((o, i) =>
+    `<button role="tab" aria-selected="${i === 0}" data-onglet="${i}">${echappe(o.nom)}</button>`).join("");
+  const afficher = (i) => {
+    corps.innerHTML = onglets[i].html;
+    $$("#tiroir-onglets button").forEach((b, j) => b.setAttribute("aria-selected", String(i === j)));
+  };
+  barre.onclick = (e) => { const b = e.target.closest("[data-onglet]"); if (b) afficher(+b.dataset.onglet); };
+  afficher(0);
+  t.classList.add("ouvert"); t.setAttribute("aria-hidden", "false");
+  montrerVoile(() => { t.classList.remove("ouvert"); t.setAttribute("aria-hidden", "true"); });
+}
+$("#tiroir-fermer").onclick = cacherVoile;
+
+/* --- Menus déroulants ---------------------------------------------------- */
+const PAIRES_MENU = [["#btn-orga", "#menu-orga"], ["#btn-compte", "#menu-compte"],
+  ["#btn-vue-options", "#menu-vue-options"], ["#btn-notifs", "#panneau-notifs"], ["#btn-colonnes", "#menu-colonnes"]];
+function fermerMenus() {
+  PAIRES_MENU.forEach(([b, m]) => { $(m)?.classList.remove("ouvert"); $(b)?.setAttribute("aria-expanded", "false"); });
+}
+PAIRES_MENU.forEach(([b, m]) => {
+  $(b)?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const ouvert = $(m).classList.contains("ouvert");
+    fermerMenus();
+    if (!ouvert) { $(m).classList.add("ouvert"); $(b).setAttribute("aria-expanded", "true"); }
+  });
+});
+document.addEventListener("click", (e) => { if (!e.target.closest(".enveloppe-menu")) fermerMenus(); });
+
+/* --- Thème et densité ----------------------------------------------------- */
+function appliquerTheme(nom) {
+  racine.dataset.theme = nom;
+  Pref.ecrire("theme", nom);
+  $("#icone-theme").innerHTML = `<use href="#${nom === "sombre" ? "ic-soleil" : "ic-lune"}"></use>`;
+  if (window.Graphiques && Graphiques.demarre) Graphiques.rehabiller();
+}
+function basculerTheme() { appliquerTheme(racine.dataset.theme === "sombre" ? "clair" : "sombre"); }
+function basculerDensite() {
+  const d = racine.dataset.densite === "normale" ? "compacte" : "normale";
+  racine.dataset.densite = d; Pref.ecrire("densite", d);
+  $("#etat-densite").textContent = d;
+  toast("Densité " + d, "info");
+}
+function basculerRail() {
+  const r = racine.dataset.rail === "replie" ? "deplie" : "replie";
+  racine.dataset.rail = r; Pref.ecrire("rail", r);
+}
+
+/* =========================================================================
+   3. NAVIGATION — rail, fil d'Ariane, vues
+   ========================================================================= */
+let vueCourante = "apercu";
+
+function construireRail() {
+  $("#rail-nav").innerHTML = NAV.map(g => `
+    <div class="rail-groupe">
+      <div class="rail-titre">${echappe(g.groupe)}</div>
+      ${g.entrees.map(e => `
+        <button class="rail-lien" data-aller="${e.cle}" title="${echappe(e.nom)}"
+                ${e.compte ? 'data-compte="1"' : ""}>
+          ${icone(e.icone, "i")}
+          <span class="etiq">${echappe(e.nom)}</span>
+          ${e.compte ? `<span class="pastille ${e.ton || ""}">${e.compte}</span>` : ""}
+        </button>`).join("")}
+    </div>`).join("");
+}
+
+function entreeNav(cle) {
+  for (const g of NAV) { const e = g.entrees.find(x => x.cle === cle); if (e) return { ...e, groupe: g.groupe }; }
+  return null;
+}
+
+function aller(cle) {
+  const e = entreeNav(cle); if (!e) return;
+  vueCourante = cle;
+  $("#fil-section").textContent = e.groupe;
+  $("#fil-page").textContent = e.nom;
+  document.title = e.nom + " — Centre de commande";
+
+  $$(".rail-lien").forEach(b => b.removeAttribute("aria-current"));
+  $(`.rail-lien[data-aller="${cle}"]`)?.setAttribute("aria-current", "page");
+
+  const cibleVue = VUES_REELLES.has(cle) ? cle : "gabarit";
+  $$(".vue").forEach(v => v.classList.toggle("active", v.dataset.vue === cibleVue));
+  if (cibleVue === "gabarit") {
+    $("#gabarit-titre").textContent = e.nom;
+    $("#gabarit-texte").textContent = `L'écran « ${e.nom} » n'est pas encore branché. Recopiez une vue existante — tableau, explorateur ou matrice — et déclarez sa clé dans VUES_REELLES.`;
+  }
+  $("#contenu").scrollTop = 0;
+  if (racine.dataset.rail === "ouvert-mobile") racine.dataset.rail = "deplie";
+  history.replaceState(null, "", "#" + cle);
+}
+
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-aller]");
+  if (b) { aller(b.dataset.aller); fermerMenus(); cacherVoile(); }
+});
+
+/* =========================================================================
+   4. PALETTE DE COMMANDES
+   ========================================================================= */
+const ACTIONS_PALETTE = [
+  { nom: "Actualiser les données", sous: "R", icone: "ic-rafraichir", faire: () => actualiser() },
+  { nom: "Basculer le thème", sous: "T", icone: "ic-lune", faire: basculerTheme },
+  { nom: "Changer la densité", sous: "D", icone: "ic-colonnes", faire: basculerDensite },
+  { nom: "Replier le rail", sous: "Ctrl B", icone: "ic-chevron-gauche", faire: basculerRail },
+  { nom: "Exporter la vue en CSV", icone: "ic-telecharger", faire: () => exporterVue() },
+  { nom: "Imprimer / enregistrer en PDF", sous: "Ctrl P", icone: "ic-rapport", faire: () => window.print() },
+  { nom: "Mettre la plateforme en maintenance", icone: "ic-puissance", faire: () => actionMaintenance() },
+  { nom: "Redémarrer un service…", icone: "ic-serveur", faire: () => { aller("apercu"); toast("Choisissez un nœud dans la flotte, puis son menu d'actions.", "info"); } },
+  { nom: "Afficher les raccourcis clavier", sous: "?", icone: "ic-clavier", faire: () => montrerRaccourcis() },
+];
+
+let paletteIndex = 0, paletteResultats = [];
+function ouvrirPalette() {
+  $("#palette").classList.add("ouverte");
+  $("#palette-champ").value = "";
+  filtrerPalette("");
+  montrerVoile(() => $("#palette").classList.remove("ouverte"));
+  setTimeout(() => $("#palette-champ").focus(), 50);
+}
+function normaliser(s) { return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+
+function filtrerPalette(q) {
+  const n = normaliser(q);
+  const pages = NAV.flatMap(g => g.entrees.map(e => ({
+    type: "Aller à", nom: e.nom, sous: g.groupe, icone: e.icone, faire: () => aller(e.cle),
+  })));
+  const serveurs = D.flotte.map(s => ({
+    type: "Serveurs", nom: s.nom, sous: s.role + " · " + s.region, icone: "ic-serveur",
+    faire: () => { aller("apercu"); detailNoeud(s); },
+  }));
+  const actions = ACTIONS_PALETTE.map(a => ({ type: "Actions", ...a }));
+  paletteResultats = [...pages, ...actions, ...serveurs]
+    .filter(r => !n || normaliser(r.nom + " " + (r.sous || "")).includes(n))
+    .slice(0, 24);
+  paletteIndex = 0;
+  dessinerPalette();
+}
+
+function dessinerPalette() {
+  const liste = $("#palette-liste");
+  if (!paletteResultats.length) {
+    liste.innerHTML = `<div class="vide" style="padding:34px 16px"><p>Aucun résultat.</p></div>`;
+    return;
+  }
+  let html = "", groupe = null;
+  paletteResultats.forEach((r, i) => {
+    if (r.type !== groupe) { groupe = r.type; html += `<div class="palette-groupe">${echappe(groupe)}</div>`; }
+    html += `<button class="palette-item" data-i="${i}" data-actif="${i === paletteIndex ? 1 : 0}" role="option">
+      <span class="ic">${icone(r.icone, "i")}</span>
+      <span>${echappe(r.nom)}</span>
+      ${r.sous ? `<span class="sous">${echappe(r.sous)}</span>` : ""}
+      ${i === paletteIndex ? '<kbd style="margin-left:auto">Entrée</kbd>' : ""}
+    </button>`;
+  });
+  liste.innerHTML = html;
+  liste.querySelector('[data-actif="1"]')?.scrollIntoView({ block: "nearest" });
+}
+
+$("#palette-champ").addEventListener("input", (e) => filtrerPalette(e.target.value));
+$("#palette-liste").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-i]"); if (!b) return;
+  const r = paletteResultats[+b.dataset.i]; cacherVoile(); r.faire();
+});
+$("#palette").addEventListener("keydown", (e) => {
+  if (e.key === "ArrowDown") { e.preventDefault(); paletteIndex = Math.min(paletteIndex + 1, paletteResultats.length - 1); dessinerPalette(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); paletteIndex = Math.max(paletteIndex - 1, 0); dessinerPalette(); }
+  else if (e.key === "Enter") { e.preventDefault(); const r = paletteResultats[paletteIndex]; if (r) { cacherVoile(); r.faire(); } }
+});
+</script>
+
+<script>
+"use strict";
+/* =========================================================================
+   5. GRAPHIQUES — Chart.js, habillés par les jetons CSS
+      Règles tenues ici : un seul axe de valeurs par graphique, marques fines,
+      légende dès deux séries, étiquettes directes, grille discrète, et une
+      vue tabulaire de repli pour chaque graphique.
+   ========================================================================= */
+const Graphiques = (() => {
+  const instances = {};
+
+  function palette() {
+    return {
+      encre: jeton("--encre"), encre2: jeton("--encre-2"), encre3: jeton("--encre-3"),
+      surface: jeton("--surface"), grille: jeton("--bordure"),
+      serie: n => jeton("--serie-" + n), rampe: n => jeton("--rampe-" + n),
+    };
+  }
+  const voiler = (hex, a) => {
+    const h = hex.replace("#", "");
+    const n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16);
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+  };
+
+  function base(p) {
+    return {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 420 },
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: p.surface, titleColor: p.encre, bodyColor: p.encre2,
+          borderColor: jeton("--bordure-2"), borderWidth: 1, padding: 10,
+          cornerRadius: 8, boxPadding: 4, usePointStyle: true,
+          titleFont: { weight: "600", size: 12 }, bodyFont: { size: 12 },
+        },
+      },
+      scales: {
+        x: { grid: { display: false }, border: { color: p.grille },
+             ticks: { color: p.encre3, font: { size: 11 }, maxRotation: 0, autoSkipPadding: 18 } },
+        y: { beginAtZero: true, grid: { color: p.grille, drawTicks: false },
+             border: { display: false },
+             ticks: { color: p.encre3, font: { size: 11 }, padding: 8, maxTicksLimit: 6 } },
+      },
+    };
+  }
+
+  /* --- Légende maison : identité + valeur, et bascule au clic ---------- */
+  function legende(idConteneur, graphique, valeurs) {
+    const c = $(idConteneur); if (!c) return;
+    c.innerHTML = graphique.data.datasets.map((ds, i) => `
+      <button class="legende-item" data-ds="${i}">
+        <span class="legende-puce" style="background:${ds.borderColor || ds.backgroundColor}"></span>
+        <span>${echappe(ds.label)}</span>
+        ${valeurs ? `<span class="legende-val">${valeurs[i]}</span>` : ""}
+      </button>`).join("");
+    c.onclick = (e) => {
+      const b = e.target.closest("[data-ds]"); if (!b) return;
+      const i = +b.dataset.ds;
+      const visible = graphique.isDatasetVisible(i);
+      graphique.setDatasetVisibility(i, !visible);
+      b.classList.toggle("eteint", visible);
+      graphique.update();
+    };
+  }
+
+  /* --- Vue tabulaire de repli (accessibilité, impression, vérification) - */
+  function tableDonnees(id, etiquettes, series, format = "nombre") {
+    const c = $(id); if (!c) return;
+    c.innerHTML = `<table class="tbl"><thead><tr><th>Heure</th>${
+      series.map(s => `<th class="num">${echappe(s.nom)}</th>`).join("")}</tr></thead><tbody>${
+      etiquettes.map((e, i) => `<tr><td class="mono">${e}</td>${
+        series.map(s => `<td class="num">${fmt(s.valeurs[i], format)}</td>`).join("")}</tr>`).join("")
+      }</tbody></table>`;
+  }
+
+  function construire() {
+    const p = palette();
+    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = p.encre3;
+
+    /* 1. Charge — aires empilées, trois familles de service */
+    const ctxCharge = $("#g-charge");
+    if (ctxCharge) {
+      instances.charge = new Chart(ctxCharge, {
+        type: "line",
+        data: {
+          labels: D.charge.etiquettes,
+          datasets: D.charge.series.map((s, i) => {
+            const col = p.serie(i + 1);
+            return {
+              label: s.nom, data: s.valeurs,
+              borderColor: col, backgroundColor: voiler(col, .22),
+              borderWidth: 2, fill: true, tension: .32,
+              pointRadius: 0, pointHoverRadius: 5,
+              pointBackgroundColor: col, pointBorderColor: p.surface, pointBorderWidth: 2,
+            };
+          }),
+        },
+        options: {
+          ...base(p),
+          scales: { ...base(p).scales, y: { ...base(p).scales.y, stacked: true,
+            ticks: { ...base(p).scales.y.ticks, callback: v => fmt(v, "compact") } } },
+          plugins: { ...base(p).plugins, tooltip: { ...base(p).plugins.tooltip,
+            callbacks: { label: c => ` ${c.dataset.label} : ${fmt(c.parsed.y)} req/min` } } },
+        },
+      });
+      const totaux = D.charge.series.map(s => "moy. " + fmt(s.valeurs.reduce((a, b) => a + b, 0) / s.valeurs.length, "compact"));
+      legende("#legende-charge", instances.charge, totaux);
+      tableDonnees("#td-charge", D.charge.etiquettes, D.charge.series);
+    }
+
+    /* 2. Latence — rampe séquentielle bleue : p50 clair, p99 foncé */
+    const ctxLat = $("#g-latence");
+    if (ctxLat) {
+      instances.latence = new Chart(ctxLat, {
+        type: "line",
+        data: {
+          labels: D.latence.etiquettes,
+          datasets: D.latence.series.map(s => {
+            const col = p.rampe(s.rampe);
+            return {
+              label: s.nom, data: s.valeurs, borderColor: col, backgroundColor: col,
+              borderWidth: 2, tension: .3, pointRadius: 0, pointHoverRadius: 5,
+              pointBackgroundColor: col, pointBorderColor: p.surface, pointBorderWidth: 2, fill: false,
+            };
+          }),
+        },
+        options: {
+          ...base(p),
+          scales: { ...base(p).scales, y: { ...base(p).scales.y,
+            ticks: { ...base(p).scales.y.ticks, callback: v => fmt(v) + " ms" } } },
+          plugins: { ...base(p).plugins, tooltip: { ...base(p).plugins.tooltip,
+            callbacks: { label: c => ` ${c.dataset.label} : ${fmt(c.parsed.y, "ms")}` } } },
+        },
+      });
+      legende("#legende-latence", instances.latence, D.latence.series.map(s => "max " + fmt(Math.max(...s.valeurs), "ms")));
+      tableDonnees("#td-latence", D.latence.etiquettes, D.latence.series, "ms");
+    }
+
+    /* 3. Volume par service — une seule série, donc pas de légende */
+    const ctxSrv = $("#g-services");
+    if (ctxSrv) {
+      instances.services = new Chart(ctxSrv, {
+        type: "bar",
+        data: {
+          labels: D.services.map(s => s.nom),
+          datasets: [{
+            label: "Requêtes", data: D.services.map(s => s.v),
+            backgroundColor: voiler(p.serie(1), .85), hoverBackgroundColor: p.serie(1),
+            borderRadius: 4, borderSkipped: false, borderColor: p.surface, borderWidth: 1.5,
+            barThickness: 16,
+          }],
+        },
+        options: {
+          ...base(p), indexAxis: "y", interaction: { mode: "nearest", intersect: true },
+          scales: {
+            x: { beginAtZero: true, grid: { color: p.grille, drawTicks: false }, border: { display: false },
+                 ticks: { color: p.encre3, font: { size: 11 }, callback: v => fmt(v, "compact"), maxTicksLimit: 5 } },
+            y: { grid: { display: false }, border: { display: false },
+                 ticks: { color: p.encre2, font: { size: 11.5, family: jeton("--mono") } } },
+          },
+          plugins: { ...base(p).plugins, tooltip: { ...base(p).plugins.tooltip,
+            callbacks: { label: c => ` ${fmt(c.parsed.x)} requêtes` } } },
+        },
+      });
+    }
+
+    /* 4. Familles de réponses — anneau + légende chiffrée */
+    const ctxCodes = $("#g-codes");
+    if (ctxCodes) {
+      const total = D.codes.reduce((a, b) => a + b.v, 0);
+      instances.codes = new Chart(ctxCodes, {
+        type: "doughnut",
+        data: {
+          labels: D.codes.map(c => c.nom),
+          datasets: [{
+            data: D.codes.map(c => c.v),
+            backgroundColor: D.codes.map((c, i) => voiler(p.serie(i + 1), .9)),
+            borderColor: p.surface, borderWidth: 2, hoverOffset: 6,
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: "66%",
+          plugins: {
+            legend: { display: false },
+            tooltip: { ...base(p).plugins.tooltip,
+              callbacks: { label: c => ` ${fmt(c.parsed)} (${NF(2).format(c.parsed / total * 100)} %)` } },
+          },
+        },
+      });
+      $("#legende-codes").innerHTML = D.codes.map((c, i) => `
+        <span class="legende-item" style="cursor:default">
+          <span class="legende-puce" style="background:${p.serie(i + 1)}"></span>
+          <span>${echappe(c.nom)}</span>
+          <span class="legende-val">${NF(1).format(c.v / total * 100)} %</span>
+        </span>`).join("");
+    }
+
+    /* 5. Étincelles des indicateurs */
+    $$("canvas[data-etincelle]").forEach(cv => {
+      const valeurs = JSON.parse(cv.dataset.etincelle);
+      const col = jeton(cv.dataset.couleur || "--accent");
+      instances["et-" + cv.id] = new Chart(cv, {
+        type: "line",
+        data: { labels: valeurs.map((_, i) => i), datasets: [{
+          data: valeurs, borderColor: col, backgroundColor: voiler(col, .16),
+          borderWidth: 1.75, fill: true, tension: .35, pointRadius: 0,
+        }] },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: { x: { display: false }, y: { display: false } },
+          elements: { line: { capBezierPoints: true } },
+        },
+      });
+    });
+  }
+
+  function detruire() { Object.values(instances).forEach(g => g.destroy()); for (const k in instances) delete instances[k]; }
+  function rehabiller() { detruire(); construire(); }
+  return { construire, rehabiller, detruire, instances, demarre: false };
+})();
+window.Graphiques = Graphiques;
+
+/* Bascule « Voir les données » sous chaque graphique */
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-table]"); if (!b) return;
+  const cible = $("#td-" + b.dataset.table);
+  const visible = cible.classList.toggle("visible");
+  b.setAttribute("aria-pressed", String(visible));
+  b.textContent = visible ? "Masquer les données" : "Voir les données";
+});
+</script>
+
+<script>
+"use strict";
+/* =========================================================================
+   6. VUE D'ENSEMBLE — indicateurs, flotte, files, audit
+   ========================================================================= */
+const INDICATEURS = [
+  { cle: "dispo", etiq: "Disponibilité", icone: "ic-horloge", valeur: 99.97, format: "pourcent", d: 2,
+    delta: 0.04, sensBon: "haut", pied: "Objectif de service : 99,90 %", objectif: 99.97 / 100,
+    couleur: "--bon", serie: serie(24, 99.9, .05) },
+  { cle: "debit", etiq: "Requêtes / min", icone: "ic-eclair", valeur: 4820, format: "compact",
+    delta: 8.3, sensBon: "haut", pied: "Pointe à 6 140 vers 11 h", couleur: "--serie-1", serie: D.charge.series[0].valeurs },
+  { cle: "p95", etiq: "Latence p95", icone: "ic-pouls", valeur: 182, format: "ms",
+    delta: 12.6, sensBon: "bas", pied: "Seuil d'alerte : 250 ms", couleur: "--serie-4", serie: D.latence.series[1].valeurs },
+  { cle: "erreurs", etiq: "Taux d'erreur", icone: "ic-alerte", valeur: 0.28, format: "pourcent", d: 2,
+    delta: -31.5, sensBon: "bas", pied: "1 286 réponses 5xx sur la période", couleur: "--critique", serie: serie(24, 14, 4) },
+  { cle: "sessions", etiq: "Sessions actives", icone: "ic-utilisateurs", valeur: 1284, format: "nombre",
+    delta: 2.1, sensBon: "haut", pied: "134 comptes, 7 rôles", couleur: "--serie-7", serie: serie(24, 1200, 90) },
+  { cle: "cout", etiq: "Coût du jour", icone: "ic-monnaie", valeur: 412, format: "euro",
+    delta: -4.8, sensBon: "bas", pied: "Projection du mois : 11 940 €", couleur: "--serie-3", serie: serie(24, 410, 25) },
+];
+
+function rendreIndicateurs() {
+  $("#indicateurs").innerHTML = INDICATEURS.map(k => {
+    const bon = (k.sensBon === "haut") === (k.delta >= 0);
+    const classe = Math.abs(k.delta) < 0.05 ? "plat" : bon ? "hausse" : "baisse";
+    const fleche = k.delta >= 0 ? "ic-tendance-haut" : "ic-tendance-bas";
+    return `<article class="carte ind">
+      <div class="ind-etiq">${icone(k.icone, "i i-s")}${echappe(k.etiq)}</div>
+      <div class="ind-rangee">
+        <div class="ind-valeur">${fmt(k.valeur, k.format, k.d)}</div>
+        <span class="delta ${classe}">${icone(fleche, "i i-s")}${NF(Math.abs(k.delta) < 1 ? 2 : 1).format(Math.abs(k.delta))} %</span>
+      </div>
+      <div class="ind-pied" title="${echappe(k.pied)}">${echappe(k.pied)}</div>
+      ${k.objectif ? `<div class="ind-objectif"><i style="width:${Math.min(100, k.objectif * 100)}%;background:var(${k.couleur})"></i></div>` : ""}
+      <div class="ind-etincelle"><canvas id="et-${k.cle}" data-etincelle='${JSON.stringify(k.serie)}' data-couleur="${k.couleur}"></canvas></div>
+    </article>`;
+  }).join("");
+}
+
+/* --- Flotte -------------------------------------------------------------- */
+const niveauJauge = (v) => v > 90 ? "critique" : v > 78 ? "vigilance" : "";
+function jauge(nom, v) {
+  return `<div class="jauge">
+    <div class="jauge-tete"><span>${nom}</span><b>${v} %</b></div>
+    <div class="jauge-piste"><i class="${niveauJauge(v)}" style="width:${v}%"></i></div>
+  </div>`;
+}
+
+function rendreFlotte() {
+  const f = D.flotte;
+  const hs = f.filter(n => n.etat === "critique").length;
+  $("#flotte-resume").innerHTML = `${f.length} nœuds · ${f.length - hs} en bonne santé · ` +
+    (hs ? `<b style="color:var(--critique)">${hs} en alerte</b>` : "aucun en alerte");
+
+  $("#flotte").innerHTML = f.map((n, i) => `
+    <div class="noeud ${n.etat === "critique" ? "alerte" : ""}" data-noeud="${i}" tabindex="0" role="button">
+      <div class="noeud-tete">
+        <span class="jeton ${n.etat}"><span class="point"></span></span>
+        <div style="flex:1;min-width:0">
+          <div class="noeud-nom">${echappe(n.nom)}</div>
+          <div class="noeud-meta">${echappe(n.role)} · ${echappe(n.region)} · ${echappe(n.version)}</div>
+        </div>
+        <div class="enveloppe-menu">
+          <button class="btn fantome sm icone" data-menu-noeud="${i}" aria-label="Actions sur ${echappe(n.nom)}">
+            ${icone("ic-points", "i i-s")}
+          </button>
+        </div>
+      </div>
+      ${jauge("Processeur", n.cpu)}${jauge("Mémoire", n.ram)}${jauge("Disque", n.disque)}
+    </div>`).join("");
+}
+
+function detailNoeud(n) {
+  ouvrirTiroir({
+    titre: n.nom,
+    sous: `<span class="jeton ${n.etat}"><span class="point"></span>${n.etat === "bon" ? "En bonne santé" : n.etat === "vigilance" ? "À surveiller" : "En alerte"}</span>`,
+    onglets: [
+      { nom: "État", html: `<dl class="def">
+          <dt>Rôle</dt><dd>${echappe(n.role)}</dd>
+          <dt>Région</dt><dd>${echappe(n.region)}</dd>
+          <dt>Version</dt><dd class="mono">${echappe(n.version)}</dd>
+          <dt>En service depuis</dt><dd>${echappe(n.duree)}</dd>
+          <dt>Processeur</dt><dd>${n.cpu} %</dd>
+          <dt>Mémoire</dt><dd>${n.ram} %</dd>
+          <dt>Disque</dt><dd>${n.disque} %</dd>
+        </dl>` },
+      { nom: "Journaux", html: `<div class="journal">${D.journaux.slice(-14).map(l => ligneJournalHTML(l)).join("")}</div>` },
+      { nom: "Actions", html: `<p class="carte-sous" style="margin-bottom:12px">Chaque action est journalisée au nom de l'opérateur connecté.</p>
+        <div class="pile">
+          <button class="btn" data-noeud-action="console" data-noeud-nom="${echappe(n.nom)}">${icone("ic-terminal")}Ouvrir une console</button>
+          <button class="btn" data-noeud-action="drainer" data-noeud-nom="${echappe(n.nom)}">${icone("ic-pause")}Drainer le trafic</button>
+          <button class="btn" data-noeud-action="maintenance" data-noeud-nom="${echappe(n.nom)}">${icone("ic-puissance")}Mettre en maintenance</button>
+          <button class="btn danger" data-noeud-action="redemarrer" data-noeud-nom="${echappe(n.nom)}">${icone("ic-rafraichir")}Redémarrer le nœud</button>
+        </div>` },
+    ],
+    pied: `<button class="btn" data-noeud-action="drainer" data-noeud-nom="${echappe(n.nom)}">Drainer</button>
+           <button class="btn danger" data-noeud-action="redemarrer" data-noeud-nom="${echappe(n.nom)}">Redémarrer</button>`,
+  });
+}
+
+/* Menu contextuel d'un nœud, construit à la volée */
+document.addEventListener("click", async (e) => {
+  const dec = e.target.closest("[data-menu-noeud]");
+  if (dec) {
+    e.stopPropagation();
+    const n = D.flotte[+dec.dataset.menuNoeud];
+    fermerMenus();
+    const enveloppe = dec.parentElement;
+    let m = enveloppe.querySelector(".menu");
+    if (!m) {
+      m = document.createElement("div");
+      m.className = "menu"; m.setAttribute("role", "menu");
+      m.innerHTML = `
+        <button class="menu-item" data-noeud-action="detail">${icone("ic-oeil")}Voir le détail</button>
+        <button class="menu-item" data-noeud-action="console">${icone("ic-terminal")}Ouvrir une console</button>
+        <button class="menu-item" data-noeud-action="drainer">${icone("ic-pause")}Drainer le trafic</button>
+        <button class="menu-item" data-noeud-action="maintenance">${icone("ic-puissance")}Mettre en maintenance</button>
+        <div class="menu-trait"></div>
+        <button class="menu-item danger" data-noeud-action="redemarrer">${icone("ic-rafraichir")}Redémarrer</button>`;
+      m.querySelectorAll("[data-noeud-action]").forEach(b => b.dataset.noeudNom = n.nom);
+      enveloppe.appendChild(m);
+    }
+    m.classList.toggle("ouvert");
+    return;
+  }
+
+  const act = e.target.closest("[data-noeud-action]");
+  if (act) {
+    fermerMenus();
+    const nom = act.dataset.noeudNom;
+    const n = D.flotte.find(x => x.nom === nom);
+    await actionNoeud(act.dataset.noeudAction, n);
+    return;
+  }
+
+  const carte = e.target.closest("[data-noeud]");
+  if (carte && !e.target.closest("button")) detailNoeud(D.flotte[+carte.dataset.noeud]);
+});
+
+async function actionNoeud(action, n) {
+  if (!n) return;
+  if (action === "detail") return detailNoeud(n);
+  if (action === "console") return toast(`Console ouverte sur ${n.nom} — session enregistrée.`, "info");
+
+  if (action === "redemarrer") {
+    const ok = await confirmer({
+      titre: "Redémarrer " + n.nom + " ?",
+      texte: `Le nœud cessera de répondre pendant 40 à 90 secondes. Le trafic sera basculé sur les autres nœuds ${n.role.toLowerCase()}. L'action est tracée dans le journal d'audit.`,
+      bouton: "Redémarrer", ton: "danger", mot: n.nom,
+    });
+    if (ok) toast(`Redémarrage de ${n.nom} lancé.`, "bon", { annuler: () => toast("Redémarrage annulé.", "info") });
+    return;
+  }
+  if (action === "drainer") {
+    const ok = await confirmer({
+      titre: "Drainer " + n.nom + " ?",
+      texte: "Le nœud ne recevra plus de nouvelle requête. Les requêtes en cours sont menées à leur terme.",
+      bouton: "Drainer", ton: "vigilance",
+    });
+    if (ok) toast(`${n.nom} est en cours de drainage.`, "bon");
+    return;
+  }
+  if (action === "maintenance") {
+    const ok = await confirmer({
+      titre: "Mettre " + n.nom + " en maintenance ?",
+      texte: "Le nœud sort de la rotation et les alertes qui le concernent sont mises en sourdine jusqu'à sa sortie de maintenance.",
+      bouton: "Mettre en maintenance", ton: "vigilance",
+    });
+    if (ok) toast(`${n.nom} est en maintenance.`, "bon");
+  }
+}
+
+/* --- Files de travail ---------------------------------------------------- */
+function rendreFiles() {
+  $("#files-travail").innerHTML = D.files.map((f, i) => {
+    const ton = f.etat === "échoué" ? "critique" : f.etat === "en cours" ? "" : "bon";
+    const classeJeton = f.etat === "échoué" ? "critique" : f.etat === "en cours" ? "bon" : "neutre";
+    return `<div style="padding:9px 0;border-bottom:1px solid var(--bordure)">
+      <div class="rangee" style="gap:8px;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:550;flex:1;min-width:0">${echappe(f.nom)}</span>
+        <span class="jeton ${classeJeton}"><span class="point"></span>${echappe(f.etat)}</span>
+      </div>
+      <div class="rangee" style="gap:9px">
+        <div class="progression" style="flex:1"><i class="${ton}" style="width:${f.fait}%"></i></div>
+        <span class="carte-sous mono" style="min-width:34px;text-align:right">${f.fait} %</span>
+        ${f.etat === "échoué"
+          ? `<button class="btn sm" data-file="${i}" data-file-action="relancer">Relancer</button>`
+          : f.etat === "en attente"
+            ? `<button class="btn sm" data-file="${i}" data-file-action="prioriser">Prioriser</button>`
+            : `<button class="btn fantome sm" data-file="${i}" data-file-action="annuler">Annuler</button>`}
+      </div>
+      <div class="carte-sous" style="margin-top:4px;font-size:11.5px">Débit : ${echappe(f.debit)}</div>
+    </div>`;
+  }).join("");
+}
+
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-file-action]"); if (!b) return;
+  const f = D.files[+b.dataset.file], a = b.dataset.fileAction;
+  if (a === "relancer") { f.etat = "en cours"; f.debit = "reprise…"; rendreFiles(); toast(`« ${f.nom} » relancé depuis le dernier point de reprise.`, "bon"); }
+  if (a === "prioriser") { f.etat = "en cours"; rendreFiles(); toast(`« ${f.nom} » placé en tête de file.`, "bon"); }
+  if (a === "annuler") {
+    const ok = await confirmer({ titre: "Annuler ce traitement ?", texte: `« ${f.nom} » sera interrompu. Le travail déjà effectué est conservé.`, bouton: "Interrompre" });
+    if (ok) { f.etat = "échoué"; f.debit = "arrêté"; rendreFiles(); toast("Traitement interrompu.", "info"); }
+  }
+});
+
+/* --- Journal d'audit ----------------------------------------------------- */
+function rendreAudit() {
+  $("#tbl-audit tbody").innerHTML = D.audit.map(a => `
+    <tr>
+      <td class="mono" style="color:var(--encre-3);white-space:nowrap">${echappe(a.horo)}</td>
+      <td>${echappe(a.auteur)}</td>
+      <td style="font-weight:550">${echappe(a.action)}</td>
+      <td class="mono" style="color:var(--encre-2)">${echappe(a.cible)}</td>
+      <td class="mono" style="color:var(--encre-3)">${echappe(a.origine)}</td>
+      <td class="num"><span class="jeton ${a.resultat === "accepté" ? "bon" : "critique"}"><span class="point"></span>${echappe(a.resultat)}</span></td>
+    </tr>`).join("");
+}
+
+/* --- Notifications ------------------------------------------------------- */
+function rendreNotifications() {
+  const couleur = { critique: "var(--critique)", vigilance: "var(--vigilance)", bon: "var(--bon)", neutre: "var(--encre-4)" };
+  $("#liste-notifs").innerHTML = D.notifications.map((n, i) => `
+    <button class="notif" data-notif="${i}">
+      <span class="notif-pastille" style="background:${couleur[n.ton]};${n.lu ? "opacity:.3" : ""}"></span>
+      <span style="flex:1;min-width:0">
+        <span class="notif-titre" style="${n.lu ? "font-weight:400;color:var(--encre-2)" : ""}">${echappe(n.titre)}</span>
+        <span class="notif-texte">${echappe(n.texte)}</span>
+        <span class="notif-quand">${echappe(n.quand)}</span>
+      </span>
+    </button>`).join("");
+  $("#cloche-point").style.display = D.notifications.some(n => !n.lu) ? "" : "none";
+}
+document.addEventListener("click", (e) => {
+  if (e.target.closest('[data-action="tout-lu"]')) {
+    D.notifications.forEach(n => n.lu = true); rendreNotifications(); toast("Notifications marquées comme lues.", "info");
+  }
+  const n = e.target.closest("[data-notif]");
+  if (n) { D.notifications[+n.dataset.notif].lu = true; rendreNotifications(); aller("alertes"); fermerMenus(); }
+});
+</script>
+
+<script>
+"use strict";
+/* =========================================================================
+   7. TABLEAU AVANCÉ — recherche, filtres, colonnes, tri, sélection, lot,
+      pagination, panneau de détail, export CSV
+   ========================================================================= */
+const COLONNES = [
+  { cle: "nom",      nom: "Compte",            triable: true,  fixe: true,
+    rendu: u => `<div class="cellule-ident"><span class="avatar sm">${echappe(u.nom.split(" ").map(m => m[0]).join("").slice(0, 2))}</span>
+      <span style="min-width:0"><span class="nom">${echappe(u.nom)}</span><span class="sous">${echappe(u.courriel)}</span></span></div>` },
+  { cle: "role",     nom: "Rôle",              triable: true,  rendu: u => echappe(u.role) },
+  { cle: "espace",   nom: "Espace",            triable: true,  rendu: u => echappe(u.espace) },
+  { cle: "statut",   nom: "Statut",            triable: true,
+    rendu: u => `<span class="jeton ${u.statut === "actif" ? "bon" : u.statut === "invite" ? "vigilance" : "critique"}">
+      <span class="point"></span>${u.statut === "actif" ? "Actif" : u.statut === "invite" ? "Invité" : "Suspendu"}</span>` },
+  { cle: "deuxFacteurs", nom: "2 facteurs",    triable: true,
+    rendu: u => u.deuxFacteurs
+      ? `<span class="jeton bon"><span class="point"></span>activé</span>`
+      : `<span class="jeton neutre">non activé</span>` },
+  { cle: "sessions", nom: "Sessions", num: true, triable: true, rendu: u => u.sessions || "—" },
+  { cle: "derniere", nom: "Dernière activité", triable: true,
+    rendu: u => u.derniere === 0 ? "à l'instant" : u.derniere < 24 ? `il y a ${u.derniere} h` : `il y a ${Math.round(u.derniere / 24)} j` },
+  { cle: "cree",     nom: "Créé le", triable: true, rendu: u => new Date(u.cree).toLocaleDateString("fr-FR") },
+];
+
+const Tableau = {
+  tri: { cle: "derniere", sens: "asc" },
+  page: 1, taille: 25,
+  selection: new Set(),
+  visibles: new Set(COLONNES.map(c => c.cle)),
+
+  filtrees() {
+    const q = normaliser($("#u-recherche").value.trim());
+    const role = $("#u-role").value, statut = $("#u-statut").value, espace = $("#u-espace").value;
+    let lignes = D.utilisateurs.filter(u =>
+      (!q || normaliser(u.nom + " " + u.courriel + " " + u.id).includes(q)) &&
+      (!role || u.role === role) && (!statut || u.statut === statut) && (!espace || u.espace === espace));
+    const { cle, sens } = this.tri, signe = sens === "asc" ? 1 : -1;
+    lignes.sort((a, b) => {
+      const x = a[cle], y = b[cle];
+      if (typeof x === "number" || typeof x === "boolean") return (Number(x) - Number(y)) * signe;
+      return String(x).localeCompare(String(y), "fr") * signe;
+    });
+    return lignes;
+  },
+
+  rendre() {
+    const lignes = this.filtrees();
+    const pages = Math.max(1, Math.ceil(lignes.length / this.taille));
+    this.page = Math.min(this.page, pages);
+    const debut = (this.page - 1) * this.taille;
+    const page = lignes.slice(debut, debut + this.taille);
+    const cols = COLONNES.filter(c => this.visibles.has(c.cle));
+
+    $("#u-entetes").innerHTML =
+      `<th class="col-case"><input type="checkbox" class="case" id="u-tout" aria-label="Tout sélectionner"></th>` +
+      cols.map(c => {
+        const actif = this.tri.cle === c.cle;
+        return `<th class="${c.num ? "num " : ""}${c.triable ? "triable" : ""}" ${c.triable ? `data-tri="${c.cle}"` : ""}
+          ${actif ? `aria-sort="${this.tri.sens === "asc" ? "ascending" : "descending"}"` : ""}>
+          ${echappe(c.nom)}${c.triable ? `<span class="fleche">${this.tri.sens === "asc" && actif ? "▲" : "▼"}</span>` : ""}</th>`;
+      }).join("") + `<th class="num">Actions</th>`;
+
+    $("#u-corps").innerHTML = page.map(u => `
+      <tr data-id="${u.id}" class="${this.selection.has(u.id) ? "selectionnee" : ""}">
+        <td class="col-case"><input type="checkbox" class="case" data-case="${u.id}" ${this.selection.has(u.id) ? "checked" : ""} aria-label="Sélectionner ${echappe(u.nom)}"></td>
+        ${cols.map(c => `<td class="${c.num ? "num" : ""}">${c.rendu(u)}</td>`).join("")}
+        <td class="num"><div class="actions-ligne">
+          <button class="btn fantome sm icone" data-ligne="detail" data-id="${u.id}" title="Détail">${icone("ic-oeil")}</button>
+          <button class="btn fantome sm icone" data-ligne="mdp" data-id="${u.id}" title="Réinitialiser le mot de passe">${icone("ic-cle")}</button>
+          <button class="btn fantome sm icone" data-ligne="suspendre" data-id="${u.id}" title="${u.statut === "suspendu" ? "Réactiver" : "Suspendre"}">${icone(u.statut === "suspendu" ? "ic-lecture" : "ic-pause")}</button>
+        </div></td>
+      </tr>`).join("");
+
+    const vide = lignes.length === 0;
+    $("#u-vide").hidden = !vide;
+    $("#tbl-utilisateurs").style.display = vide ? "none" : "";
+
+    $("#u-compteur").innerHTML = vide ? "Aucun résultat"
+      : `<b style="color:var(--encre)">${fmt(debut + 1)}–${fmt(debut + page.length)}</b> sur ${fmt(lignes.length)} comptes` +
+        (lignes.length !== D.utilisateurs.length ? ` <span style="color:var(--encre-4)">(filtré sur ${fmt(D.utilisateurs.length)})</span>` : "");
+
+    const idsPage = page.map(u => u.id);
+    const coches = idsPage.filter(i => this.selection.has(i)).length;
+    const tout = $("#u-tout");
+    if (tout) { tout.checked = coches > 0 && coches === idsPage.length; tout.indeterminate = coches > 0 && coches < idsPage.length; }
+
+    this.rendrePagination(pages);
+    this.rendreBarreLot();
+  },
+
+  rendrePagination(pages) {
+    const p = this.page;
+    const nums = new Set([1, pages, p - 1, p, p + 1].filter(n => n >= 1 && n <= pages));
+    let html = `<button data-page="${p - 1}" ${p === 1 ? "disabled" : ""} aria-label="Page précédente">${icone("ic-chevron-gauche")}</button>`;
+    let dernier = 0;
+    [...nums].sort((a, b) => a - b).forEach(n => {
+      if (n - dernier > 1) html += `<span style="padding:0 4px;color:var(--encre-4)">…</span>`;
+      html += `<button data-page="${n}" ${n === p ? 'aria-current="true"' : ""}>${n}</button>`;
+      dernier = n;
+    });
+    html += `<button data-page="${p + 1}" ${p === pages ? "disabled" : ""} aria-label="Page suivante">${icone("ic-chevron-droite")}</button>`;
+    $("#u-pagination").innerHTML = html;
+  },
+
+  rendreBarreLot() {
+    const n = this.selection.size;
+    $("#barre-lot").classList.toggle("visible", n > 0);
+    $("#lot-compte").textContent = n;
+  },
+
+  rendreFiltres() {
+    $("#u-role").innerHTML = `<option value="">Tous les rôles</option>` +
+      [...new Set(D.utilisateurs.map(u => u.role))].sort().map(r => `<option>${echappe(r)}</option>`).join("");
+    $("#u-espace").innerHTML = `<option value="">Tous les espaces</option>` +
+      [...new Set(D.utilisateurs.map(u => u.espace))].sort().map(r => `<option>${echappe(r)}</option>`).join("");
+    $("#menu-colonnes").innerHTML = `<div class="menu-titre">Colonnes affichées</div>` +
+      COLONNES.map(c => `<button class="menu-item" data-colonne="${c.cle}" ${c.fixe ? "disabled style=opacity:.5" : ""}>
+        <input type="checkbox" class="case" ${this.visibles.has(c.cle) ? "checked" : ""} tabindex="-1" style="pointer-events:none">
+        ${echappe(c.nom)}</button>`).join("");
+  },
+
+  detail(id) {
+    const u = D.utilisateurs.find(x => x.id === id); if (!u) return;
+    const sessions = Array.from({ length: Math.max(1, u.sessions) }, (_, i) => ({
+      appareil: choix(["Chrome · Windows", "Safari · iPhone", "Firefox · Linux", "Edge · Windows"]),
+      lieu: choix(["Libreville", "Port-Gentil", "Paris", "Dakar"]),
+      depuis: Math.round(entre(1, 72)) + " h", courante: i === 0,
+    }));
+    ouvrirTiroir({
+      titre: u.nom,
+      sous: `<span class="mono">${echappe(u.id)}</span> · ${echappe(u.courriel)}`,
+      onglets: [
+        { nom: "Profil", html: `<dl class="def">
+            <dt>Rôle</dt><dd>${echappe(u.role)}</dd>
+            <dt>Espace</dt><dd>${echappe(u.espace)}</dd>
+            <dt>Statut</dt><dd>${echappe(u.statut)}</dd>
+            <dt>Deux facteurs</dt><dd>${u.deuxFacteurs ? "activé" : "<b style='color:var(--vigilance)'>non activé</b>"}</dd>
+            <dt>Créé le</dt><dd>${new Date(u.cree).toLocaleDateString("fr-FR")}</dd>
+            <dt>Sessions ouvertes</dt><dd>${u.sessions}</dd>
+          </dl>` },
+        { nom: "Sessions", html: sessions.map(s => `
+            <div class="rangee" style="padding:9px 0;border-bottom:1px solid var(--bordure)">
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:550">${echappe(s.appareil)}${s.courante ? ' <span class="jeton bon" style="margin-left:4px"><span class="point"></span>courante</span>' : ""}</div>
+                <div class="carte-sous">${echappe(s.lieu)} · ouverte il y a ${echappe(s.depuis)}</div>
+              </div>
+              <button class="btn sm" data-session-revoquer>Révoquer</button>
+            </div>`).join("") },
+        { nom: "Droits", html: `<p class="carte-sous" style="margin-bottom:11px">Droits hérités du rôle « ${echappe(u.role)} ».</p>
+            <dl class="def">${D.permissions.map(p => {
+              const i = D.roles.indexOf(u.role);
+              const e = i >= 0 ? D.droits[p.cle][i].etat : "aucun";
+              return `<dt>${echappe(p.nom)}</dt><dd><span class="jeton ${e === "complet" ? "bon" : e === "lecture" ? "neutre" : "neutre"}">${e}</span></dd>`;
+            }).join("")}</dl>` },
+        { nom: "Journal", html: `<div class="journal">${D.journaux.slice(-12).map(l => ligneJournalHTML(l)).join("")}</div>` },
+      ],
+      pied: `<button class="btn" data-ligne="mdp" data-id="${u.id}">${icone("ic-cle")}Réinitialiser l'accès</button>
+             <button class="btn ${u.statut === "suspendu" ? "" : "danger"} pousse" data-ligne="suspendre" data-id="${u.id}">
+               ${u.statut === "suspendu" ? "Réactiver le compte" : "Suspendre le compte"}</button>`,
+    });
+  },
+};
+
+/* --- Branchements du tableau -------------------------------------------- */
+["#u-recherche", "#u-role", "#u-statut", "#u-espace"].forEach(s =>
+  $(s).addEventListener("input", () => { Tableau.page = 1; Tableau.rendre(); }));
+$("#u-taille").addEventListener("change", (e) => { Tableau.taille = +e.target.value; Tableau.page = 1; Tableau.rendre(); });
+["#u-raz", "#u-vide-raz"].forEach(s => $(s).addEventListener("click", () => {
+  $("#u-recherche").value = ""; $("#u-role").value = ""; $("#u-statut").value = ""; $("#u-espace").value = "";
+  Tableau.page = 1; Tableau.rendre();
+}));
+
+$("#tbl-utilisateurs").addEventListener("click", async (e) => {
+  const entete = e.target.closest("[data-tri]");
+  if (entete) {
+    const c = entete.dataset.tri;
+    Tableau.tri = { cle: c, sens: Tableau.tri.cle === c && Tableau.tri.sens === "asc" ? "desc" : "asc" };
+    return Tableau.rendre();
+  }
+  if (e.target.id === "u-tout") {
+    const ids = Tableau.filtrees().slice((Tableau.page - 1) * Tableau.taille, Tableau.page * Tableau.taille).map(u => u.id);
+    const tout = ids.every(i => Tableau.selection.has(i));
+    ids.forEach(i => tout ? Tableau.selection.delete(i) : Tableau.selection.add(i));
+    return Tableau.rendre();
+  }
+  const c = e.target.closest("[data-case]");
+  if (c) {
+    const id = c.dataset.case;
+    Tableau.selection.has(id) ? Tableau.selection.delete(id) : Tableau.selection.add(id);
+    return Tableau.rendre();
+  }
+  const b = e.target.closest("[data-ligne]");
+  if (b) { e.stopPropagation(); return actionLigne(b.dataset.ligne, b.dataset.id); }
+  const tr = e.target.closest("tr[data-id]");
+  if (tr) Tableau.detail(tr.dataset.id);
+});
+
+$("#u-pagination").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-page]"); if (!b) return;
+  Tableau.page = +b.dataset.page; Tableau.rendre();
+  $(".tbl-enveloppe").scrollTop = 0;
+});
+
+$("#menu-colonnes").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-colonne]"); if (!b || b.disabled) return;
+  const c = b.dataset.colonne;
+  Tableau.visibles.has(c) ? Tableau.visibles.delete(c) : Tableau.visibles.add(c);
+  Tableau.rendreFiltres(); Tableau.rendre();
+  $("#menu-colonnes").classList.add("ouvert");
+});
+
+/* Actions sur une ligne (aussi déclenchables depuis le tiroir) */
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-ligne]");
+  if (!b || e.target.closest("#tbl-utilisateurs")) return;
+  await actionLigne(b.dataset.ligne, b.dataset.id);
+});
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-session-revoquer]")) toast("Session révoquée. L'appareil devra se reconnecter.", "bon");
+});
+
+async function actionLigne(action, id) {
+  const u = D.utilisateurs.find(x => x.id === id); if (!u) return;
+  if (action === "detail") return Tableau.detail(id);
+  if (action === "mdp") {
+    const ok = await confirmer({ titre: "Réinitialiser l'accès de " + u.nom + " ?",
+      texte: "Un lien à usage unique, valable 30 minutes, sera envoyé à " + u.courriel + ". Les sessions ouvertes restent actives.",
+      bouton: "Envoyer le lien", ton: "info" });
+    if (ok) toast("Lien de réinitialisation envoyé à " + u.courriel, "bon");
+    return;
+  }
+  if (action === "suspendre") {
+    if (u.statut === "suspendu") { u.statut = "actif"; Tableau.rendre(); return toast(u.nom + " a été réactivé.", "bon"); }
+    const ok = await confirmer({ titre: "Suspendre " + u.nom + " ?",
+      texte: "Ses sessions seront fermées immédiatement et il ne pourra plus se connecter. Les données et l'historique sont conservés.",
+      bouton: "Suspendre", ton: "danger" });
+    if (ok) {
+      const avant = u.statut; u.statut = "suspendu"; Tableau.rendre();
+      toast(u.nom + " a été suspendu.", "bon", { annuler: () => { u.statut = avant; Tableau.rendre(); toast("Suspension annulée.", "info"); } });
+    }
+  }
+}
+
+/* --- Actions groupées ---------------------------------------------------- */
+$("#barre-lot").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-lot]"); if (!b) return;
+  const a = b.dataset.lot, ids = [...Tableau.selection], n = ids.length;
+  const vider = () => { Tableau.selection.clear(); Tableau.rendre(); };
+
+  if (a === "vider") return vider();
+  if (a === "export") { exporterCSV("comptes-selection", D.utilisateurs.filter(u => Tableau.selection.has(u.id))); return toast(`${n} comptes exportés.`, "bon"); }
+  if (a === "role") return toast("Choisissez le rôle cible dans le panneau d'attribution.", "info");
+  if (a === "mdp") {
+    const ok = await confirmer({ titre: `Réinitialiser l'accès de ${n} comptes ?`,
+      texte: "Chaque compte recevra un lien à usage unique valable 30 minutes.", bouton: "Envoyer les liens", ton: "info" });
+    if (ok) { toast(`${n} liens envoyés.`, "bon"); vider(); }
+    return;
+  }
+  if (a === "suspendre" || a === "reactiver") {
+    const cible = a === "suspendre" ? "suspendu" : "actif";
+    const ok = await confirmer({ titre: `${a === "suspendre" ? "Suspendre" : "Réactiver"} ${n} comptes ?`,
+      texte: a === "suspendre"
+        ? "Toutes leurs sessions seront fermées immédiatement. L'opération est réversible et journalisée."
+        : "Ces comptes pourront se reconnecter dès validation.",
+      bouton: a === "suspendre" ? "Suspendre" : "Réactiver", ton: a === "suspendre" ? "danger" : "info" });
+    if (ok) {
+      const avant = ids.map(i => ({ i, s: D.utilisateurs.find(u => u.id === i).statut }));
+      ids.forEach(i => D.utilisateurs.find(u => u.id === i).statut = cible);
+      vider();
+      toast(`${n} comptes mis à jour.`, "bon", { annuler: () => {
+        avant.forEach(({ i, s }) => D.utilisateurs.find(u => u.id === i).statut = s); Tableau.rendre(); toast("Opération annulée.", "info");
+      } });
+    }
+    return;
+  }
+  if (a === "supprimer") {
+    const ok = await confirmer({ titre: `Supprimer ${n} comptes ?`,
+      texte: "La suppression est définitive : identités, sessions et jetons sont effacés. Le journal d'audit conserve la trace de l'opération.",
+      bouton: "Supprimer définitivement", ton: "danger", mot: "SUPPRIMER" });
+    if (ok) {
+      D.utilisateurs = D.utilisateurs.filter(u => !Tableau.selection.has(u.id));
+      vider(); toast(`${n} comptes supprimés.`, "bon");
+    }
+  }
+});
+</script>
+
+<script>
+"use strict";
+/* =========================================================================
+   8. EXPLORATEUR DE JOURNAUX
+   ========================================================================= */
+const Journaux = {
+  niveaux: new Set(["ERREUR", "ALERTE", "INFO"]),
+  flux: true,
+  minuteur: null,
+
+  filtrees() {
+    const q = normaliser($("#j-recherche").value.trim());
+    return D.journaux.filter(l => this.niveaux.has(l.niveau) &&
+      (!q || normaliser(l.message + " " + l.source + " " + l.requete).includes(q)));
+  },
+
+  rendre() {
+    const lignes = this.filtrees().slice(-400);
+    const el = $("#journal");
+    const enBas = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    el.innerHTML = lignes.length
+      ? lignes.map(l => ligneJournalHTML(l)).join("")
+      : `<div class="vide" style="padding:40px 16px"><p>Aucune ligne ne correspond à ce filtre.</p></div>`;
+    $("#j-compteur").textContent = `${fmt(lignes.length)} lignes affichées sur ${fmt(D.journaux.length)} collectées`;
+    if (enBas || this.flux) el.scrollTop = el.scrollHeight;
+  },
+
+  demarrer() {
+    clearInterval(this.minuteur);
+    this.minuteur = setInterval(() => {
+      if (!this.flux) return;
+      D.journaux.push(ligneJournal(0));
+      if (D.journaux.length > 900) D.journaux.shift();
+      if (vueCourante === "journaux") this.rendre();
+    }, 1600);
+  },
+};
+
+function ligneJournalHTML(l) {
+  return `<div class="journal-ligne" data-niveau="${l.niveau}" data-req="${l.requete}" tabindex="0">
+    <span class="horo">${l.horo}</span>
+    <span class="niv">${l.niveau}</span>
+    <span class="src">${echappe(l.source)}</span>
+    <span class="msg">${echappe(l.message)}</span>
+  </div>`;
+}
+
+$("#j-recherche").addEventListener("input", () => Journaux.rendre());
+$("#j-niveaux").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-niveau]"); if (!b) return;
+  const n = b.dataset.niveau, actif = b.getAttribute("aria-pressed") === "true";
+  actif ? Journaux.niveaux.delete(n) : Journaux.niveaux.add(n);
+  b.setAttribute("aria-pressed", String(!actif));
+  Journaux.rendre();
+});
+$("#j-flux").addEventListener("click", (e) => {
+  Journaux.flux = !Journaux.flux;
+  const b = $("#j-flux");
+  b.setAttribute("aria-pressed", String(Journaux.flux));
+  b.querySelector("span").textContent = Journaux.flux ? "Flux en direct" : "Flux en pause";
+  b.querySelector("use").setAttribute("href", Journaux.flux ? "#ic-pause" : "#ic-lecture");
+});
+$("#journal").addEventListener("click", (e) => {
+  const l = e.target.closest(".journal-ligne"); if (!l) return;
+  const niveau = l.dataset.niveau;
+  ouvrirTiroir({
+    titre: "Ligne de journal",
+    sous: `<span class="mono">${echappe(l.dataset.req)}</span>`,
+    onglets: [
+      { nom: "Contexte", html: `<dl class="def">
+          <dt>Niveau</dt><dd>${niveau}</dd>
+          <dt>Horodatage</dt><dd class="mono">${l.querySelector(".horo").textContent}</dd>
+          <dt>Service</dt><dd class="mono">${echappe(l.querySelector(".src").textContent)}</dd>
+          <dt>Requête</dt><dd class="mono">${echappe(l.dataset.req)}</dd>
+          <dt>Message</dt><dd>${echappe(l.querySelector(".msg").textContent)}</dd>
+        </dl>` },
+      { nom: "Trace", html: `<div class="journal">${D.journaux.slice(-9).map(x => ligneJournalHTML(x)).join("")}</div>` },
+    ],
+    pied: `<button class="btn" onclick="toast('Requête rejouée en bac à sable.','bon')">Rejouer la requête</button>
+           <button class="btn principal pousse" onclick="toast('Alerte créée à partir de ce motif.','bon')">Créer une alerte</button>`,
+  });
+});
+
+/* =========================================================================
+   9. MATRICE DES DROITS — trois états, garde-fou d'enregistrement
+   ========================================================================= */
+const Droits = {
+  brouillon: null,
+  suivant: { aucun: "lecture", lecture: "complet", complet: "aucun" },
+
+  rendre() {
+    if (!this.brouillon) this.brouillon = JSON.parse(JSON.stringify(D.droits));
+    $("#matrice-droits thead").innerHTML =
+      `<tr><th>Permission</th>${D.roles.map(r => `<th>${echappe(r)}</th>`).join("")}</tr>`;
+    let groupe = null;
+    $("#matrice-droits tbody").innerHTML = D.permissions.map(p => {
+      let tete = "";
+      if (p.groupe !== groupe) {
+        groupe = p.groupe;
+        tete = `<tr><td colspan="${D.roles.length + 1}" style="background:var(--surface-2);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--encre-3)">${echappe(groupe)}</td></tr>`;
+      }
+      return tete + `<tr><th scope="row">${echappe(p.nom)}<small class="mono">${echappe(p.cle)}</small></th>${
+        this.brouillon[p.cle].map((c, i) => `<td>
+          <button class="droit" data-perm="${p.cle}" data-role="${i}" data-etat="${c.etat}" data-verrou="${c.verrou ? 1 : 0}"
+            ${c.verrou ? "disabled" : ""} aria-label="${echappe(p.nom)} — ${echappe(D.roles[i])} : ${c.etat}">${c.etat}</button>
+        </td>`).join("")}</tr>`;
+    }).join("");
+    this.majEtat();
+  },
+
+  majEtat() {
+    const modifie = JSON.stringify(this.brouillon) !== JSON.stringify(D.droits);
+    $("#droits-etat").hidden = !modifie;
+    $("#btn-droits-enregistrer").disabled = !modifie;
+    $("#btn-droits-annuler").disabled = !modifie;
+  },
+};
+
+$("#matrice-droits").addEventListener("click", (e) => {
+  const b = e.target.closest(".droit"); if (!b || b.disabled) return;
+  const c = Droits.brouillon[b.dataset.perm][+b.dataset.role];
+  c.etat = Droits.suivant[c.etat];
+  b.dataset.etat = c.etat; b.textContent = c.etat;
+  Droits.majEtat();
+});
+$("#btn-droits-annuler").addEventListener("click", () => { Droits.brouillon = null; Droits.rendre(); toast("Modifications abandonnées.", "info"); });
+$("#btn-droits-enregistrer").addEventListener("click", async () => {
+  const ok = await confirmer({
+    titre: "Appliquer la nouvelle matrice ?",
+    texte: "Les droits prennent effet à la prochaine requête de chaque session. Le serveur reste seul juge : cette matrice ne remplace pas ses contrôles.",
+    bouton: "Appliquer", ton: "vigilance",
+  });
+  if (!ok) return;
+  Object.assign(D.droits, JSON.parse(JSON.stringify(Droits.brouillon)));
+  Droits.majEtat();
+  toast("Matrice des droits enregistrée et journalisée.", "bon");
+});
+
+/* =========================================================================
+   10. ALERTES
+   ========================================================================= */
+const Alertes = {
+  filtre: "",
+  rendre() {
+    const libelle = { critique: "P1 critique", serieux: "P2 sérieux", vigilance: "P3 vigilance" };
+    const lignes = D.alertes.filter(a => !this.filtre || a.gravite === this.filtre);
+    $("#tbl-alertes tbody").innerHTML = lignes.length ? lignes.map((a, i) => `
+      <tr>
+        <td><span class="jeton ${a.gravite}"><span class="point"></span>${libelle[a.gravite]}</span></td>
+        <td><div style="font-weight:550">${echappe(a.titre)}</div><div class="carte-sous mono">${echappe(a.code)}</div></td>
+        <td class="mono">${echappe(a.service)}</td>
+        <td>${echappe(a.depuis)}</td>
+        <td>${echappe(a.astreinte)}</td>
+        <td class="num"><div class="actions-ligne" style="opacity:1">
+          <button class="btn sm" data-alerte="acquitter" data-i="${i}">Acquitter</button>
+          <button class="btn sm" data-alerte="escalader" data-i="${i}">${icone("ic-escalade")}Escalader</button>
+          <button class="btn fantome sm icone" data-alerte="sourdine" data-i="${i}" title="Mettre en sourdine">${icone("ic-pause")}</button>
+        </div></td>
+      </tr>`).join("")
+      : `<tr><td colspan="6"><div class="vide" style="padding:40px"><div class="vide-icone">${icone("ic-check-cercle", "i i-l")}</div><h3>Rien à signaler</h3><p>Aucune alerte ouverte à ce niveau de gravité.</p></div></td></tr>`;
+
+    const compte = g => D.alertes.filter(a => a.gravite === g).length;
+    $("#alertes-indicateurs").innerHTML = [
+      ["Alertes ouvertes", D.alertes.length, "--encre"],
+      ["P1 critiques", compte("critique"), "--critique"],
+      ["P2 sérieuses", compte("serieux"), "--serieux"],
+      ["Délai moyen d'acquittement", "4 min", "--serie-1"],
+    ].map(([e, v, c]) => `<article class="carte ind">
+        <div class="ind-etiq">${echappe(e)}</div>
+        <div class="ind-valeur" style="color:var(${c})">${typeof v === "number" ? fmt(v) : v}</div>
+      </article>`).join("");
+  },
+};
+
+$("#a-filtres").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-gravite]"); if (!b) return;
+  $$("#a-filtres .puce").forEach(x => x.setAttribute("aria-pressed", "false"));
+  b.setAttribute("aria-pressed", "true");
+  Alertes.filtre = b.dataset.gravite;
+  Alertes.rendre();
+});
+$("#tbl-alertes").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-alerte]"); if (!b) return;
+  const a = D.alertes[+b.dataset.i], action = b.dataset.alerte;
+  if (action === "acquitter") {
+    const copie = { ...a };
+    D.alertes.splice(D.alertes.indexOf(a), 1);
+    Alertes.rendre();
+    toast(`${copie.code} acquittée — vous en êtes responsable.`, "bon",
+      { annuler: () => { D.alertes.push(copie); Alertes.rendre(); } });
+  }
+  if (action === "escalader") {
+    const ok = await confirmer({ titre: "Escalader " + a.code + " ?",
+      texte: "Le niveau 2 d'astreinte sera appelé immédiatement, de jour comme de nuit.", bouton: "Escalader", ton: "vigilance" });
+    if (ok) toast(a.code + " escaladée au niveau 2.", "bon");
+  }
+  if (action === "sourdine") toast(a.code + " mise en sourdine pendant 2 heures.", "info");
+});
+
+/* =========================================================================
+   11. ACTIONS GLOBALES
+   ========================================================================= */
+function exporterCSV(nom, lignes) {
+  if (!lignes.length) return toast("Rien à exporter.", "info");
+  const cles = Object.keys(lignes[0]);
+  const echapCSV = v => `"${String(v).replace(/"/g, '""')}"`;
+  const csv = "\uFEFF" + [cles.join(";"), ...lignes.map(l => cles.map(c => echapCSV(l[c])).join(";"))].join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = `${nom}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function exporterVue() {
+  if (vueCourante === "utilisateurs") { exporterCSV("comptes", Tableau.filtrees()); return toast("Export des comptes filtrés lancé.", "bon"); }
+  if (vueCourante === "journaux") { exporterCSV("journaux", Journaux.filtrees()); return toast("Export des journaux lancé.", "bon"); }
+  if (vueCourante === "alertes") { exporterCSV("alertes", D.alertes); return toast("Export des alertes lancé.", "bon"); }
+  exporterCSV("audit", D.audit); toast("Export du journal d'audit lancé.", "bon");
+}
+
+let auto = false, minuteurAuto = null, derniereMaj = Date.now();
+function actualiser() {
+  derniereMaj = Date.now();
+  D.charge.series.forEach(s => { s.valeurs.shift(); s.valeurs.push(Math.max(0, Math.round(s.valeurs.at(-1) * entre(.88, 1.14)))); });
+  D.latence.series.forEach(s => { s.valeurs.shift(); s.valeurs.push(Math.max(1, Math.round(s.valeurs.at(-1) * entre(.9, 1.12)))); });
+  D.flotte.forEach(n => {
+    n.cpu = Math.min(99, Math.max(5, n.cpu + Math.round(entre(-9, 9))));
+    n.ram = Math.min(99, Math.max(5, n.ram + Math.round(entre(-5, 5))));
+    const pire = Math.max(n.cpu, n.ram, n.disque);
+    n.etat = pire > 90 ? "critique" : pire > 78 ? "vigilance" : "bon";
+  });
+  D.files.forEach(f => { if (f.etat === "en cours" && f.fait < 100) f.fait = Math.min(100, f.fait + Math.round(entre(1, 7))); });
+  rendreFlotte(); rendreFiles();
+  ["charge", "latence"].forEach(k => {
+    const g = Graphiques.instances[k]; if (!g) return;
+    g.data.datasets.forEach((ds, i) => ds.data = (k === "charge" ? D.charge : D.latence).series[i].valeurs);
+    g.update("none");
+  });
+  majHorodatage();
+}
+
+function majHorodatage() {
+  const s = Math.round((Date.now() - derniereMaj) / 1000);
+  $("#horo-maj").textContent = s < 5 ? "à l'instant" : s < 60 ? `il y a ${s} s` : `il y a ${Math.round(s / 60)} min`;
+}
+
+$("#btn-actualiser").addEventListener("click", () => { actualiser(); toast("Données actualisées.", "bon", { duree: 1800 }); });
+$("#btn-auto").addEventListener("click", () => {
+  auto = !auto;
+  const b = $("#btn-auto");
+  b.setAttribute("aria-pressed", String(auto));
+  b.classList.toggle("actif", auto);
+  b.querySelector("use").setAttribute("href", auto ? "#ic-pause" : "#ic-lecture");
+  $("#auto-etiq").textContent = auto ? "Auto · 10 s" : "Auto";
+  clearInterval(minuteurAuto);
+  if (auto) minuteurAuto = setInterval(actualiser, 10000);
+});
+
+$("#periodes").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-periode]"); if (!b) return;
+  $$("#periodes button").forEach(x => x.setAttribute("aria-pressed", "false"));
+  b.setAttribute("aria-pressed", "true");
+  actualiser();
+  toast("Période : " + b.textContent.trim(), "info", { duree: 1600 });
+});
+
+async function actionMaintenance() {
+  const ok = await confirmer({
+    titre: "Passer la plateforme en maintenance ?",
+    texte: "Tous les utilisateurs non administrateurs verront une page d'indisponibilité. Les traitements en cours sont menés à leur terme, puis la file est gelée.",
+    bouton: "Activer la maintenance", ton: "vigilance", mot: "MAINTENANCE",
+  });
+  if (ok) toast("Mode maintenance activé — bandeau visible par tous les administrateurs.", "bon");
+}
+
+function montrerRaccourcis() {
+  const r = [["Ctrl K", "Palette de commandes"], ["Ctrl B", "Replier le rail"], ["T", "Basculer le thème"],
+    ["D", "Changer la densité"], ["R", "Actualiser les données"], ["/", "Rechercher dans la page"],
+    ["G puis A", "Aller aux alertes"], ["G puis U", "Aller aux utilisateurs"], ["G puis J", "Aller aux journaux"],
+    ["Échap", "Fermer la superposition"], ["?", "Afficher cette aide"]];
+  ouvrirTiroir({
+    titre: "Raccourcis clavier",
+    sous: "Tout ce qui se fait à la souris doit se faire au clavier.",
+    onglets: [{ nom: "Tous", html: `<dl class="def">${r.map(([k, t]) =>
+      `<dt><kbd>${k}</kbd></dt><dd>${t}</dd>`).join("")}</dl>` }],
+  });
+}
+
+/* --- Actions déclaratives ------------------------------------------------ */
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-action]"); if (!b) return;
+  switch (b.dataset.action) {
+    case "palette": ouvrirPalette(); break;
+    case "theme": basculerTheme(); fermerMenus(); break;
+    case "densite": basculerDensite(); fermerMenus(); break;
+    case "raccourcis": montrerRaccourcis(); fermerMenus(); break;
+    case "plein-ecran": document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); fermerMenus(); break;
+    case "export-csv": case "export-utilisateurs": case "export-journaux": exporterVue(); fermerMenus(); break;
+    case "maintenance": fermerMenus(); actionMaintenance(); break;
+    case "fermer-bandeau": $("#bandeau-incident").style.display = "none"; break;
+    case "acquitter": toast("INC-2048 acquitté — vous en êtes responsable.", "bon"); break;
+    case "escalader": {
+      const ok = await confirmer({ titre: "Escalader INC-2048 ?", texte: "Le niveau 2 d'astreinte sera appelé immédiatement.", bouton: "Escalader", ton: "vigilance" });
+      if (ok) toast("INC-2048 escaladé au niveau 2.", "bon");
+      break;
+    }
+    case "ouvrir-incident": aller("alertes"); break;
+    case "inviter": toast("Formulaire d'invitation à brancher sur votre route POST /invitations.", "info"); break;
+    case "ajouter-noeud": toast("Assistant d'ajout de nœud à brancher.", "info"); break;
+    case "silence": toast("Alertes mises en sourdine pendant 2 heures.", "info"); break;
+    case "regles-alerte": toast("Éditeur de règles à brancher.", "info"); break;
+    case "exporter-graph": exporterCSV("graphique-" + b.dataset.graph, D.charge.etiquettes.map((h, i) => {
+      const l = { heure: h }; D.charge.series.forEach(s => l[s.nom] = s.valeurs[i]); return l;
+    })); toast("Graphique exporté en CSV.", "bon"); break;
+  }
+});
+
+/* =========================================================================
+   12. CLAVIER
+   ========================================================================= */
+let sequence = "";
+document.addEventListener("keydown", (e) => {
+  const saisie = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); return ouvrirPalette(); }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") { e.preventDefault(); return basculerRail(); }
+  if (e.key === "Escape") { cacherVoile(); fermerMenus(); return; }
+  if (saisie || e.ctrlKey || e.metaKey || e.altKey) return;
+
+  if (e.key === "?") { e.preventDefault(); return montrerRaccourcis(); }
+  if (e.key === "/") { e.preventDefault(); return ouvrirPalette(); }
+
+  const k = e.key.toLowerCase();
+  if (sequence === "g") {
+    sequence = "";
+    const cible = { a: "alertes", u: "utilisateurs", j: "journaux", o: "apercu", d: "droits", s: "services" }[k];
+    if (cible) { e.preventDefault(); aller(cible); }
+    return;
+  }
+  if (k === "g") { sequence = "g"; setTimeout(() => sequence = "", 1200); return; }
+  if (k === "t") basculerTheme();
+  if (k === "d") basculerDensite();
+  if (k === "r") { actualiser(); toast("Données actualisées.", "bon", { duree: 1500 }); }
+});
+
+$("#btn-replier").addEventListener("click", basculerRail);
+$("#btn-menu-mobile").addEventListener("click", () => {
+  racine.dataset.rail = racine.dataset.rail === "ouvert-mobile" ? "deplie" : "ouvert-mobile";
+});
+
+/* =========================================================================
+   13. DÉMARRAGE
+   ========================================================================= */
+(function demarrer() {
+  appliquerTheme(Pref.lire("theme", window.matchMedia("(prefers-color-scheme: light)").matches ? "clair" : "sombre"));
+  racine.dataset.densite = Pref.lire("densite", "normale");
+  racine.dataset.rail = Pref.lire("rail", "deplie");
+  $("#etat-densite").textContent = racine.dataset.densite;
+
+  construireRail();
+  rendreIndicateurs();
+  rendreFlotte();
+  rendreFiles();
+  rendreAudit();
+  rendreNotifications();
+  Tableau.rendreFiltres();
+  Tableau.rendre();
+  Journaux.rendre();
+  Journaux.demarrer();
+  Droits.rendre();
+  Alertes.rendre();
+
+  if (window.Chart) { Graphiques.construire(); Graphiques.demarre = true; }
+  else document.querySelectorAll(".graph-boite").forEach(b => {
+    b.innerHTML = `<div class="vide"><p>Chart.js n'a pas pu être chargé. Vérifiez l'accès au CDN, ou déposez la bibliothèque à côté de ce fichier.</p></div>`;
+  });
+
+  const cle = location.hash.slice(1);
+  aller(entreeNav(cle) ? cle : "apercu");
+
+  setInterval(majHorodatage, 5000);
+})();
+</script>
+</body>
+</html>

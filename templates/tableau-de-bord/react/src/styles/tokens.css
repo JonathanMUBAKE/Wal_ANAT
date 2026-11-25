@@ -1,0 +1,347 @@
+@import "tailwindcss";
+
+/* =========================================================================
+   JETONS DE CONCEPTION — habillage UniFi
+   Gammes, rayons, ombres, durées et échelle typographique relevés sur
+   l'interface d'Ubiquiti (ui.com) le 25/11/2026. UniFi est clair par défaut ;
+   le sombre est sa déclinaison « on-color », pas une inversion automatique.
+   Pour rhabiller aux couleurs d'un autre produit : --accent et --accent-fort.
+   ========================================================================= */
+
+:root {
+  color-scheme: light;
+
+  /* --- Gamme neutre : 00 = la surface, 12 = l'encre la plus dense ------ */
+  --n00: #ffffff;  --n01: #f9fafa;  --n02: #f4f5f6;  --n03: #eeeff1;
+  --n04: #dee0e3;  --n05: #cdd1d5;  --n06: #c2c6cb;  --n07: #9fa5ad;
+  --n08: #808893;  --n09: #676f79;  --n10: #50565e;  --n11: #3b3f45;
+  --n12: #212327;
+
+  /* --- Bleu UniFi ------------------------------------------------------ */
+  --b01: #e5f1ff; --b02: #cce2ff; --b03: #99c5ff; --b04: #66a8ff; --b05: #338bff;
+  --b06: #006eff; --b07: #0058cc; --b08: #0049a8; --b09: #003780; --b10: #002657;
+
+  /* --- Gammes d'état --------------------------------------------------- */
+  --v01: #ebfaef; --v06: #38cc65; --v07: #2ea34f; --v08: #258341;
+  --o01: #fef5e7; --o06: #f5a524; --o07: #c4871c;
+  --r01: #fdeced; --r05: #f36267; --r06: #f0383b; --r07: #c12f34;
+  --j07: #cbad15;
+
+  /* --- Rôles ----------------------------------------------------------- */
+  --fond:      var(--n02);
+  --surface:   var(--n00);
+  --surface-2: var(--n01);
+  --surface-3: var(--n03);
+  --survol:    var(--n02);
+  --bordure:   rgb(33 35 39 / 0.07);
+  --bordure-2: var(--n05);
+  --rail-fond: var(--n00);
+
+  --encre:   var(--n12);
+  --encre-2: var(--n10);
+  --encre-3: var(--n08);
+  --encre-4: var(--n06);
+
+  --accent:       var(--b06);
+  --accent-fort:  var(--b07);
+  --accent-doux:  var(--b01);
+  --accent-voile: rgb(0 110 255 / 0.10);
+  --accent-encre: #ffffff;
+
+  --bon:      var(--v07);
+  --vigilance:var(--o06);
+  --serieux:  var(--r05);
+  --critique: var(--r07);
+  --bon-voile:       rgb(46 163 79 / 0.12);
+  --vigilance-voile: rgb(245 165 36 / 0.14);
+  --serieux-voile:   rgb(243 98 103 / 0.14);
+  --critique-voile:  rgb(193 47 52 / 0.12);
+
+  /* --- Séries (palette validée, voisines distinguables en daltonisme) -- */
+  --serie-1: #006eff;  /* bleu UniFi */
+  --serie-2: #eb6834;  /* orange     */
+  --serie-3: #1baf7a;  /* aqua       */
+  --serie-4: #eda100;  /* jaune      */
+  --serie-5: #e87ba4;  /* magenta    */
+  --serie-6: #008300;  /* vert       */
+  --serie-7: #6250d6;  /* violet     */
+  --serie-8: #e34948;  /* rouge      */
+
+  --rampe-1: #cce2ff; --rampe-2: #99c5ff; --rampe-3: #66a8ff;
+  --rampe-4: #006eff; --rampe-5: #0058cc; --rampe-6: #0049a8;
+
+  /* --- Ombres UniFi ---------------------------------------------------- */
+  --ombre-nulle:  0 0 1px 0 hsl(214 8% 14% / 0.08);
+  --ombre-basse:  0 4px 12px 0 hsl(214 8% 14% / 0.08), 0 0 1px 0 hsl(214 8% 14% / 0.08);
+  --ombre:        0 8px 24px 0 hsl(214 8% 14% / 0.08), 0 0 1px 0 hsl(214 8% 14% / 0.08);
+  --ombre-haute:  0 12px 48px 0 hsl(214 8% 14% / 0.12), 0 0 1px 0 hsl(214 8% 14% / 0.08);
+
+  /* --- Mouvement ------------------------------------------------------- */
+  --t-instant: 50ms;
+  --t-rapide:  100ms;
+  --t-normal:  200ms;
+  --t-lent:    400ms;
+  --e-sortie:  cubic-bezier(0, 0, 0.2, 1);
+  --e-entree:  cubic-bezier(0.4, 0, 1, 1);
+  --e-double:  cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root[data-theme="sombre"] {
+  color-scheme: dark;
+
+  /* La gamme neutre d'UniFi s'inverse : 00 reste « la surface ». */
+  --n00: #141414;  --n01: #1f1f1f;  --n02: #2b2b2b;  --n03: #383838;
+  --n04: #474747;  --n05: #575757;  --n06: #7d7d7d;  --n07: #a1a1a1;
+  --n08: #bdbdbd;  --n09: #cfcfcf;  --n10: #e0e0e0;  --n11: #ededed;
+  --n12: #fafafa;
+
+  --b01: #05254d; --b02: #083c7d; --b03: #0b54ad; --b04: #0e69d8; --b05: #2782f1;
+  --b06: #4797ff; --b07: #80b7ff; --b08: #b3d4ff; --b09: #cce2ff; --b10: #e6f1ff;
+
+  /* Relevés sur un contrôleur UniFi Network 11 en thème sombre. */
+  --fond:      #0d0d0d;
+  --surface:   #131416;
+  --surface-2: #1a1b1d;
+  --surface-3: #212326;
+  --survol:    rgb(249 250 250 / 0.06);
+  --bordure:   rgb(249 250 250 / 0.07);
+  --bordure-2: rgb(249 250 250 / 0.14);
+  --rail-fond: #131416;
+
+  --encre:   #fafafa;
+  --encre-2: #b7bcc2;
+  --encre-3: #8b9097;
+  --encre-4: #666b72;
+
+  --accent:       var(--b06);
+  --accent-fort:  var(--b05);
+  --accent-doux:  var(--b01);
+  --accent-voile: rgb(71 151 255 / 0.16);
+
+  --bon:      var(--v06);
+  --vigilance:var(--o06);
+  --serieux:  var(--r05);
+  --critique: var(--r06);
+
+  --serie-1: #4797ff;
+  --serie-2: #d95926;
+  --serie-3: #199e70;
+  --serie-4: #c98500;
+  --serie-5: #d55181;
+  --serie-6: #0ca30c;
+  --serie-7: #9085e9;
+  --serie-8: #e66767;
+
+  --rampe-1: #b3d4ff; --rampe-2: #80b7ff; --rampe-3: #4797ff;
+  --rampe-4: #2782f1; --rampe-5: #0e69d8; --rampe-6: #0b54ad;
+
+  --ombre-nulle: 0 0 1px 0 rgb(0 0 0 / 0.6);
+  --ombre-basse: 0 4px 12px 0 rgb(0 0 0 / 0.4), 0 0 1px 0 rgb(0 0 0 / 0.6);
+  --ombre:       0 8px 24px 0 rgb(0 0 0 / 0.45), 0 0 1px 0 rgb(0 0 0 / 0.6);
+  --ombre-haute: 0 12px 48px 0 rgb(0 0 0 / 0.6), 0 0 1px 0 rgb(0 0 0 / 0.6);
+}
+
+/* --- Passerelle vers les utilitaires Tailwind -------------------------- */
+@theme inline {
+  --color-fond: var(--fond);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-survol: var(--survol);
+  --color-bordure: var(--bordure);
+  --color-bordure-2: var(--bordure-2);
+  --color-rail: var(--rail-fond);
+
+  --color-encre: var(--encre);
+  --color-encre-2: var(--encre-2);
+  --color-encre-3: var(--encre-3);
+  --color-encre-4: var(--encre-4);
+
+  --color-accent: var(--accent);
+  --color-accent-fort: var(--accent-fort);
+  --color-accent-doux: var(--accent-doux);
+  --color-accent-voile: var(--accent-voile);
+  --color-accent-encre: var(--accent-encre);
+
+  --color-bon: var(--bon);
+  --color-vigilance: var(--vigilance);
+  --color-serieux: var(--serieux);
+  --color-critique: var(--critique);
+  --color-bon-voile: var(--bon-voile);
+  --color-vigilance-voile: var(--vigilance-voile);
+  --color-serieux-voile: var(--serieux-voile);
+  --color-critique-voile: var(--critique-voile);
+
+  --color-serie-1: var(--serie-1);
+  --color-serie-2: var(--serie-2);
+  --color-serie-3: var(--serie-3);
+  --color-serie-4: var(--serie-4);
+  --color-serie-5: var(--serie-5);
+  --color-serie-6: var(--serie-6);
+  --color-serie-7: var(--serie-7);
+
+  --shadow-nulle: var(--ombre-nulle);
+  --shadow-basse: var(--ombre-basse);
+  --shadow-carte: var(--ombre-nulle);
+  --shadow-flottant: var(--ombre);
+  --shadow-haute: var(--ombre-haute);
+
+  /* UniFi : 4 px partout, 8 px pour les boîtes flottantes, 16 px au-delà. */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 16px;
+
+  --font-sans: Inter, Lato, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  /* Échelle typographique UniFi */
+  --text-xs: 9px;
+  --text-xs--line-height: 12px;
+  --text-sm: 11px;
+  --text-sm--line-height: 16px;
+  --text-base: 13px;
+  --text-base--line-height: 20px;
+  --text-lg: 15px;
+  --text-lg--line-height: 24px;
+  --text-xl: 19px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 23px;
+  --text-2xl--line-height: 32px;
+  --text-3xl: 27px;
+  --text-3xl--line-height: 36px;
+  --text-4xl: 35px;
+  --text-4xl--line-height: 44px;
+}
+
+/* --- Socle -------------------------------------------------------------- */
+@layer base {
+  html, body, #racine { height: 100%; }
+  body {
+    background: var(--fond);
+    color: var(--encre);
+    font-family: Inter, Lato, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-size: 13px;
+    line-height: 20px;
+    font-feature-settings: "cv05" 1, "tnum" 0;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-radius: 4px;
+  }
+  ::selection { background: var(--accent-voile); }
+
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background: var(--n06); border-radius: 9999px;
+    border: 3px solid transparent; background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: var(--n07); background-clip: content-box; }
+}
+
+/* --- Densité : un attribut pilote tout le serrage ----------------------- */
+:root[data-densite="compacte"] { --pas-ligne: 4px; --pas-carte: 12px; --h-ligne: 32px; }
+:root[data-densite="normale"]  { --pas-ligne: 8px; --pas-carte: 16px; --h-ligne: 40px; }
+
+@layer utilities {
+  .pas-carte { padding: var(--pas-carte); }
+  .pas-ligne { padding-top: var(--pas-ligne); padding-bottom: var(--pas-ligne); }
+  .tab-num { font-variant-numeric: tabular-nums; }
+
+  /* Mouvement UniFi : court, sorti en douceur, jamais rebondissant. */
+  .anim-monte    { animation: monte var(--t-normal) var(--e-sortie); }
+  .anim-apparait { animation: apparait var(--t-normal) var(--e-sortie); }
+  .anim-glisse   { animation: glisse var(--t-normal) var(--e-sortie); }
+  .anim-entre    { animation: entre var(--t-lent) var(--e-sortie) both; }
+  .transi        { transition: background-color var(--t-rapide) var(--e-double),
+                               border-color var(--t-rapide) var(--e-double),
+                               color var(--t-rapide) var(--e-double),
+                               box-shadow var(--t-normal) var(--e-sortie),
+                               opacity var(--t-rapide) var(--e-double); }
+  .pulse-etat::before {
+    content: ""; position: absolute; inset: -4px; border-radius: 9999px;
+    background: currentColor; opacity: .25; animation: pulse 2s var(--e-double) infinite;
+  }
+}
+
+@keyframes monte    { from { opacity: 0; transform: translateY(-6px) scale(.99); } }
+@keyframes apparait { from { opacity: 0; transform: translateY(4px); } }
+@keyframes glisse   { from { opacity: 0; transform: translateX(16px); } }
+@keyframes entre    { from { opacity: 0; transform: translateY(8px); } }
+@keyframes pulse    { 0% { transform: scale(.6); opacity: .35; } 70%, 100% { transform: scale(1.6); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+@media print {
+  .sans-impression { display: none !important; }
+  body { overflow: visible; background: #fff; }
+}
+
+/* =========================================================================
+   MOUVEMENT
+   Règle tenue partout : une animation sert à expliquer d'où vient une chose
+   ou ce qui vient de changer. Elle ne décore pas. Trois durées suffisent —
+   rapide pour un survol, normale pour une apparition, lente pour une
+   transition de page — et tout s'annule sous `prefers-reduced-motion`.
+   ========================================================================= */
+@layer utilities {
+  .anim-vue        { animation: vue var(--t-lent) var(--e-sortie) both; }
+  .anim-pousse     { animation: pousse var(--t-normal) var(--e-sortie) both; }
+  .anim-tombe      { animation: tombe var(--t-normal) var(--e-sortie) both; }
+  .anim-grandit    { animation: grandit var(--t-normal) var(--e-sortie) both; }
+  .anim-attire     { animation: attire 1.6s var(--e-double) 2; }
+  .anim-scintille  { animation: scintille 1.4s linear infinite; }
+  .anim-trace      { animation: trace 900ms var(--e-sortie) both; }
+  .anim-compte     { animation: compte var(--t-lent) var(--e-sortie) both; }
+
+  /* Échelonnement : chaque enfant entre juste après le précédent.
+     Au-delà de quinze, plus de décalage — on n'attend pas une liste. */
+  .echelonne > * { animation: pousse var(--t-normal) var(--e-sortie) both; }
+  .echelonne > *:nth-child(1)  { animation-delay: 0ms; }
+  .echelonne > *:nth-child(2)  { animation-delay: 28ms; }
+  .echelonne > *:nth-child(3)  { animation-delay: 56ms; }
+  .echelonne > *:nth-child(4)  { animation-delay: 84ms; }
+  .echelonne > *:nth-child(5)  { animation-delay: 112ms; }
+  .echelonne > *:nth-child(6)  { animation-delay: 140ms; }
+  .echelonne > *:nth-child(7)  { animation-delay: 168ms; }
+  .echelonne > *:nth-child(8)  { animation-delay: 196ms; }
+  .echelonne > *:nth-child(9)  { animation-delay: 224ms; }
+  .echelonne > *:nth-child(10) { animation-delay: 252ms; }
+  .echelonne > *:nth-child(11) { animation-delay: 280ms; }
+  .echelonne > *:nth-child(12) { animation-delay: 308ms; }
+  .echelonne > *:nth-child(13) { animation-delay: 336ms; }
+  .echelonne > *:nth-child(14) { animation-delay: 364ms; }
+  .echelonne > *:nth-child(n+15) { animation-delay: 392ms; }
+
+  /* Micro-réactions : elles disent que l'élément a reçu le geste. */
+  .reagit     { transition: transform var(--t-rapide) var(--e-sortie), box-shadow var(--t-normal) var(--e-sortie); }
+  .reagit:hover  { transform: translateY(-1px); box-shadow: var(--ombre-basse); }
+  .reagit:active { transform: translateY(0); box-shadow: none; }
+
+  .souleve    { transition: transform var(--t-normal) var(--e-sortie), border-color var(--t-rapide) var(--e-double); }
+  .souleve:hover { transform: translateY(-2px); }
+
+  /* Barre de chargement indéterminée, en haut du contenu. */
+  .barre-charge::after {
+    content: ""; position: absolute; left: 0; top: 0; height: 2px; width: 38%;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: glisse-barre 1.1s var(--e-double) infinite;
+  }
+}
+
+@keyframes vue       { from { opacity: 0; transform: translateY(6px); } }
+@keyframes pousse    { from { opacity: 0; transform: translateY(5px); } }
+@keyframes tombe     { from { opacity: 0; transform: translateY(-5px); } }
+@keyframes grandit   { from { opacity: 0; transform: scale(.96); } }
+@keyframes compte    { from { opacity: 0; transform: translateY(8px) scale(.96); } }
+@keyframes attire    { 0%, 100% { box-shadow: 0 0 0 0 var(--accent-voile); } 50% { box-shadow: 0 0 0 5px var(--accent-voile); } }
+@keyframes scintille { 0% { background-position: -340px 0; } 100% { background-position: 340px 0; } }
+@keyframes trace     { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes glisse-barre { 0% { left: -38%; } 100% { left: 100%; } }

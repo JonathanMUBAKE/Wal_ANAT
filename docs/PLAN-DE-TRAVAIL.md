@@ -455,6 +455,69 @@ Le plus gros lot. Le modèle a été repris avec Jonathan le 25 novembre.
       le tiroir les couvre déjà. Demande la conversion en routeur de données (`createBrowserRouter`), qui
       couvrirait aussi les boutons Précédent et Suivant.
 
+### Lot AD — Logique qui ne tient pas, dans les cinq modules restants
+
+Relevé le 25 novembre par lecture du code, sur les modules que la campagne des testeurs n'avait pas
+parcourus : partenaires et conventions, congés, ressources humaines, portefeuille et activités,
+coéquipiers IA. Les deux premiers points ont été revérifiés à la main.
+
+- [ ] **AD1. Le secret médical sort par les notifications.** Le masque (`leaves.ts:94-100`) ne s'applique
+      qu'à `get`, `list` et `summary` : il remplace « maladie » par « absence » et vide le motif, et le
+      commentaire du code dit l'intention — « la DG voit l'absence, pas la maladie ». Mais l'avis au chef
+      (`leaves.ts:296-303`) écrit le type de congé dans son titre et **le motif en clair dans son corps** ;
+      `decide()` (335-349) renvoie la ligne non masquée ; `notifyInterim` (309-318) nomme le type à
+      l'intérimaire. L'avis reste ensuite dans leur centre de notifications. **Règle serveur.**
+- [ ] **AD2. Les raisons budgétaires fuient par une route voisine.** `review()` (`portfolio.ts:198-202`)
+      retire les montants et les raisons commençant par « budget » pour qui n'a pas le droit de les voir ;
+      `health()` (227-236) renvoie `reasons` tel quel à tout lecteur du projet — dont « budget consommé à
+      125 % ». **Règle serveur** : un seul masque appelé par les deux routes.
+- [ ] **AD3. La création d'un agent enrôle avant de valider.** `hr.ts:344` ouvre le compte, envoie le lien
+      et prévient les administrateurs ; les contrôles (date de fin obligatoire, dossier déjà existant)
+      viennent après, en 378-380. Un contractuel saisi sans date de fin laisse un compte créé, une personne
+      membre sans dossier, et un nouvel essai qui échoue sur une adresse déjà prise. **Règle serveur.**
+- [ ] **AD4. Un avenant signé pendant la résiliation de son accord reste bloqué pour toujours.**
+      `terminate()` (`agreements.ts:780-810`) ignore les avenants en cours ; à la signature,
+      `assertParentLive` (569-574) lève un 409. L'avenant ne peut plus ni entrer en vigueur, ni être
+      supprimé, ni rejeté — et la DG a signé un acte sans effet. **Règle serveur.**
+- [ ] **AD5. La sortie d'un agent ne se défait pas et laisse ses demandes ouvertes.** Une seule route, qui
+      lève 409 si la date est déjà posée ; aucune annulation. `applyExit` suspend le compte et coupe les
+      sessions mais ne touche pas à `agent_leaves` : le chef continue de recevoir à valider les congés d'un
+      agent parti, qui reste intérimaire d'autres personnes. **Règle serveur.**
+- [ ] **AD6. Les congés sont validés moins bien qu'ailleurs.** `leaves.ts:40` n'a qu'une expression
+      régulière là où le reste du serveur emploie `isRealDate` : « 2026-02-31 » atteint la base et finit en
+      500. `workingDays` boucle sans borne et ignore les jours fériés. Une demande du samedi au dimanche
+      donne 0 jour et passe. Aucun plafond de solde. **Règle serveur.**
+- [ ] **AD7. Modifier une activité n'est pas journalisé** — y compris lever sa confidentialité ou changer
+      son responsable (`activities.ts:248-288`). Seuls `create` et `remove` laissent une trace. L'Agence ne
+      peut pas répondre à « qui a ouvert ce dossier confidentiel ». **Règle serveur.**
+- [ ] **AD8. Une règle IA garde les droits de son premier auteur.** `saveRule` (`ai/engine.ts:880-936`) ne
+      journalise rien et ne change pas `created_by` ; `ruleMayRun` ne vérifie que les droits de celui-ci. Un
+      administrateur de projet sans droit de déléguer peut réécrire la consigne, et l'IA agira sous les
+      droits d'un autre. **Règle serveur.**
+- [ ] **AD9. Une proposition de l'IA sans décideur attend indéfiniment** et verrouille la tâche :
+      `checkpoint` (`ai/engine.ts:590-641`) attend sans délai, et si la liste des approbateurs est vide,
+      personne n'est prévenu. `start()` refuse ensuite toute intervention sur cette tâche, en silence.
+      **Refonte d'un parcours.**
+- [ ] **AD10. Une validation humaine peut être journalisée « approuvée » sans que rien ne s'exécute.**
+      `decide()` (`ai/engine.ts:672-710`) passe la ligne à `approved` et journalise, puis, si l'attente
+      n'existe plus, la marque `expired` et répond 200. Pour un acte opposable, la trace ment.
+      **Règle serveur** : refuser la décision avant tout journal.
+- [ ] **AD11. La liste des exécutions IA est tronquée avant d'être filtrée par droits** (`listRuns`,
+      `ai/engine.ts:978-998`) : un agent peut ne rien voir parce que les cinquante dernières appartiennent à
+      d'autres projets. **Règle serveur.**
+- [ ] **AD12. Une demande d'arbitrage part à tous les détenteurs de `decisions.record`**, avec le nom du
+      dossier et la question, sans regarder qui a le droit de l'ouvrir (`portfolio.ts:293-307`). Et si le
+      demandeur est le seul décideur, l'arbitrage reste en attente. **Règle serveur.**
+- [ ] **AD13. La fusion de deux partenaires contourne la règle des accords en vigueur** : `setState` refuse
+      de clore une fiche qui en porte un, `merge` (`partners.ts:804-888`) y transfère les accords sans
+      regarder l'état de la fiche gardée. **Règle serveur.**
+- [ ] **AD14. Une demande de congé peut n'avoir personne pour la décider** : l'approbateur est figé à la
+      création et n'est jamais recalculé ; sans chef, et si le demandeur est le seul gestionnaire RH, la
+      demande attend pour toujours. **Règle serveur.**
+- [ ] **AD15. On peut confier une suite à quelqu'un qui ne peut pas ouvrir l'activité** : l'avis porte le
+      titre, et le lien répond « introuvable » (`activities.ts:297-318` contre `readable()`, 93-108).
+      **Règle serveur et retouche d'écran.**
+
 ---
 
 ## 4. Décisions ouvertes (à trancher par Jonathan)

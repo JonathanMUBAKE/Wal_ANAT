@@ -330,58 +330,46 @@ export class Hr {
     let userId = input.user_id;
     let link: { sent: boolean; link?: string } | null = null;
     const name = [input.first_names, input.last_name].filter(Boolean).join(" ").trim();
+    // Tous les contrôles d'abord : rien n'est créé, envoyé ni journalisé tant que le dossier n'est pas valide (S3.3)
+    if (LIMITED.has(input.status ?? "") && !input.contract_end_on)
+      throw badRequest("Un contractuel, un stagiaire ou un consultant a une date de fin : indiquez-la");
+    let staged: Awaited<ReturnType<Provisioning["stageAgent"]>> | null = null;
+    let profile: { id: string; base_role: string } | undefined;
     if (userId) {
       await this.requireWrite(actorId, orgId, userId);
       if (!(await this.svc.db.one("SELECT 1 FROM org_members WHERE org_id = $1 AND user_id = $2", [orgId, userId])))
         throw badRequest("Cette personne n'est pas membre de l'institution");
+      if (await this.svc.db.one("SELECT 1 FROM agent_records WHERE org_id = $1 AND user_id = $2", [orgId, userId]))
+        throw badRequest("Cette personne a déjà un dossier d'agent");
     } else {
       if (!input.email) throw badRequest("L'adresse électronique est obligatoire pour ouvrir le compte de l'agent");
       const slug = PROFILE_OF_STATUS[input.status ?? ""] ?? "agent";
-      const profile = await this.svc.db.one<{ id: string }>("SELECT id FROM access_profiles WHERE id = $1", [
-        `prf_${slug}_${orgId}`,
-      ]);
+      profile = await this.svc.db.one<{ id: string; base_role: string }>(
+        "SELECT id, base_role FROM access_profiles WHERE id = $1",
+        [`prf_${slug}_${orgId}`],
+      );
       if (!profile) throw badRequest("Le profil « Agent » n'existe pas dans cette institution");
-      const r = await this.provisioning.enrolAgent(
+      staged = await this.provisioning.stageAgent(
         actorId,
         orgId,
-        {
-          email: input.email,
-          name,
-          profile_id: profile.id,
-          unit_id: input.unit_id ?? null,
-          title: input.function_title,
-        },
+        { email: input.email, name, profile_id: profile.id, unit_id: input.unit_id ?? null, title: input.function_title },
         info,
       );
-      link = { sent: r.sent, ...(r.link ? { link: r.link } : {}) };
-      userId = (await this.svc.db.one<{ id: string }>("SELECT id FROM users WHERE lower(email) = $1", [input.email]))!
-        .id;
-      // Les administrateurs contrôlent après coup chaque compte ouvert par les RH (RH-2)
-      for (const u of await this.svc.usersOf(orgId)) {
-        if (u.is_ai || u.id === actorId) continue;
-        if (!(await this.svc.permissionsOf(u.id, orgId)).includes("org.members")) continue;
-        await this.svc.notify(u.id, orgId, {
-          kind: "hr.account_opened",
-          title: `Compte ouvert par les RH : ${name || input.email}`,
-          body: "Profil « Agent » ou équivalent selon le statut. Vérifiez le profil et le rattachement dans Structure.",
-          actor_id: actorId,
-          link: "/org",
-        });
-      }
-      await this.svc.log(actorId, "hr.account_opened", { orgId, data: { email: input.email, profile: profile.id } });
-      // L'invitation range la personne à l'activation ; le dossier, lui, existe dès maintenant
-      await this.svc.db.query(
-        "INSERT INTO org_members (org_id, user_id, role, profile_id, unit_id) SELECT $1, $2, p.base_role, p.id, $4 FROM access_profiles p WHERE p.id = $3 ON CONFLICT (org_id, user_id) DO NOTHING",
-        [orgId, userId, profile.id, input.unit_id ?? null],
-      );
+      userId = staged.userId;
+      if (await this.svc.db.one("SELECT 1 FROM agent_records WHERE org_id = $1 AND user_id = $2", [orgId, userId]))
+        throw badRequest("Cette personne a déjà un dossier d'agent");
     }
-    if (await this.svc.db.one("SELECT 1 FROM agent_records WHERE org_id = $1 AND user_id = $2", [orgId, userId]))
-      throw badRequest("Cette personne a déjà un dossier d'agent");
-    if (LIMITED.has(input.status ?? "") && !input.contract_end_on)
-      throw badRequest("Un contractuel, un stagiaire ou un consultant a une date de fin : indiquez-la");
     const matricule = input.matricule || (await this.nextMatricule(orgId, input.hired_on));
     const cols = FIELDS.filter((k) => (input as Record<string, unknown>)[k] !== undefined);
     await this.svc.db.tx(async (q) => {
+      if (staged) {
+        // Compte, invitation et rattachement : dans la même transaction que le dossier, ou pas du tout
+        await staged.insert(q);
+        await q.query(
+          "INSERT INTO org_members (org_id, user_id, role, profile_id, unit_id) SELECT $1, $2, p.base_role, p.id, $4 FROM access_profiles p WHERE p.id = $3 ON CONFLICT (org_id, user_id) DO NOTHING",
+          [orgId, userId, profile!.id, input.unit_id ?? null],
+        );
+      }
       await q.query(
         `INSERT INTO agent_records (org_id, user_id, matricule, created_by${cols.map((c) => `, ${c}`).join("")})
          VALUES ($1, $2, $3, $4${cols.map((_, i) => `, $${i + 5}`).join("")})`,
@@ -407,6 +395,23 @@ export class Hr {
         ],
       );
     });
+    if (staged) {
+      const r = await staged.complete();
+      link = { sent: r.sent, ...(r.link ? { link: r.link } : {}) };
+      // Les administrateurs contrôlent après coup chaque compte ouvert par les RH (RH-2)
+      for (const u of await this.svc.usersOf(orgId)) {
+        if (u.is_ai || u.id === actorId) continue;
+        if (!(await this.svc.permissionsOf(u.id, orgId)).includes("org.members")) continue;
+        await this.svc.notify(u.id, orgId, {
+          kind: "hr.account_opened",
+          title: `Compte ouvert par les RH : ${name || input.email}`,
+          body: "Profil « Agent » ou équivalent selon le statut. Vérifiez le profil et le rattachement dans Structure.",
+          actor_id: actorId,
+          link: "/org",
+        });
+      }
+      await this.svc.log(actorId, "hr.account_opened", { orgId, data: { email: input.email, profile: profile!.id } });
+    }
     await this.svc.log(actorId, "hr.agent.created", { orgId, data: { user_id: userId, matricule, name } });
     return { agent: await this.row(orgId, userId!), ...(link ?? { sent: false }) };
   }

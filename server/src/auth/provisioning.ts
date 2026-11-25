@@ -255,26 +255,34 @@ export class Provisioning {
   }
 
   /**
-   * Ouverture du compte d'un agent par le service RH (module RH) : le droit hr.manage est vérifié par l'appelant.
-   * Même parcours qu'une invitation : lien personnel, l'agent choisit son mot de passe.
+   * Ouverture du compte d'un agent en deux temps (S3.3) : les contrôles d'abord, sans rien écrire ; puis l'écriture dans la
+   * transaction du dossier (`insert`), et seulement après son aboutissement l'envoi du lien et le journal (`complete`).
+   * Si le dossier échoue, rien de ce que fait l'enrôlement n'a été écrit ni envoyé.
    */
-  enrolAgent(
+  async stageAgent(
     actorId: string,
     orgId: string,
     input: { email: string; name: string; profile_id: string; unit_id?: string | null; title?: string },
     info: RequestInfo,
   ) {
-    return this.enrol(actorId, orgId, input, info);
+    const { email, existing } = await this.assertEnrollable(orgId, input.email);
+    const userId = existing?.id ?? uid("usr");
+    let inv: OrgInvitation | null = null;
+    return {
+      userId,
+      insert: async (q: Queryable) => {
+        inv = await this.insertEnrolment(q, actorId, orgId, input, email, userId, !existing);
+      },
+      complete: async () => {
+        await this.auth.record("account.invited", { userId, actorId, ip: info.ip, data: { org_id: orgId } });
+        this.svc.bus.emit({ type: "org.changed", actorId, orgId });
+        return { invitation_id: inv!.id, ...(await this.notifyInvitee(inv!, actorId)) };
+      },
+    };
   }
 
-  /** Crée le compte s'il n'existe pas, l'invite dans l'institution et envoie le lien de finalisation. */
-  private async enrol(
-    actorId: string,
-    orgId: string,
-    input: { email: string; name: string; profile_id: string; unit_id?: string | null; title?: string },
-    info: RequestInfo,
-  ) {
-    const email = input.email.trim().toLowerCase();
+  private async assertEnrollable(orgId: string, rawEmail: string) {
+    const email = rawEmail.trim().toLowerCase();
     if (
       await this.svc.db.one(
         "SELECT 1 FROM org_members om JOIN users u ON u.id = om.user_id WHERE om.org_id = $1 AND lower(u.email) = $2",
@@ -293,29 +301,50 @@ export class Provisioning {
       "SELECT id FROM users WHERE lower(email) = $1 AND NOT is_ai",
       [email],
     );
+    return { email, existing };
+  }
+
+  private async insertEnrolment(
+    q: Queryable,
+    actorId: string,
+    orgId: string,
+    input: { name: string; profile_id: string; unit_id?: string | null; title?: string },
+    email: string,
+    userId: string,
+    createAccount: boolean,
+  ) {
+    if (createAccount)
+      await q.query("INSERT INTO users (id, name, email, status, title) VALUES ($1,$2,$3,'invited',$4)", [
+        userId,
+        input.name.trim(),
+        email,
+        input.title?.trim() || null,
+      ]);
+    return this.createInvitation(
+      {
+        org_id: orgId,
+        email,
+        name: input.name.trim(),
+        profile_id: input.profile_id,
+        created_account: createAccount,
+        unit_id: input.unit_id ?? null,
+        title: input.title?.trim() ?? "",
+      },
+      actorId,
+      q,
+    );
+  }
+
+  /** Crée le compte s'il n'existe pas, l'invite dans l'institution et envoie le lien de finalisation. */
+  private async enrol(
+    actorId: string,
+    orgId: string,
+    input: { email: string; name: string; profile_id: string; unit_id?: string | null; title?: string },
+    info: RequestInfo,
+  ) {
+    const { email, existing } = await this.assertEnrollable(orgId, input.email);
     const userId = existing?.id ?? uid("usr");
-    const inv = await this.svc.db.tx(async (q) => {
-      if (!existing)
-        await q.query("INSERT INTO users (id, name, email, status, title) VALUES ($1,$2,$3,'invited',$4)", [
-          userId,
-          input.name.trim(),
-          email,
-          input.title?.trim() || null,
-        ]);
-      return this.createInvitation(
-        {
-          org_id: orgId,
-          email,
-          name: input.name.trim(),
-          profile_id: input.profile_id,
-          created_account: !existing,
-          unit_id: input.unit_id ?? null,
-          title: input.title?.trim() ?? "",
-        },
-        actorId,
-        q,
-      );
-    });
+    const inv = await this.svc.db.tx((q) => this.insertEnrolment(q, actorId, orgId, input, email, userId, !existing));
     await this.auth.record("account.invited", { userId, actorId, ip: info.ip, data: { org_id: orgId } });
     this.svc.bus.emit({ type: "org.changed", actorId, orgId });
     return { invitation_id: inv.id, ...(await this.notifyInvitee(inv, actorId)) };

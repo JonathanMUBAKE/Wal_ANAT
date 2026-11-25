@@ -156,3 +156,61 @@ describe("S3.1 : un avenant n'est jamais pris au piège de la résiliation de so
     expect((await g.api("u_alice", "DELETE", `/api/agreements/${av.id}`)).status).toBe(200);
   });
 });
+
+describe("S3.3 : un agent n'est enrôlé qu'une fois son dossier validé", () => {
+  const body = async (over: Record<string, unknown> = {}) => ({
+    last_name: "Fictive",
+    first_names: "Awa Marie",
+    email: "awa.s33@exemple.test",
+    status: "contractuel",
+    function_title: "Chargée d'études",
+    unit_id: ((await g.api("u_alice", "GET", "/api/org/units")).body as Any[])[1].id,
+    hired_on: "2024-01-08",
+    ...over,
+  });
+  const traces = async () => ({
+    users: (await g.ctx.db.query<Any>("SELECT id FROM users WHERE lower(email) = 'awa.s33@exemple.test'")).length,
+    invitations: (await g.ctx.db.query<Any>("SELECT id FROM org_invitations WHERE lower(email) = 'awa.s33@exemple.test'")).length,
+    members: (await g.ctx.db.query<Any>("SELECT user_id FROM org_members")).length,
+    records: (await g.ctx.db.query<Any>("SELECT user_id FROM agent_records")).length,
+    avis: (await g.ctx.db.query<Any>("SELECT id FROM notifications WHERE kind = 'hr.account_opened'")).length,
+    journal: (await g.ctx.db.query<Any>("SELECT id FROM activity WHERE kind = 'hr.account_opened'")).length,
+  });
+
+  it("contractuel sans date de fin : 400 et aucun compte, aucune invitation, aucun membre, aucun avis ; avec la date, tout passe", async () => {
+    // Un autre administrateur existe : c'est lui que l'ouverture de compte préviendrait
+    expect((await g.promote("u_karim")).status).toBe(200);
+    const before = await traces();
+    const refused = await g.api("u_alice", "POST", "/api/hr/agents", await body());
+    expect(refused.status).toBe(400);
+    expect(refused.body.error).toMatch(/date de fin/);
+    expect(await traces()).toEqual(before);
+    const ok = await g.api("u_alice", "POST", "/api/hr/agents", await body({ contract_end_on: "2030-12-31" }));
+    expect(ok.status).toBe(200);
+    const after = await traces();
+    expect(after).toMatchObject({ users: 1, invitations: 1, records: before.records + 1, members: before.members + 1 });
+    expect(after.avis).toBeGreaterThan(before.avis);
+    expect(after.journal).toBe(before.journal + 1);
+  });
+
+  it("un compte existant qui a déjà un dossier : 400 sans rien changer", async () => {
+    const first = await g.api("u_alice", "POST", "/api/hr/agents", await body({ user_id: "u_hugo", email: undefined, contract_end_on: "2030-12-31" }));
+    expect(first.status).toBe(200);
+    const before = await traces();
+    const again = await g.api("u_alice", "POST", "/api/hr/agents", await body({ user_id: "u_hugo", email: undefined, contract_end_on: "2030-12-31" }));
+    expect(again.status).toBe(400);
+    expect(again.body.error).toMatch(/déjà un dossier/);
+    expect(await traces()).toEqual(before);
+  });
+
+  it("si l'écriture du dossier échoue, l'enrôlement est défait : ni compte ni invitation", async () => {
+    // Un matricule déjà pris par une autre personne est refusé avant tout ; on force l'échec au cœur de la transaction
+    await g.ctx.db.query(
+      "ALTER TABLE agent_records ADD CONSTRAINT s33_echec CHECK (function_title IS DISTINCT FROM 'PANNE')",
+    ).catch(() => {});
+    const before = await traces();
+    const r = await g.api("u_alice", "POST", "/api/hr/agents", await body({ function_title: "PANNE", contract_end_on: "2030-12-31" }));
+    expect(r.status).toBeGreaterThanOrEqual(400);
+    expect(await traces()).toEqual(before);
+  });
+});

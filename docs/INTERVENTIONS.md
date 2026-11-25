@@ -32,9 +32,22 @@ Six interventions. Rien d'autre ne commence tant que celles-ci ne sont pas faite
 
 ## S1.1 — Un compte sans aucun droit dépose un document dans un dossier de projet *(AA1)*
 
-- **Défaut** — Sous le profil « Lecture seule », zéro droit sur cinquante-huit, le testeur a déposé un
-  document dans un dossier de projet : le serveur a répondu 200. Il n'existe aucune règle d'écriture sur
-  les documents de dossier. *(à localiser : la route de dépôt dans `documents.ts` / `documents-dossiers`)*
+> **Corrigé le 25 novembre 2026 : le constat était faux, et sa vraie cause est ailleurs.** La règle
+> d'écriture **existe** — `dossier-documents.ts:63`, `write: role === "editor" || role === "admin"` —
+> et elle est éprouvée : sans rôle 404, lecteur 403, commentateur 403, éditeur 200. Si le testeur a
+> obtenu un 200 sous le profil « Lecture seule », c'est que **son compte tenait un rôle d'éditeur sur le
+> projet** — ce qui est précisément le défaut S1.6 : un projet créé depuis l'accueil naissait avec des
+> éditeurs que personne n'avait choisis. Le trou n'était donc pas dans les documents, il était dans la
+> création des projets, et il est bouché.
+>
+> **Reste une question de modèle, qui revient au maître d'ouvrage.** La règle des documents s'appuie sur
+> le **rôle tenu sur le projet**, jamais sur le profil. Un profil « Lecture seule », zéro droit sur
+> cinquante-huit, peut donc écrire dans un dossier dès qu'on lui donne un rôle d'éditeur quelque part.
+> Est-ce voulu ? Un profil sans aucun droit devrait-il pouvoir devenir éditeur par un rôle de projet ?
+
+- **Ce qui a été fait** — Aucun code serveur modifié : il n'y avait rien à corriger. Un test couvre
+  désormais les quatre cas (sans rôle, lecteur, commentateur, éditeur) sous le profil « Lecture seule »,
+  pour que la règle ne puisse plus être perdue en silence.
 - **Change** — Le droit d'écrire un document de dossier suit **le rôle tenu sur le projet** (décision de
   l'utilisateur, question 6). Un lecteur lit, un éditeur dépose, un invité sans rôle n'accède pas.
   La lecture suit la même règle que le reste du dossier.

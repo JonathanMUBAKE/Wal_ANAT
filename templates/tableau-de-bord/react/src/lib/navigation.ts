@@ -28,6 +28,11 @@ export const NAVIGATION: GroupeNav[] = [
     { cle: "decisions", nom: "Registre des décisions", icone: "balance", compte: 2, ton: "critique" },
     { cle: "signataire", nom: "Signataire", icone: "cle", compte: 2 },
   ]},
+  { groupe: "Contrôles", icone: "verrou", entrees: [
+    { cle: "controles", nom: "Registre des contrôles", icone: "verrou", compte: 1, ton: "critique" },
+    { cle: "approbations", nom: "Approbations", icone: "tampon", compte: 7, ton: "vigilance" },
+    { cle: "gardefous", nom: "Garde-fous", icone: "bouclier", compte: 1, ton: "critique" },
+  ]},
   { groupe: "Exploitation", icone: "serveur", entrees: [
     { cle: "services", nom: "Services", icone: "serveur", compte: 12 },
     { cle: "taches", nom: "Tâches", icone: "tache", compte: 10 },

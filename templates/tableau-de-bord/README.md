@@ -36,6 +36,7 @@ composants ni routeur.
 | Domaine | Pages |
 |---|---|
 | **Pilotage** | Vue d'ensemble · Activité · Rapports |
+| **Contrôles** | **Registre des contrôles** · **Approbations** · **Garde-fous** |
 | **Dossiers** | Portefeuille · Accords et partenaires |
 | **Secrétariat** | Courrier · Séances · Registre des décisions · Signataire |
 | **Exploitation** | Services · Tâches · Files d'attente · Déploiements · **Console d'exploitation** · **Incidents et astreinte** |
@@ -47,11 +48,45 @@ composants ni routeur.
 | **Accès** | Utilisateurs · Rôles et droits · Sessions · Jetons d'API |
 | **Système** | Paramètres · Intégrations · Sauvegardes · Journal d'audit |
 
-**Quarante-deux pages, onze domaines.** Le cœur est le centre de commande d'administration
+**Quarante-cinq pages, douze domaines.** Le cœur est le centre de commande d'administration
 système : exploitation, infrastructure, sécurité, observabilité. Les domaines *Dossiers* et
 *Secrétariat* portent les patrons institutionnels (portefeuille, courrier, séances, décisions,
 signature, accords) ; ils se retirent en supprimant deux entrées de `navigation.ts` et six
 fichiers de `vues/`, sans toucher au reste.
+
+## Rien ne se fait sans contrôle
+
+Le domaine *Contrôles* est la colonne vertébrale de l'outil, pas un module de plus.
+
+**Le registre** recense chaque geste que l'outil permet, et ce qu'il faut traverser pour le
+faire : son effet (lire, écrire, détruire, configurer, envoyer, exécuter), son niveau de contrôle
+(libre · confirmation · mot à retaper · double regard · quorum de deux · interdit), qui peut le
+déclencher, s'il est journalisé, s'il se défait et dans quel délai, et **pourquoi ce niveau** —
+la colonne qu'on relit dans six mois. Chaque type d'effet a un **plancher** : une destruction
+exige au minimum un double regard. Un geste sous son plancher est un **défaut**, affiché en tête
+de page tant qu'il dure — sauf s'il porte un **écart signé** : le motif, le nom de celui qui
+l'assume, la date, et la date à laquelle on y revient. Un contrôle allégé en silence est un
+défaut ; allégé par écrit, c'est une décision.
+
+Le registre se protège lui-même : relever ou abaisser un niveau est le geste `G-062`, sous
+quorum de deux et vingt-quatre heures de délai. Couper une journalisation est le geste `G-063`,
+et il est **interdit** — retiré de l'outil, pas seulement fermé.
+
+**Les approbations** réunissent dans une file unique tout ce qui attend une main humaine :
+correctifs proposés par l'IA, opérations, appels MCP en écriture, suppressions, envois en masse,
+dérogations. Trois files qu'on ne regarde plus deviennent une file qu'on vide. L'écran tient
+quatre règles : un avis sans motif n'est pas un avis (les boutons restent inertes tant que rien
+n'est écrit) ; un agent ne donne qu'un avis par demande et le demandeur n'approuve jamais sa
+propre demande ; une demande non tranchée expire et ne s'exécute pas — le silence ne décide de
+rien ; l'IA propose, mais c'est le nom de l'approbateur qui est inscrit au journal.
+
+**Les garde-fous** sont ce qui refuse le geste *avant* qu'il soit demandé : fenêtres de
+changement, gel de fin de période, plafonds d'envoi et de dépense, séparation des tâches,
+dépendances (pas de migration sans retour arrière testé), listes blanches, formes refusées à
+l'entrée (une requête d'écriture sans clause de restriction, un jeton sans échéance). Un contrôle
+réclame une main ; un garde-fou, lui, dit non — et c'est ce qui évite les deux cents approbations
+qu'on finirait par signer sans lire. Une règle éteinte reste affichée en tête de page, avec un
+rappel hebdomadaire, jusqu'à ce qu'elle soit remise.
 
 ## Ce que le centre de commande couvre
 

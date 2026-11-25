@@ -11,6 +11,7 @@ import { connexions, journalMateriel, systeme, temperatures, ventilateurs, verro
 import { agentsIA, approbationsMCP, clesModeles, connecteursMCP, executionsAgents } from "../lib/intelligence";
 import { sms, smtp, whatsapp, envois } from "../lib/communication";
 import { accords, arbitrages, courriers, decisions, dossiers, circuits, seances } from "../lib/institution";
+import { approbations, conforme, gardeFous, gestes } from "../lib/controles";
 
 /* Le bas du panneau de section porte l'essentiel du domaine, comme la carte
    « console » du tableau de bord UniFi : un en-tête d'identité, une liste de
@@ -31,6 +32,27 @@ export function ResumeGroupe({ groupe, aller }: { groupe: string; aller: (cle: s
         <div className="mt-3 space-y-2">
           <Bouton taille="s" icone="alerte" className="w-full" onClick={() => aller("alertes")} enfants="Centre d'alertes" />
           <Bouton taille="s" icone="rapport" className="w-full" onClick={() => aller("rapports")} enfants="Rapports de direction" />
+        </div>
+      </Bloc>
+    );
+  }
+
+  if (groupe === "Contrôles") {
+    const attente = approbations.filter((a) => a.etat === "en attente").length;
+    const eleves = approbations.filter((a) => a.etat === "en attente" && a.risque === "élevé").length;
+    const defauts = gestes.filter((g) => !conforme(g)).length;
+    const eteints = gardeFous.filter((g) => !g.actif).length;
+    return (
+      <Bloc titre="Ce qui attend une main">
+        <LigneStat etiquette="Demandes en attente" valeur={String(attente)} ton={attente ? "vigilance" : "bon"} />
+        <LigneStat etiquette="Dont à risque élevé" valeur={String(eleves)} ton={eleves ? "critique" : "bon"} />
+        <LigneStat etiquette="Gestes recensés" valeur={String(gestes.length)} />
+        <LigneStat etiquette="Gestes sous-contrôlés" valeur={String(defauts)} ton={defauts ? "critique" : "bon"} />
+        <LigneStat etiquette="Garde-fous éteints" valeur={String(eteints)} ton={eteints ? "critique" : "bon"} />
+        {eteints > 0 && <Alerte texte="Un modèle peut déclencher une écriture MCP sans accord humain : la règle GF-14 est éteinte." ton="critique" />}
+        <div className="mt-3 space-y-2">
+          <Bouton taille="s" icone="tampon" className="w-full" onClick={() => aller("approbations")} enfants="Vider la file" />
+          <Bouton taille="s" icone="verrou" className="w-full" onClick={() => aller("controles")} enfants="Registre des contrôles" />
         </div>
       </Bloc>
     );

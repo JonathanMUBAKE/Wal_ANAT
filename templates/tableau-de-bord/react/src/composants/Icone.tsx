@@ -66,6 +66,9 @@ const TRACES: Record<string, JSX.Element> = {
   discussion: <><path d="M21 11.5a8 8 0 0 1-11.6 7.1L3.5 20.5l1.9-5.9A8 8 0 1 1 21 11.5z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/></>,
   boussole: <><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5.5-5.5 2 2-5.5z"/></>,
   balance: <><path d="M12 4v16M7 20h10"/><path d="M5 8h14M5 8l-2.5 5a3 3 0 0 0 5 0zM19 8l2.5 5a3 3 0 0 1-5 0z"/></>,
+  verrou: <><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /><path d="M12 15v2" /></>,
+  tampon: <><path d="M9 3h6a2 2 0 0 1 2 2v2.5a3 3 0 0 1-.9 2.1L15 11h-6l-1.1-1.4A3 3 0 0 1 7 7.5V5a2 2 0 0 1 2-2z" /><path d="M5 15h14a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z" /><path d="M9 11v4M15 11v4" /></>,
+  halte: <><circle cx="12" cy="12" r="9" /><path d="M8.5 8.5l7 7" /></>,
   boite: <><path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.73l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8z" /><path d="m3.3 7 8.7 5 8.7-5M12 22V12" /></>,
 };
 

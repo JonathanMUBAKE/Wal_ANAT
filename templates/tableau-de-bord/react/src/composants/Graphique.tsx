@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Chart, registerables, type ChartConfiguration } from "chart.js";
+import type { ScriptableContext } from "chart.js";
 import { cx, fmt, jeton, voiler, type Format } from "../lib/format";
 import { useApp } from "../lib/contexte";
 import type { Serie } from "../lib/donnees";
@@ -47,12 +48,55 @@ export function optionsCommunes() {
   };
 }
 
+/* --- Tracé progressif ----------------------------------------------------
+   Une courbe qui se dessine de gauche à droite dit deux choses qu'une courbe
+   posée d'un coup ne dit pas : que le temps va dans ce sens, et que ce qu'on
+   voit vient d'arriver. L'animation dure moins d'une seconde et ne se rejoue
+   qu'au premier rendu — une donnée qui change ensuite glisse, elle ne se
+   redessine pas. */
+type ContexteAnim = ScriptableContext<"line"> & {
+  type?: string; index: number; datasetIndex: number;
+  xStarted?: boolean; yStarted?: boolean;
+};
+
+export function animationTrace(nbPoints: number) {
+  const total = 850;
+  const pas = total / Math.max(1, nbPoints);
+  const depart = (ctx: ContexteAnim) => {
+    if (ctx.index === 0) return ctx.chart.scales.y.getPixelForValue(ctx.chart.scales.y.min);
+    const precedent = ctx.chart.getDatasetMeta(ctx.datasetIndex).data[ctx.index - 1];
+    return precedent ? (precedent.getProps(["y"], true) as { y: number }).y
+      : ctx.chart.scales.y.getPixelForValue(ctx.chart.scales.y.min);
+  };
+  return {
+    x: {
+      type: "number", easing: "linear", duration: pas, from: NaN,
+      delay(ctx: ContexteAnim) {
+        if (ctx.type !== "data" || ctx.xStarted) return 0;
+        ctx.xStarted = true; return ctx.index * pas;
+      },
+    },
+    y: {
+      type: "number", easing: "linear", duration: pas, from: depart,
+      delay(ctx: ContexteAnim) {
+        if (ctx.type !== "data" || ctx.yStarted) return 0;
+        ctx.yStarted = true; return ctx.index * pas;
+      },
+    },
+  };
+}
+
+const mouvementReduit = () =>
+  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 /** Rend un graphique Chart.js et le reconstruit quand le thème change. */
-export function Graphique({ config, hauteur = 268, cacher }: {
+export function Graphique({ config, hauteur = 268, cacher, surInstance }: {
   config: () => ChartConfiguration;
   hauteur?: number;
   /** Index des séries masquées depuis la légende. */
   cacher?: Set<number>;
+  /** Donne l'instance à la vue, pour les mises à jour en direct. */
+  surInstance?: (c: Chart | null) => void;
 }) {
   const toile = useRef<HTMLCanvasElement>(null);
   const instance = useRef<Chart | null>(null);
@@ -60,9 +104,17 @@ export function Graphique({ config, hauteur = 268, cacher }: {
 
   useEffect(() => {
     if (!toile.current) return;
-    const c = new Chart(toile.current, config());
+    const cfg = config();
+    /* Toute courbe se trace progressivement, sans que chaque vue ait à le
+       demander. Les barres et les anneaux gardent l'animation par défaut. */
+    if (cfg.type === "line" && !mouvementReduit()) {
+      const n = (cfg.data.datasets[0]?.data as unknown[] | undefined)?.length ?? 0;
+      cfg.options = { ...cfg.options, animations: animationTrace(n) as never };
+    }
+    const c = new Chart(toile.current, cfg);
     instance.current = c;
-    return () => { c.destroy(); instance.current = null; };
+    surInstance?.(c);
+    return () => { c.destroy(); instance.current = null; surInstance?.(null); };
     // La configuration est reconstruite à chaque bascule de thème : les
     // couleurs sont lues sur les jetons CSS au moment du rendu.
     // eslint-disable-next-line react-hooks/exhaustive-deps

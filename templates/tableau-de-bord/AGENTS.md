@@ -11,7 +11,7 @@ des choix déjà tranchés.
 
 ## 1. Ce que vous avez entre les mains
 
-Trente-quatre écrans, dix domaines, une bibliothèque de composants, et des règles de conduite.
+Quarante-cinq écrans, douze domaines, une bibliothèque de composants, et des règles de conduite.
 Rien n'est à moitié fait : chaque page a ses indicateurs, ses filtres, ses actions réelles et son
 état vide.
 
@@ -36,7 +36,7 @@ react/src/
 
 ---
 
-## 2. Les dix règles
+## 2. Les onze règles
 
 Elles ne sont pas négociables. Si une demande vous pousse à en enfreindre une, dites-le plutôt
 que de la contourner en silence.
@@ -46,7 +46,20 @@ que de la contourner en silence.
 Aucun agent IA ne modifie quoi que ce soit. Il rend une lecture, l'opérateur la retient ou
 l'écarte. Toute action part d'un humain et porte son nom au journal.
 
-### 2.2 Toute action à conséquence passe par `ui.confirmer`
+### 2.2 Tout geste que vous ajoutez entre au registre
+
+Une fonctionnalité n'est pas finie quand elle marche : elle est finie quand on sait ce qu'elle
+permet, à qui, et à quel prix. Toute action que vous ajoutez se déclare dans `lib/controles.ts`
+avec son effet, son niveau, ses rôles, sa journalisation, sa réversibilité, et **pourquoi ce
+niveau**. Le registre impose un plancher par effet — une destruction exige au minimum un double
+regard. Si vous voulez descendre en dessous, vous ne baissez pas le plancher : vous inscrivez un
+**écart signé** (`ecart`), avec le motif, le nom de celui qui l'assume, la date, et la date de
+revue. Un contrôle allégé en silence est un défaut ; allégé par écrit, c'est une décision.
+
+Ce qui attend une main humaine ne va pas dans un écran à part : cela rejoint la file unique des
+*Approbations*. Trois files qu'on ne regarde plus valent moins qu'une file qu'on vide.
+
+### 2.3 Toute action à conséquence passe par `ui.confirmer`
 
 ```tsx
 const ok = await ui.confirmer({
@@ -65,42 +78,42 @@ dans le message qui suit :
 ui.message("12 comptes suspendus.", "bon", { annuler: () => { /* remettre l'état d'avant */ } });
 ```
 
-### 2.3 Rien ne repose sur la couleur seule
+### 2.4 Rien ne repose sur la couleur seule
 
 Un état porte toujours un mot. `<Jeton ton="critique" enfants="en alerte" />`, jamais une pastille
 rouge muette. Les graphiques ont une légende dès deux séries et un repli tabulaire.
 
-### 2.4 Un seul axe de valeurs par graphique
+### 2.5 Un seul axe de valeurs par graphique
 
 Deux mesures d'ordres différents font deux graphiques, ou sont ramenées à un indice base 100.
 Jamais deux échelles sur un même dessin.
 
-### 2.5 Le serveur reste seul juge
+### 2.6 Le serveur reste seul juge
 
 Les écrans de droits et de paramètres décrivent ce que l'interface **demande**, pas ce qu'elle
 accorde. Écrivez-le dans l'interface quand c'est le sujet de la page.
 
-### 2.6 Un journal d'audit ne se vide pas depuis l'interface
+### 2.7 Un journal d'audit ne se vide pas depuis l'interface
 
 Pas de bouton « purger ». Les lignes partent par la durée de conservation, elle-même tracée quand
 on la change.
 
-### 2.7 Les garde-fous d'un agent ne vivent pas dans ses instructions
+### 2.8 Les garde-fous d'un agent ne vivent pas dans ses instructions
 
 Une consigne en prose se négocie. Une liste d'outils autorisés, non. Lire et écrire sont séparés,
 et tout ce qui écrit demande un humain.
 
-### 2.8 Tout ce qui se fait à la souris se fait au clavier
+### 2.9 Tout ce qui se fait à la souris se fait au clavier
 
 `Ctrl K`, `Ctrl B`, `T`, `D`, `?`, et les séquences `G` puis une lettre. Une nouvelle page gagne
 sa lettre dans `CentreDeCommande.tsx`.
 
-### 2.9 Une animation explique, elle ne décore pas
+### 2.10 Une animation explique, elle ne décore pas
 
 Elle dit d'où vient une chose ou ce qui vient de changer. Rien ne bouge plus de 400 ms, rien ne
 bouge deux fois pour la même information, et tout s'annule sous `prefers-reduced-motion`.
 
-### 2.10 Français partout
+### 2.11 Français partout
 
 Interface, noms de variables, noms de composants, commentaires, messages d'erreur, commits.
 `poserEtat` et non `setState`, `enfants` et non `children` pour les emplacements nommés.
@@ -200,6 +213,7 @@ Avant d'écrire un composant, cherchez-le ici.
 | `Chronologie` · `FriseDisponibilite` · `Etapes` · `LigneReglage` | Les formes qui reviennent. |
 | `Graphique` · `CarteGraphique` · `AnneauTotal` · `Etincelle` · `Legende` | Chart.js habillé par les jetons, légende cliquable, repli tabulaire. |
 | `Apparition` · `ListeEchelonnee` · `NombreAnime` · `Squelette` · `AuDefilement` | Le mouvement. |
+| `lib/controles.ts` | Le registre des gestes, la file d'approbation, les garde-fous. `conforme()`, `manque()`, `ecartAssume()` disent si un geste tient debout. |
 | `Bouton` · `Carte` · `Jeton` · `Delta` · `Menu` · `Jauge` · `Progression` · `EtatVide` | Le socle. |
 
 ---

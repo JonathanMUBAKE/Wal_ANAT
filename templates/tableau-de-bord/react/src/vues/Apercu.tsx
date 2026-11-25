@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import type { ChartConfiguration } from "chart.js";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Chart, ChartConfiguration } from "chart.js";
 import {
   BarreMini, Bouton, Carte, CaseSerie, CurseurPeriode, Jeton, LigneStat,
   Onglets, Pastille, RangeeTuiles, SelecteurPeriode, TeteCarte,
@@ -9,8 +9,10 @@ import { LigneAssistant } from "../composants/AssistantIA";
 import { Icone } from "../composants/Icone";
 import { useUI } from "../composants/Superpositions";
 import { cx, fmt, jeton, NF, voiler } from "../lib/format";
+import { NombreAnime, useMouvementReduit } from "../composants/Mouvement";
+import { approbations, conforme, gardeFous, gestes } from "../lib/controles";
 import { HEURES, charge, latence, parCode, parService, serie } from "../lib/donnees";
-import { activiteParModule, servicesSIGRH } from "../lib/sigrh";
+import { activite, activiteParModule, servicesSIGRH, type EvenementActivite } from "../lib/sigrh";
 import { agentsIA } from "../lib/intelligence";
 
 /* =========================================================================
@@ -37,6 +39,57 @@ export function Apercu({ aller }: { aller: (cle: string) => void }) {
   const [visibles, poserVisibles] = useState<Set<string>>(new Set(["requetes", "latence"]));
   const [service, poserService] = useState("");
   const [incident, poserIncident] = useState(true);
+
+  /* Le direct : la courbe avance d'un point et le flux reçoit un geste toutes
+     les deux secondes et demie. C'est ce qui distingue un tableau de bord
+     d'une capture d'écran — on voit que le système vit. */
+  const [direct, poserDirect] = useState(true);
+  const [flux, poserFlux] = useState<Array<{ cle: number; ev: EvenementActivite }>>(
+    () => activite.slice(0, 6).map((ev, i) => ({ cle: i, ev })));
+  const [debit, poserDebit] = useState(4820);
+  const hero = useRef<Chart | null>(null);
+  const compteur = useRef(1000);
+  const reduit = useMouvementReduit();
+
+  useEffect(() => {
+    if (!direct) return;
+    const minuteur = setInterval(() => {
+      const c = hero.current;
+      if (c) {
+        /* Le direct fait bouger le dernier point, il n'allonge pas l'axe :
+           sur une courbe qui couvre la journée, empiler un point toutes les
+           deux secondes répéterait cinq fois la même heure et écraserait le
+           reste. Ce qui vit ici, c'est l'intervalle en cours. */
+        c.data.datasets.forEach((ds) => {
+          const d = ds.data as number[];
+          const i = d.length - 1;
+          if (i < 0) return;
+          /* L'amplitude du frémissement se mesure sur l'étendue de la courbe,
+             pas sur la valeur du point : à la fin d'une journée creuse, 7 %
+             d'une valeur basse ne se verrait pas à l'écran. */
+          const etendue = Math.max(...d) - Math.min(...d) || 10;
+          const socle = d[i - 1] ?? d[i];
+          d[i] = Math.max(0, Math.round(socle + (Math.random() - 0.45) * etendue * 0.14));
+        });
+        /* Le tracé progressif n'a lieu qu'une fois, à l'ouverture. Passé la
+           première mise à jour, on le remplace par un fondu court : une courbe
+           qui se redessine entièrement toutes les deux secondes fatigue plus
+           qu'elle n'informe. */
+        const o = c.options as { animations?: unknown; animation?: unknown };
+        if (o.animations) {
+          o.animations = false;
+          o.animation = { duration: 620, easing: "easeOutCubic" };
+        }
+        c.update();
+      }
+      poserDebit((v) => Math.max(3200, Math.min(6400, Math.round(v * (0.97 + Math.random() * 0.07)))));
+      poserFlux((l) => [
+        { cle: ++compteur.current, ev: activite[Math.floor(Math.random() * activite.length)] },
+        ...l,
+      ].slice(0, 7));
+    }, 2600);
+    return () => clearInterval(minuteur);
+  }, [direct]);
 
   const basculer = (cle: string) => poserVisibles((s) => {
     const n = new Set(s);
@@ -174,11 +227,19 @@ export function Apercu({ aller }: { aller: (cle: string) => void }) {
                   actif={visibles.has(s.cle)} surChangement={() => basculer(s.cle)} />
               ))}
               <span className="w-px h-[20px] bg-bordure mx-1" />
+              <button type="button" aria-pressed={direct} onClick={() => poserDirect((d) => !d)}
+                className={cx("inline-flex items-center gap-[7px] h-[26px] px-[9px] rounded-[4px] text-[12px] transi",
+                  direct ? "bg-bon-voile text-bon font-semibold" : "text-encre-3 hover:bg-survol hover:text-encre")}>
+                <span className={cx("relative inline-flex w-[7px] h-[7px] rounded-full bg-current shrink-0",
+                  direct && !reduit && "pulse-etat")} />
+                Direct
+              </button>
               <SelecteurPeriode options={["1 h", "1 j", "1 sem.", "1 mois"]} valeur={periode} surChoix={poserPeriode} />
             </div>
           </div>
 
-          <Graphique config={configHero} cacher={undefined} hauteur={300} />
+          <Graphique config={configHero} cacher={undefined} hauteur={300}
+            surInstance={(c) => { hero.current = c; }} />
           <CurseurPeriode debut="00:00" fin="Maintenant"
             surEtendre={() => ui.message("Période étendue à une semaine.", "info", { duree: 1400 })} />
         </>
@@ -347,17 +408,85 @@ export function Apercu({ aller }: { aller: (cle: string) => void }) {
           </>
         } />
 
+        <Carte className={cx(direct && "border-bon/30")} enfants={
+          <>
+            <TeteCarte
+              titre="Activité en direct"
+              sous={direct ? "Les gestes arrivent au fil de l'eau" : "Flux en pause"}
+              outils={
+                <span className="inline-flex items-center gap-[6px] text-[11px] text-encre-3">
+                  <span className={cx("relative inline-flex w-[7px] h-[7px] rounded-full shrink-0",
+                    direct ? "bg-bon" : "bg-encre-4", direct && !reduit && "pulse-etat text-bon")} />
+                  {direct ? "en direct" : "en pause"}
+                </span>
+              }
+            />
+            <div className="pas-carte pt-3 min-h-[232px]">
+              {flux.map(({ cle, ev }, i) => (
+                <div key={cle}
+                  className={cx("flex items-start gap-[9px] py-[7px] border-b border-bordure last:border-0",
+                    i === 0 && direct && !reduit && "anim-glisse")}
+                  style={{ opacity: 1 - i * 0.07 }}>
+                  <span className="w-[6px] h-[6px] rounded-full bg-accent shrink-0 mt-[6px]" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] truncate">{ev.action}</span>
+                    <span className="block text-[11px] text-encre-3 truncate">
+                      {ev.agent} · {ev.module} · {ev.canal}
+                    </span>
+                  </span>
+                  <span className="text-[11px] text-encre-4 shrink-0 tab-num">
+                    {i === 0 ? "à l'instant" : ev.quand}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        } />
+
         <Carte enfants={
           <>
             <TeteCarte titre="Chiffres du jour" sous="Les cinq qu'on regarde en premier" />
             <div className="pas-carte pt-3">
               <LigneStat etiquette="Disponibilité (90 j)" valeur="99,81 %" ton="vigilance" />
-              <LigneStat etiquette="Requêtes par minute" valeur="4,8 k" />
+              <LigneStat etiquette="Requêtes par minute" valeur={<NombreAnime valeur={debit} duree={900} />} />
               <LigneStat etiquette="Latence p95" valeur="182 ms" />
               <LigneStat etiquette="Taux d'erreur" valeur="0,28 %" ton="bon" />
               <LigneStat etiquette="Agents connectés" valeur="284 sur 412" />
               <LigneStat etiquette="Coût du jour" valeur="412 €" />
               <LigneStat etiquette="Dépense IA du jour" valeur="26,56 €" />
+            </div>
+          </>
+        } />
+
+        <Carte enfants={
+          <>
+            <TeteCarte
+              titre="Ce qui attend une main"
+              sous="Rien ne part sans qu'un humain l'ait tranché"
+              outils={<Bouton ton="fantome" taille="s" onClick={() => aller("approbations")} enfants="Ouvrir la file" />}
+            />
+            <div className="pas-carte pt-3">
+              {(() => {
+                const attente = approbations.filter((a) => a.etat === "en attente");
+                const eleves = attente.filter((a) => a.risque === "élevé").length;
+                const dIA = attente.filter((a) => a.parIA).length;
+                const defauts = gestes.filter((g) => !conforme(g)).length;
+                const eteints = gardeFous.filter((g) => !g.actif).length;
+                return (
+                  <>
+                    <LigneStat etiquette="Demandes en attente" valeur={fmt(attente.length)} ton={attente.length ? "vigilance" : "bon"} />
+                    <LigneStat etiquette="Dont à risque élevé" valeur={fmt(eleves)} ton={eleves ? "critique" : "bon"} />
+                    <LigneStat etiquette="Déposées par un agent IA" valeur={fmt(dIA)} ton="accent" />
+                    <LigneStat etiquette="Gestes sous-contrôlés" valeur={fmt(defauts)} ton={defauts ? "critique" : "bon"} />
+                    <LigneStat etiquette="Garde-fous éteints" valeur={fmt(eteints)} ton={eteints ? "critique" : "bon"} />
+                    <div className="mt-3 pt-3 border-t border-bordure flex flex-wrap gap-2">
+                      <Bouton taille="s" ton="principal" icone="tampon" onClick={() => aller("approbations")}
+                        enfants={`Trancher ${attente.length} demandes`} />
+                      <Bouton taille="s" icone="verrou" onClick={() => aller("controles")} enfants="Le registre" />
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </>
         } />

@@ -556,8 +556,8 @@ coéquipiers IA. Les deux premiers points ont été revérifiés à la main.
 ## 3 ter. Plan de chantier (arrêté le 25 novembre 2026)
 
 > **Le plan d'intervention complet — ce que le logiciel doit devenir, serveur et interface séparés,
-> avec les critères qui disent si on y est — est dans .** Cette section-ci en
-> donne l'ordre d'exécution.
+> avec les critères qui disent si on y est — est dans `docs/PLAN-INTERVENTION.md`.** Cette section-ci
+> en donne l'ordre d'exécution.
 
 Les 102 points des lots T à AD ne se traitent pas dans l'ordre où ils ont été trouvés. Voici l'ordre de
 chantier, les règles communes, et qui fait quoi.

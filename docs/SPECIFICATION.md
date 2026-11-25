@@ -109,26 +109,26 @@ ambiguïté.
 | 4 | Exigences transverses | ✅ |
 | 5 | Spécification par module | |
 | 5.1 | Courrier | ✅ *(module modèle)* |
-| 5.2 | Signataire (circuits de visa et de signature) | à rédiger |
-| 5.3 | Réunions et comptes rendus | à rédiger |
-| 5.4 | Décisions de la direction générale | à rédiger |
-| 5.5 | Plans de travail | à rédiger |
-| 5.6 | Attributions des entités | à rédiger |
-| 5.7 | Portefeuille, activités et projets | à rédiger |
-| 5.8 | Tâches et charges | à rédiger |
-| 5.9 | Livrables et consultants | à rédiger |
-| 5.10 | Partenaires et conventions | à rédiger |
-| 5.11 | Risques et indicateurs | à rédiger |
-| 5.12 | Ressources humaines, congés et absences | à rédiger |
-| 5.13 | Organisation et structure | à rédiger |
-| 5.14 | Administration du système | à rédiger |
-| 5.15 | Coéquipiers IA et validations humaines | à rédiger |
-| 5.16 | Documents, modèles et archives | à rédiger |
+| 5.2 | Signataire (circuits de visa et de signature) | ✅ |
+| 5.3 | Réunions et comptes rendus | ✅ |
+| 5.4 | Décisions de la direction générale | ✅ |
+| 5.5 | Plans de travail | ✅ |
+| 5.6 | Attributions des entités | ✅ |
+| 5.7 | Portefeuille, activités et projets | ✅ |
+| 5.8 | Tâches et charges | ✅ |
+| 5.9 | Livrables et consultants | ✅ |
+| 5.10 | Partenaires et conventions | ✅ |
+| 5.11 | Risques et indicateurs | ✅ |
+| 5.12 | Ressources humaines, congés et absences | ✅ |
+| 5.13 | Organisation et structure | ✅ |
+| 5.14 | Administration du système | ✅ |
+| 5.15 | Coéquipiers IA et validations humaines | ✅ |
+| 5.16 | Documents, modèles et archives | ✅ |
 | 6 | Modèle de données | à rédiger |
 | 7 | Architecture technique | à rédiger |
 | 8 | Exigences non fonctionnelles | à rédiger |
 | 9 | Recette et vérification | à rédiger |
-| 10 | Synthèse des écarts | à rédiger |
+| 10 | Synthèse des écarts | ✅ |
 | 11 | Trajectoire | ✅ *(renvoi)* |
 | A | Glossaire | ✅ |
 | B | Matrice de traçabilité exigences × interventions | à produire |
@@ -2986,6 +2986,111 @@ consultable.
 
 ---
 
+# 10. Synthèse des écarts
+
+## 10.1 Ce que pèse le dossier
+
+| | |
+|---|---|
+| Exigences écrites | **477** |
+| Modules spécifiés | 16 |
+| Exigences confrontées à l'existant | **185** |
+| Exigences dont l'état n'est pas établi | **292** |
+
+**Les 292 non confrontées ne sont pas une omission, c'est une étape.** Elles ont été déduites du
+fonctionnement de l'Agence, et personne n'est encore allé lire le code pour savoir si elles sont tenues.
+Les tableaux d'écarts le disent module par module. L'établissement de leur état est un travail à part
+entière, à conduire avant d'ouvrir les lots concernés.
+
+## 10.2 L'état de ce qui a été vérifié
+
+Sur les 185 exigences confrontées :
+
+| État | Nombre | Part |
+|---|---|---|
+| ✅ tenue | **10** | 5 % |
+| ⚠️ partielle | 19 | 10 % |
+| ❌ non tenue | **113** | 61 % |
+| ➖ absente — rien n'existe | **43** | 23 % |
+
+Autrement dit : **sur vingt exigences vérifiées, une est tenue.** Ce chiffre est dur, et il faut le lire
+pour ce qu'il est — non pas le constat d'un mauvais logiciel, mais la mesure de l'écart entre un outil
+bâti par ajouts successifs et un système spécifié à partir du fonctionnement d'une institution. Les deux
+tiers des manques étaient déjà connus, documentés et chiffrés dans `docs/INTERVENTIONS.md`. Le dernier
+quart ne l'était pas.
+
+## 10.3 Les exigences par module
+
+| Module | Exigences | Confrontées | ✅ | ⚠️ | ❌ | ➖ |
+|---|---|---|---|---|---|---|
+| `SIG` Signataire | 26 | 14 | 1 | 2 | 4 | 7 |
+| `REU` Réunions | 41 | 22 | 0 | 5 | 11 | 6 |
+| `DEC` Décisions | 33 | 9 | 1 | 0 | 6 | 2 |
+| `PLA` Plans de travail | 25 | 3 | 0 | 1 | 1 | 1 |
+| `ATT` Attributions | 11 | 4 | 0 | 0 | 2 | 2 |
+| `POR` Portefeuille | 24 | 11 | 0 | 1 | 10 | 0 |
+| `TAC` Tâches | 25 | 14 | 2 | 2 | 8 | 2 |
+| `LIV` Livrables | 29 | 17 | 1 | 1 | 13 | 2 |
+| `PAR` Partenaires | 23 | 10 | 2 | 1 | 7 | 0 |
+| `RIS` Risques | 19 | 5 | 0 | 0 | 4 | 1 |
+| `RH` Ressources humaines | 39 | 26 | 2 | 1 | 19 | 4 |
+| `ORG` Organisation | 28 | 14 | 1 | 0 | 6 | 7 |
+| `ADM` Administration | 27 | 13 | 0 | 4 | 8 | 1 |
+| `IA` Coéquipiers IA | 24 | 13 | 0 | 0 | 13 | 0 |
+| `DOC` Documents | 26 | 10 | 0 | 1 | 1 | 8 |
+
+Deux modules — **Plans de travail** et **Attributions** — ont des tableaux d'écarts très courts. Ce n'est
+pas qu'ils soient sains : c'est que les 102 défauts les couvraient peu. Ils sont donc les premiers
+candidats au travail d'établissement des états.
+
+Un module se détache : **les coéquipiers IA, treize exigences confrontées, treize non tenues, aucune
+tenue.**
+
+## 10.4 Ce que la spécification a trouvé et que les défauts n'avaient pas vu
+
+C'est le résultat le plus utile du dossier, et il justifie à lui seul de l'avoir écrit : **on ne peut pas
+voir une absence en lisant du code.** Ces exigences n'ont aucun point d'intervention, parce que rien dans
+le système ne les évoque.
+
+**Les actes d'amont.** Le Conseil d'administration n'est pas outillé — c'est délibéré — mais **ses actes
+entrent dans la gestion**, et rien ne les reçoit :
+
+- `EX-DEC-050` — une résolution du conseil entre dans le système comme charge à suivre.
+- `EX-DEC-051` — un budget arrêté par le conseil sert de cadre d'exécution.
+- `EX-DOC-050` — les états financiers approuvés sont conservés comme document de référence.
+- `EX-DOC-051` — le budget arrêté est consultable comme cadre d'exécution.
+
+**La structure territoriale.** L'Agence est présente par six pools, et le système ne les connaît pas :
+
+- `EX-ORG-004` — le type d'entité *pool*.
+- `EX-ORG-005` — la fonction de directeur de pool.
+
+**La continuité du service.**
+
+- `EX-ORG-019` — l'intérim d'un chef d'entité. Le modèle institutionnel le signalait déjà comme manquant.
+- `EX-ORG-007` — le catalogue des profils reflète qu'il n'y a **qu'un** directeur général adjoint.
+- `EX-PLA-012` — l'écran dit à celui qui soumet un plan qui peut l'approuver.
+
+## 10.5 Les exigences d'amont d'un travail déjà prévu
+
+Ces exigences sont rattachées à un point d'intervention, mais ce point ne les couvre qu'en partie. Les
+écrire avant d'ouvrir le lot évite de livrer la moitié du sujet.
+
+- **La délégation de signature** — `EX-SIG-021` à `025` : délégation datée, bornes obligatoires, ouverture
+  et fermeture automatiques, journal, mention portée sur l'acte signé. Le point M1.8 n'en nommait qu'une.
+- **L'adoption collégiale d'un compte rendu** — `EX-REU-023` à `028` et `031` : amendement par les
+  présents avec trace, adoption à la séance suivante, modifications consignées, et le cas d'une séance
+  qui n'a pas de suivante.
+- **Les types de livrables** — `EX-LIV-003` et `004` : à écrire quand la liste sera arrêtée.
+
+## 10.6 Ce qui attend une décision du maître d'ouvrage
+
+Aux huit décisions déjà listées dans `docs/PLAN-PROJET.md` § 6, la spécification en ajoute une :
+
+- **Qui confirme une exécution déclarée** — le secrétariat de direction ou la direction générale.
+
+---
+
 # 11. Trajectoire
 
 La trajectoire de mise en œuvre — sprints, jalons, chemin critique, décisions attendues et registre des
@@ -3020,5 +3125,5 @@ intervention sans exigence est un travail dont on n'a pas dit pourquoi on le fai
 
 # Annexe B — Matrice de traçabilité
 
-*À produire une fois les modules 5.2 à 5.16 rédigés : chaque exigence, son état, et le ou les points
+*À produire : chaque exigence, son état, et le ou les points
 d'intervention qui la tiennent.*

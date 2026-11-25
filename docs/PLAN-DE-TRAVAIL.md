@@ -553,6 +553,114 @@ coéquipiers IA. Les deux premiers points ont été revérifiés à la main.
 
 ---
 
+## 3 ter. Plan de chantier (arrêté le 25 novembre 2026)
+
+Les 102 points des lots T à AD ne se traitent pas dans l'ordre où ils ont été trouvés. Voici l'ordre de
+chantier, les règles communes, et qui fait quoi.
+
+### Les règles du chantier, valables pour tout le monde
+
+1. **Un lot se termine ou ne se commence pas.** Pas de moitié de parcours, pas de bouton posé sur une
+   règle absente, pas de règle serveur sans l'écran qui va avec. *(Consigne de Jonathan, 25 novembre.)*
+2. **Les tests d'abord**, puis le code. Le nombre de tests ne baisse jamais.
+3. **Une branche par lot**, jamais de travail direct sur `main`, aucune poussée sans accord.
+4. **Jamais deux agents sur les mêmes fichiers** en même temps.
+5. **Les briques avant les copies** : avant d'écrire un écran, chercher le composant existant et le
+   paramétrer (lot T).
+6. Chaque lot finit par : `npm run typecheck`, `npm test`, `npm run lint`, et la vérification au
+   navigateur de ce qui se voit.
+
+### Phase 0 — Mettre la table (rien ne commence avant)
+
+- [ ] **0.1 Fusionner les deux branches en attente** dans `main` : `design-kobra` (quatre
+      affinages, accessibilité à zéro manquement) et `claude/droits-interface-c60378` (six commits,
+      quatorze droits gardés, 760 tests). Elles se croisent sur quatre fichiers. Tant qu'elles ne sont pas
+      fusionnées, tout le chantier se fait sur une base divergente.
+- [ ] **0.2 Lot T — les briques.** Corriger cent points sur du code recopié revient à corriger cinq fois.
+      144 boutons et 91 champs écrits à la main doivent rejoindre les briques existantes, et un test doit
+      interdire la rechute.
+
+### Phase 1 — Ce qui ouvre un accès ou laisse fuir *(serveur)*
+
+AA1 (dépôt de document sans aucun droit), AD1 (le secret médical par les notifications), AD2 (les raisons
+budgétaires par la route voisine), AD12 (l'arbitrage notifié hors du cercle), AA2 (le contrat de mission
+d'un autre), AA3 (le projet né ouvert à trois éditeurs). **Six points. C'est par là qu'on commence.**
+
+### Phase 2 — Ce qui fait mentir la trace *(serveur)*
+
+AD10 (validation journalisée sans exécution), AD7 (modifications d'activité non journalisées, y compris la
+levée de confidentialité), AD8 (règle IA sous les droits d'un autre, sans trace).
+
+### Phase 3 — Ce qui enferme sans issue *(serveur)*
+
+AD4 (avenant bloqué par la résiliation de son accord), AD5 (sortie d'agent irréversible), AD3 (agent
+enrôlé avant validation), AD9 (proposition IA sans décideur).
+
+### Phase 4 — L'exactitude *(serveur)*
+
+Z2 (livrable remis sans pièce, qui engage un paiement), AD6 (dates de congé mal validées, pas de jours
+fériés, pas de plafond), AD11 (exécutions IA tronquées avant filtrage), AD14 (congé sans décideur), AD13
+(fusion de partenaires contournant la règle des accords).
+
+### Phase 5 — Le temps *(serveur, prérequis du chantier courrier)*
+
+Lot X16 en entier. En particulier, **l'heure se vérifie, elle ne se croit pas** :
+
+- **Connecté**, le serveur interroge une source de temps — un serveur de l'heure (NTP), ou à défaut
+  l'en-tête `Date` d'un appel qu'il fait déjà — et **ne se fie jamais à la seule horloge de la machine**.
+  Il garde le fuseau de la RDC, porté par l'institution et au besoin par l'entité (Kinshasa UTC+1,
+  Lubumbashi UTC+2), jamais l'UTC brut.
+- **Hors ligne**, il repart du dernier temps de référence enregistré, augmenté du temps écoulé mesuré par
+  une horloge qui ne recule pas. Un recul est refusé ; l'écart constaté au retour est journalisé et
+  affiché.
+- Le rang d'un courrier se déduit de son année, sans aucune réinitialisation à déclencher.
+
+### Phase 6 — Le courrier, de bout en bout *(serveur et interface, le plus gros)*
+
+Lot X, seize points : enregistrement unique, un état par personne, « pour traitement » et « pour
+information », la tâche créée, l'étiquette et l'accusé de réception, le passage au signataire, les deux
+phases du sortant, la délégation de signature, les modèles, la numérotation, l'antidatage alerté, les
+archives, les rappels. **Ne pas commencer avant la phase 5.**
+
+### Phase 7 — Les réunions *(serveur et interface)*
+
+Lot Y, dix points : l'adoption collégiale à la séance suivante, les modifications consignées, les présents
+qui amendent, le rapporteur et les intervenants, la réunion des directions lisible de tous, le type de
+réunion en référentiel fermé, l'ordre du jour à la programmation, l'action qui devient une tâche.
+
+### Phase 8 — Les livrables *(serveur et interface)*
+
+Lot Z : le rattachement obligatoire, le fichier à la remise, la modification possible, les types à établir.
+
+### Phase 9 — L'interface *(interface seule)*
+
+Lots U (brancher ce que le serveur calcule déjà — meilleur rapport effet/coût de tout le chantier),
+V (les actes engageants qui ne disent rien), W (périmètre des listes, portes de menu, recherche),
+AC (Mes tâches, la matrice des droits, l'arrivée d'une personne, la règle 5.2.4 partout).
+
+### Phase 10 — Le vocabulaire *(en dernier, exprès)*
+
+Lot AB : « parapheur » devient « signataire » (232 occurrences), le champ « Signataire » devient
+« Signé par », et « décision » se scinde en trois objets. **En dernier parce qu'un renommage de cette
+ampleur sur du code qui bouge encore produit des conflits dans tous les lots en cours.**
+
+### Phase 11 — La vérification
+
+Les agents testeurs reviennent, un par profil, **uniquement sur ce qui a été corrigé** — pas pour
+redécouvrir ce qui est déjà au plan. Ils lisent d'abord ce document.
+
+### Qui fait quoi
+
+- **Un agent serveur** : phases 1 à 5, puis la moitié serveur des phases 6 à 8. Un lot à la fois.
+- **Un agent interface** : phase 0.2 (les briques), puis la phase 9, puis la moitié interface des
+  phases 6 à 8 — jamais en même temps que l'agent serveur sur les mêmes fichiers.
+- **Les testeurs** : seulement en phase 11.
+- **Rien ne part en parallèle sur un même lot.** Le budget de jetons est limité : les agents lisent le
+  code, n'ouvrent un navigateur que pour vérifier ce qu'ils viennent d'écrire, et ne lancent aucun
+  sous-agent.
+
+---
+
 ## 4. Décisions ouvertes (à trancher par Jonathan)
 
 | N° | Question | Proposition par défaut |

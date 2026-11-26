@@ -25,7 +25,7 @@ export function useOpenFromUrl(open: () => void) {
   }, [params, setParams, open]);
 }
 
-/** noSign : la page affiche déjà le parapheur dans « Ce qui vous attend » ; viser n'est pas une saisie (A-5). */
+/** noSign : la page affiche déjà le signataire dans « Ce qui vous attend » ; viser n'est pas une saisie (A-5). */
 /** Les saisies offertes à la personne, selon ses droits. */
 function useQuickItems(noSign?: boolean) {
   const can = useCan();
@@ -73,10 +73,10 @@ function useQuickItems(noSign?: boolean) {
     },
     !noSign &&
       can("signature.use") && {
-      to: "/parapheur",
+      to: "/signataire",
       Icon: FileSignature,
       label: "Viser ou signer",
-      hint: toSign?.length ? `${toSign.length} ${pl(toSign.length, "document(s)")} en attente` : "parapheur à jour",
+      hint: toSign?.length ? `${toSign.length} ${pl(toSign.length, "document(s)")} en attente` : "signataire à jour",
       count: toSign?.length,
     },
   ].filter(Boolean) as { to: string; Icon: typeof Scale; label: string; hint: string; count?: number }[];

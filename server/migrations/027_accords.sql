@@ -23,7 +23,7 @@ CREATE TABLE agreements (
   year INTEGER,
   seq INTEGER,
   signed_on DATE,
-  -- Exemplaire signé sur papier, déclaré par un gestionnaire, plutôt que signé au parapheur
+  -- Exemplaire signé sur papier, déclaré par un gestionnaire, plutôt que signé au signataire
   signed_outside BOOLEAN NOT NULL DEFAULT FALSE,
   effective_on DATE,
   end_on DATE,

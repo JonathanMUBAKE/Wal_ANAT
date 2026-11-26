@@ -72,7 +72,7 @@ describe("Point focal des partenariats (PA-4, CV-4)", () => {
     expect((await g.api("u_alice", "GET", `/api/partners/${p.id}`)).body.no_focal).toBe(true);
   });
 
-  it("CV-4 : un accord ne part pas au parapheur sans point focal", async () => {
+  it("CV-4 : un accord ne part pas au signataire sans point focal", async () => {
     const p = (await g.api("u_alice", "POST", "/api/partners", { name: "Partenaire fictif", type_code: "autre" })).body;
     const a = (
       await g.api("u_alice", "POST", "/api/agreements", {
@@ -220,7 +220,7 @@ describe("Risques et indicateurs : historique et responsable prévenu (RI-3, RI-
   });
 });
 
-describe("PH-4 : le cabinet voit la pile du parapheur de la DG", () => {
+describe("PH-4 : le cabinet voit la pile du signataire de la DG", () => {
   it("le droit de pilotage montre, en lecture, les documents qui attendent la signature de la DG", async () => {
     const doc = (
       await g.api("u_alice", "POST", "/api/signature", {

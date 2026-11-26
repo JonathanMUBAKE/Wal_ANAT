@@ -35,7 +35,7 @@
 | **Pilotage** | Tableau de bord DG · Portefeuille · Décisions · Réunions | droits `pilotage.view` · `agenda.view` ou `projects.create` · `decisions.view` ou `decisions.record` · `meetings.view` |
 | **Suivi-évaluation** | Plans de travail | `plans.view` |
 | **Partenariats** | Partenaires · Conventions | `partners.view` |
-| **Secrétariat** | Parapheur · Courrier | `signature.use` · courrier pour tout non-invité |
+| **Secrétariat** | Signataire · Courrier | `signature.use` · courrier pour tout non-invité |
 | **Organisation** | Structure · Équipes · Ressources humaines · Administration système | RH : `hr.view`/`hr.manage` ; Administration : administrateur de la plateforme |
 
 ### 0.3 Les profils (droits regroupés)
@@ -65,7 +65,7 @@ Plans de travail ◄── avancement ── Projets / Activités ◄── tâc
        │                                   │                                   ▲
        └──────────► Tableau de bord DG ◄───┘                                   │
                       (vue par direction)              Réunions ── décisions de séance ┘
-Courrier ── réponse ──► Parapheur ── signature ──► Conventions / Courrier sortant
+Courrier ── réponse ──► Signataire ── signature ──► Conventions / Courrier sortant
 Partenaires ──► Conventions, projets, courrier, réunions
 ```
 
@@ -149,9 +149,9 @@ Partenaires ──► Conventions, projets, courrier, réunions
     activités du plan) et l'on descend d'un service à l'autre.
   - Santé du portefeuille, **décisions attendues** (bouton **Arbitrer**), assistant IA, agenda de la semaine, à
     suivre en priorité, indicateurs stratégiques, risques majeurs.
-  - Raccourcis : Réunions, Parapheur, **Nouvelle activité**.
+  - Raccourcis : Réunions, Signataire, **Nouvelle activité**.
 - **Ce que la DG y saisit** : *Arbitrer* (inscrit une décision), *Nouvelle activité*. Les autres saisies sont
-  ailleurs (Décisions, Courrier, Parapheur, Réunions) : il n'y a pas de point de saisie rassemblé (I-31).
+  ailleurs (Décisions, Courrier, Signataire, Réunions) : il n'y a pas de point de saisie rassemblé (I-31).
 - **Incohérences**
   - « Décisions attendues » = phrases libres des dossiers, distinctes des arbitrages formels (I-01, I-02).
   - Santé « déclarée » (avec retard de tâches) alors que la revue de portefeuille affiche une santé « calculée »
@@ -305,18 +305,18 @@ Partenaires ──► Conventions, projets, courrier, réunions
 
 - **À quoi il sert** : le registre des actes conclus avec les partenaires et de leurs avenants.
 - **Où** : Partenariats › Conventions.
-- **Objets et cycle de vie** : accord **en préparation → au parapheur → en vigueur (CONV/AAAA/NNNN) → échu /
+- **Objets et cycle de vie** : accord **en préparation → au signataire → en vigueur (CONV/AAAA/NNNN) → échu /
   résilié** ; avenants numérotés.
 - **Fonctionnalités** : parties (multipartite, chef de file), dates, reconduction tacite, préavis, point focal,
-  documents (exemplaire signé), alertes à 90, 30, 7 jours ; soumettre au parapheur ou déclarer en vigueur ;
+  documents (exemplaire signé), alertes à 90, 30, 7 jours ; soumettre au signataire ou déclarer en vigueur ;
   avenant ; résiliation motivée.
 - **Incohérences** : volet finance (engagements, décaissements, obligations de rapport) absent — reporté ; pas
   d'export du registre (I-22).
 
-## 14. Parapheur
+## 14. Signataire
 
 - **À quoi il sert** : le circuit de visa et de signature.
-- **Où** : Secrétariat › Parapheur.
+- **Où** : Secrétariat › Signataire.
 - **Qui** : `signature.use`.
 - **Objets et cycle de vie** : document avec circuit (visas puis signature) **préparé → en circuit → signé /
   rejeté** ; délégations de signature datées.
@@ -336,7 +336,7 @@ Partenaires ──► Conventions, projets, courrier, réunions
   en traitement → traité / classé sans suite** (motif).
 - **Fonctionnalités** : enregistrement (expéditeur de l'annuaire, pièce numérisée) ; **imputation** par la direction
   (entité, agent, instruction, délai, annotation, copies pour information ou avis) puis **en cascade** par le chef
-  d'entité ; prise en charge ; annotations ; réponse par le parapheur ; clôture ; fil du courrier ; tableau de bord
+  d'entité ; prise en charge ; annotations ; réponse par le signataire ; clôture ; fil du courrier ; tableau de bord
   (à imputer, en cours, en retard, traités ce mois, à moi).
 - **Avis** : imputation, copie, annotation, délai proche ou dépassé (puis le chef).
 - **Export** : registre (Excel, PDF, Word, CSV).
@@ -388,7 +388,7 @@ Partenaires ──► Conventions, projets, courrier, réunions
 
 ## 20. Fonctions transverses
 
-- **Notifications** : boîte de réception par domaine (tâches, réunions, courrier, décisions, parapheur, projets,
+- **Notifications** : boîte de réception par domaine (tâches, réunions, courrier, décisions, signataire, projets,
   partenariats, équipe, IA, autres), préférences de courriel par domaine, rappels d'échéance.
 - **Documents** : typés, aperçu partout, téléchargements des pièces sensibles tracés, pièces officielles non
   supprimables.
@@ -402,7 +402,7 @@ Partenaires ──► Conventions, projets, courrier, réunions
 ## 21. Synthèse des incohérences et points à trancher
 
 > **État au 12 novembre 2026 (branche `lot-corrections`)** : corrigés — I-01, I-02, I-03, I-10, I-11, I-12, I-13, I-16,
-> I-20, I-22 (portefeuille, partenaires, conventions, risques ; reste Parapheur et Mon entité), I-23, I-30, I-31, I-32,
+> I-20, I-22 (portefeuille, partenaires, conventions, risques ; reste Signataire et Mon entité), I-23, I-30, I-31, I-32,
 > I-36. Restent ouverts : I-04 (lien décision de séance / décision attendue), I-14, I-15, I-17, I-21, I-33, I-34, I-35.
 > Le guide Word `docs/word/ANAT-Pilotage-guide-module-par-module.docx` décrit le fonctionnement corrigé avec des scénarios.
 
@@ -423,11 +423,11 @@ Gravité : **A** = fausse l'information ou la décision · **B** = parcours inco
 | I-16 | Plans / Pilotage | Le plan de l'institution n'apparaît dans aucune direction. | C | Une ligne « Institution » dans la vue par direction. |
 | I-17 | Équipes | Recouvrement équipe / entité / projet non expliqué. | C | Préciser le rôle des équipes ou les fondre. |
 | I-20 | Tâches | La répétition ne se choisit pas à la création. | C | Champ « Répétition » dans les formulaires de création. |
-| I-21 | Décisions, Parapheur, Plans, Structure | Grilles sans « consulter puis Modifier » ni actions en ligne. | B | Grilles homogènes. |
-| I-22 | Transverse | Export absent de : Toutes les activités, Projets, Partenaires, Conventions, Parapheur, Mon entité. Mise en page PDF non vérifiée à l'œil. | C | Bouton Exporter partout ; relecture d'un PDF. |
+| I-21 | Décisions, Signataire, Plans, Structure | Grilles sans « consulter puis Modifier » ni actions en ligne. | B | Grilles homogènes. |
+| I-22 | Transverse | Export absent de : Toutes les activités, Projets, Partenaires, Conventions, Signataire, Mon entité. Mise en page PDF non vérifiée à l'œil. | C | Bouton Exporter partout ; relecture d'un PDF. |
 | I-23 | Réunions | Carte « Convocation » en champs modifiables dans la fiche en lecture. | C | Lecture d'abord, « Modifier » ensuite. |
 | I-30 | Profils | Pas de profil « Assistant(e) de la DG » ; une saisie faite pour la DG n'est pas marquée « pour le compte de la DG ». | A | Profil Assistant ; saisie « pour le compte de ». |
-| I-31 | Accueil / Tableau de bord DG | Les saisies de la DG sont dispersées (Décisions, Courrier, Parapheur, Réunions, Portefeuille) ; son accueil est celui de tout le monde. | B | Un bloc « Saisir » simple sur l'accueil et le tableau de bord DG (décision, courrier, activité, réunion, arbitrage). |
+| I-31 | Accueil / Tableau de bord DG | Les saisies de la DG sont dispersées (Décisions, Courrier, Signataire, Réunions, Portefeuille) ; son accueil est celui de tout le monde. | B | Un bloc « Saisir » simple sur l'accueil et le tableau de bord DG (décision, courrier, activité, réunion, arbitrage). |
 | I-32 | Tableau de bord DG | La fiche de direction affiche la charge nominative de chaque agent : niveau chef d'entité. | B | Synthèse seulement pour la DG ; détail par agent pour le chef. |
 | I-33 | Portefeuille / Pilotage | La DG voit tout ce qui lui est ouvert, pas seulement ce qui lui est adressé ; elle voit aussi des tâches internes. | A | Notion de « dossier suivi par la DG » (transmis ou stratégique) ; tâches internes hors de sa vue. |
 | I-34 | Profils | DGA : inscrit-il des décisions par délégation ? Responsable informatique administrateur de droit ? Stagiaires et portefeuille ? | — | Décisions à prendre. |

@@ -5,7 +5,7 @@ import { ConfirmDialog, IconButton, PANEL, cn } from "./ui";
 
 /*
  * Tiroir de consultation (docs/DESIGN-SYSTEM.md § 4, « Tiroir »). Toute fiche secondaire — contact, document,
- * courrier, décision, document du parapheur — s'ouvre ici, à droite, sans quitter la page : on la lit, puis
+ * courrier, décision, document du signataire — s'ouvre ici, à droite, sans quitter la page : on la lit, puis
  * « Modifier » ouvre les champs dans le même tiroir. Échap ou la croix le ferment ; si des modifications ne sont pas
  * enregistrées, la fermeture demande confirmation. Le modal reste réservé aux confirmations et aux actes courts.
  */

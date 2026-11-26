@@ -98,7 +98,7 @@ function PersonalHome() {
             to="/pilotage"
             className="mt-4 inline-flex items-center gap-2 rounded-xl border border-line bg-panel px-4 py-2.5 text-[13.5px] font-medium shadow-sm hover:border-line-strong hover:bg-hover"
           >
-            Ouvrir le tableau de bord DG : décisions, retards, parapheur, directions
+            Ouvrir le tableau de bord DG : décisions, retards, signataire, directions
           </Link>
         )}
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-muted">

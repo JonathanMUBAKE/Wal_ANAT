@@ -62,13 +62,13 @@ Légende : ✅ corrigé et testé · 🟡 manque fonctionnel, à construire.
 | Une échéance pouvait **dépasser la fin de la mission** | ✅ refusé |
 | Le signal « **à payer** » ne s'éteignait jamais | ✅ action « Constater le paiement » (gestionnaire des missions), datée, tracée, une seule fois |
 
-## 6. Parapheur
+## 6. Signataire
 
 **Scénario.** L'auteur prépare une note, compose le circuit (avis, visas, signature finale), le lance ; le contenu est scellé ; chaque intervenant agit dans l'ordre, éventuellement par délégation.
 
 | Constat | Suite |
 | --- | --- |
-| Un intervenant **sans accès au parapheur** pouvait être placé dans le circuit : le document restait **bloqué** à son étape | ✅ refusé à la composition du circuit |
+| Un intervenant **sans accès au signataire** pouvait être placé dans le circuit : le document restait **bloqué** à son étape | ✅ refusé à la composition du circuit |
 | Une délégation de signature pouvait être donnée à un **invité** (consultant) | ✅ refusé |
 | 🟡 Pas de relance quand un document dépasse sa date limite | à construire |
 | 🟡 Signature électronique reconnue juridiquement et pièces jointes | décision ouverte |

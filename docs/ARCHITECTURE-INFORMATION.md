@@ -30,7 +30,7 @@ Quatre règles de conception, appliquées dans cet ordre :
 | **Plan de travail** | Suivi-évaluation › Plans | Activités planifiées, révisions | Entité concernée |
 | **Livrable, contrat de prestataire** | **Dans le projet** (onglets Livrables et Contrats) | Validation, historique, tranche de paiement, termes de référence | Mes tâches (à produire, à valider), Portefeuille › Contrats et paiements (service financier) |
 | **Indicateur, risque** | Suivi-évaluation (écrans de saisie à venir) | Valeurs, cotation | Tableau de bord DG |
-| **Document à signer, délégation** | Secrétariat › Parapheur | Circuit, visas, délégations | Tableau de bord (« À signer ») |
+| **Document à signer, délégation** | Secrétariat › Signataire | Circuit, visas, délégations | Tableau de bord (« À signer ») |
 | **Courrier** | Secrétariat › Courrier | Numéro, imputation, délai | Entité imputée |
 
 ## 3. Ce qui change
@@ -51,7 +51,7 @@ Quatre règles de conception, appliquées dans cet ordre :
 Accueil · Mes tâches · Coéquipiers IA
 PILOTAGE            Tableau de bord DG · Portefeuille · Décisions · Réunions
 SUIVI-ÉVALUATION    Plans de travail
-SECRÉTARIAT         Parapheur · Courrier
+SECRÉTARIAT         Signataire · Courrier
 ORGANISATION        Structure · Équipes · (Administration)
 ```
 

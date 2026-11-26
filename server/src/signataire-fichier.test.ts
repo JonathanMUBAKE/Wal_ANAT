@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { boot, type GovCtx } from "./gov-test-helpers.js";
 
 /*
- * Thème 6 de l'analyse (docs/ANALYSE-MODULES.md), PH-1 : le parapheur signe le document réel. L'auteur joint le
+ * Thème 6 de l'analyse (docs/ANALYSE-MODULES.md), PH-1 : le signataire signe le document réel. L'auteur joint le
  * fichier (PDF, Word) ; il est scellé par son empreinte à l'entrée dans le circuit ; une fois signé, l'outil produit
  * le bordereau des visas et signatures, qui cite l'empreinte du fichier signé.
  */
@@ -28,7 +28,7 @@ const draft = async () =>
 const attach = (who: string, id: string, data = PDF, name = "note.pdf") =>
   g.upload(who, `/api/signature/${id}/file?name=${encodeURIComponent(name)}`, data);
 
-describe("parapheur : signature de fichiers (PH-1)", () => {
+describe("signataire : signature de fichiers (PH-1)", () => {
   it("l'auteur joint le fichier ; il est scellé à l'entrée dans le circuit", async () => {
     const d = await draft();
     expect((await attach("u_karim", d.id)).status).toBe(403);

@@ -20,7 +20,7 @@ const doc = async (patch: Record<string, unknown> = {}, who = "u_alice") =>
     })
   ).body;
 
-describe("parapheur", () => {
+describe("signataire", () => {
   it("numérote et enregistre le circuit", async () => {
     const d = await doc();
     expect(d.reference).toMatch(/^PAR\/\d{4}\/0001$/);

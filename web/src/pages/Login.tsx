@@ -56,7 +56,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
             transition={{ delay: 0.1 }}
             className="mt-6 max-w-md text-[15px] leading-relaxed text-white/70"
           >
-            Réunions, plans de travail, livrables, parapheur et décisions réunis dans un même espace, sous validation
+            Réunions, plans de travail, livrables, signataire et décisions réunis dans un même espace, sous validation
             humaine à chaque étape.
           </motion.p>
         </div>

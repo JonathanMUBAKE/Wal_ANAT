@@ -34,7 +34,7 @@ const ECRANS = [
   ["/plans", "Plans de travail"],
   ["/partenaires", "Partenaires"],
   ["/conventions", "Conventions"],
-  ["/parapheur", "Parapheur"],
+  ["/signataire", "Signataire"],
   ["/courrier", "Courrier"],
   ["/org", "Organisation"],
   ["/teams", "Équipes"],

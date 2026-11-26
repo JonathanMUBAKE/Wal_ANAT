@@ -188,7 +188,7 @@ export function PilotagePage() {
       onClick: o.counters.retards ? () => setLateOpen(true) : undefined,
     },
     { label: "Décisions", value: o.counters.decisions, Icon: Scale, tone: act(o.counters.decisions, "warning"), to: "/decisions" },
-    { label: "À signer", value: o.to_sign, Icon: FileSignature, tone: act(o.to_sign, "warning"), to: "/parapheur" },
+    { label: "À signer", value: o.to_sign, Icon: FileSignature, tone: act(o.to_sign, "warning"), to: "/signataire" },
     ...(mail ? [{ label: "Courrier", value: mail.to_assign, Icon: Mail, tone: act(mail.to_assign, "info"), to: "/courrier" }] : []),
     ...(leaves?.to_decide
       ? [{ label: "Congés", value: leaves.to_decide, Icon: CalendarOff, tone: "info" as Tone2, to: "/conges" }]

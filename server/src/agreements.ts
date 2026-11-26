@@ -9,7 +9,7 @@ import { Signature, type SignDoc, signReference, signatureHooks } from "./signat
 
 /*
  * Accords avec les partenaires et pièces de collaboration (lot PA2, docs/CONCEPTION.md § 4.4 à 4.6).
- * Un accord est préparé, passe au parapheur s'il est contraignant, entre en vigueur avec son numéro CONV/AAAA/NNNN
+ * Un accord est préparé, passe au signataire s'il est contraignant, entre en vigueur avec son numéro CONV/AAAA/NNNN
  * et son texte figé ; un avenant le modifie, une résiliation motivée le clôt. L'IA ne pose aucun de ces actes.
  */
 
@@ -479,7 +479,7 @@ export class Agreements {
       throw new HttpError(
         409,
         a.state === "signature"
-          ? "L'accord est au parapheur : son texte est scellé pendant le circuit"
+          ? "L'accord est au signataire : son texte est scellé pendant le circuit"
           : "Un accord entré en vigueur ne se modifie plus : passez par un avenant",
       );
     if (!manager && (i.focal_id !== undefined || i.confidential !== undefined))
@@ -547,7 +547,7 @@ export class Agreements {
     if (!manager && a.created_by !== actorId)
       throw forbidden("Supprimer un accord en préparation revient à son auteur ou aux gestionnaires");
     if (a.state !== "preparation")
-      throw new HttpError(409, "Un accord passé au parapheur ou entré en vigueur ne se supprime pas");
+      throw new HttpError(409, "Un accord passé au signataire ou entré en vigueur ne se supprime pas");
     await this.svc.db.tx(async (q) => {
       // Les pièces restent au partenaire : seule la préparation disparaît
       await q.query("UPDATE partner_documents SET agreement_id = NULL WHERE agreement_id = $1", [id]);
@@ -564,7 +564,7 @@ export class Agreements {
     return { ok: true };
   }
 
-  /** Passage au parapheur : le texte est scellé pendant le circuit ; la signature fait entrer l'accord en vigueur. */
+  /** Passage au signataire : le texte est scellé pendant le circuit ; la signature fait entrer l'accord en vigueur. */
   /** Un avenant suit son accord : rien ne se signe ni n'entre en vigueur sur un accord qui ne l'est plus (testeurs). */
   private async assertParentLive(a: Row) {
     if (!a.parent_id) return;
@@ -575,11 +575,11 @@ export class Agreements {
 
   async sign(actorId: string, id: string, steps: { actor_id: string; action: "avis" | "visa" | "signature" }[]) {
     const { a } = await this.writable(actorId, id);
-    if (a.state !== "preparation") throw new HttpError(409, "Seul un accord en préparation passe au parapheur");
+    if (a.state !== "preparation") throw new HttpError(409, "Seul un accord en préparation passe au signataire");
     await this.assertParentLive(a);
     if (!a.content.trim()) throw badRequest("Rédigez le texte de l'accord avant de le soumettre à la signature");
-    // Un accord signé se suit : il part au parapheur avec son point focal (CV-4)
-    if (!a.focal_id) throw badRequest("Désignez le point focal de l'accord avant de l'envoyer au parapheur");
+    // Un accord signé se suit : il part au signataire avec son point focal (CV-4)
+    if (!a.focal_id) throw badRequest("Désignez le point focal de l'accord avant de l'envoyer au signataire");
     const type = (await this.ref.values(a.org_id, "agreement_type")).find((t) => t.code === a.type_code);
     const parties = a.parties.map((p) => p.name).join(", ");
     const signature = new Signature(this.svc);
@@ -604,13 +604,13 @@ export class Agreements {
       a.org_id,
       a.parties.map((p) => p.id),
       actorId,
-      `Accord soumis au parapheur (${signReference(doc)}) : ${a.title}`,
+      `Accord soumis au signataire (${signReference(doc)}) : ${a.title}`,
     );
     await this.svc.log(actorId, "agreement.sign", { orgId: a.org_id, data: { id, document: doc.id } });
     return this.get(actorId, id);
   }
 
-  /** Suite du parapheur : signé, l'accord entre en vigueur ; rejeté, il revient en préparation. */
+  /** Suite du signataire : signé, l'accord entre en vigueur ; rejeté, il revient en préparation. */
   async onSignature(doc: SignDoc, outcome: "signed" | "rejected", actorId: string, comment: string) {
     const a = await this.svc.db.one<Row>(`${SELECT("$2")} WHERE a.sign_document_id = $1 AND a.state = 'signature'`, [
       doc.id,
@@ -627,12 +627,12 @@ export class Agreements {
         a.org_id,
         a.parties.map((p) => p.id),
         actorId,
-        `Accord rejeté au parapheur, de retour en préparation : ${comment}`,
+        `Accord rejeté au signataire, de retour en préparation : ${comment}`,
       );
       for (const u of new Set([a.focal_id, a.created_by].filter((x): x is string => !!x)))
         await this.svc.notify(u, a.org_id, {
           kind: "agreement.rejected",
-          title: `Accord rejeté au parapheur : ${a.title}`,
+          title: `Accord rejeté au signataire : ${a.title}`,
           body: comment,
           actor_id: actorId,
         });
@@ -647,7 +647,7 @@ export class Agreements {
         "UPDATE agreements SET state = 'preparation', sign_document_id = NULL, updated_at = now() WHERE id = $1 AND state = 'signature'",
         [a.id],
       );
-      const why = `${e.message}. L'avenant revient en préparation : supprimez-le, ou rouvrez l'accord principal avant de le renvoyer au parapheur.`;
+      const why = `${e.message}. L'avenant revient en préparation : supprimez-le, ou rouvrez l'accord principal avant de le renvoyer au signataire.`;
       await this.history(
         this.svc.db,
         a.org_id,
@@ -668,14 +668,14 @@ export class Agreements {
     await this.enter(a, actorId, today(), null, false);
   }
 
-  /** Entrée en vigueur sans parapheur : type non contraignant, ou exemplaire signé sur papier déclaré par un gestionnaire. */
+  /** Entrée en vigueur sans signataire : type non contraignant, ou exemplaire signé sur papier déclaré par un gestionnaire. */
   async activate(actorId: string, id: string, i: { signed_on: string; effective_on?: string | null }) {
     const { a, manager } = await this.writable(actorId, id);
     if (a.state !== "preparation")
       throw new HttpError(
         409,
         a.state === "signature"
-          ? "L'accord est au parapheur : il entrera en vigueur à sa signature"
+          ? "L'accord est au signataire : il entrera en vigueur à sa signature"
           : "Cet accord est déjà conclu",
       );
     if (!isRealDate(i.signed_on) || (i.effective_on && !isRealDate(i.effective_on))) throw badRequest("Date invalide");
@@ -688,10 +688,10 @@ export class Agreements {
       )
         throw new HttpError(
           409,
-          "Un accord de ce type entre en vigueur par sa signature au parapheur, ou en joignant l'exemplaire signé (pièce officielle)",
+          "Un accord de ce type entre en vigueur par sa signature au signataire, ou en joignant l'exemplaire signé (pièce officielle)",
         );
       if (!manager)
-        throw forbidden("Déclarer un accord signé hors parapheur revient aux gestionnaires des partenariats");
+        throw forbidden("Déclarer un accord signé hors signataire revient aux gestionnaires des partenariats");
       outside = true;
     }
     const blocked = a.parties.find((p) => p.state === "suspendu" || p.state === "clos");
@@ -822,7 +822,7 @@ export class Agreements {
     if (inCircuit.length)
       throw new HttpError(
         409,
-        `Résiliation impossible : ${inCircuit.length > 1 ? "des avenants sont" : "un avenant est"} au parapheur (${inCircuit.map((v) => `avenant n° ${v.amendment_no ?? "?"} « ${v.title} »`).join(", ")}). Faites-le rejeter par son signataire, ou attendez sa signature, puis résiliez l'accord.`,
+        `Résiliation impossible : ${inCircuit.length > 1 ? "des avenants sont" : "un avenant est"} au signataire (${inCircuit.map((v) => `avenant n° ${v.amendment_no ?? "?"} « ${v.title} »`).join(", ")}). Faites-le rejeter, ou attendez sa signature, puis résiliez l'accord.`,
       );
     await this.svc.db.tx(async (q) => {
       await q.query(
@@ -1083,7 +1083,7 @@ export class Agreements {
   }
 }
 
-// Le parapheur prévient les accords de l'issue de leur circuit
+// Le signataire prévient les accords de l'issue de leur circuit
 signatureHooks.push((svc, doc, outcome, actorId, comment) =>
   new Agreements(svc).onSignature(doc, outcome, actorId, comment),
 );

@@ -202,7 +202,7 @@ lettre et le soumet. Il passe à l'**antichambre de la direction générale**, q
 modifications ou les faire elle-même. Il va ensuite au **secrétariat** pour la finalisation : les
 numéros, l'impression. Et il finit **chez la directrice générale pour signature**.
 
-Ce chemin est exactement celui d'un parapheur — ce que l'Agence appelle **le signataire** : un document
+Ce chemin est exactement celui d'un signataire — ce que l'Agence appelle **le signataire** : un document
 qui circule pour recueillir des visas, et qui finit par une signature. L'outil en possède déjà un, et les
 testeurs l'ont jugé bien fait. Le courrier sortant n'a donc pas besoin d'un second circuit : **il doit
 entrer dans celui-là**.

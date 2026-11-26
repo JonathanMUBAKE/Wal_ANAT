@@ -534,7 +534,7 @@ export function ValueDialog({
                 checked={f.binding}
                 onChange={(v) => setF({ ...f, binding: v })}
                 label="Juridiquement contraignant"
-                hint="L'accord n'entre en vigueur que par la signature au parapheur, ou en joignant l'exemplaire signé."
+                hint="L'accord n'entre en vigueur que par la signature au signataire, ou en joignant l'exemplaire signé."
               />
               <Toggle
                 checked={f.financial}

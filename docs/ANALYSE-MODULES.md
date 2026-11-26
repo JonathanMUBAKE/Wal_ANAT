@@ -34,7 +34,7 @@ Les personnes et les entités citées sont celles de la démonstration (données
 | 11 | Plans de travail | Faite | À faire |
 | 12 | Partenaires | Faite | À faire |
 | 13 | Conventions | Faite | À faire |
-| 14 | Parapheur | Faite | À faire |
+| 14 | Signataire | Faite | À faire |
 | 15 | Courrier | Faite | À faire |
 | 16 | Structure | Faite | À faire |
 | 17 | Équipes | Faite | À faire |
@@ -93,7 +93,7 @@ Activité des coéquipiers IA.
 | A-2 | Les retards de l'Accueil comptent les sous-tâches, contrairement à la règle du lot 3 (« un retard = une tâche principale échue ») appliquée par le Tableau de bord DG et la vue par direction. Les chiffres diffèrent d'une page à l'autre. | Haute | **Fait** (lot 6) : l'Accueil compte les retards comme le tableau de bord (tâches principales) ; les sous-tâches échues restent listées sans être comptées |
 | A-3 | Profil et responsabilité se contredisent : Le chef de cellule Suivi-évaluation et l'agent Études et Prospective (Agent) dirigent une entité, l'assistante de direction (assistante) reste cheffe des RH, le chef de cellule Ingénierie territoriale dirige aussi l'Antenne Sud et la Représentation Nord. L'outil ne contrôle pas cet écart. | Haute | Décidé le 17/11/2026 : on refuse la nomination (lot 3) ; démo corrigée (lot 1) |
 | A-4 | La DG apparaît comme « Propriétaire » dans l'en-tête, pas comme « DG ». | Moyenne | **Fait** (lot 1) : la DG a le profil « DG » et s'affiche comme telle |
-| A-5 | « Viser ou signer » figure deux fois (Saisir et Ce qui vous attend). Pour un agent, le bloc Saisir se réduit à ce seul bouton. | Moyenne | **Fait** (lot 11) : l'Accueil n'affiche plus « Viser ou signer » dans « Saisir » : le parapheur reste dans « Ce qui vous attend » |
+| A-5 | « Viser ou signer » figure deux fois (Saisir et Ce qui vous attend). Pour un agent, le bloc Saisir se réduit à ce seul bouton. | Moyenne | **Fait** (lot 11) : l'Accueil n'affiche plus « Viser ou signer » dans « Saisir » : le signataire reste dans « Ce qui vous attend » |
 | A-6 | « Nouveau projet » s'affiche pour tout le monde sans vérifier le droit de créer un projet ; un stagiaire ou un consultant reçoit un refus en cliquant. | Moyenne | **Fait** (lot 3) : « Nouveau projet » ne s'affiche qu'à qui a le droit de créer un projet |
 | A-7 | Projets et tâches de démo issus d'une start-up (« Campagne de lancement », « Application mobile v2 », « Refonte du site web », « Tests de non-régression iOS »). | Moyenne (démo) | **Fait** (lot 1) : projets et tâches d'une agence d'aménagement (SIG national, schéma national, site institutionnel, archives cartographiques) |
 | A-8 | Trois réunions s'appellent seulement « Réunion » dans « Mes prochaines réunions ». | Moyenne (démo) | **Fait** (lot 1) : chaque réunion porte le nom de son type (Comité de direction, Comité de pilotage, Réunion avec les provinces) |
@@ -459,7 +459,7 @@ assistante. Les chefs de direction et les agents reçoivent un refus.
 
 | Bloc | Contenu |
 |---|---|
-| En-tête | Salutation, date, raccourcis Réunions et Parapheur, bouton « Nouvelle activité » |
+| En-tête | Salutation, date, raccourcis Réunions et Signataire, bouton « Nouvelle activité » |
 | Saisir | Les six raccourcis de saisie (les mêmes que sur l'Accueil) |
 | Quatre chiffres | Activités suivies et part « en bonne voie », décisions attendues, retards à résorber, documents à signer |
 | Par direction | Une ligne par direction : appréciation (sous contrôle, vigilance, alerte) et sa raison, projets, avancement du plan de travail comparé à l'attendu, retards par nature |
@@ -1078,7 +1078,7 @@ leurs avenants. Un accord suit un cycle :
 - **Préparation** : type (référentiel), titre, texte, parties (au moins un partenaire, un chef de
   file), référence du partenaire, dates d'entrée en vigueur et d'échéance, reconduction tacite,
   entité, point focal, confidentialité.
-- **Signature** : un accord contraignant passe au parapheur ; son texte est scellé pendant le
+- **Signature** : un accord contraignant passe au signataire ; son texte est scellé pendant le
   circuit. Signé, il entre en vigueur ; rejeté, il revient en préparation et le point focal est
   prévenu. Un accord non contraignant, ou signé sur papier, est déclaré en vigueur par un
   gestionnaire (date de signature jamais future).
@@ -1097,15 +1097,15 @@ officielle ne se supprime pas. L'IA ne pose aucun acte.
 |---|---|---|---|---|---|
 | CONV/2025/0001 | Appui à l'élaboration des schémas provinciaux d'aménagement | FFDT, MFUH | En vigueur | 10/01/2025 → 10/01/2027 | Le chef de cellule Ingénierie territoriale |
 | — | Prolongation d'un an et extension à une quatrième province (avenant) | FFDT, MFUH | Préparation | — | Le chef de cellule Ingénierie territoriale |
-| — | Partage des données cartographiques et formation des cadres provinciaux | UFGL | Au parapheur | → 20/11/2029, tacite | **aucun** |
+| — | Partage des données cartographiques et formation des cadres provinciaux | UFGL | Au signataire | → 20/11/2029, tacite | **aucun** |
 | — | Comité conjoint de suivi des plans d'urbanisme | MFUH | Préparation | — | La DG |
 
 Les six comptes voient les quatre accords.
 
 ### Cas d'usage
 
-- **Le chef de cellule Ingénierie territoriale, point focal, envoie l'avenant au parapheur.** C'est lui qui compose le circuit : il peut
-  désigner comme signataire final n'importe quelle personne qui a accès au parapheur, c'est-à-dire
+- **Le chef de cellule Ingénierie territoriale, point focal, envoie l'avenant au signataire.** C'est lui qui compose le circuit : il peut
+  désigner comme signataire final n'importe quelle personne qui a accès au signataire, c'est-à-dire
   tout le monde dans la démo, agents compris. L'outil vérifie seulement que la dernière étape est une
   signature et que l'auteur ne figure pas dans le circuit. À la signature, l'avenant entre en vigueur
   avec son numéro. Rien n'impose que la signature finale soit celle de la DG, qui représente
@@ -1115,23 +1115,23 @@ Les six comptes voient les quatre accords.
 - **La DG veut savoir combien le FFDT apporte.** L'accord n'a aucun champ financier (montant,
   contribution de chaque partie, échéancier de décaissement) : l'information est dans le texte, ou
   ailleurs. Le risque « Retard de décaissement du bailleur » (score 20) n'est pas relié à cet accord.
-- **La convention avec l'université est au parapheur sans point focal** : quand elle sera signée ou
+- **La convention avec l'université est au signataire sans point focal** : quand elle sera signée ou
   rejetée, seul son auteur sera prévenu.
 
 ### Remarques
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| CV-1 | Le circuit de signature d'un accord est composé librement par qui l'envoie : n'importe quelle personne ayant accès au parapheur peut être signataire final, et sa signature fait entrer l'accord en vigueur. | Haute | **Fait** (lot 4) : un accord engage l'Agence : la signature finale revient à la DG (droit « Signer au nom de l'Agence ») ou à son délégataire |
+| CV-1 | Le circuit de signature d'un accord est composé librement par qui l'envoie : n'importe quelle personne ayant accès au signataire peut être signataire final, et sa signature fait entrer l'accord en vigueur. | Haute | **Fait** (lot 4) : un accord engage l'Agence : la signature finale revient à la DG (droit « Signer au nom de l'Agence ») ou à son délégataire |
 | CV-2 | Aucun volet financier : montant, contributions, échéancier de décaissement. (Décision « finance des partenariats » déjà reportée dans le plan de travail.) | Moyenne | **Décidé et fait** (lot 8) : montant, devise, contribution de l'Agence et de chaque partie, fixés pendant la préparation ; l'échéancier reste pour plus tard |
 | CV-3 | Tous les profils voient tous les accords non confidentiels, texte compris. | Basse | **Décidé et fait** (lot 7) : un agent voit les accords de son entité ou qu'il suit ; la direction voit tout le non-confidentiel |
-| CV-4 | Un accord peut être préparé et envoyé au parapheur sans point focal. | Moyenne | **Fait** (lot 11) : un accord ne part pas au parapheur sans point focal |
+| CV-4 | Un accord peut être préparé et envoyé au signataire sans point focal. | Moyenne | **Fait** (lot 11) : un accord ne part pas au signataire sans point focal |
 | CV-5 | Les risques ne se rattachent pas à un accord (voir RI-5). | Basse | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : voir RI-5 : un risque se rattache à un accord |
 | CV-6 | Un avenant en préparation n'empêche pas l'échéance de l'accord principal : aucune alerte croisée « échéance proche, avenant non signé ». | Basse | **Fait** (lot 12) : le rappel d'échéance signale l'avenant pas encore signé |
 
 ### Ce qui fonctionne bien
 
-- Cycle complet et verrouillé : préparation, parapheur, vigueur avec numéro et texte figé, avenant,
+- Cycle complet et verrouillé : préparation, signataire, vigueur avec numéro et texte figé, avenant,
   résiliation motivée.
 - Le texte est scellé pendant le circuit ; un rejet ramène l'accord en préparation et prévient le
   point focal.
@@ -1148,7 +1148,7 @@ Les six comptes voient les quatre accords.
 
 ---
 
-## 14. Parapheur
+## 14. Signataire
 
 ### Rôle
 
@@ -1163,9 +1163,9 @@ d'étapes que compose son auteur :
 - chaque intervenant approuve ou rejette (motif obligatoire) ; un rejet renvoie le document à son
   auteur, qui peut le corriger et relancer le circuit ;
 - à la dernière signature, le document est signé et l'auteur prévenu ; les modules qui passent par
-  le parapheur (conventions) en tirent la suite (entrée en vigueur).
+  le signataire (conventions) en tirent la suite (entrée en vigueur).
 
-**Délégations** : chacun peut déléguer son parapheur à un collègue pour une période ; le délégataire
+**Délégations** : chacun peut déléguer son signataire à un collègue pour une période ; le délégataire
 agit alors à sa place, et son nom est enregistré.
 
 Onglets : à signer, mes documents, tous, délégations ; export de la liste.
@@ -1185,14 +1185,14 @@ Aucune délégation en cours.
   dans son circuit, elle ne peut pas la signer : le signataire désigné est le chef de cellule Ingénierie territoriale, chef de
   département. À sa signature, la convention entrera en vigueur au nom de l'Agence. C'est le cas
   CV-1 vécu dans la démo.
-- **Le chef de cellule Ingénierie territoriale doit faire signer une note au ministère, rédigée sous Word.** Le parapheur n'accepte pas
+- **Le chef de cellule Ingénierie territoriale doit faire signer une note au ministère, rédigée sous Word.** Le signataire n'accepte pas
   de fichier : il faut recopier le texte dans le champ « texte ». La signature porte sur ce texte
   saisi, pas sur le document qui partira réellement. Rien n'est produit en sortie (document signé
   avec mention des visas et signatures).
-- **L'assistante veut savoir ce qui attend la DG au parapheur.** L'onglet « Tous » ne lui montre rien :
+- **L'assistante veut savoir ce qui attend la DG au signataire.** L'onglet « Tous » ne lui montre rien :
   il ne liste que les documents dont on est auteur ou intervenant. Elle peut ouvrir un document si
   elle en connaît le lien, mais pas voir la pile de la DG.
-- **La DG part en mission dix jours.** Elle délègue son parapheur à un collègue. Rien ne limite la
+- **La DG part en mission dix jours.** Elle délègue son signataire à un collègue. Rien ne limite la
   durée, ni le choix du délégataire (un agent peut recevoir la signature de la DG), ni la portée (tous
   les documents, conventions comprises). Retirer une délégation l'efface de la liste.
 - **Un document est rejeté puis relancé.** Le nouveau circuit repart de zéro : les visas et le motif
@@ -1202,12 +1202,12 @@ Aucune délégation en cours.
 
 | # | Constat | Gravité | Suite |
 |---|---|---|---|
-| PH-1 | Le parapheur ne signe que du texte saisi : pas de fichier joint (lettre, note, convention en PDF ou Word), pas de document signé produit en sortie. | Haute | **Fait** (lot 8) : le fichier à signer est joint et scellé par son empreinte ; une fois signé, le bordereau des visas et signatures (PDF ou Word) cite l'empreinte du fichier signé |
-| PH-2 | L'auteur compose librement le circuit : n'importe quel détenteur du parapheur peut être signataire final, y compris pour une convention. Et quand la DG est l'auteur, elle ne peut pas signer. | Haute | **Fait** (lot 4) : signature finale de la DG imposée pour les documents qui engagent l'Agence (convention, accord, avenant, contrat, protocole, acte) ; l'auteur peut signer en dernier après le visa ou l'avis d'une autre personne |
+| PH-1 | Le signataire ne signe que du texte saisi : pas de fichier joint (lettre, note, convention en PDF ou Word), pas de document signé produit en sortie. | Haute | **Fait** (lot 8) : le fichier à signer est joint et scellé par son empreinte ; une fois signé, le bordereau des visas et signatures (PDF ou Word) cite l'empreinte du fichier signé |
+| PH-2 | L'auteur compose librement le circuit : n'importe quel détenteur du signataire peut être signataire final, y compris pour une convention. Et quand la DG est l'auteur, elle ne peut pas signer. | Haute | **Fait** (lot 4) : signature finale de la DG imposée pour les documents qui engagent l'Agence (convention, accord, avenant, contrat, protocole, acte) ; l'auteur peut signer en dernier après le visa ou l'avis d'une autre personne |
 | PH-3 | Délégation sans limite de durée, de délégataire ni de portée ; une délégation retirée disparaît de la liste. | Haute | **Fait** (lot 4) : 30 jours au plus ; portée « visa et avis » ou « visa et signature » ; la signature ne se délègue qu'à un responsable ; une délégation retirée reste dans l'historique |
-| PH-4 | Le secrétariat de la DG ne voit pas la pile de documents qui attendent la DG. | Moyenne | **Fait** (lot 11) : onglet « Parapheur de la DG » pour le cabinet (droit de pilotage), en lecture ; texte non transmis, intitulé confidentiel masqué |
+| PH-4 | Le secrétariat de la DG ne voit pas la pile de documents qui attendent la DG. | Moyenne | **Fait** (lot 11) : onglet « Signataire de la DG » pour le cabinet (droit de pilotage), en lecture ; texte non transmis, intitulé confidentiel masqué |
 | PH-5 | Après un rejet et une relance, les visas et le motif du premier circuit disparaissent de la fiche. | Moyenne | **Fait** (lot 5) : chaque circuit clos par un rejet est conservé (visas, auteurs, dates, motif) et se relit sur la fiche, sous « Circuits précédents » |
-| PH-6 | Tous les profils ont accès au parapheur : chacun peut lancer un circuit vers la DG. | Basse | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : un document adressé à la DG passe par son secrétariat ou son cabinet : ils le lancent, ou le visent avant elle |
+| PH-6 | Tous les profils ont accès au signataire : chacun peut lancer un circuit vers la DG. | Basse | **Décidé (option prudente, en l'absence de l'utilisateur) et fait** (lot 13) : un document adressé à la DG passe par son secrétariat ou son cabinet : ils le lancent, ou le visent avant elle |
 
 ### Ce qui fonctionne bien
 
@@ -1220,7 +1220,7 @@ Aucune délégation en cours.
 
 ### Décisions ouvertes
 
-- PH-1 : le parapheur doit-il signer des fichiers (PDF, Word) et produire le document signé ?
+- PH-1 : le signataire doit-il signer des fichiers (PDF, Word) et produire le document signé ?
 - PH-2 : qui signe quoi (matrice nature du document → signataire) ?
 - PH-3 : quelles limites pour les délégations (durée, délégataire, portée) ?
 
@@ -1745,7 +1745,7 @@ informatique administrateur, la DG relit**. I-4 tranché dans le sens de la règ
 | Exécution d'une décision (DEC-3) | Le chargé la déclarait exécutée seul | Le chargé déclare l'exécution avec son compte rendu ; le secrétariat de la DG la confirme ou la renvoie avec un motif |
 | Coéquipiers IA (I-1, I-2, I-4) | Validation automatique possible ; un refus n'arrêtait rien ; la personne visée validait | Plus de validation automatique ; « Refuser et arrêter » met fin à l'intervention, « Refuser, laisser continuer » la laisse poursuivre ; la personne visée par une proposition ne la voit pas à valider et ne peut pas la valider |
 | Compte rendu validé (R-3) | Tout valideur pouvait le rouvrir | Seuls la personne qui l'a validé et la DG le rouvrent, avec un motif inscrit au journal ; valideur et rédacteur prévenus |
-| Signataire d'un document qui engage l'Agence (CV-1, PH-2) | N'importe quel détenteur du parapheur pouvait signer une convention ; la DG ne pouvait pas signer ce qu'elle avait préparé | Convention, accord, avenant, contrat, protocole, acte : la signature finale revient à la DG (droit « Signer au nom de l'Agence ») ou à son délégataire. L'auteur peut signer en dernier si une autre personne a visé ou donné son avis avant |
+| Signataire d'un document qui engage l'Agence (CV-1, PH-2) | N'importe quel détenteur du signataire pouvait signer une convention ; la DG ne pouvait pas signer ce qu'elle avait préparé | Convention, accord, avenant, contrat, protocole, acte : la signature finale revient à la DG (droit « Signer au nom de l'Agence ») ou à son délégataire. L'auteur peut signer en dernier si une autre personne a visé ou donné son avis avant |
 | Délégations (PH-3) | Sans limite de durée, de délégataire ni de portée ; retirée, elle disparaissait | 30 jours au plus ; portée « visa et avis » ou « visa et signature » ; la signature ne se délègue qu'à un responsable (profil de chef, DGA, DG) ; retirée, elle reste dans la liste avec sa date de retrait |
 | Administration (AD-1) | La DG était administratrice de la plateforme, sans contrôle du journal | Dans la démonstration, le responsable informatique, responsable informatique, est l'administrateur système ; la DG ne l'est plus. Page « Contrôle de l'administration » : la DG relit les actions de l'administrateur depuis la dernière relecture et vise le journal ; l'administrateur ne relit jamais ses propres actions |
 
@@ -1772,7 +1772,7 @@ on garde les deux portes (Structure et Ressources humaines), mais avec le même 
 | Rattachement d'une personne (S-1, S-2) | Pas de trace ; depuis Structure, aucune affectation dans le dossier RH | Journalisé (« Entité d'une personne changée »), depuis Structure comme depuis les RH. Depuis Structure, l'affectation en cours du dossier RH se ferme et une nouvelle, datée, s'ouvre |
 | Équipes (EQ-3) | Ajouts, retraits et changements de responsable non tracés | Création, modification, ajout, retrait, changement de rôle, adhésion et réponse à une demande sont journalisés, avec le nom de l'équipe et de la personne |
 | Dossier d'agent (D-3) | La consultation par un tiers n'était pas tracée | Chaque consultation par une autre personne que l'agent est journalisée, une fois par lecteur et par demi-heure ; lire son propre dossier ne l'est pas |
-| Parapheur (PH-5) | Après un rejet et une relance, les visas et le motif disparaissaient de la fiche | Chaque circuit clos par un rejet est conservé et se relit sur la fiche, sous « Circuits précédents » |
+| Signataire (PH-5) | Après un rejet et une relance, les visas et le motif disparaissaient de la fiche | Chaque circuit clos par un rejet est conservé et se relit sur la fiche, sous « Circuits précédents » |
 
 Le journal d'audit nomme ces nouveaux événements en français et les range sous « Organisation » ou « Ressources
 humaines » ; les plus sensibles (chef d'entité, rattachement, consultation d'un dossier) sont marqués « importants ».
@@ -1837,15 +1837,15 @@ suspendu** ; CV-2 **montant et devise** ; R-2 **le délégataire de la présiden
 | Échéances (RH-3) | Aucune alerte ; un contractuel pouvait n'avoir aucune date de fin | Date de fin obligatoire pour contractuels, stagiaires et consultants. Alertes à 90 puis 30 jours (fin de contrat, retraite à 65 ans) au service RH et au chef ; liste « Échéances à 90 jours » sur la page RH |
 | Demande de correction (D-4) | L'agent ne pouvait rien signaler | « Demander une correction » depuis Mon dossier ; le service RH la traite depuis sa page, l'agent est prévenu, la demande reste au dossier |
 | Contenu du dossier (D-9) | Ni pièces, ni formations, ni évaluations, ni congés | Pièces du dossier (actes, contrats ; RH et agent, pas le chef), formations, évaluations annuelles (RH et agent), congés et absences |
-| Signature de fichiers (PH-1) | Le parapheur ne signait que du texte saisi | Le fichier (PDF, Word…) est joint, ouvert et téléchargé par les intervenants, scellé par son empreinte SHA-256 au lancement du circuit. Une fois signé, le bordereau des visas et signatures se produit en PDF ou en Word et cite l'empreinte du fichier signé. Fusionner fichier et bordereau en un seul PDF demanderait une bibliothèque de plus, non ajoutée |
-| Intérim de la présidence (R-2) | Seule la présidence validait | Son délégataire (délégation de signature du parapheur) valide, avec la mention « par délégation » |
+| Signature de fichiers (PH-1) | Le signataire ne signait que du texte saisi | Le fichier (PDF, Word…) est joint, ouvert et téléchargé par les intervenants, scellé par son empreinte SHA-256 au lancement du circuit. Une fois signé, le bordereau des visas et signatures se produit en PDF ou en Word et cite l'empreinte du fichier signé. Fusionner fichier et bordereau en un seul PDF demanderait une bibliothèque de plus, non ajoutée |
+| Intérim de la présidence (R-2) | Seule la présidence validait | Son délégataire (délégation de signature du signataire) valide, avec la mention « par délégation » |
 | Séance non tenue (R-6) | « Compte rendu à établir » indéfiniment | « Déclarer non tenue », avec un motif ; les convoqués sont prévenus ; rappel au rédacteur après deux jours |
 | Rappel de convocation (R-7) | Aucun | Rappel au rédacteur d'une séance non convoquée à 7 jours |
 | Campagne des plans (PT-5) | Aucune vue des entités sans plan | Bloc « Campagne » sur la page des plans : entités sans plan pour l'année, relance de leurs chefs par le service du plan |
 | Volet financier des accords (CV-2) | Aucun | Montant, devise, contribution de l'Agence et de chaque partie, fixés pendant la préparation ; les contributions ne dépassent pas le montant |
 | Congés et absences | Module prêt sur la branche `lot-conges`, jamais fusionné | Rapatrié : demande par l'agent, validation par son chef (ou les RH), absences constatées saisies par les RH, intérim. Son alerte de fin de contrat à 60 jours est retirée au profit de celle du dossier (90 et 30 jours) ; sa migration devient la 055 |
 
-Migrations `052` à `055`. Tests : `rh-suite.test.ts` (7), `parapheur-fichier.test.ts` (3),
+Migrations `052` à `055`. Tests : `rh-suite.test.ts` (7), `signataire-fichier.test.ts` (3),
 `fonctions-suite.test.ts` (5), `conges.test.ts` (rapatrié) ; 3 anciens tests ajustés (un contractuel a désormais
 une date de fin) et le test d'alerte de fin de contrat du lot congés aligné sur l'alerte unique. 650 tests au vert.
 
@@ -1904,7 +1904,7 @@ Les 22 remarques de gravité moyenne marquées « À corriger ». Celles qui att
 | Réunions | R-4 | Recommandation publiée : annulée, jamais supprimée |
 | Risques et indicateurs | RI-3, RI-6 | Historique daté et signé, tendance ; responsable prévenu |
 | Plans | PT-4 | Date de début obligatoire à la soumission |
-| Partenariats | PA-4, CV-4, PH-4 | Point focal obligatoire ; parapheur de la DG visible du cabinet |
+| Partenariats | PA-4, CV-4, PH-4 | Point focal obligatoire ; signataire de la DG visible du cabinet |
 | Courrier, structure, RH, administration | C-2, S-4, RH-4, AD-3 | Réponse choisie à la clôture ; confirmation et motif des changements de profil ; filtres et indicateurs RH ; pas de courriel promis sans messagerie |
 
 Migrations `057_recommandation_publiee.sql` et `058_historique_risques_indicateurs.sql`. Tests :
@@ -1954,7 +1954,7 @@ Chaque choix ci-dessous est réversible ; il est à relire à son retour.
 | RH-5, RH-8 | Matricule saisi qui fait foi ; carrière en prochain volet | Pas de numéro inventé quand l'officiel existe |
 
 Migrations `059_avancement_justifie.sql` et `060_risques_rattaches_indicateur_archive.sql`. Tests :
-`server/src/remarques-decisions.test.ts` ; quatre tests du parapheur ajustés (PH-6 : l'envoi passe par le cabinet).
+`server/src/remarques-decisions.test.ts` ; quatre tests du signataire ajustés (PH-6 : l'envoi passe par le cabinet).
 
 **Remarques traitées** : A-1, P-8, T-11, T-12, E-8, P-5, F-6, DEC-4, R-5, RI-5, RI-7, PT-2, PA-2, CV-5, PH-6, C-5, EQ-2, RH-2, RH-5, RH-8.
 
@@ -1968,7 +1968,7 @@ des anomalies moyennes et basses.
 | Domaine | Ce qui était possible | Ce qui est désormais refusé ou corrigé |
 |---|---|---|
 | Administration | L'administrateur système se créait un compte « Propriétaire », recevait le lien de réinitialisation de la DG ou des RH, se nommait chef de la Direction générale, laissait la plateforme sans administrateur | Pas de profil de direction attribué hors de l'institution ; le lien d'autrui ne revient jamais à l'administrateur ; personne ne se nomme chef ; la tête d'une entité tenue par la DG relève de la DG ; dernier administrateur protégé ; un compte sorti ne se réactive pas ; la RH ne déplace ni un chef ni la DG |
-| Parapheur, arbitrages, décisions | Le fichier d'un document confidentiel sortait dans la pile de la DG ; l'assistante tranchait les arbitrages, déclarait exécutée une décision non confirmée, remplaçait une décision de la DG | Le fichier ne sort d'aucune liste ; seule la DG tranche ; l'exécution se déclare par le chargé sur une décision confirmée ; un remplacement prend effet à la confirmation ; une décision du secrétariat ne clôt rien avant confirmation |
+| Signataire, arbitrages, décisions | Le fichier d'un document confidentiel sortait dans la pile de la DG ; l'assistante tranchait les arbitrages, déclarait exécutée une décision non confirmée, remplaçait une décision de la DG | Le fichier ne sort d'aucune liste ; seule la DG tranche ; l'exécution se déclare par le chargé sur une décision confirmée ; un remplacement prend effet à la confirmation ; une décision du secrétariat ne clôt rien avant confirmation |
 | Tâches confiées | L'agent se désattribuait puis se réattribuait la tâche pour lever le verrou ; un chef de sous-entité contournait celui de son N+1 | Le chargé ne se retire pas, ne supprime pas, ne change ni calendrier ni récurrence ; il n'est jamais son propre responsable |
 | Réunions | L'assistante se désignait présidente et validait seule ; une IA présidait | La présidence est une personne habilitée à valider |
 | Accords, partenaires | Lier une fiche confidentielle invisible ; un avenant entrait en vigueur après la résiliation ; un accord faisait avancer un partenaire sans point focal | Fiche confidentielle inconnue de qui ne la lit pas ; avenant bloqué sur un accord qui n'est plus en vigueur ; résiliation non future ; le point focal de l'accord devient celui du partenaire |
@@ -2025,7 +2025,7 @@ Passe de contrôle sur les 17 comptes de la démonstration (environ 40 écrans e
 |---|---|
 | La DG et l'informatique lisaient et renommaient une équipe privée dont elles n'étaient pas membres | Une équipe privée se connaît et se gère par ses membres, ses responsables et les administrateurs généralistes |
 | « Gérer les équipes » valait aussi pour les équipes privées | Ce droit ne s'applique plus qu'aux équipes non privées |
-| Le menu Parapheur paraissait au responsable informatique, sans document à traiter | Il paraît à qui y a un document, ou dirige réellement une entité |
+| Le menu Signataire paraissait au responsable informatique, sans document à traiter | Il paraît à qui y a un document, ou dirige réellement une entité |
 | Comité de recrutement dirigé par la DG, sans la cheffe RH | Dirigé par la cheffe RH, la gestionnaire RH y siège, la DG reste membre |
 | Le cabinet ne voit pas le partenaire confidentiel que voit la DG | Décision : « comme la DG ». La direction (DG, DGA, cabinet) lit partenaires, accords et pièces confidentiels, sans les modifier |
 
@@ -2044,7 +2044,7 @@ Demande de l'utilisateur : trop de texte à l'écran ; un clic droit qui propose
 | Champs de saisie, texte sélectionné, Maj + clic droit | Menu du navigateur | Inchangé (copier, coller, correcteur) |
 
 Extension du clic droit aux registres (même jour, branche `clic-droit-registres`) : toute ligne de tableau qui s'ouvre
-propose « Ouvrir » ; les décisions, réunions, documents du parapheur, courriers, conventions et dossiers d'agents
+propose « Ouvrir » ; les décisions, réunions, documents du signataire, courriers, conventions et dossiers d'agents
 proposent aussi « Copier le numéro » (ou le matricule) ; les fiches qui ont leur propre adresse (réunions, conventions,
 partenaires, plans, projets, dossiers d'agents) s'ouvrent dans un nouvel onglet et leur lien se copie.
 

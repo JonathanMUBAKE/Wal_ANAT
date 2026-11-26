@@ -1,4 +1,4 @@
--- Parapheur à circuit ordonné, délégations, registre du courrier, risques, indicateurs, écarts de participation.
+-- Signataire à circuit ordonné, délégations, registre du courrier, risques, indicateurs, écarts de participation.
 CREATE TABLE sign_documents (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,

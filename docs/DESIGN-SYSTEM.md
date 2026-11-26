@@ -154,7 +154,7 @@ repère : la chasse fixe est un signal de nature, pas un pas typographique de pl
 ### Fiche — consulter d'abord, modifier ensuite (`components/record.tsx`)
 1. Une fiche (partenaire, accord, réunion, activité, contact, document…) **s'ouvre toujours en lecture** : faits en paires libellé / valeur (`Facts`, `Fact`), textes longs en paragraphes (`LongText`), aucun champ de saisie.
 2. En tête, à droite : **« Modifier »** si le profil le permet (`RecordActions`). Pendant la modification : **« Annuler »** (rien n'est perdu côté serveur) et **« Enregistrer »** (principal). On ne quitte jamais une fiche avec des champs ouverts sans l'avoir décidé.
-3. Les actes du circuit (changer l'état, soumettre au parapheur, résilier…) restent des boutons distincts, chacun avec sa boîte de dialogue ; ils ne se mêlent pas à la modification.
+3. Les actes du circuit (changer l'état, soumettre au signataire, résilier…) restent des boutons distincts, chacun avec sa boîte de dialogue ; ils ne se mêlent pas à la modification.
 4. Une petite fiche (contact, document, courrier, décision) s'ouvre dans un **tiroir** à droite, sur le même principe : lecture, puis « Modifier ».
 
 ### Grille CRUD
@@ -169,7 +169,7 @@ repère : la chasse fixe est un signal de nature, pas un pas typographique de pl
 | Surface | Pour | Exemples |
 | --- | --- | --- |
 | **Page** | Un dossier qui a ses propres onglets et une vie longue | Partenaire, accord, projet, réunion, activité, plan |
-| **Tiroir** (à droite, 600 px, plein écran sur téléphone) | **Consulter** une fiche secondaire sans quitter la liste, puis la modifier sur place | Contact, document, courrier, décision, document du parapheur, recommandation |
+| **Tiroir** (à droite, 600 px, plein écran sur téléphone) | **Consulter** une fiche secondaire sans quitter la liste, puis la modifier sur place | Contact, document, courrier, décision, document du signataire, recommandation |
 | **Modal** (centré) | **Décider** : confirmer, motiver, choisir une option courte | Supprimer, résilier, rejeter avec motif, changer d'état, abandonner des modifications |
 
 Le modal n'est jamais une fiche de consultation ; le tiroir n'est jamais une confirmation. Un tiroir n'en ouvre pas un autre : un lien vers un autre objet mène à sa page ou remplace le contenu du tiroir.

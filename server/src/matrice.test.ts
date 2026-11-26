@@ -1040,7 +1040,7 @@ const TABLE = [
     body: { title: "Document renommé" },
   })),
   R_("DELETE", "/api/dossier-documents/:id", async (X) => ({ url: `/api/dossier-documents/${(await X.ddoc()).id}` })),
-  // Parapheur : fichier à signer et bordereau (thème 6, PH-1)
+  // Signataire : fichier à signer et bordereau (thème 6, PH-1)
   R_("POST", "/api/signature/:id/file", async (X) => ({
     url: `/api/signature/${(await X.doc()).id}/file?name=note.pdf`,
     bin: "%PDF-1.4\n%%EOF\n",

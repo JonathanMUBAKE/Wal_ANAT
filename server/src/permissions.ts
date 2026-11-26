@@ -68,9 +68,9 @@ export const PERMISSION_GROUPS = [
     ],
   },
   {
-    group: "Parapheur et courrier",
+    group: "Signataire et courrier",
     items: [
-      { key: "signature.use", label: "Utiliser le parapheur" },
+      { key: "signature.use", label: "Utiliser le signataire" },
       { key: "signature.institution", label: "Signer au nom de l'Agence (conventions, accords, actes)" },
       { key: "correspondence.view", label: "Consulter le courrier" },
       { key: "correspondence.manage", label: "Enregistrer et imputer le courrier" },
@@ -319,7 +319,7 @@ export const SYSTEM_PROFILES: {
     slug: "agent",
     name: "Agent",
     description:
-      "Agent de l'institution : ses tâches et celles de son entité, ses projets, ses réunions ; consulte décisions, plans et partenaires ; vise au parapheur quand il est dans le circuit.",
+      "Agent de l'institution : ses tâches et celles de son entité, ses projets, ses réunions ; consulte décisions, plans et partenaires ; vise au signataire quand il est dans le circuit.",
     permissions: AGENT,
   },
   {

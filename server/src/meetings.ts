@@ -355,7 +355,7 @@ export class Meetings {
     await this.svc.requirePerm(actorId, m.org_id, "meetings.validate");
     return { onBehalf: null };
   }
-  /** Délégation de signature en cours de la présidence vers cette personne (celle du parapheur). */
+  /** Délégation de signature en cours de la présidence vers cette personne (celle du signataire). */
   private async delegateOf(chairId: string, actorId: string, orgId: string) {
     return !!(await this.svc.db.one(
       `SELECT 1 FROM delegations WHERE org_id = $1 AND from_user = $2 AND to_user = $3 AND scope = 'signature'

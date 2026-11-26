@@ -5,7 +5,7 @@ import { localDate } from "./services.js";
 
 /*
  * Lot PA2 — accords et pièces de collaboration (docs/CONCEPTION.md § 4.4 à 4.6).
- * Un accord lie un ou plusieurs partenaires ; il entre en vigueur par la signature au parapheur (type contraignant)
+ * Un accord lie un ou plusieurs partenaires ; il entre en vigueur par la signature au signataire (type contraignant)
  * ou par la date de signature (type non contraignant) ; il reçoit alors son numéro CONV/AAAA/NNNN et son texte
  * est figé. Toute modification passe par un avenant. Bernadette gère, Fiston est point focal, Didier consulte.
  */
@@ -138,7 +138,7 @@ describe("accords : entrée en vigueur", () => {
     const a = (await create({ partner_ids: [p.id], type_code: "convention_partenariat" })).body;
     const r = await activate(a.id);
     expect(r.status).toBe(409);
-    expect(r.body.error).toMatch(/parapheur/);
+    expect(r.body.error).toMatch(/signataire/);
     const up = await g.upload(
       "u_alice",
       `/api/partners/${p.id}/documents?name=convention.txt&nature=convention_signee&issued_on=2026-01-05&agreement_id=${a.id}`,
@@ -151,7 +151,7 @@ describe("accords : entrée en vigueur", () => {
     expect(ok.body.signed_outside).toBe(true);
   });
 
-  it("au parapheur : la convention est scellée pendant le circuit, entre en vigueur à la signature, revient en préparation si rejetée", async () => {
+  it("au signataire : la convention est scellée pendant le circuit, entre en vigueur à la signature, revient en préparation si rejetée", async () => {
     const p = await partner();
     const a = (await create({ partner_ids: [p.id], type_code: "convention_partenariat", focal_id: "u_karim" })).body;
     // Un accord engage l'Agence : Fiston vise, la DG signe (thème 2, CV-1) ; Fiston ne peut pas être signataire final

@@ -245,7 +245,7 @@ Une règle générale reste à créer sous forme de test : toute donnée masqué
 | Volume d'actes par an | Ordre de grandeur à établir avec le maître d'ouvrage avant la recette | Relevé du registre papier d'un exercice | Non établi ; aucun chiffre n'est avancé ici |
 | Performance | Une action courante répond sans attente perceptible, sur liaison faible | Seuils à fixer à partir du jeu de taille réelle ; mesure en recette | Seuils non fixés ; non vérifié |
 | Accessibilité | WCAG 2.1 niveau AA, thèmes clair et sombre, bureau et téléphone | Commande d'audit axe-core : zéro manquement | Tenue : zéro manquement mesuré le 25 novembre sur la branche principale |
-| Langue | Interface, erreurs et documents produits en français ; vocabulaire de l'Agence | Relecture des libellés ; un terme désigne une seule chose | Non tenue : « parapheur » employé 232 fois, « décision » désigne quatre objets |
+| Langue | Interface, erreurs et documents produits en français ; vocabulaire de l'Agence | Relecture des libellés ; un terme désigne une seule chose | Non tenue : « signataire » employé 232 fois, « décision » désigne quatre objets |
 | Navigateurs | Versions récentes des navigateurs courants, bureau et mobile | Parcours Playwright sur les navigateurs retenus | La liste des navigateurs reste à arrêter |
 | Matériel modeste | Poste ancien, liaison lente ou intermittente | Poids des pages mesuré ; parcours sur poste de référence | Non mesuré |
 | Maintenabilité | Une brique, un endroit ; aucune balise brute hors des briques | Test qui échoue si une balise brute réapparaît | 144 boutons et 91 champs hors des briques ; test à créer |

@@ -21,7 +21,7 @@ ANAT Pilotage est l'outil de travail et de pilotage de l'Agence. Il sert au quot
 | Gérer les partenariats | Partenariats › Partenaires, Conventions | Un annuaire unique des tiers, leurs contacts, leurs documents, et le registre des accords conclus. |
 | Programmer et suivre les réunions | Pilotage › Réunions | De la convocation au compte rendu validé, avec recommandations et décisions qui alimentent les registres. |
 | Suivre les décisions | Pilotage › Décisions | Registre numéroté des décisions de la DG, avec leur exécution. |
-| Traiter le courrier | Secrétariat › Courrier, Parapheur | Enregistrement, annotation et imputation par la DG, délais, réponse signée au parapheur. |
+| Traiter le courrier | Secrétariat › Courrier, Signataire | Enregistrement, annotation et imputation par la DG, délais, réponse signée au signataire. |
 | Planifier l'année | Suivi-évaluation › Plans de travail | Plan annuel par entité, soumis, approuvé, réalisé par les projets et activités. |
 | Piloter | Pilotage › Tableau de bord DG | Ce qui est en retard, ce qui attend une décision, ce qui arrive à échéance. |
 | Administrer | Administration système | Comptes, profils, paramètres, **journal d'audit**. |
@@ -36,7 +36,7 @@ un bouton masqué ne suffit jamais, la règle est vérifiée à chaque demande.
    Une trace ne se modifie ni ne se supprime. Consulter l'analyse du journal ou l'exporter laisse aussi une trace.
 2. **Rien ne se fait de manière isolée.** Ce qui engage l'institution passe par au moins deux personnes : le
    rédacteur d'un compte rendu ne le valide pas, celui qui soumet un plan ne l'approuve pas, l'auteur d'un livrable
-   ne le valide pas, un document part au parapheur pour visa puis signature. L'analyse du journal signale tout cas
+   ne le valide pas, un document part au signataire pour visa puis signature. L'analyse du journal signale tout cas
    où la même personne a préparé et validé.
 3. **Ce qui est validé est figé.** Compte rendu validé, décision enregistrée, accord en vigueur, document signé :
    le texte ne se modifie plus. On corrige par un acte nouveau (réouverture motivée, décision de remplacement,
@@ -49,15 +49,15 @@ un bouton masqué ne suffit jamais, la règle est vérifiée à chaque demande.
 6. **Consulter d'abord, modifier ensuite.** Une fiche s'ouvre en lecture ; « Modifier » ouvre les champs. Fermer
    avec des modifications non enregistrées demande confirmation.
 7. **Numéros officiels attribués par l'outil** : `DEC/2026/0001` (décision), `CONV/2026/0001` (accord),
-   `ENT/2026/0142` et `SOR/2026/0098` (courrier), numéros de réunion et de parapheur. Jamais saisis à la main.
+   `ENT/2026/0142` et `SOR/2026/0098` (courrier), numéros de réunion et de signataire. Jamais saisis à la main.
 8. **Date locale.** Toutes les dates « aujourd'hui », échéances et retards sont calculés à l'heure de l'Agence.
 
 ## 3. Qui fait quoi
 
 | Personne | Ce qu'elle fait dans l'outil |
 | --- | --- |
-| **Directeur·rice général·e (DG)** | Consulte le tableau de bord, annote et impute le courrier, enregistre les décisions, préside et valide les comptes rendus, signe au parapheur. |
-| **Responsable d'entité** (direction, service, cellule) | Confie des tâches à ses agents et les suit dans « Mon entité », prépare le plan de travail de son entité, porte les projets, vise au parapheur. |
+| **Directeur·rice général·e (DG)** | Consulte le tableau de bord, annote et impute le courrier, enregistre les décisions, préside et valide les comptes rendus, signe au signataire. |
+| **Responsable d'entité** (direction, service, cellule) | Confie des tâches à ses agents et les suit dans « Mon entité », prépare le plan de travail de son entité, porte les projets, vise au signataire. |
 | **Agent** | Traite ses tâches, le courrier qui lui est imputé, ses recommandations de réunion ; rédige des comptes rendus ; tient les fiches partenaires dont il est point focal. |
 | **Secrétariat / bureau d'ordre** | Enregistre le courrier, programme et convoque les réunions, rédige les comptes rendus. |
 | **Gestionnaire d'un module** (partenariats, réunions…) | Profil qui porte le droit « gérer » du module : crée, modifie, archive, définit de nouveaux types. |
@@ -66,7 +66,7 @@ un bouton masqué ne suffit jamais, la règle est vérifiée à chaque demande.
 | **Coéquipier IA** | Assistant : propose, résume, rédige ; ne décide jamais. |
 
 Les droits se règlent par **profil** dans Organisation › Structure, onglet « Profils et droits » : chaque profil coche des droits
-regroupés par domaine (Projets, Tâches, Réunions, Plans de travail, Livrables, Parapheur et courrier, Partenaires,
+regroupés par domaine (Projets, Tâches, Réunions, Plans de travail, Livrables, Signataire et courrier, Partenaires,
 Pilotage, IA…). Un droit peut être ajouté ou retiré à une personne précise ; ce réglage est une action **critique**
 du journal.
 
@@ -78,7 +78,7 @@ La **barre latérale** regroupe les espaces :
 - **Pilotage** : Tableau de bord DG, Portefeuille, Décisions, Réunions ;
 - **Suivi-évaluation** : Plans de travail ;
 - **Partenariats** : Partenaires, Conventions ;
-- **Secrétariat** : Parapheur, Courrier ;
+- **Secrétariat** : Signataire, Courrier ;
 - **Organisation** : structure (organigramme, attributions, personnes, profils et droits, messagerie), équipes ;
 - **Administration système** (administrateur seulement).
 
@@ -212,7 +212,7 @@ juridique.
   | **Tous** | Tout le registre. |
   | **En vigueur** | Accords signés et actifs, numérotés. |
   | **En préparation** | Textes en cours de rédaction : encore modifiables, sans numéro. |
-  | **Au parapheur** | Textes envoyés en signature : **scellés** pendant le circuit. Un rejet les renvoie en préparation ; la signature les fait entrer en vigueur. |
+  | **Au signataire** | Textes envoyés en signature : **scellés** pendant le circuit. Un rejet les renvoie en préparation ; la signature les fait entrer en vigueur. |
   | **Échus** | Date de fin dépassée sans reconduction tacite. |
   | **Résiliés** | Accords auxquels on a mis fin avant terme, avec motif. |
 - Un **bandeau d'alerte** quand des accords en vigueur arrivent à échéance **dans les 90 jours** : « à prolonger
@@ -222,9 +222,9 @@ juridique.
 **Le tableau** — une ligne par accord :
 | Colonne | Contenu |
 | --- | --- |
-| **Numéro** | `CONV/AAAA/NNNN`, attribué à l'**entrée en vigueur** (année de signature). « — » tant que l'accord est en préparation ou au parapheur. |
+| **Numéro** | `CONV/AAAA/NNNN`, attribué à l'**entrée en vigueur** (année de signature). « — » tant que l'accord est en préparation ou au signataire. |
 | **Accord** | L'objet ; « Avenant n° X — » devant un avenant ; un cadenas si confidentiel ; le type en étiquette. |
-| **État** | En préparation, Au parapheur, En vigueur, Échu, Résilié. |
+| **État** | En préparation, Au signataire, En vigueur, Échu, Résilié. |
 | **Partenaires** | Le ou les partenaires liés (un accord peut être multipartite, avec un chef de file). |
 | **Échéance** | Date de fin, avec un repère quand elle approche (≤ 90 jours) ou « reconduction tacite ». |
 | **Point focal** | L'agent qui suit l'accord. |
@@ -236,7 +236,7 @@ juridique.
 - **Dates et suivi** : signature, entrée en vigueur, fin, reconduction tacite, préavis, entité porteuse, point focal ;
 - **Documents** : exemplaire signé, annexes (pièces officielles jamais supprimées ; téléchargements tracés) ;
 - **Avenants** : chacun numéroté, il peut reporter l'échéance ;
-- **Actions** selon l'état : *Soumettre au parapheur* (accord contraignant) ou *Déclarer en vigueur* avec
+- **Actions** selon l'état : *Soumettre au signataire* (accord contraignant) ou *Déclarer en vigueur* avec
   l'exemplaire signé joint ; *Préparer un avenant* ; *Résilier* (motif et date, gestionnaire seulement).
 
 **Ce que l'écran n'affiche pas encore** : les engagements chiffrés et l'échéancier des décaissements (volet
@@ -282,7 +282,7 @@ juridique.
 3. **Imputer en cascade** (chef d'entité) : le chef de l'entité imputée confie le courrier à un agent de son entité.
    Un agent ne réimpute pas.
 4. **Prendre en charge** (agent) : le courrier passe « en traitement ».
-5. **Traiter** : instruire, annoter, rattacher un dossier ; **répondre** par un projet de réponse au parapheur ; la
+5. **Traiter** : instruire, annoter, rattacher un dossier ; **répondre** par un projet de réponse au signataire ; la
    réponse enregistrée en sortie (`SOR/AAAA/NNNN`) clôt l'entrant.
 6. **Clôturer** (agent, chef ou direction) ou **classer sans suite** (direction, motif obligatoire).
 
@@ -292,9 +292,9 @@ accès au registre : c'est l'onglet **Mon courrier**. Le **tableau de bord** com
 en retard, traité ce mois, et ce qui vous attend. Rappels deux jours avant le délai, puis en retard ; le retard
 remonte au chef de l'entité.
 
-### 5.8 Parapheur
+### 5.8 Signataire
 
-**Secrétariat › Parapheur** — circuit de visa et de signature.
+**Secrétariat › Signataire** — circuit de visa et de signature.
 - Un document est déposé avec son circuit (visa du directeur, signature de la DG…) ; chaque signataire est prévenu
   à son tour ; il **approuve** ou **rejette** avec commentaire.
 - Le document est figé pendant le circuit. Une **délégation de signature** permet à un suppléant de signer, tracée.
@@ -329,7 +329,7 @@ structurée. Ouvrir ou télécharger une pièce sensible est tracé ; une pièce
 
 Chaque avis arrive dans la **boîte de réception** (cloche) et, selon vos préférences, **par courriel** signé
 « ANAT Pilotage » avec le lien direct. Chaque avis porte son **domaine** (tâches, réunions, courrier, décisions,
-parapheur, projets, partenariats, équipe) : la boîte se filtre par domaine, et **Préférences** permet de couper le
+signataire, projets, partenariats, équipe) : la boîte se filtre par domaine, et **Préférences** permet de couper le
 courriel d'un domaine (l'avis dans l'outil reste toujours). Un clic mène à l'endroit où agir.
 
 | Événement | Qui est prévenu |
@@ -338,7 +338,7 @@ courriel d'un domaine (l'avis dans l'outil reste toujours). Un clic mène à l'e
 | Échéance de tâche (veille, puis retard) | Le chargé ; **puis le chef de son entité**, une fois |
 | Courrier imputé à l'entité ; imputé à un agent ; en copie ; nouvelle annotation ; délai proche ou dépassé | Le chef de l'entité ; l'agent ; la personne en copie ; l'agent ; l'agent puis son chef |
 | Réunion convoquée ; **modifiée après convocation** (date, heure, lieu, lien) ; **annulée** ; compte rendu soumis, retourné, validé | Les convoqués ; présidence ; rédacteur ; participants |
-| Recommandation, décision, livrable, plan, parapheur, accord, partenaire | Le responsable concerné (comme avant) |
+| Recommandation, décision, livrable, plan, signataire, accord, partenaire | Le responsable concerné (comme avant) |
 
 ### 5.12 Administration système
 
@@ -443,7 +443,7 @@ d'audit le sont dans les événements de sécurité.
 (tout ce qui se fait dans les modules) et le **journal de sécurité** (connexions, comptes, droits, mots de passe).
 
 **Chaque ligne** : date et heure, **auteur**, **gravité**, **domaine** (Partenariats, Décisions, Réunions,
-Courrier, Parapheur, Projets, Tâches, Activités, Plans de travail, Documents, Organisation, Paramétrage, Sécurité),
+Courrier, Signataire, Projets, Tâches, Activités, Plans de travail, Documents, Organisation, Paramétrage, Sécurité),
 **action** en clair (« Accord entré en vigueur », « Tâche attribuée », « Connexion refusée »…), **objet** (nom du
 partenaire, titre de la décision, numéro, document, personne concernée). Un clic ouvre la trace complète dans un
 tiroir (institution, adresse IP, source, code technique).
@@ -451,8 +451,8 @@ tiroir (institution, adresse IP, source, code technique).
 **Gravité**
 | Gravité | Exemples |
 | --- | --- |
-| **Critique** | Toute suppression ; échec de connexion ; compte verrouillé ou suspendu ; rôle d'administrateur système accordé ou retiré ; 2FA désactivée ; mot de passe réinitialisé ; droits individuels modifiés ; fusion de partenaires ; résiliation d'accord ; rejet au parapheur ; sessions fermées ; configuration de la messagerie. |
-| **Importante** | Ce qui engage l'institution : décision enregistrée ou exécutée, accord en vigueur ou au parapheur, avenant, réunion convoquée, compte rendu validé ou retourné, courrier imputé ou clôturé, visa ou signature, délégation, plan soumis ou approuvé, livrable validé ou payé, tâche attribuée, échéance changée, compte créé, profil changé, analyse ou export du journal. |
+| **Critique** | Toute suppression ; échec de connexion ; compte verrouillé ou suspendu ; rôle d'administrateur système accordé ou retiré ; 2FA désactivée ; mot de passe réinitialisé ; droits individuels modifiés ; fusion de partenaires ; résiliation d'accord ; rejet au signataire ; sessions fermées ; configuration de la messagerie. |
+| **Importante** | Ce qui engage l'institution : décision enregistrée ou exécutée, accord en vigueur ou au signataire, avenant, réunion convoquée, compte rendu validé ou retourné, courrier imputé ou clôturé, visa ou signature, délégation, plan soumis ou approuvé, livrable validé ou payé, tâche attribuée, échéance changée, compte créé, profil changé, analyse ou export du journal. |
 | **Normale** | Le reste : création, modification courante, consultation de document, connexion réussie. |
 
 **Filtres** : recherche libre, domaine, gravité, auteur, période. **Exporter** produit un fichier tableur (CSV)
@@ -482,6 +482,6 @@ analysable.
 | --- | --- |
 | Finance des partenariats : engagements, échéancier des décaissements, tableau des bailleurs | Reporté à la demande (PA4) |
 | Obligations de rapport d'un accord devenant des tâches du point focal | À construire (PA5) |
-| CRUD complet sur les grilles hors partenariats (décisions, parapheur, plans, équipes, structure) | Partiel |
+| CRUD complet sur les grilles hors partenariats (décisions, signataire, plans, équipes, structure) | Partiel |
 | Conservation paramétrable du journal, navigateur des connexions, valeurs avant / après | À construire (E2, E3) |
 | Aperçu fidèle des documents Word | Plus tard |

@@ -58,7 +58,7 @@ const reference = (d: Pick<SignDoc, "year" | "seq">) => `PAR/${d.year}/${String(
 export const signReference = reference;
 
 /**
- * Suites données à la fin d'un circuit par les modules qui passent par le parapheur (ex. un accord avec un
+ * Suites données à la fin d'un circuit par les modules qui passent par le signataire (ex. un accord avec un
  * partenaire entre en vigueur à sa signature). Elles s'exécutent après l'enregistrement de la décision.
  */
 export type SignatureHook = (
@@ -108,7 +108,7 @@ export class Signature {
       [id],
     );
   }
-  /** Qui m'a délégué son parapheur aujourd'hui ; pour une signature, seulement les délégations de signature. */
+  /** Qui m'a délégué sa signature aujourd'hui ; pour une signature, seulement les délégations de signature. */
   private async delegators(orgId: string, userId: string, action?: Step["action"]) {
     return (await this.svc.db.query<{ from_user: string; scope: string }>(DELEGATORS, [orgId, userId, today()]))
       .filter((r) => action !== "signature" || r.scope === "signature")
@@ -151,9 +151,9 @@ export class Signature {
       if (!role) throw badRequest("Chaque intervenant doit être membre de l'organisation");
       // Viser et signer sont des actes humains : l'IA propose, une personne décide (testeurs)
       if ((await this.svc.userOrNull(s.actor_id))?.is_ai) throw badRequest("Un coéquipier IA ne vise ni ne signe");
-      // Sans accès au parapheur, l'intervenant ne pourrait jamais agir : le document resterait bloqué à son étape
+      // Sans accès au signataire, l'intervenant ne pourrait jamais agir : le document resterait bloqué à son étape
       if (role === "guest" || !(await this.svc.permissionsOf(s.actor_id, orgId)).includes("signature.use"))
-        throw badRequest("Chaque intervenant doit avoir accès au parapheur");
+        throw badRequest("Chaque intervenant doit avoir accès au signataire");
     }
     const final = i.steps.at(-1)!;
     if (isBinding(i) && !(await this.svc.permissionsOf(final.actor_id, orgId)).includes("signature.institution"))
@@ -355,7 +355,7 @@ export class Signature {
     if (!actorId) return;
     await this.svc.notify(actorId, d.org_id, {
       kind: "signature.pending",
-      title: `À traiter au parapheur : ${d.title}`,
+      title: `À traiter au signataire : ${d.title}`,
       body: reference(d),
     });
     for (const r of await this.svc.db.query<{ to_user: string }>(
@@ -493,7 +493,7 @@ export class Signature {
     return {
       title: `Bordereau de signature — ${g.title}`,
       reference: reference(g),
-      subtitle: "Visas et signatures recueillis au parapheur. Le document signé est celui dont l'empreinte figure ci-dessous.",
+      subtitle: "Visas et signatures recueillis au signataire. Le document signé est celui dont l'empreinte figure ci-dessous.",
       filename: `bordereau-${reference(g).replace(/\//g, "-")}`,
       sections: [
         {
@@ -505,7 +505,7 @@ export class Signature {
                 ["Référence", reference(g)],
                 ["Objet", g.title],
                 ["Nature", g.kind],
-                ["Fichier signé", g.file ? `${g.file.name} (${g.file.size} octets)` : "Aucun : texte saisi au parapheur"],
+                ["Fichier signé", g.file ? `${g.file.name} (${g.file.size} octets)` : "Aucun : texte saisi au signataire"],
                 ["Empreinte du fichier (SHA-256)", g.file?.hash ?? "—"],
                 ["Sceau du document (SHA-256)", g.content_hash ?? "—"],
                 ["Intégrité vérifiée", g.intact ? "Oui : le contenu n'a pas changé depuis l'entrée dans le circuit" : "Non"],
@@ -563,7 +563,7 @@ export class Signature {
     const role = await this.svc.orgRole(i.to_user, orgId);
     if (!role) throw badRequest("Le délégataire doit être membre de l'organisation");
     if (role === "guest" || !(await this.svc.permissionsOf(i.to_user, orgId)).includes("signature.use"))
-      throw badRequest("Le délégataire doit avoir accès au parapheur : un invité ne peut pas recevoir de délégation");
+      throw badRequest("Le délégataire doit avoir accès au signataire : un invité ne peut pas recevoir de délégation");
     if (scope === "signature" && !(await this.svc.permissionsOf(i.to_user, orgId)).includes("units.lead"))
       throw badRequest(
         "Une délégation de signature va à un responsable (profil de chef d'entité, DGA ou DG) ; à un agent, déléguez le visa seulement",

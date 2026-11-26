@@ -10,7 +10,7 @@ import type { UnitDashboard } from "@/lib/types";
 /*
  * « Ce qui vous attend » : l'accueil met en avant, selon le profil de chacun, ce qu'il doit faire aujourd'hui
  * (docs/MODELE-INSTITUTIONNEL.md § 4.1). L'agent voit son courrier ; le chef d'entité, les retards de son entité ;
- * la direction, le courrier à imputer, le parapheur à signer et les décisions à suivre.
+ * la direction, le courrier à imputer, le signataire à signer et les décisions à suivre.
  */
 interface Item {
   to: string;
@@ -66,11 +66,11 @@ export function RoleFocus({ className }: { className?: string } = {}) {
     });
   if (toSign?.length)
     items.push({
-      to: "/parapheur",
+      to: "/signataire",
       icon: FileSignature,
       label: "À viser ou signer",
       value: toSign.length,
-      hint: "au parapheur",
+      hint: "au signataire",
     });
   if (headed && unit)
     items.push({

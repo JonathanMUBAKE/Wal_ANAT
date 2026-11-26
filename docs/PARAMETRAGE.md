@@ -31,15 +31,15 @@
 | États d'un partenaire (identifié, en discussion, actif, suspendu, clos) | Nouveau | **Reste fixe** | Le cycle et les droits du point focal en dépendent |
 | **Types d'accords** (convention de partenariat, protocole d'accord, accord de financement…) | Nouveau | **Paramétrable — lot PA2** | Propriétés `binding`, `financial` |
 | **Natures de pièces de collaboration** (convention signée, avenant, rapport…) | Nouveau | **Paramétrable — lot PA2** | Propriété `official` |
-| États d'un accord (en préparation, au parapheur, en vigueur, résilié ; échu calculé) | Nouveau | **Reste fixe** | Numérotation, gel du texte et circuit en dépendent |
+| États d'un accord (en préparation, au signataire, en vigueur, résilié ; échu calculé) | Nouveau | **Reste fixe** | Numérotation, gel du texte et circuit en dépendent |
 | Types de réunions (comité de direction, hebdomadaire…) | Texte libre | Paramétrable — lot suivant | Aucune règle n'en dépend |
-| Natures de documents du parapheur (note, lettre, arrêté…) | Texte libre | Paramétrable — lot suivant | Aucune règle n'en dépend |
+| Natures de documents du signataire (note, lettre, arrêté…) | Texte libre | Paramétrable — lot suivant | Aucune règle n'en dépend |
 | Unités des indicateurs, sources | Texte libre | Paramétrable — lot suivant | Homogénéiser les tableaux |
 | Domaines d'activité | Déjà un référentiel (Organisation › Référentiel) | Inchangé | Géré par l'administration courante |
 | Statuts (livrables, plans, décisions, courrier, réunions) | Figée | **Reste fixe** | Les circuits de validation en dépendent |
 | États de santé (dans les temps, à surveiller…) | Figée | **Reste fixe** | Le tableau de bord calcule dessus |
 | Rôles d'attribution, types de rapports entre entités | Figée | **Reste fixe** | La détection des écarts en dépend |
-| Actions du parapheur (avis, visa, signature), sens du courrier | Figée | **Reste fixe** | Règles du circuit et numérotation |
+| Actions du signataire (avis, visa, signature), sens du courrier | Figée | **Reste fixe** | Règles du circuit et numérotation |
 
 ## 3. Propriétés qui remplacent les règles figées
 
@@ -52,7 +52,7 @@
 | Type de partenaire | `public` | Le partenaire relève de l'État ou d'une collectivité (statistiques de l'annuaire) |
 | Catégorie de partenaire | `financial` | Peut porter des engagements financiers (lot PA4) |
 | Catégorie de partenaire | `supplier` | Peut être choisi comme prestataire d'un contrat de projet (lot PA3) |
-| Type d'accord | `binding` | N'entre en vigueur que par la signature au parapheur, ou en joignant l'exemplaire signé (gestionnaire) |
+| Type d'accord | `binding` | N'entre en vigueur que par la signature au signataire, ou en joignant l'exemplaire signé (gestionnaire) |
 | Type d'accord | `financial` | Porte des engagements financiers (lot PA4) |
 | Nature de pièce | `official` | La pièce reste au dossier : elle ne se supprime jamais |
 

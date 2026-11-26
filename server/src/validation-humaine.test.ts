@@ -275,7 +275,7 @@ describe("compte rendu validé : réouverture motivée (R-3)", () => {
   });
 });
 
-describe("parapheur : signataire imposé selon la nature du document (CV-1, PH-2)", () => {
+describe("signataire : signataire imposé selon la nature du document (CV-1, PH-2)", () => {
   const draft = (who: string, kind: string, steps: { actor_id: string; action: string }[]) =>
     g.api(who, "POST", "/api/signature", { title: "Convention avec l'université de Kinshasa", kind, body: "Texte", steps });
 
@@ -333,7 +333,7 @@ describe("parapheur : signataire imposé selon la nature du document (CV-1, PH-2
   });
 });
 
-describe("parapheur : délégations bornées (PH-3)", () => {
+describe("signataire : délégations bornées (PH-3)", () => {
   it("une délégation dure au plus 30 jours et sa portée se choisit", async () => {
     const long = await g.api("u_alice", "POST", "/api/delegations", {
       to_user: "u_karim",

@@ -109,9 +109,9 @@ d'aménagement ». Consultant individuel, 3 mois, superviseur : le chef du servi
 | --- | --- | --- | --- |
 | 1. Vérifier que le besoin est prévu | Directeur de la planification | Le diagnostic est une activité du **plan de travail approuvé**, avec budget ; le projet existe | Le projet affiche l'activité du plan qu'il réalise et le budget disponible |
 | 2. Rédiger les TdR | Service foncier, **dans le projet** | Contexte, objectifs, tâches, **livrables attendus** (titre, contenu, échéance, critères d'acceptation), profil recherché, durée, superviseur, estimation du coût | TdR en préparation, pièce du projet |
-| 3. Faire valider TdR et dépense | Circuit du **parapheur** | Avis de la direction financière et de la cellule des marchés, visa du directeur, signature de la DG | Le document signé est **rattaché au projet** |
+| 3. Faire valider TdR et dépense | Circuit du **signataire** | Avis de la direction financière et de la cellule des marchés, visa du directeur, signature de la DG | Le document signé est **rattaché au projet** |
 | 4. Sélectionner | Cellule des marchés, comité d'évaluation | Selon la procédure applicable (consultation de CV ou appel à manifestation d'intérêt) : candidats, grille, **procès-verbal d'évaluation**, attribution | L'outil suit les étapes et range les pièces ; il ne remplace pas la procédure de passation |
-| 5. Contracter | Cellule des marchés ; DG | **Contrat dans le projet** : prestataire, objet, TdR annexés, dates, montant, **échéancier de paiement lié aux livrables** (ex. 30 % au rapport de démarrage, 40 % au rapport intermédiaire, 30 % au rapport final) ; signature au parapheur | Les **livrables contractuels** sont créés d'après les TdR, dans l'onglet Livrables du projet, avec le superviseur comme valideur |
+| 5. Contracter | Cellule des marchés ; DG | **Contrat dans le projet** : prestataire, objet, TdR annexés, dates, montant, **échéancier de paiement lié aux livrables** (ex. 30 % au rapport de démarrage, 40 % au rapport intermédiaire, 30 % au rapport final) ; signature au signataire | Les **livrables contractuels** sont créés d'après les TdR, dans l'onglet Livrables du projet, avec le superviseur comme valideur |
 | 6. Accueillir | Responsable du projet | Création du **compte externe** du consultant, ajout à l'équipe du projet avec son rôle | Le consultant ne voit que ce projet ; son accès s'arrêtera à la fin du contrat |
 | 7. Exécuter | Consultant, superviseur | Réunion de démarrage (rattachée au projet), tâches assignées, échanges | Avancement visible dans le projet |
 | 8. Livrer | Consultant → superviseur | Le consultant **soumet** le livrable (fichier joint) ; le superviseur le prend en revue, demande des corrections ou **valide** | Validation par une autre personne que l'auteur ; **procès-verbal de réception** numéroté (PV-2026-0007) ; la **tranche de paiement** liée devient « à payer » |
@@ -157,14 +157,14 @@ convention.
 | 1. Enregistrer | Bureau d'ordre | Expéditeur, date et référence de la lettre, objet, date de réception, pièce numérisée | Numéro **ENT/2026/0142** |
 | 2. Imputer | DG (annotation) | Entité et agent chargés, **instruction** (« pour traitement », « pour avis », « pour information »), délai de réponse | L'agent est prévenu ; le délai court |
 | 3. Traiter | Agent imputé | Instruit ; si un vrai travail en découle, **ouvre ou rattache un dossier** (projet ou activité) | Le courrier apparaît dans le dossier |
-| 4. Répondre | Agent → parapheur | Projet de réponse soumis au circuit (visa du directeur, signature de la DG) | Une fois signée, la réponse est **enregistrée en sortie** (SOR/2026/0098) **liée au courrier entrant**, qui est **clôturé** |
+| 4. Répondre | Agent → signataire | Projet de réponse soumis au circuit (visa du directeur, signature de la DG) | Une fois signée, la réponse est **enregistrée en sortie** (SOR/2026/0098) **liée au courrier entrant**, qui est **clôturé** |
 | 5. Relancer | Outil | — | Délai dépassé : relance de l'agent, puis remontée au responsable de l'entité |
 
 **Aujourd'hui** :
 - le parcours fonctionne, sauf ces liens : le courrier sortant n'est pas lié au courrier entrant, et le courrier
   n'est rattaché à aucun dossier ;
 - l'instruction d'imputation n'est pas saisie ;
-- un document signé au parapheur n'alimente pas le courrier sortant.
+- un document signé au signataire n'alimente pas le courrier sortant.
 
 ### Parcours 5 — Préparer, approuver et suivre le plan de travail annuel
 
@@ -219,7 +219,7 @@ sont détectés.
 
 1. **Un domicile par objet : son dossier.**
    - Les livrables et les contrats appartiennent au **projet**.
-   - Une réunion, un courrier, un document du parapheur ou une décision **peut être rattaché** à un dossier et
+   - Une réunion, un courrier, un document du signataire ou une décision **peut être rattaché** à un dossier et
      apparaît alors dans son onglet.
 2. **Les écrans transverses sont des vues.**
    - « Mes tâches » rassemble aussi les livrables à produire ou à valider et les recommandations à exécuter.
@@ -252,7 +252,7 @@ Navigation cible :
 Accueil · Mes tâches · Coéquipiers IA
 PILOTAGE            Tableau de bord DG · Portefeuille · Décisions · Réunions
 SUIVI-ÉVALUATION    Plans de travail · (Indicateurs et risques, à venir)
-SECRÉTARIAT         Parapheur · Courrier
+SECRÉTARIAT         Signataire · Courrier
 ORGANISATION        Structure · Équipes
 ```
 
@@ -262,7 +262,7 @@ ORGANISATION        Structure · Équipes
 | --- | --- | --- |
 | **P1. Le projet devient le dossier complet** | Contrats et livrables rattachés au projet (avec reprise des données existantes), onglets Livrables et Contrats dans le projet, échéancier de paiement par livrable, « À produire / À valider » dans Mes tâches, vue Contrats et paiements, retrait du module | 2, 3 |
 | **P2. La réunion programmée** | Participants convoqués, convocation avec réponse, pièces de l'ordre du jour, point de suivi automatique, soumission puis validation par la présidence, diffusion, rattachement à un dossier, récurrence | 1 |
-| **P3. Les liens entre dossiers** | Projet ↔ activité du plan (avancement remonté), recommandation → tâche du projet, décision de séance → registre, courrier sortant ↔ entrant, courrier et parapheur rattachés à un dossier, instruction d'imputation | 1, 3, 4, 5, 6 |
+| **P3. Les liens entre dossiers** | Projet ↔ activité du plan (avancement remonté), recommandation → tâche du projet, décision de séance → registre, courrier sortant ↔ entrant, courrier et signataire rattachés à un dossier, instruction d'imputation | 1, 3, 4, 5, 6 |
 | **P4. L'accès externe des consultants** | Compte externe limité aux dossiers du contrat, expirant avec lui ; TdR structurés | 2 |
 | **P5. Les délais comme paramètres** | Délais de convocation, de compte rendu, de réponse, de compte rendu de mission ; relances | 1, 4, 6 |
 

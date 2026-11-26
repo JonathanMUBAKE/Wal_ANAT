@@ -509,7 +509,7 @@ Prérequis de tout le chantier courrier. Détail complet au point **X16** du pla
 ## F3.4 — Les pastilles de compte *(audit du rail)*
 
 - **Défaut** — Le composant de lien sait afficher une pastille (`Sidebar.tsx:206-215`) et **une seule
-  entrée sur dix-neuf** s'en sert (Coéquipiers IA). Parapheur, Courrier, Congés, Décisions, Mes tâches :
+  entrée sur dix-neuf** s'en sert (Coéquipiers IA). Signataire, Courrier, Congés, Décisions, Mes tâches :
   rien.
 - **Change** — Une pastille sur chaque entrée qui a quelque chose à annoncer, comptant **ce qui attend la
   personne**, pas le contenu du module. Un module sans rien à faire n'affiche aucun chiffre.
@@ -586,14 +586,14 @@ Prérequis de tout le chantier courrier. Détail complet au point **X16** du pla
 
 # Chantier F5 — La finition
 
-## F5.1 — « Parapheur » devient « Signataire » *(AB1)*
+## F5.1 — « Signataire » devient « Signataire » *(AB1)*
 
-- **Défaut** — Le dépôt dit « parapheur » **232 fois** : `pages/Parapheur.tsx`, `server/src/signature.ts`,
+- **Défaut** — Le dépôt dit « signataire » **232 fois** : `pages/Signataire.tsx`, `server/src/signature.ts`,
   `audit.ts`, `notification-categories.ts`, les pages Accords, une dizaine de documents de `docs/`, et la
-  route `/parapheur`. Le mot de la maison est « le signataire ».
+  route `/signataire`. Le mot de la maison est « le signataire ».
 - **Change** — Renommage complet, route comprise. **Aucune migration** : les clés de droits sont déjà
   `signature.use` et `signature.institution`.
-- **Fini quand** — Le mot « parapheur » n'apparaît plus, sauf dans l'historique.
+- **Fini quand** — Le mot « signataire » n'apparaît plus, sauf dans l'historique.
 
 ## F5.2 — Le champ « Signataire » devient « Signé par » *(AB2)*
 

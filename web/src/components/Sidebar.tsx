@@ -161,7 +161,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     partners: wide || can("partners.manage") || hasPartners,
     agreements: wide || can("partners.manage") || hasAgreements,
     mail: wide || can("correspondence.manage") || can("correspondence.view") || hasMail,
-    // Le parapheur paraît pour qui y a un document, ou qui dirige réellement une entité (et peut y présenter une pièce)
+    // Le signataire paraît pour qui y a un document, ou qui dirige réellement une entité (et peut y présenter une pièce)
     signature: wide || (can("units.lead") && !!myUnits?.some((u) => u.role === "responsable")) || hasSignature,
     teams: can("teams.create") || hasTeams,
     structure:
@@ -262,7 +262,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
         {((can("signature.use") && show.signature) || show.mail) && (
           <NavSection title="Secrétariat">
-            {can("signature.use") && show.signature && link("/parapheur", FileSignature, "Parapheur")}
+            {can("signature.use") && show.signature && link("/signataire", FileSignature, "Signataire")}
             {show.mail && link("/courrier", Mail, "Courrier")}
           </NavSection>
         )}

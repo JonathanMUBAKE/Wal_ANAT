@@ -62,7 +62,7 @@ describe("administration : pas d'élévation de privilèges", () => {
   });
 });
 
-describe("parapheur, arbitrages et décisions", () => {
+describe("signataire, arbitrages et décisions", () => {
   it("la pile de la DG ne transmet jamais le fichier", async () => {
     await g.direction("u_hugo");
     const d = (
@@ -188,7 +188,7 @@ describe("accords : partenaires confidentiels et avenants", () => {
     const av = (await g.api("u_alice", "POST", `/api/agreements/${a.id}/amend`, { title: "Prolongation", new_end_on: day(700) })).body;
     expect((await g.api("u_alice", "POST", `/api/agreements/${a.id}/terminate`, { reason: "Fin", ended_on: day(30) })).status).toBe(400);
     expect((await g.api("u_alice", "POST", `/api/agreements/${a.id}/terminate`, { reason: "Fin", ended_on: day() })).status).toBe(200);
-    // L'avenant ne prend plus effet : ni parapheur ni entrée en vigueur
+    // L'avenant ne prend plus effet : ni signataire ni entrée en vigueur
     expect((await g.api("u_alice", "POST", `/api/agreements/${av.id}/activate`, { signed_on: day() })).status).toBe(409);
     expect((await g.api("u_alice", "GET", `/api/agreements/${a.id}`)).body.end_on).toBe(day(300));
   });

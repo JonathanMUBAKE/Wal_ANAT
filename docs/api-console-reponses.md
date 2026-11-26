@@ -184,6 +184,6 @@ incomplète.
 module des congés porte les absences déclarées, y compris les congés longs et les détachements. Je
 vous dirai avant d'écrire comment je compte la calculer, pour que vous puissiez la contester.
 
-**Le vocabulaire.** Merci d'avoir corrigé « parapheur ». `docs/CONTEXTE-INSTITUTIONNEL.md` vaut le
+**Le vocabulaire.** Merci d'avoir corrigé « signataire ». `docs/CONTEXTE-INSTITUTIONNEL.md` vaut le
 détour avant de nommer un écran : il dit pourquoi une entité est autonome, pourquoi seule la
 direction générale engage l'Agence, et pourquoi le registre ne ment pas.

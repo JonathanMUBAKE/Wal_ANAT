@@ -255,7 +255,7 @@ export async function seedGovDemo(svc: Services) {
     await at.approve("u_karim", s.id);
   }
 
-  // Plan, livrables, mission, parapheur, courrier, risques et indicateurs
+  // Plan, livrables, mission, signataire, courrier, risques et indicateurs
   const plans = new Plans(svc);
   const d = new Deliverables(svc);
   const sig = new Signature(svc);
@@ -839,7 +839,7 @@ async function seedPartnerLinks(svc: Services, org: string, me: string) {
   });
 }
 
-/** Accords fictifs (lot PA2) : en vigueur, à l'échéance proche, en préparation, au parapheur, avec un avenant. */
+/** Accords fictifs (lot PA2) : en vigueur, à l'échéance proche, en préparation, au signataire, avec un avenant. */
 async function seedAgreements(svc: Services, org: string, me: string) {
   if (await svc.db.one("SELECT 1 FROM agreements WHERE org_id = $1", [org])) return;
   const byName = async (acronym: string) =>

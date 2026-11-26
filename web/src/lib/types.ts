@@ -405,7 +405,7 @@ export interface Notification {
   project_id: string | null;
   approval_id: string | null;
   actor_id: string | null;
-  /** Domaine : taches, reunions, courrier, decisions, parapheur, projets, partenariats, equipe, ia, autres. */
+  /** Domaine : taches, reunions, courrier, decisions, signataire, projets, partenariats, equipe, ia, autres. */
   category?: string;
   /** Où agir. */
   link?: string | null;

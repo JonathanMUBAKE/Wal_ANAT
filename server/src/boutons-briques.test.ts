@@ -107,7 +107,7 @@ const EXCEPTIONS: Record<string, { n: number; raison: string }> = {
   "pages/OrgAccess.tsx": { n: 3, raison: "LIGNE/LIEN/ONGLET : profil sélectionnable, « Tout cocher » d'un groupe, niveaux d'accès en radio." },
   "pages/Organization.tsx": { n: 4, raison: "LIGNE/DECLEUR : repli d'un nœud d'organigramme, sélection, déclencheur de choix du responsable, option." },
   "pages/OrgMail.tsx": { n: 2, raison: "PASTILLE : copier et modifier une adresse, icônes de 28 px en bout de ligne." },
-  "pages/Parapheur.tsx": { n: 2, raison: "LIEN/PASTILLE : lien de préremplissage, retrait d'une copie." },
+  "pages/Signataire.tsx": { n: 2, raison: "LIEN/PASTILLE : lien de préremplissage, retrait d'une copie." },
   "pages/Partners.tsx": { n: 2, raison: "LIEN/PASTILLE : retrait d'un visa, bascule « Afficher les archivés »." },
   "pages/Pilotage.tsx": { n: 3, raison: "LIGNE/LIEN : tuiles de chiffres cliquables, titre d'une alerte, arbitrage d'une demande." },
   "pages/Project.tsx": { n: 4, raison: "DECLEUR/LIGNE : pastille de statut, échéance, membres du projet, option d'ajout de membre." },

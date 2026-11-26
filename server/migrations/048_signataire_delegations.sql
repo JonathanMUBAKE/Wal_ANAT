@@ -1,4 +1,4 @@
--- Parapheur (thème 2 de l'analyse, CV-1, PH-2, PH-3). Un document qui engage l'Agence (convention, accord, avenant,
+-- Signataire (thème 2 de l'analyse, CV-1, PH-2, PH-3). Un document qui engage l'Agence (convention, accord, avenant,
 -- contrat, protocole, acte) est signé par la DG, ou par son délégataire désigné. Une délégation est bornée dans le
 -- temps, porte sur le visa seul ou sur la signature, et reste dans l'historique quand elle est retirée.
 ALTER TABLE sign_documents ADD COLUMN binding BOOLEAN NOT NULL DEFAULT FALSE;

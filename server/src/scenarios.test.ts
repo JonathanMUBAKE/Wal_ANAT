@@ -148,8 +148,8 @@ describe("livrables et missions : réception, paiement, durée de la mission", (
   });
 });
 
-describe("parapheur : personne ne reste bloqué dans un circuit", () => {
-  it("refuse un intervenant qui n'a pas accès au parapheur", async () => {
+describe("signataire : personne ne reste bloqué dans un circuit", () => {
+  it("refuse un intervenant qui n'a pas accès au signataire", async () => {
     await g.ctx.db.query("UPDATE org_units SET manager_id = NULL WHERE manager_id = 'u_hugo'"); // un chef garde un profil de chef (A-3)
     await g.promote("u_hugo", "Lecture seule");
     const r = await g.api("u_alice", "POST", "/api/signature", {
@@ -157,7 +157,7 @@ describe("parapheur : personne ne reste bloqué dans un circuit", () => {
       steps: [{ actor_id: "u_hugo", action: "signature" }],
     });
     expect(r.status).toBe(400);
-    expect(r.body.error).toMatch(/parapheur/);
+    expect(r.body.error).toMatch(/signataire/);
   });
   it("refuse une délégation de signature au profit d'un invité", async () => {
     await g.ctx.db.query("UPDATE org_members SET role = 'guest' WHERE user_id = 'u_hugo' AND org_id = $1", [g.org]);

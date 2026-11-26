@@ -18,10 +18,10 @@ export const NOTIFICATION_CATEGORIES = [
   { id: "courrier", label: "Courrier", hint: "Imputations, délais de réponse", route: "/courrier" },
   { id: "decisions", label: "Décisions", hint: "Décisions à exécuter, remplacements", route: "/decisions" },
   {
-    id: "parapheur",
-    label: "Parapheur",
+    id: "signataire",
+    label: "Signataire",
     hint: "Documents à viser ou signer, signés, rejetés, délégations",
-    route: "/parapheur",
+    route: "/signataire",
   },
   {
     id: "projets",
@@ -49,7 +49,7 @@ export function categoryOfKind(kind: string): NotificationCategory {
   if (kind.startsWith("meeting") || kind === "recommendation") return "reunions";
   if (kind.startsWith("correspondence") || kind === "mail") return "courrier";
   if (kind.startsWith("decision")) return "decisions";
-  if (kind.startsWith("signature") || kind.startsWith("delegation")) return "parapheur";
+  if (kind.startsWith("signature") || kind.startsWith("delegation")) return "signataire";
   if (/^(deliverable|contract|project|plan)/.test(kind)) return "projets";
   if (/^(agreement|partner)/.test(kind)) return "partenariats";
   if (kind === "approval" || kind === "ai" || kind === "rule") return "ia";

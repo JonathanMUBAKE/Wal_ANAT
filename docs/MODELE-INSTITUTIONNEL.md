@@ -12,7 +12,7 @@
 ## 1. Synthèse
 
 1. **L'institution travaille sur trois horloges.** L'**année** (plan de travail, budget, conventions), le **mois**
-   (comités, réunions de service, rapports aux partenaires), le **jour** (tâches, courrier, parapheur). L'outil
+   (comités, réunions de service, rapports aux partenaires), le **jour** (tâches, courrier, signataire). L'outil
    donne à chaque horloge son objet et relie les trois : une tâche du jour fait avancer une activité du plan de
    l'année, sous une décision prise en comité.
 2. **Deux axes se croisent : l'organisation et le travail.** L'axe *organisation* dit qui est responsable
@@ -31,8 +31,8 @@
 
 | Niveau | Qui | Ce qu'il décide | Où dans l'outil |
 | --- | --- | --- | --- |
-| **Direction générale** | DG, DGA, cabinet | Orientations, arbitrages, signature, imputation du courrier | Tableau de bord DG, Décisions, Parapheur, Courrier |
-| **Directions** | Directeurs | Plan de travail de la direction, conduite des projets, visa | Mon entité, Plans de travail, Portefeuille, Parapheur |
+| **Direction générale** | DG, DGA, cabinet | Orientations, arbitrages, signature, imputation du courrier | Tableau de bord DG, Décisions, Signataire, Courrier |
+| **Directions** | Directeurs | Plan de travail de la direction, conduite des projets, visa | Mon entité, Plans de travail, Portefeuille, Signataire |
 | **Services / cellules** | Chefs de service | Répartition du travail entre agents, suivi | Mon entité (suivi des agents) |
 | **Agents** | Agents, stagiaires | Exécution : tâches, instruction du courrier, rédaction | Mes tâches, Mon courrier, Réunions |
 | **Extérieurs** | Consultants, invités, partenaires | Production sous contrat, participation | Projets ouverts, réunions |
@@ -44,7 +44,7 @@
 | --- | --- | --- |
 | **Annuel** | Chaque entité prépare son plan de travail ; la direction l'approuve ; les conventions se signent ou se renouvellent | Plan de travail, activités du plan, accords |
 | **Mensuel** | Comités et réunions de service ; décisions et recommandations ; rapports aux bailleurs | Réunions, comptes rendus, décisions, recommandations |
-| **Quotidien** | Le courrier arrive et s'impute ; les tâches se font ; les documents se visent et se signent | Courrier, tâches, parapheur |
+| **Quotidien** | Le courrier arrive et s'impute ; les tâches se font ; les documents se visent et se signent | Courrier, tâches, signataire |
 | **Continu** | Traces, délais, rappels, alertes | Journal d'audit, notifications, tableau de bord |
 
 ---
@@ -79,7 +79,7 @@
 | **Décision** | Un acte de la DG, numéroté, figé, avec un chargé d'exécution. | Une recommandation (à suivre, non numérotée au registre). |
 | **Recommandation** | Une suite à donner issue d'une réunion, avec un responsable et une échéance. | Une décision. |
 | **Courrier** | Une correspondance entrante ou sortante, numérotée, imputée, avec un délai. | Un document de dossier. |
-| **Document au parapheur** | Un acte soumis à un circuit de visa puis de signature. | Un document déposé dans un dossier. |
+| **Document au signataire** | Un acte soumis à un circuit de visa puis de signature. | Un document déposé dans un dossier. |
 | **Document** | Une pièce rangée dans un dossier, un partenaire, un accord, un courrier ou une réunion, décrite par son type. | — |
 | **Partenaire** | Un tiers de l'annuaire unique (ministère, bailleur, collectivité, entreprise). | Un contact (personne chez le partenaire). |
 | **Accord** | Un acte conclu avec un ou plusieurs partenaires, numéroté à l'entrée en vigueur, modifié par avenant. | Un contrat de prestataire (qui vit dans le projet). |
@@ -93,7 +93,7 @@ Entité ─ chef / agents ─────────── porte ────�
                                                         ├─ Tâches, livrables, contrats, documents
 Réunion ─ décisions ─► Registre des décisions           ├─ Réunions (comité de pilotage)
         └ recommandations ─► tâches du dossier          └─ Courrier rattaché
-Courrier ─ imputé à ─► Entité ─► Agent ─ réponse ─► Parapheur ─► Courrier sortant
+Courrier ─ imputé à ─► Entité ─► Agent ─ réponse ─► Signataire ─► Courrier sortant
 Partenaire ─ accords ─ documents ─ réunions ─ courrier ─ dossiers (commanditaire)
 ```
 
@@ -115,7 +115,7 @@ concerne · « ent. » = son entité et les entités rattachées.
 | Réunions | V convoqué | V | V convoqué | V | V F A ent. | V F A | V F A | V |
 | Décisions | — | — | — | V | V | V | V F (enregistre) | — |
 | Courrier | — | V soi | — | V F soi (imputé) | V F ent. (impute) | V F (impute) | V F (annote, impute) | — |
-| Parapheur | — | — | — | V F (vise si circuit) | V F A (vise) | V F A | V A (signe) | — |
+| Signataire | — | — | — | V F (vise si circuit) | V F A (vise) | V F A | V A (signe) | — |
 | Partenaires, conventions | — | — | — | V | V | V F | V F | — |
 | Tableau de bord DG | — | — | — | — | — | V | V | — |
 | Ressources humaines | Mon dossier | Mon dossier | — | Mon dossier | V ent. | V | V | — |
@@ -141,7 +141,7 @@ concerne · « ent. » = son entité et les entités rattachées.
 | **Invité** | Ce qui lui est partagé, ses convocations |
 | **Chef d'entité** | Mon entité : tableau de bord (retards, charge des agents, réunions de l'entité, projets), courrier imputé à l'entité, plan de travail, livrables à valider |
 | **DGA** | Tableau de bord DG, portefeuille, réunions, plans à approuver, courrier à imputer |
-| **DG** | Tableau de bord DG (ce qui attend une décision), parapheur à signer, courrier à annoter, décisions en retard |
+| **DG** | Tableau de bord DG (ce qui attend une décision), signataire à signer, courrier à annoter, décisions en retard |
 | **Responsable informatique** | Organisation (personnes, structure, profils, messagerie), état du système (s'il est administrateur système) |
 | **Administrateur système** | État du système, comptes, sessions, rôles et droits, journal d'audit |
 
@@ -170,7 +170,7 @@ manques identifiés) · **Partiel** (une partie du cycle manque) · **À constru
 | Réunions | **Complet** | À venir / déjà tenue, convocation, réponses, ordre du jour et pièces, compte rendu, validation, décisions et recommandations, réunions d'entité | Convocation en lecture (carte encore en champs) |
 | Décisions | **Utilisable** | Registre numéroté, exécution, remplacement, rappels | Grille CRUD homogène (actions en ligne) |
 | Courrier | **Complet** | Registre, imputation en cascade, annotations, copies, prise en charge, clôture, classement motivé, réponse liée, délais, tableau de bord, Mon courrier | Modèles de réponse ; accusé de réception automatique |
-| Parapheur | **Utilisable** | Circuit de visa et signature, délégations, accroches (accords, courrier) | Grille CRUD homogène ; signature électronique qualifiée |
+| Signataire | **Utilisable** | Circuit de visa et signature, délégations, accroches (accords, courrier) | Grille CRUD homogène ; signature électronique qualifiée |
 | Partenaires, conventions | **Utilisable** | Annuaire, états, contacts, documents typés, accords, avenants, rapprochement, liens | Finance (engagements, décaissements) et obligations de rapport — reportés à la demande |
 | Tableau de bord DG | **Complet** | Retards, décisions attendues, agenda, santé du portefeuille ; vue par direction (appréciation motivée, projets, plan réalisé face à l'attendu, retards) et fiche de chaque direction et service | Tendances d'un mois sur l'autre |
 | Coéquipiers IA | **Utilisable** | Assistant, délégation sous validation, analyse du journal | Fournisseur par agent IA |
@@ -195,7 +195,7 @@ manques identifiés) · **Partiel** (une partie du cycle manque) · **À constru
 | Priorité | Lot | Pourquoi | Effort |
 | --- | --- | --- | --- |
 | 1 | **Accueil par profil** : l'écran d'accueil propre à l'Agent, au Chef d'entité, au DG | Chacun ouvre l'outil sur ce qu'il doit faire, sans chercher | Moyen |
-| 2 | **Grilles homogènes** : décisions, parapheur, plans, équipes, structure en lecture puis « Modifier », actions en ligne | Cohérence d'usage dans tout l'outil (règle § 4 du design) | Moyen |
+| 2 | **Grilles homogènes** : décisions, signataire, plans, équipes, structure en lecture puis « Modifier », actions en ligne | Cohérence d'usage dans tout l'outil (règle § 4 du design) | Moyen |
 | 3 | **RH, deuxième étape** : congés et absences et alertes de fin de contrat (faits) ; carrière et pièces du dossier à venir | Le dossier d'agent devient l'outil du service RH | Moyen |
 | 4 | **Évaluation des agents** : objectifs, entretien annuel, appuyé sur les tâches tenues et les délais (appréciation humaine) | Demandé ; s'appuie sur des données déjà présentes | Moyen |
 | 5 | **Finance des partenariats** (PA4) : engagements, échéancier des décaissements, tableau des bailleurs | Reporté à la demande | Élevé |

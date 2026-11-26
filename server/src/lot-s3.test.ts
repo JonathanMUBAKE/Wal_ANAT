@@ -85,7 +85,7 @@ describe("S3.1 : un avenant n'est jamais pris au piège de la résiliation de so
   let n = 0;
   const day = () => new Date().toISOString().slice(0, 10);
   /** Un accord en vigueur, et un de ses avenants envoyé à la signature de la DG. */
-  async function avenantAuParapheur() {
+  async function avenantAuSignataire() {
     const p = (
       await g.api("u_alice", "POST", "/api/partners", {
         name: `Partenaire S31 ${++n}`,
@@ -122,11 +122,11 @@ describe("S3.1 : un avenant n'est jamais pris au piège de la résiliation de so
     (await g.ctx.db.one<Any>("SELECT state, sign_document_id FROM agreements WHERE id = $1", [id]))!;
 
   it("résilier un accord dont un avenant est au signataire : refus motivé, rien ne bouge ; une fois l'avenant rejeté, la résiliation passe", async () => {
-    const { a, av, doc } = await avenantAuParapheur();
+    const { a, av, doc } = await avenantAuSignataire();
     const t = await g.api("u_alice", "POST", `/api/agreements/${a.id}/terminate`, { reason: "Fin de coopération", ended_on: day() });
     expect(t.status).toBe(409);
     expect(t.body.error).toMatch(/avenant/i);
-    expect(t.body.error).toMatch(/parapheur|signataire|rejet/i);
+    expect(t.body.error).toMatch(/signataire|signataire|rejet/i);
     expect((await state(a.id)).state).toBe("vigueur");
     expect((await state(av.id)).state).toBe("signature");
     const rej = await g.api("u_alice", "POST", `/api/signature/${doc}/decide`, { decision: "reject", comment: "Plus d'objet" });
@@ -139,7 +139,7 @@ describe("S3.1 : un avenant n'est jamais pris au piège de la résiliation de so
   });
 
   it("si le parent n'est plus en vigueur à la signature, l'avenant revient en préparation avec un message, et la signature aboutit sans erreur", async () => {
-    const { a, av, doc } = await avenantAuParapheur();
+    const { a, av, doc } = await avenantAuSignataire();
     // Le cas ne doit plus naître de la résiliation ; il reste atteignable par une autre voie (reprise de données)
     await g.ctx.db.query("UPDATE agreements SET state = 'resilie' WHERE id = $1", [a.id]);
     const r = await g.api("u_alice", "POST", `/api/signature/${doc}/decide`, { decision: "approve" });

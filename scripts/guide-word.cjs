@@ -360,28 +360,28 @@ content.push(
     access: ["Menu : Partenariats."],
     features: [
       "Partenaires : états (identifié, en discussion, actif, suspendu, clos), contacts, documents, historique, fusion des doublons, rapprochement.",
-      "Conventions : en préparation, au parapheur, en vigueur (CONV/AAAA/NNNN), échue, résiliée ; avenants ; alertes d'échéance à 90, 30, 7 jours.",
+      "Conventions : en préparation, au signataire, en vigueur (CONV/AAAA/NNNN), échue, résiliée ; avenants ; alertes d'échéance à 90, 30, 7 jours.",
       "Export de l'annuaire et du registre.",
     ],
     scenarios: [
       ["faire entrer une convention en vigueur", "Le point focal ; la DG.", [
-        "Le point focal prépare l'accord et le soumet au parapheur.",
+        "Le point focal prépare l'accord et le soumet au signataire.",
         "La DG signe : l'accord entre en vigueur et reçoit son numéro ; son texte est figé.",
       ], "le registre juridique est à jour sans ressaisie."],
     ],
     changes: ["Export de l'annuaire et du registre des conventions (I-22)."],
   }),
-  ...module("14. Parapheur et courrier", {
+  ...module("14. Signataire et courrier", {
     role: "Le circuit de visa et de signature, et le circuit du courrier du bureau d'ordre à la réponse.",
     access: ["Menu : Secrétariat."],
     features: [
-      "Parapheur : circuit de visas puis signature, approbation ou rejet commenté, délégation de signature, document figé pendant le circuit.",
-      "Courrier : enregistrement (ENT ou SOR), imputation par la direction puis en cascade par le chef d'entité, copies, annotations, prise en charge, réponse par le parapheur, clôture ou classement motivé ; « Mon courrier » pour chacun.",
+      "Signataire : circuit de visas puis signature, approbation ou rejet commenté, délégation de signature, document figé pendant le circuit.",
+      "Courrier : enregistrement (ENT ou SOR), imputation par la direction puis en cascade par le chef d'entité, copies, annotations, prise en charge, réponse par le signataire, clôture ou classement motivé ; « Mon courrier » pour chacun.",
     ],
     scenarios: [
       ["un courrier imputé en cascade", "Esther ; Fiston ; Gaston.", [
         "Esther enregistre la lettre et l'impute à l'Ingénierie territoriale, « pour traitement », délai 10 jours, copie à la DGA.",
-        "Fiston l'impute à Gaston ; Gaston la prend en charge et prépare la réponse, qui part au parapheur.",
+        "Fiston l'impute à Gaston ; Gaston la prend en charge et prépare la réponse, qui part au signataire.",
         "Signée, la réponse est enregistrée en sortie et le courrier entrant est clos.",
       ], "chaque étape est tracée ; un retard remonte au chef d'entité."],
     ],
@@ -428,7 +428,7 @@ content.push(
     "**Ce qui est adressé à la DG (I-33)** : faut-il une notion de « dossier suivi par la DG » (transmis par une direction, ou stratégique par nature) pour que son portefeuille ne montre que ces dossiers ? Qui transmet un dossier ?",
     "**Profils (I-34)** : le DGA inscrit-il des décisions par délégation ? Le responsable informatique est-il administrateur de droit ? Les stagiaires voient-ils le portefeuille ?",
     "**Saisie pour le compte de la DG** : faut-il que la DG confirme d'un clic une décision inscrite par son assistant(e) avant qu'elle soit numérotée ?",
-    "**Grilles homogènes (I-21)** : Décisions, Parapheur, Plans et Structure en « consulter puis Modifier » avec actions en ligne.",
+    "**Grilles homogènes (I-21)** : Décisions, Signataire, Plans et Structure en « consulter puis Modifier » avec actions en ligne.",
     "**Congés et absences (I-35)** : prêts sur leur branche, à fusionner quand vous le déciderez.",
     "**Finance des partenariats** : engagements et décaissements, reportés à votre demande.",
     "**Décision de séance et décision attendue (I-04)** : relier une décision prise en réunion à la décision attendue du dossier rattaché.",

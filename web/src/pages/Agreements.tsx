@@ -53,7 +53,7 @@ import { HUES, REF_ICONS, type RefValue, useReferentials } from "@/lib/referenti
 export type AgreementState = "preparation" | "signature" | "vigueur" | "resilie" | "echu";
 export const AGREEMENT_STATE: Record<AgreementState, { label: string; tone: Tone }> = {
   preparation: { label: "En préparation", tone: "neutral" },
-  signature: { label: "Au parapheur", tone: "info" },
+  signature: { label: "Au signataire", tone: "info" },
   vigueur: { label: "En vigueur", tone: "success" },
   echu: { label: "Échu", tone: "warning" },
   resilie: { label: "Résilié", tone: "neutral" },
@@ -225,7 +225,7 @@ export function AgreementsPage() {
           { id: "all" as const, label: "Tous", badge: data?.length },
           { id: "vigueur" as const, label: "En vigueur", badge: count("vigueur") },
           { id: "preparation" as const, label: "En préparation", badge: count("preparation") },
-          { id: "signature" as const, label: "Au parapheur", badge: count("signature") },
+          { id: "signature" as const, label: "Au signataire", badge: count("signature") },
           { id: "echu" as const, label: "Échus", badge: count("echu") },
           { id: "resilie" as const, label: "Résiliés", badge: count("resilie") },
         ]}
@@ -382,7 +382,7 @@ export function NewAgreement({ partner, onClose }: { partner?: { id: string; nam
           label="Type"
           required
           hint={
-            type ? (type.props.binding ? "Contraignant : signature au parapheur." : "Non contraignant.") : undefined
+            type ? (type.props.binding ? "Contraignant : signature au signataire." : "Non contraignant.") : undefined
           }
         >
           {(a) => (
@@ -567,12 +567,12 @@ export function AgreementPage() {
                     disabled={!d.focal_id}
                     title={d.focal_id ? undefined : "Désignez d'abord le point focal de l'accord"}
                   >
-                    Soumettre au parapheur
+                    Soumettre au signataire
                   </Button>
                 )}
                 {d.can.activate && (
                   <Button icon={<CheckCircle2 className="size-4" />} onClick={() => setDialog("activate")}>
-                    {d.binding ? "Déclarer signé hors parapheur" : "Déclarer en vigueur"}
+                    {d.binding ? "Déclarer signé hors signataire" : "Déclarer en vigueur"}
                   </Button>
                 )}
                 {d.can.amend && (
@@ -608,11 +608,11 @@ export function AgreementPage() {
         <div className="min-w-0 space-y-4">
           {d.state === "signature" && d.sign_document && (
             <p className="rounded-xl border border-line bg-hover/50 px-4 py-3 text-[13px]">
-              Au parapheur sous le numéro <span className="font-mono">{d.sign_document.reference}</span> : le texte est
+              Au signataire sous le numéro <span className="font-mono">{d.sign_document.reference}</span> : le texte est
               scellé pendant le circuit. L'accord entrera en vigueur à la signature ; un rejet le renverra en
               préparation.{" "}
-              <Link to="/parapheur" className="font-medium text-primary hover:underline">
-                Ouvrir le parapheur
+              <Link to="/signataire" className="font-medium text-primary hover:underline">
+                Ouvrir le signataire
               </Link>
             </p>
           )}
@@ -641,7 +641,7 @@ export function AgreementPage() {
               )}
               {d.state !== "preparation" && (
                 <p className="text-[12px] text-faint">
-                  Le texte d'un accord passé au parapheur ou conclu ne se modifie plus : un avenant le complète.
+                  Le texte d'un accord passé au signataire ou conclu ne se modifie plus : un avenant le complète.
                 </p>
               )}
             </div>
@@ -779,7 +779,7 @@ export function AgreementPage() {
                       {frDate(d.signed_on)}
                       {d.signed_outside && (
                         <span className="block text-[12px] font-normal text-muted">
-                          Exemplaire signé hors parapheur
+                          Exemplaire signé hors signataire
                         </span>
                       )}
                     </>
@@ -839,7 +839,7 @@ function SignDialog({
       }),
     onSuccess: (r) => {
       onDone(r);
-      toast.success(`Soumis au parapheur (${r.sign_document?.reference})`);
+      toast.success(`Soumis au signataire (${r.sign_document?.reference})`);
       onClose();
     },
     onError: fail,
@@ -849,7 +849,7 @@ function SignDialog({
     <Dialog
       open
       onOpenChange={onClose}
-      title="Soumettre au parapheur"
+      title="Soumettre au signataire"
       description="Le texte est scellé pendant le circuit. À la signature, l'accord entre en vigueur et reçoit son numéro."
       width={520}
       footer={
@@ -890,7 +890,7 @@ function SignDialog({
             }}
           />
         </div>
-        <Field label="Signataire" required hint="En principe la Directrice générale.">
+        <Field label="Qui signe" required hint="En principe la Directrice générale.">
           {(a) => (
             <PeopleSelect
               {...a}
@@ -932,7 +932,7 @@ function ActivateDialog({
     <Dialog
       open
       onOpenChange={onClose}
-      title={agreement.binding ? "Déclarer l'accord signé hors parapheur" : "Déclarer l'accord en vigueur"}
+      title={agreement.binding ? "Déclarer l'accord signé hors signataire" : "Déclarer l'accord en vigueur"}
       description={
         agreement.binding
           ? "Réservé aux gestionnaires : l'exemplaire signé doit être joint comme pièce officielle. L'accord reçoit son numéro et son texte est figé."

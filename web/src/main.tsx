@@ -42,7 +42,7 @@ import { AgreementPage, AgreementsPage } from "./pages/Agreements";
 import { ReconcilePage } from "./pages/PartnerLinks";
 import { AttributionsPage } from "./pages/Attributions";
 import { PlanPage, PlansPage } from "./pages/Plans";
-import { CourrierPage, ParapheurPage } from "./pages/Parapheur";
+import { CourrierPage, SignatairePage } from "./pages/Signataire";
 import { ActivitiesPage, ActivityPage } from "./pages/Activities";
 
 createRoot(document.getElementById("root")!).render(
@@ -74,7 +74,7 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="plans/:id" element={<PlanPage />} />
                   {/* Les livrables vivent dans leur projet ; l'ancienne adresse mène à « Mes tâches » */}
                   <Route path="livrables" element={<Navigate to="/my-tasks" replace />} />
-                  <Route path="parapheur" element={<ParapheurPage />} />
+                  <Route path="signataire" element={<SignatairePage />} />
                   <Route path="courrier" element={<CourrierPage />} />
                   <Route path="pilotage" element={<PilotagePage />} />
                   <Route path="pilotage/directions/:id" element={<DirectionPage />} />

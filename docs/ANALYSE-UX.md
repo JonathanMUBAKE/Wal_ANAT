@@ -11,7 +11,7 @@ Données fictives uniquement.
   (1440 px) et de téléphone (375 px). Les comptes sont désignés par leur fonction : Directrice générale, Directeur,
   Chef de cellule, Agent.
 - Écrans examinés : Accueil, Tableau de bord DG, Mes tâches, Mon entité, Portefeuille, Projet (liste, tableau de bord),
-  Décisions, Réunions (liste et fiche), Risques et indicateurs, Plans de travail, Partenaires, Conventions, Parapheur,
+  Décisions, Réunions (liste et fiche), Risques et indicateurs, Plans de travail, Partenaires, Conventions, Signataire,
   Courrier, Structure, Ressources humaines, Congés, Coéquipiers IA.
 - Recherche des normes applicables en 2026 et de références par type d'écran (Linear, Stripe, Asana, Attio, GOV.UK,
   GC Design System, DSFR, Dribbble). Limite : les galeries Dribbble et Pinterest ont été consultées par leurs fiches et
@@ -37,7 +37,7 @@ référence la plus proche de la politique d'accès déjà retenue (modèle cana
    téléphone, il occupe tout le premier écran et les chiffres n'apparaissent qu'après défilement. Un tableau de bord
    répond d'abord à « où en est-on ? », puis propose d'agir.
 2. **Deux écrans disent la même chose.** L'Accueil de la DG et le Tableau de bord DG présentent chacun courrier,
-   parapheur, entité, congés, tâches et projets, avec des chiffres qui se recoupent.
+   signataire, entité, congés, tâches et projets, avec des chiffres qui se recoupent.
 3. **Des phrases dans les cellules.** La colonne « Appréciation » du tableau par direction contient deux ou trois
    phrases par ligne ; les pastilles des chiffres clés sont tronquées (« 5 tâches, 1 suite d'activité… »).
 4. **Un objet, plusieurs statuts.** Le portefeuille affiche « À surveiller » et dessous « déclaré : Dans les temps » ;
@@ -222,12 +222,12 @@ responsable, cible et barre d'avancement par trimestre.
 **Disposition proposée.** Fiche en deux colonnes à la manière d'un logiciel de relation partenaires : à gauche les
 propriétés (état, type, catégories, point focal, coordonnées) ; au centre des onglets « Activité » (chronologie des
 échanges, courriers, réunions), « Conventions », « Contacts », « Pièces ». Conventions : la même structure ; une barre
-d'étapes (préparation → parapheur → en vigueur → échue ou résiliée) ; l'échéance en évidence avec le compte à rebours.
+d'étapes (préparation → signataire → en vigueur → échue ou résiliée) ; l'échéance en évidence avec le compte à rebours.
 
 **Références.** Attio, fiche d'entreprise (panneau des propriétés, onglet Activité en chronologie, onglets de
 relations).
 
-### Parapheur
+### Signataire
 
 **Ce qui gêne.** Une liste de tableau ; pour signer, il faut ouvrir une fenêtre ; on ne voit ni le document ni le
 circuit d'un coup d'œil.
@@ -246,10 +246,10 @@ Workflow ».
 **Ce qui gêne.** Le compteur « À moi · en retard : 0 · 0 » est difficile à lire ; trois icônes d'action sans libellé.
 
 **Disposition proposée.** Quatre compteurs simples (à imputer, en cours, en retard, traités ce mois) ; « À moi » devient
-un filtre. Même boîte à deux volets que le parapheur : la liste à gauche, le courrier et son circuit d'imputation à
+un filtre. Même boîte à deux volets que le signataire : la liste à gauche, le courrier et son circuit d'imputation à
 droite, avec les actions en boutons libellés.
 
-**Références.** Les mêmes que le parapheur ; Stripe, liste et détail.
+**Références.** Les mêmes que le signataire ; Stripe, liste et détail.
 
 ### Structure (organisation)
 
@@ -313,7 +313,7 @@ l'écran ; les chiffres clés en carrousel horizontal.
 |---|---|---|---|
 | UX-1 | Composants communs : en-tête de page compact, liste de synthèse sans champs vides, étiquette de statut unique, chronologie, chiffre clé avec repère, pluriels corrects, état vide des graphiques | Effet sur tous les écrans à la fois | Moyen |
 | UX-2 | Tableau de bord DG et Accueil fusionnés ; ordre information puis action ; tableau par direction réduit | La DG comprend la situation en dix secondes | Moyen |
-| UX-3 | Boîte à deux volets pour le parapheur et le courrier ; barre d'étapes des réunions et des conventions | Moins de clics pour viser, signer, imputer | Moyen à fort |
+| UX-3 | Boîte à deux volets pour le signataire et le courrier ; barre d'étapes des réunions et des conventions | Moins de clics pour viser, signer, imputer | Moyen à fort |
 | UX-4 | Onglets ramenés à cinq (projet, entité, portefeuille) ; matrice des risques ; calendrier des congés ; organigramme | Écrans plus lisibles | Moyen |
 | UX-5 | Téléphone : tableaux en cartes, bouton d'action flottant ; thème clair par défaut ; contrôle WCAG 2.2 (cibles de 24 px, alternative au glisser, focus visible) | Conformité RGAA 5 et usage mobile | Moyen |
 
@@ -387,7 +387,7 @@ Règles retenues :
 
 Écran témoin livré : l'Accueil de la direction (six cartes de chiffres, les directions, trois cartes de listes). Les
 autres écrans ont reçu l'habillage (couleurs, filets, rayons, barre latérale, police) mais gardent leur structure : ils
-se traitent un par un après accord, dans l'ordre Décisions, Courrier et Parapheur, Réunions, Mon entité, Projet,
+se traitent un par un après accord, dans l'ordre Décisions, Courrier et Signataire, Réunions, Mon entité, Projet,
 Portefeuille, RH et Congés.
 
 Compléments demandés le même jour :

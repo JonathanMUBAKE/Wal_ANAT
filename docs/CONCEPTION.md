@@ -25,7 +25,7 @@ numéroté et figé, chaque passage de main prévient quelqu'un, et l'IA propose
 
 | Question de la DG | Où la réponse se lit |
 | --- | --- |
-| Qu'ai-je à trancher ou à signer ? | Tableau de bord DG (décisions attendues, parapheur) |
+| Qu'ai-je à trancher ou à signer ? | Tableau de bord DG (décisions attendues, signataire) |
 | Qu'est-ce qui est en retard, et qui en répond ? | Tableau de bord DG (retards), dossiers |
 | Où en est l'exécution du plan de l'année ? | Plans de travail, avancement remonté des dossiers |
 | Qu'avons-nous promis, et à qui ? | Décisions, courrier, **conventions avec les partenaires** |
@@ -79,7 +79,7 @@ numéroté et figé, chaque passage de main prévient quelqu'un, et l'IA propose
                                                    ├ Activité : mandat, suites
                                                    Décisions (registre)
                                                    Réunions (registre des CR)
- SECRÉTARIAT : Parapheur (signe les actes) · Courrier (registre entrant / sortant)
+ SECRÉTARIAT : Signataire (signe les actes) · Courrier (registre entrant / sortant)
  SOCLE : Authentification · Droits · Journal · Paramétrage · Documents · Messagerie · Coéquipiers IA · Accès externe
 ```
 
@@ -90,7 +90,7 @@ Accueil · Mes tâches · Coéquipiers IA
 PILOTAGE            Tableau de bord DG · Portefeuille · Décisions · Réunions
 SUIVI-ÉVALUATION    Plans de travail · Indicateurs et risques
 PARTENARIATS        Partenaires · Conventions
-SECRÉTARIAT         Parapheur · Courrier
+SECRÉTARIAT         Signataire · Courrier
 ORGANISATION        Structure · Équipes · (Administration système)
 ```
 
@@ -125,7 +125,7 @@ Chaque module dit : **son rôle**, **ses objets**, **ses fonctionnalités** avec
 | Espace réservé à l'administrateur système | ✅ |
 | Référentiels : code stable, archivage, couleur, icône, propriétés, journalisés | ✅ |
 | Types d'activités, types d'entités (dont « représentation provinciale ») | ✅ |
-| Types de réunions, natures de documents du parapheur, unités des indicateurs | ⬜ |
+| Types de réunions, natures de documents du signataire, unités des indicateurs | ⬜ |
 | **Types et catégories de partenaires** (partie 4, lot PA1) | ✅ |
 | Types d'accords, natures de pièces de collaboration (lot PA2) | ✅ |
 | Délais administratifs en paramètres : convocation, compte rendu, réponse au courrier, mission (P5) | ⬜ |
@@ -220,14 +220,14 @@ l'**activité** (une représentation ou un engagement ponctuel).
 | Écrans de saisie des indicateurs (valeurs, sources, unités paramétrables) | ⬜ |
 | Registre des risques (cotation, mesures, responsable, rattachement à un dossier) | ⬜ |
 
-### 3.10 Secrétariat — Parapheur
+### 3.10 Secrétariat — Signataire
 
 | Fonctionnalité | État |
 | --- | --- |
 | Circuit avis → visa → signature, délégations | ✅ |
 | Document signé rattaché au projet | 🟡 |
 | Un document signé alimente le courrier sortant | ⬜ |
-| **Une convention signée au parapheur passe « en vigueur » dans le module Partenaires** (partie 4, lot PA2) | ✅ |
+| **Une convention signée au signataire passe « en vigueur » dans le module Partenaires** (partie 4, lot PA2) | ✅ |
 
 ### 3.11 Secrétariat — Courrier
 
@@ -308,7 +308,7 @@ nous ? ». Filtrer par l'un ou l'autre répond à des questions différentes de 
 | --- | --- | --- |
 | `partner_type` — Types de partenaires | Institution publique (ministère, administration) · Collectivité territoriale · Établissement public · Entreprise privée · Organisation internationale · Agence de coopération bilatérale · ONG / association · Université, centre de recherche · Autre | `public` (booléen : relève de l'État, utile aux statistiques) |
 | `partner_category` — Catégories | PTF (partenaire technique et financier) · Partenaire technique · Partenaire institutionnel · Partenaire de mise en œuvre · Prestataire · Mécène / sponsor | `financial` (booléen : peut porter des engagements financiers) · `supplier` (booléen : peut être choisi comme prestataire d'un contrat) |
-| `agreement_type` — Types d'accords | Convention de partenariat · Protocole d'accord (MoU) · Accord de financement · Convention de subvention · Contrat-cadre · Lettre d'intention | `binding` (booléen : juridiquement contraignant, exige la signature au parapheur) · `financial` (booléen : porte des engagements financiers) |
+| `agreement_type` — Types d'accords | Convention de partenariat · Protocole d'accord (MoU) · Accord de financement · Convention de subvention · Contrat-cadre · Lettre d'intention | `binding` (booléen : juridiquement contraignant, exige la signature au signataire) · `financial` (booléen : porte des engagements financiers) |
 | `partner_doc_nature` — Natures de pièces | Convention signée · Avenant · Lettre d'intention · Rapport d'activité · Rapport financier · Compte rendu · Correspondance · Fiche de présentation · Autre | `official` (booléen : figée dès son dépôt, ne se supprime pas) |
 
 Le **pays** et la **zone d'intervention** (provinces) se choisissent dans des listes fermées : pays (norme ISO) et
@@ -341,7 +341,7 @@ Une fiche créée par erreur et jamais citée peut être supprimée par un gesti
 
 ```
  En préparation ──▶ En négociation ──▶ En signature ──▶ En vigueur ──▶ Échu
-                                      (parapheur)          │
+                                      (signataire)          │
                                                            ├──▶ Résilié (motif)
                                                            └──▶ Avenant (nouvel acte lié)
 ```
@@ -349,7 +349,7 @@ Une fiche créée par erreur et jamais citée peut être supprimée par un gesti
 | État | Règle |
 | --- | --- |
 | **En préparation / En négociation** | Le texte et les engagements se modifient librement. *Construit (PA2) : un seul état « En préparation » couvre les deux ; la création d'un accord fait passer ses partenaires « En discussion ».* |
-| **En signature** | Le texte est soumis au parapheur (si le type est `binding`) ; plus modifiable sauf retour du circuit |
+| **En signature** | Le texte est soumis au signataire (si le type est `binding`) ; plus modifiable sauf retour du circuit |
 | **En vigueur** | Atteint à la signature (ou à la saisie de la date de signature pour un accord non contraignant). Numéro `CONV/AAAA/NNNN` attribué, **texte et pièce signée figés** |
 | **Échu** | Calculé à la date de fin si rien n'est fait ; alerte au point focal **90, 30 et 7 jours** avant (délais paramétrables, P5) |
 | **Résilié** | Motif et date obligatoires, réservé aux gestionnaires |
@@ -400,7 +400,7 @@ reprise (§ 4.11).
 | **Contrat de prestataire** | `consultant_name` (texte) | Cabinet = partenaire de catégorie `supplier` ; un consultant individuel reste un nom (ce n'est pas une organisation) |
 | **Courrier** | `correspondent` (texte) | Correspondant = partenaire (et contact facultatif) ; le courrier apparaît sur la fiche |
 | **Réunion** | Convoqués extérieurs (nom) | Partenaire(s) concerné(s) ; convoqués extérieurs = contacts du partenaire |
-| **Parapheur** | Documents signés | Un accord `binding` passe « en vigueur » à la signature ; la pièce signée est rangée dans l'accord |
+| **Signataire** | Documents signés | Un accord `binding` passe « en vigueur » à la signature ; la pièce signée est rangée dans l'accord |
 | **Décisions** | Rattachées à un dossier | Une décision peut viser un partenaire (ex. « suspendre la convention ») |
 | **Plans de travail** | Activités du plan | Un accord dit à quelles activités du plan il contribue ; le plan montre les financements attendus |
 | **Structure** | Entités | Le panneau d'une entité liste les partenaires qu'elle porte |
@@ -435,7 +435,7 @@ Règles complémentaires :
 | Partenaire « Clos » ou « Suspendu » | Plus proposé dans les sélecteurs ; aucun nouvel accord |
 | Accord en vigueur : texte, parties, montants des engagements figés | Toute modification passe par un **avenant** |
 | Numéro `CONV/AAAA/NNNN` attribué à l'entrée en vigueur, continu, jamais réutilisé | Registre des conventions |
-| Accord de type `binding` | Entre en vigueur seulement par la signature au parapheur |
+| Accord de type `binding` | Entre en vigueur seulement par la signature au signataire |
 | Engagement financier seulement si le partenaire a une catégorie `financial` **et** l'accord est d'un type `financial` | Refus sinon |
 | Somme des décaissements prévus ≤ montant de l'engagement ; reçu constaté une seule fois, par `partners.finance` | Refus sinon, tracé |
 | Financement d'un projet par un engagement : la somme affectée aux projets ≤ montant de l'engagement | Refus sinon |
@@ -500,7 +500,7 @@ Cas fictif : un bailleur propose d'appuyer l'élaboration des schémas provincia
 | 1. Enregistrer | Cellule de coopération | Fiche partenaire : nom, sigle, type « Agence de coopération bilatérale », catégories « PTF », contact principal, point focal | Contrôle des doublons ; état « Identifié » |
 | 2. Échanger | Point focal | Réunion programmée depuis la fiche, contacts convoqués ; compte rendu validé | État « En discussion » à l'ouverture de l'accord ; la réunion apparaît sur la fiche |
 | 3. Négocier | Point focal, juriste | Accord « Accord de financement » : objet, engagements (montant, tranches), activités du plan, obligations de rapport | Accord « En négociation » |
-| 4. Signer | DG, au parapheur | Visa du juriste et de la direction financière, signature | Accord « En vigueur », numéro `CONV/2026/0004`, texte figé, partenaire « Actif » ; décision inscrite au registre si la DG le demande |
+| 4. Signer | DG, au signataire | Visa du juriste et de la direction financière, signature | Accord « En vigueur », numéro `CONV/2026/0004`, texte figé, partenaire « Actif » ; décision inscrite au registre si la DG le demande |
 | 5. Mettre en œuvre | Responsable de projet | Projet financé : source = engagement du bailleur | Le projet affiche son financement ; le plan montre le financement attendu |
 | 6. Recevoir les fonds | Service financier | Constate chaque décaissement reçu | Engagé / reçu à jour sur la fiche et au tableau de bord |
 | 7. Rendre compte | Point focal | Rapport semestriel (tâche créée d'office), joint comme pièce `official` | Obligation close |
@@ -511,7 +511,7 @@ Cas fictif : un bailleur propose d'appuyer l'élaboration des schémas provincia
 | Lot | Contenu | Dépend de |
 | --- | --- | --- |
 | **PA1. L'annuaire** ✅ | Référentiels (types, catégories), fiche partenaire, états et cycle, contacts, points focaux, doublons et fusion, notes d'échange, liste filtrable (type, catégorie, état, recherche), droits, journal, matrice | — |
-| **PA2. Accords et pièces** ✅ | Types d'accords, fiche accord multi-parties, cycle de vie, registre `CONV/AAAA/NNNN`, avenants, pièces de collaboration par nature, passage au parapheur, alertes d'échéance | PA1 |
+| **PA2. Accords et pièces** ✅ | Types d'accords, fiche accord multi-parties, cycle de vie, registre `CONV/AAAA/NNNN`, avenants, pièces de collaboration par nature, passage au signataire, alertes d'échéance | PA1 |
 | **PA3. Les liens** ✅ | Partenaire choisi dans projets, activités, courrier, contrats, réunions (programmer depuis la fiche, contacts convoqués) ; onglets Dossiers, Réunions, Courrier, Historique ; écran de rapprochement de l'existant | PA1 |
 | **PA4. Engagements et financement** | Engagements, décaissements, financement des projets par source, lien au plan, cartes du tableau de bord DG | PA2 |
 | **PA5. IA** | Note de préparation, résumé de la relation, proposition d'accord à partir d'un scan, veille | PA2, Lot D souhaitable |

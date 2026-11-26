@@ -152,7 +152,7 @@ Il n'est pas répété ici ; seules les conséquences sur le système le sont.
 
 Trois faits cadrent le besoin.
 
-**L'Agence travaille sur registres.** Courrier, décisions, comptes rendus, conventions, parapheur : la
+**L'Agence travaille sur registres.** Courrier, décisions, comptes rendus, conventions, signataire : la
 matière première n'est pas la tâche mais l'acte écrit, numéroté, daté, signé, classé. Un outil de
 productivité ordinaire ne convient pas, parce qu'il ne garantit ni la continuité d'une série, ni la date
 d'un acte, ni la véracité d'une trace.
@@ -434,9 +434,9 @@ qui a écrit sa consigne en vigueur.
 | EX-TRA-020 à 024 | ➖ Aucune horloge de référence, aucun fuseau configuré | `services.ts:181-183` | S5.1, S5.2 |
 | EX-TRA-030 | ➖ Le fonctionnement hors connexion n'est pas traité | — | S5 |
 | EX-TRA-040 | ⚠️ « Mes tâches » ne porte que les tâches et les livrables | — | F1.7 |
-| EX-TRA-050 | ❌ Quatre actes engageants sont muets | `Parapheur.tsx`, `ProjectDossier.tsx:861` | F3.1 |
+| EX-TRA-050 | ❌ Quatre actes engageants sont muets | `Signataire.tsx`, `ProjectDossier.tsx:861` | F3.1 |
 | EX-TRA-052 | ⚠️ Tenue pour le tiroir et l'éditeur de compte rendu ; pas pour les autres formulaires de page | `276f78b` | F4.4 |
-| EX-TRA-061 | ❌ « Parapheur » employé 232 fois ; « rapporteur » désigne l'intervenant | `Meetings.tsx:1968` | F5.1, M2.3 |
+| EX-TRA-061 | ❌ « Signataire » employé 232 fois ; « rapporteur » désigne l'intervenant | `Meetings.tsx:1968` | F5.1, M2.3 |
 | EX-TRA-062 | ❌ « Décision » désigne quatre objets ; « Signataire » en désignera deux | `Pilotage.tsx:348` | F5.2, F5.3 |
 | EX-TRA-070 | ❌ 144 boutons et 91 champs hors des briques | — | F1.1, F1.2 |
 | EX-TRA-072 | ✅ Zéro manquement, vérifié le 25/11 sur `main` | audit `axe-core` | — |
@@ -822,8 +822,8 @@ personne qui signe un accord.
 | EX-SIG-030 | ➖ | Un courrier n'entre jamais au signataire | `registers.ts` | M1.6 |
 | EX-SIG-031 | ➖ | *idem* ; l'annotation se saisit pendant l'imputation | `registers.ts:296-345` | M1.6 |
 | EX-SIG-033 | ❌ | La résiliation laisse l'avenant au statut `signature` ; il ne peut plus ni entrer en vigueur, ni être supprimé, ni être rejeté | `agreements.ts:780-810`, `569-574`, `681` | S3.1 |
-| EX-SIG-040 | ❌ | « Enregistrer le brouillon », « Lancer le circuit » et « Approuver » sont muets | `Parapheur.tsx` | F3.1 |
-| EX-SIG-041 | ❌ | Le mot « parapheur » est employé 232 fois ; « Signataire » désigne déjà la personne dans l'écran des accords | `Agreements.tsx:893` | F5.1, F5.2 |
+| EX-SIG-040 | ❌ | « Enregistrer le brouillon », « Lancer le circuit » et « Approuver » sont muets | `Signataire.tsx` | F3.1 |
+| EX-SIG-041 | ❌ | Le mot « signataire » est employé 232 fois ; « Signataire » désigne déjà la personne dans l'écran des accords | `Agreements.tsx:893` | F5.1, F5.2 |
 
 *Les exigences absentes de ce tableau n'ont pas été confrontées au code : leur état n'est pas établi.*
 
@@ -3118,7 +3118,7 @@ intervention sans exigence est un travail dont on n'a pas dit pourquoi on le fai
 | **Pour attribution** | Formule administrative française pour *pour traitement* ; écartée ici pour éviter la confusion avec les fiches d'attributions. |
 | **Rapporteur** | Celui qui programme une réunion, prend note et rédige le compte rendu. Il n'y décide rien. |
 | **Réunion des directions** | La réunion hebdomadaire rassemblant directions et cellules. Jamais « comité de direction ». |
-| **Signataire** | Le circuit par lequel un document recueille visas puis signature. En France : *parapheur*. |
+| **Signataire** | Le circuit par lequel un document recueille visas puis signature. En France : *signataire*. |
 | **Visa** | L'accord d'une étape intermédiaire d'un circuit ; il n'engage pas l'Agence. |
 
 ---

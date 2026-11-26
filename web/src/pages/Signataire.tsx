@@ -100,7 +100,7 @@ const STATE: Record<DocStatus, { label: string; tone: Tone }> = {
 const ACTION = { avis: "Avis", visa: "Visa", signature: "Signature" };
 const fail = (e: unknown) => toast.error((e as Error).message);
 
-export function ParapheurPage() {
+export function SignatairePage() {
   const [tab, setTab] = useState<
     "to_sign" | "mine" | "all" | "dg" | "delegations"
   >("to_sign");
@@ -116,8 +116,8 @@ export function ParapheurPage() {
     <div className="min-h-full">
       <PageHeader
         Icon={FileSignature}
-        crumbs={["Secrétariat", "Parapheur"]}
-        title="Parapheur"
+        crumbs={["Secrétariat", "Signataire"]}
+        title="Signataire"
         subtitle="Chaque document suit son circuit dans l'ordre. Son contenu est scellé dès l'entrée dans le circuit."
         actions={
           <Button
@@ -137,7 +137,7 @@ export function ParapheurPage() {
           { id: "mine", label: "Mes documents" },
           { id: "all", label: "Tous mes circuits" },
           ...(cabinet
-            ? [{ id: "dg" as const, label: "Parapheur de la DG" }]
+            ? [{ id: "dg" as const, label: "Documents de la DG" }]
             : []),
           { id: "delegations", label: "Délégations" },
         ]}
@@ -785,7 +785,7 @@ function Delegations() {
   });
   return (
     <div className="space-y-4">
-      <Section title="Déléguer mon parapheur en cas d'absence (30 jours au plus)">
+      <Section title="Déléguer ma signature en cas d'absence (30 jours au plus)">
         <div className="grid items-end gap-3 p-4 sm:grid-cols-[1fr_150px_150px_170px_auto]">
           <Field label="Délégataire">
             {(a) => (

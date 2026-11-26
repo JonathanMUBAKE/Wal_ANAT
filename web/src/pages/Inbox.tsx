@@ -50,7 +50,7 @@ const FILTERS: [string, string][] = [
   ["reunions", "Réunions"],
   ["courrier", "Courrier"],
   ["decisions", "Décisions"],
-  ["parapheur", "Parapheur"],
+  ["signataire", "Signataire"],
   ["equipe", "Équipe"],
   ["projets", "Projets"],
   ["partenariats", "Partenariats"],

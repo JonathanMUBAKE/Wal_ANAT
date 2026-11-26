@@ -328,6 +328,43 @@ Mais deux mécanismes qui portent le même mot sur un écran finissent par être
 qui clique. Dans la console, ils ne porteront jamais le même mot : *archivé* d'un côté, *au coffre*
 de l'autre.
 
+### Vérifié sur les deux bases, et deux précisions
+
+L'agent serveur n'a pas approuvé la proposition : il l'a **éprouvée**. L'Agence tourne sur PGlite
+en local et en démonstration, sur PostgreSQL en production, et une divergence sur
+`information_schema` aurait donné un coffre qui marche d'un côté et pas de l'autre.
+
+Les quatre vues nécessaires — `table_constraints`, `key_column_usage`,
+`constraint_column_usage`, `referential_constraints` — répondent sur PGlite, et `delete_rule` dit
+bien `CASCADE`. **L'approche tient dans les deux environnements.**
+
+Il ajoute deux précisions d'ingénierie, toutes deux justes :
+
+- **le graphe se lit une fois au démarrage**, pas à chaque suppression — quatre jointures par clic
+  coûteraient cher, et le schéma ne change qu'aux migrations ;
+- **la photographie suit le sous-arbre en profondeur** : une cascade en entraîne une autre.
+  Supprimer un projet emporte ses tâches, qui emportent leurs commentaires, qui emportent leurs
+  pièces jointes. Il faut descendre jusqu'au bout, et donc **borner**.
+
+### Que fait-on quand le sous-arbre dépasse la borne ?
+
+C'est la seule question qui reste dans ce mécanisme, et elle se décide mal par défaut. La réponse
+qui vient naturellement — photographier ce qu'on peut, journaliser un avertissement, supprimer
+quand même — **est exactement la faute que nous venons de passer deux jours à éviter** : une
+capture partielle et silencieuse, un écran qui dira « restauré » en rendant une coquille.
+
+**Au-delà de la borne, la suppression se refuse.** Pas de troncature, pas d'avertissement qu'on
+lira plus tard. `supprimer()` rend la main en disant ce qu'il aurait fallu photographier et
+combien, et l'opérateur passe par une procédure dédiée — qui est, elle, un geste du registre, avec
+son double regard.
+
+Le cas réel est facile à nommer : **supprimer une organisation** emporte à peu près tout le dépôt
+par cascade. C'est précisément le geste qui ne doit pas se faire d'un clic en photographiant « les
+dix mille premières lignes ».
+
+C'est le même principe que partout ailleurs ici : mieux vaut refuser que faire à moitié sans le
+dire.
+
 ### La découpe qu'il propose, et que je retiens
 
 Mon plan disait : le lot 12 après le lot 8. Sa nuance est juste — **le point de passage et le

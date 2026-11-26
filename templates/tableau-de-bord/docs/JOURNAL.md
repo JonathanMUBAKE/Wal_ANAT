@@ -41,14 +41,25 @@
 | 26 nov. 2026 | console | Écrit `08-format-des-evenements.md`. **Une chaîne scellée ne se migre pas** : l'enveloppe doit donc prévoir dès la première entrée les champs des lots 9, 12 et 13 — `country`, `vault`, `on_behalf_of` — vides mais présents. Un champ vide pendant six mois ne coûte rien ; un champ absent coûte six mois d'histoire d'une autre forme. |
 | 26 nov. 2026 | console | **Vocabulaire des écrans arrêté.** Le document de vision promet une « preuve irréfutable » et la « non-répudiation » ; le mécanisme tient « intègre depuis sa réception ». On écrira donc le second et jamais le premier. La vraie non-répudiation demanderait que chaque agent signe ses actes avec sa propre clé — quatre cents clés à distribuer et renouveler, disproportionné ici. |
 | 26 nov. 2026 | console | Trois précisions sur ses points : l'expéditeur devrait vider les actes `importante` d'abord, pour qu'une liaison lente retarde un commentaire plutôt qu'une décision ; la chaîne scelle dans l'ordre d'arrivée et ne prétend pas attester l'ordre des faits ; un acte en retard ne se range pas à sa place, et un trou de séquence s'affiche comme une alerte. |
+| 26 nov. 2026 | serveur | **Six corrections à l'enveloppe, toutes relevées dans son code.** `severity` a trois valeurs et non deux ; `target_id` manquait — le **compte visé**, distinct de l'objet ; `corrects` manquait aussi ; `ip` est vide pour tous les actes métier et `user_agent` n'est stocké nulle part ; il y a **171 genres**, pas 137 ; et le vocabulaire doit être corrigé **avant** le premier scellement. Vérifiées une à une : exactes six fois sur six. |
+| 26 nov. 2026 | console | **Enveloppe v2.** Les six retenues, plus une septième que j'ajoute : `audit.ts:247` porte `signature: "Parapheur"` en **nom de catégorie** — scellé sur bien plus d'entrées qu'un libellé isolé. |
+| 26 nov. 2026 | console | **Règle tirée de sa sixième correction** : tout ce que l'application rédige en prose et qui sera scellé doit être arrêté avant le premier scellement. Et pour mes écrans : regrouper, filtrer et compter se font toujours sur `kind`, **jamais sur `label`** — le libellé est ce que l'application disait à ce moment-là, pas une clé. |
+| 26 nov. 2026 | serveur | **Deux limites signalées.** L'ordre entre deux pools n'est pas établissable : horloge locale sans fuseau, six pools, deux fuseaux. `sequence` tient l'ordre dans une source, rien de plus — la console affichera la dérive de chaque pool plutôt que de laisser un tri suggérer une chronologie. Et un nom scellé ne s'efface plus. |
+| 26 nov. 2026 | console | **Proposé le chiffrement par instantané pour le coffre.** Le journal garde les noms — une administration garde la trace de ses actes. Mais le contenu des documents supprimés est chiffré avec une clé propre : le jour où il doit cesser d'être lisible, **on détruit la clé**. L'entrée reste dans la chaîne, son empreinte ne change pas, la vérification passe toujours. On n'efface pas l'histoire, on rend une pièce inaccessible — et ce geste est lui-même journalisé. **Décision de Jonathan.** |
 | 26 nov. 2026 | les deux | **Incident d'arbre partagé.** Son commit `0d38996` est tombé sur `centre-de-commande` parce que j'avais basculé de branche pendant qu'il écrivait. Rien n'est déplacé — ses deux fichiers partent avec ma branche, il les reprendra sur `main`. Une seule copie du dépôt, une seule branche sortie : regarder où l'on est avant chaque commit. |
 
 ---
 
 ## En attente
 
-- ~~L'isolement de la console~~ — **tranché le 26 novembre : service séparé, avec sa propre base.**
-  Plus aucune décision en attente de Jonathan.
+- ~~L'isolement de la console~~ — **tranché : service séparé, avec sa propre base.**
+- **Jonathan** : la **mémoire permanente des noms**. Le journal scellé devient un stock de noms
+  réels d'agents qu'aucune demande ne pourra en retirer. Défendable pour le journal des actes ;
+  à trancher pour le contenu du coffre, où le chiffrement par instantané permettrait de détruire
+  une clé plutôt que de réécrire l'histoire.
+- **Jonathan** : la **promesse des écrans**. Le document de vision annonce « preuve irréfutable »
+  et « non-répudiation » ; le mécanisme tient « intègre depuis sa réception ». Le vocabulaire
+  retenu est le second.
 - ~~La rétention des journaux~~ — **tranchée par la vision** : aucune purge, journal inaltérable.
   Reste à distinguer « ne jamais effacer » de « tout garder dans la même table » : l'archivage vers
   un stock froid est le lot 8.

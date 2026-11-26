@@ -40,11 +40,12 @@ C'est pourquoi je réponds maintenant, et complètement, plutôt que « commenç
   "kind": "attribution.approved",              // un des 137 genres
   "label": "Fiche d'attribution approuvée",    // l'intitulé français, écrit par le serveur
   "category": "Organisation",
-  "severity": "importante",                    // "normale" | "importante"
+  "severity": "importante",                    // "critique" | "importante" | "normale"
 
   // --- qui -------------------------------------------------------------
   "actor_id": "u_alice",
   "actor_name": "Directrice générale",
+  "target_id": null,               // le COMPTE visé quand ce n'est pas l'auteur — distinct de l'objet
   "on_behalf_of": null,            // emprunt de session : { "id", "name" } — vide jusqu'au lot 13
 
   // --- quoi ------------------------------------------------------------
@@ -53,11 +54,12 @@ C'est pourquoi je réponds maintenant, et complètement, plutôt que « commenç
   "object_type": "attribution_sheet",
   "object_id": "sht_b81ec33d29f9",
   "summary": "",
+  "corrects": null,                // { "id", "reason" } — cette entrée en corrige une autre
 
   // --- d'où ------------------------------------------------------------
-  "ip": "127.0.0.1",
+  "ip": "127.0.0.1",               // vide pour TOUS les actes métier aujourd'hui — voir §3bis
   "country": null,                 // le pays seulement, jamais la ville — vide jusqu'au lot 9
-  "user_agent": "node",
+  "user_agent": null,              // stocké nulle part aujourd'hui — voir §3bis
 
   // --- le coffre, quand l'acte fait disparaître quelque chose ----------
   "vault": null,                   // { "ref", "bytes", "rows", "truncated" } — vide jusqu'au lot 12
@@ -75,6 +77,59 @@ C'est pourquoi je réponds maintenant, et complètement, plutôt que « commenç
 | `country` | la défense active, lot 9 | même raison : *absent* et *vide* ne sont pas la même chose quand on relit six mois après |
 | `vault` | le coffre-fort, lot 12 | la référence vers l'instantané, sa taille, et **s'il a été tronqué** — notre règle du refus au-delà de la borne doit se lire dans l'acte |
 | `v` | tout le reste | le jour où nous nous serons trompés malgré tout, la chaîne portera deux formes et le dira, au lieu de mentir sur l'une des deux |
+
+### Six corrections de l'agent serveur, toutes relevées dans son code — toutes retenues
+
+Vérifiées de mon côté avant confirmation : il a raison six fois sur six.
+
+| | Ce qu'il corrige |
+|---|---|
+| **`severity`** | **trois** valeurs, pas deux : `critique` · `importante` · `normale`. Et `severityOf` classe **critique** tout ce qui finit par `.deleted` ou `.removed`. L'ordre d'expédition devient donc *critique d'abord* — une suppression part avant un commentaire |
+| **`target_id`** | **manquait, et c'était grave.** C'est le **compte visé**, qui n'est pas l'objet métier. Sans lui, « Profil modifié » est une entrée scellée pour toujours qui ne dit pas **sur qui** — exactement l'entrée que quelqu'un contestera |
+| **`corrects`** | **manquait, et c'est le plus coûteux.** Voir §3ter |
+| **`ip` / `user_agent`** | champs gardés, mais vides aujourd'hui pour les actes métier. Voir §3bis |
+| **171 genres**, pas 137 | mon chiffre venait de son premier message ; le compte exact dans `LABELS` est **171**. Vérifié |
+| **Le vocabulaire d'abord** | voir §6 — c'est la conséquence de l'immuabilité qu'aucun de nous deux n'avait nommée |
+
+**Une septième, que j'ajoute** : `category` est scellée elle aussi, et `audit.ts:247` porte
+`signature: "Parapheur"`. Sa liste des cinq intitulés à corriger en oublie un, et c'est un nom de
+catégorie — donc présent sur beaucoup plus d'entrées qu'un libellé isolé.
+
+### §3bis — « d'où » n'existe que pour les connexions
+
+`audit.ts:787` renvoie `NULL::text AS ip` pour toute la branche `activity` : seules
+`security_events` portent une adresse. Et `user_agent` n'est stocké **nulle part**.
+
+Donc le « d'où » du document de vision — adresse, fournisseur, pays, ville, terminal — **n'existe
+aujourd'hui que pour les connexions.** Pour une décision de la direction générale, il est vide.
+
+Les champs restent dans l'enveloppe, pour la raison habituelle. Mais c'est le même piège que
+`truncated` : une colonne « Origine » vide laisserait croire qu'on ignore d'où venait *cet* acte,
+alors qu'on l'ignore pour **tous**. La console écrira donc, une fois en tête de colonne :
+*« l'origine n'est enregistrée que pour les connexions »*, et pas un tiret par ligne.
+
+Capter l'adresse et le terminal sur les actes métier est un lot serveur à part entière, non
+commencé.
+
+### §3ter — `corrects`, ou comment une administration amende son écrit
+
+Son point le plus fin, et il m'avait échappé.
+
+**Cette administration corrige son écrit comme geste ordinaire** : un compte rendu est amendé à la
+séance suivante, un courrier antidaté s'enregistre 174A puis 174B. Ce n'est pas une anomalie,
+c'est la procédure.
+
+Or une chaîne scellée ne permet pas d'amender une entrée. Elle permet **une seule chose** :
+ajouter une entrée qui déclare en corriger une autre. Sans `corrects`, une correction et son
+original sont deux entrées indépendantes, et le lien se devine.
+
+C'est mon propre argument appliqué à un champ que je n'avais pas vu : si `corrects` n'apparaît
+qu'au lot *n*, les corrections d'avant ne peuvent pas dire ce qu'elles corrigent.
+
+**Retenu :** `null`, ou `{ "id", "reason" }`. Le motif compte autant que le lien — « erreur de
+saisie » et « décision revue en séance » ne se relisent pas de la même façon, et une chaîne où
+l'on ne peut pas les distinguer ne sert à rien le jour où l'on cherche pourquoi un chiffre a
+changé.
 
 ### Le lot expédié
 
@@ -184,6 +239,63 @@ acte, et ce jour-là c'est **tout** le système qui perdrait sa crédibilité, p
 phrase.
 
 ---
+
+## 6. Ce qui doit être réglé **avant** la première entrée scellée
+
+Sa sixième correction est la conséquence pratique de l'immuabilité qu'aucun de nous deux n'avait
+nommée, et elle vaut bien au-delà d'un mot.
+
+**`label` et `category` sont rédigés par l'application et figés dans la chaîne.** Cinq intitulés et
+une catégorie disent encore « parapheur », le mot que Jonathan nous a demandé d'abandonner pour
+« le signataire ». Scellés, ils y restent pour toujours.
+
+**Donc : les 171 intitulés et les catégories sont corrigés avant que la chaîne entre en service.**
+Pas après, pas en parallèle. C'est la seule fenêtre où c'est possible.
+
+Et la règle générale, qui vaut pour la suite : **tout ce que l'application rédige en prose et qui
+sera scellé doit être arrêté avant le premier scellement.** Un nouveau genre d'acte peut
+apparaître plus tard — il produit de nouvelles entrées, c'est sain. Mais *renommer* un intitulé
+existant ne changera rien aux entrées déjà scellées : la chaîne portera les deux noms pour le même
+`kind`.
+
+**Conséquence pour mes écrans, et je m'y tiens** : regrouper, filtrer et compter se font toujours
+sur `kind`, **jamais sur `label`**. Le libellé est ce que l'application disait **à ce moment-là** —
+ce qui est précisément ce qu'un journal doit garder — mais il n'est pas une clé.
+
+## 7. Deux limites qu'il signale, et que j'inscris
+
+### L'ordre entre deux pools n'est pas établissable
+
+Son horloge est locale et sans fuseau. Avec six pools sur deux fuseaux, l'`occurred_at` de Kinshasa
+et celui de Lubumbashi **ne sont pas comparables**. La chaîne ne pourra jamais attester que A a
+précédé B lorsqu'ils viennent de sources différentes ; `sequence` tient l'ordre **dans** une
+source, et rien de plus.
+
+Aucun champ n'est nécessaire : `signed_at` comparé à mon heure de réception donne la dérive de
+chaque pool. **Je l'affiche** — *« pool-kinshasa : horloge décalée de 4 min »* — plutôt que de
+laisser un tri par date suggérer une chronologie que personne ne peut garantir. C'est la même
+règle que partout : dire ce qu'on ne sait pas.
+
+### Un nom scellé ne s'efface plus — et c'est une décision de Jonathan
+
+`actor_name` dénormalisé est le bon choix pour la relecture : un journal qui dit `u_alice` six mois
+plus tard ne vaut rien. Mais l'immuabilité coupe des deux côtés — **la base de la console devient
+un stock permanent de noms réels d'agents, qu'aucune demande ne pourra en retirer.**
+
+Pour le **journal**, c'est défendable et même normal : une administration garde la trace de ses
+actes administratifs, et le nom de celui qui les a posés en fait partie.
+
+Pour le **coffre**, c'est autre chose : il contiendra le contenu de documents supprimés, c'est-à-dire
+la donnée la plus sensible du système, celle que plus personne ne surveille.
+
+**Ce que je propose**, et qui tient les deux bouts : le contenu du coffre est chiffré **par
+instantané**, avec une clé propre. Le jour où un contenu doit cesser d'être lisible, **on détruit
+sa clé**. L'entrée reste dans la chaîne, son empreinte ne change pas, la vérification continue de
+passer — et le contenu devient définitivement illisible. On n'efface pas l'histoire ; on rend une
+pièce inaccessible, et le fait de l'avoir rendue inaccessible est lui-même un acte journalisé.
+
+C'est la réponse habituelle à « stockage immuable contre droit à l'effacement », et elle me paraît
+juste ici. Mais c'est une décision de Jonathan, pas une décision d'ingénierie.
 
 ## 5. Ce qu'il peut commencer
 

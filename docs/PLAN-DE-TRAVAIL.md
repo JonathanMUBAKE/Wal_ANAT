@@ -20,6 +20,18 @@ vérifier que c'est fait. Cochez les cases au fil de l'eau et commitez ce fichie
 6. **Pousser** la branche sur `origin`, puis noter dans la section « Journal » en bas de ce fichier ce qui a été fait.
 7. **Langue** : interface, messages d'erreur et commits en français.
 8. **Ne jamais commiter** de secret (clé API, mot de passe) : ils vont dans `.env` (ignoré par git).
+9. **Devant tout chiffre, demander : où ai-je compté, et qu'est-ce qui n'était pas là ?**
+   C'est la faute caractéristique de cet outil, rencontrée trois fois le 25 et le 26 novembre 2026, et
+   elle a chaque fois la même forme : **une mesure littéralement vraie qui laisse croire autre chose.**
+   - « 144 boutons hors de la brique » — comptées les balises `<button>`, pas les boutons. Presque
+     aucune n'en était un.
+   - « Ce profil a cinquante-huit droits » — le champ est *calculé* pour un propriétaire, pas accordé.
+     L'écran racontait une décision qui n'avait pas eu lieu.
+   - « Aucune suppression en cascade » — cherchées dans le code TypeScript, où il n'y en a aucune.
+     Il y en a **109**, dans les migrations SQL, que le code ne mentionne jamais.
+
+   La règle vaut pour ce qu'on écrit à l'écran autant que pour ce qu'on écrit dans un rapport : un total
+   calculé sur une liste tronquée est un mensonge arithmétique, même si chaque ligne est vraie.
 
 Commandes utiles : `npm install` · `npm run build` · `npm start` · `npm run dev` (rechargement à chaud) ·
 `npm test` · `npm run typecheck` · `npm run e2e`.

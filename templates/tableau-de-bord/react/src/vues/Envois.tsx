@@ -6,6 +6,9 @@ import { LigneAssistant } from "../composants/AssistantIA";
 import { Definitions, useUI } from "../composants/Superpositions";
 import { exporterCSV, fmt, normaliser } from "../lib/format";
 import { envois as envoisInitiaux, type Envoi } from "../lib/communication";
+import { Empechement, useDistant } from "../composants/Distant";
+import { journalMessagerie } from "../lib/api/anat";
+import { useSource } from "../lib/api/source";
 
 const TON = {
   "délivré": "bon", "lu": "bon", "envoyé": "accent", "en attente": "neutre", "échec": "critique",
@@ -16,7 +19,26 @@ const ICONE = { "Messagerie": "enveloppe", "SMS": "telephone", "WhatsApp": "disc
    arrivé. C'est la page qu'on ouvre quand un agent dit « je n'ai rien reçu ». */
 export function Envois() {
   const ui = useUI();
-  const [envois, poserEnvois] = useState<Envoi[]>(envoisInitiaux);
+  const { source } = useSource();
+  const direct = source === "application";
+  const distant = useDistant(journalMessagerie);
+  const [inventes, poserInventes] = useState<Envoi[]>(envoisInitiaux);
+  /* Le journal d'envoi de l'application ne porte que la messagerie : ni SMS,
+     ni WhatsApp, qui n'existent pas chez elle. Une liste vide ici veut dire
+     « rien n'est parti », pas « on n'a pas pu lire » — la différence se voit
+     au bandeau au-dessus. */
+  const envois: Envoi[] = direct
+    ? (distant.donnees ?? []).map((e, i) => ({
+        id: e.id ?? `env-${i}`,
+        quand: e.created_at ? new Date(e.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "—",
+        canal: "Messagerie",
+        destinataire: e.to ?? "—",
+        objet: e.subject ?? "—",
+        etat: e.status === "sent" ? "remis" : e.error ? "échoué" : "envoyé",
+        motif: e.error ?? "",
+      }) as unknown as Envoi)
+    : inventes;
+  const poserEnvois = direct ? (() => { /* le serveur fait foi */ }) as typeof poserInventes : poserInventes;
   const [q, poserQ] = useState("");
   const [canal, poserCanal] = useState("");
   const [etat, poserEtat] = useState("");
@@ -86,6 +108,24 @@ export function Envois() {
             enfants="Exporter" />
         }
       />
+
+      {direct && (
+        <>
+          <div className="mb-4">
+            <Empechement etat={distant.etat} echec={distant.echec} relancer={distant.relancer} />
+          </div>
+          {distant.etat === "ok" && (
+            <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-surface-2 border border-bordure">
+              <Icone nom="info" className="text-encre-3 mt-[2px]" />
+              <p className="flex-1 min-w-[min(100%,260px)] text-[13px] text-encre-2">
+                <b>{envois.length === 0 ? "Aucun envoi enregistré." : `${envois.length} envois lus sur l'application.`}</b>{" "}
+                Seule la messagerie est suivie : l'application n'envoie ni SMS ni WhatsApp. Une liste vide
+                signifie ici que rien n'est parti — pas que la lecture a échoué, ce qui serait dit autrement.
+              </p>
+            </div>
+          )}
+        </>
+      )}
 
       <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
         <Carte className="pas-carte" enfants={<LigneStat etiquette="Envois affichés" valeur={fmt(envois.length)} />} />

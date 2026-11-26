@@ -4,6 +4,34 @@ import { Icone } from "../composants/Icone";
 import { useUI } from "../composants/Superpositions";
 import { cx, fmt, normaliser } from "../lib/format";
 import { agentsIA as agentsInitiaux, executionsAgents, modeles, type AgentIA } from "../lib/intelligence";
+import { Empechement, useDistant } from "../composants/Distant";
+import { agentsIA, type AgentIADistant } from "../lib/api/anat";
+import { useSource } from "../lib/api/source";
+
+/* Les coéquipiers IA déclarés dans ANAT Pilotage : leur rôle et leurs
+   instructions, tels que l'organisation les a écrits.
+
+   Ce que l'application ne dit pas : le modèle employé, le coût, les quotas,
+   les plafonds de dépense. C'est le lot « gouvernance de l'IA », et tant
+   qu'il n'existe pas ces chiffres restent du gabarit. En revanche la règle
+   qui compte est déjà tenue côté serveur : l'IA propose, un humain décide. */
+function depuisAgent(a: AgentIADistant): AgentIA {
+  return {
+    id: a.id,
+    nom: a.name,
+    role: a.ai_role ?? a.title ?? "Coéquipier IA",
+    etat: a.status === "active" ? "actif" : "suspendu",
+    modele: "non déclaré",
+    instructions: a.ai_instructions ?? "",
+    documents: [],
+    outils: [],
+    executions30j: 0,
+    cout30j: 0,
+    tauxValidation: 0,
+    derniere: new Date(a.created_at).toLocaleDateString("fr-FR"),
+    garde: "L'agent propose, un humain décide. Les garde-fous vivent hors des instructions.",
+  } as unknown as AgentIA;
+}
 
 const TON = { "actif": "bon", "en essai": "vigilance", "suspendu": "neutre" } as const;
 
@@ -13,7 +41,14 @@ const TON = { "actif": "bon", "en essai": "vigilance", "suspendu": "neutre" } as
    réinterprète ; une liste d'outils autorisés, non. */
 export function AgentsIA() {
   const ui = useUI();
-  const [agents, poserAgents] = useState<AgentIA[]>(agentsInitiaux);
+  const { source } = useSource();
+  const direct = source === "application";
+  const distant = useDistant(agentsIA);
+  const [inventes, poserInventes] = useState<AgentIA[]>(agentsInitiaux);
+  const agents: AgentIA[] = direct && distant.donnees?.length
+    ? distant.donnees.map(depuisAgent)
+    : inventes;
+  const poserAgents = direct ? (() => { /* le serveur fait foi */ }) as typeof poserInventes : poserInventes;
   const [choisi, poserChoisi] = useState<AgentIA>(agentsInitiaux[0]);
   const [onglet, poserOnglet] = useState("instructions");
   const [q, poserQ] = useState("");
@@ -90,6 +125,25 @@ export function AgentsIA() {
           </>
         }
       />
+
+      {direct && (
+        <>
+          <div className="mb-4">
+            <Empechement etat={distant.etat} echec={distant.echec} relancer={distant.relancer} />
+          </div>
+          {distant.etat === "ok" && (
+            <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-surface-2 border border-bordure">
+              <Icone nom="robot" className="text-accent mt-[2px]" />
+              <p className="flex-1 min-w-[min(100%,260px)] text-[13px] text-encre-2">
+                <b>{distant.donnees?.length ?? 0} coéquipiers IA déclarés dans l'application</b>, avec leur rôle
+                et leurs instructions tels que l'organisation les a écrits. Le modèle employé, le coût et les
+                quotas ne sont pas exposés : ces chiffres-là restent du gabarit jusqu'au lot de gouvernance de
+                l'IA. La règle qui compte, elle, est déjà tenue côté serveur — l'IA propose, un humain décide.
+              </p>
+            </div>
+          )}
+        </>
+      )}
 
       <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
         <Carte className="pas-carte" enfants={<LigneStat etiquette="Agents déclarés" valeur={String(agents.length)} />} />

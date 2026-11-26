@@ -106,3 +106,31 @@ export function Tronquee({ combien }: { combien: number }) {
     </div>
   );
 }
+
+/* =========================================================================
+   Les écrans qui ne sont pas branchés doivent le dire eux-mêmes.
+
+   C'est posé une seule fois, dans le routeur, plutôt que répété dans vingt
+   fichiers : la liste des écrans branchés est la seule chose à tenir à jour,
+   et un écran qu'on oublie d'y inscrire se signale comme gabarit — l'erreur
+   par défaut est donc celle qui ne ment pas.
+   ========================================================================= */
+export const ECRANS_BRANCHES = new Set([
+  "apercu", "sessions", "utilisateurs", "droits", "audit",
+  "dormance", "gestes", "parametres", "agents", "canaux", "envois", "activite",
+]);
+
+export function BandeauGabarit({ cle }: { cle: string }) {
+  const { source } = useSource();
+  if (source !== "application" || ECRANS_BRANCHES.has(cle)) return null;
+  return (
+    <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-surface-2 border border-bordure border-dashed">
+      <Icone nom="boite" className="text-encre-3 mt-[2px]" />
+      <p className="flex-1 min-w-[min(100%,260px)] text-[13px] text-encre-2">
+        <b>Cet écran est un gabarit.</b> Tout ce qu'il affiche est inventé : ANAT Pilotage n'expose
+        rien de comparable, et c'est normal — il montre ce qu'une console sait faire pour un autre
+        genre de système, un serveur loué ou un cluster. Rien ici ne décrit votre installation.
+      </p>
+    </div>
+  );
+}

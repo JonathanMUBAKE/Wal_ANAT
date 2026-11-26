@@ -6,6 +6,44 @@ import { TableauDonnees, type Colonne } from "../composants/TableauDonnees";
 import { Definitions, useUI } from "../composants/Superpositions";
 import { cx, exporterCSV, normaliser } from "../lib/format";
 import { actionsCritiques as gestesInitiaux, reglesGestes, type ActionCritique, type CategorieGeste } from "../lib/exploitation";
+import { Empechement, useDistant } from "../composants/Distant";
+import { evenements, type EvenementSecurite } from "../lib/api/anat";
+import { useSource } from "../lib/api/source";
+
+/* Les événements de sécurité d'ANAT Pilotage — connexions, échecs,
+   verrouillages, droits changés.
+
+   Ce que l'application ne porte pas : ni lieu, ni appareil, ni règle de
+   détection, ni niveau d'inhabituel. Ces colonnes restent vides plutôt que
+   devinées. Et l'ancienneté a une limite dure : passé un an, ces événements
+   sont effacés par l'application. Le journal scellé du centre de commande est
+   précisément ce qui gardera les plus anciens. */
+const CATEGORIES: Record<string, string> = {
+  "login.success": "connexion", "login.failed": "connexion", "login.locked": "connexion",
+  "mfa.enabled": "droits", "mfa.disabled": "droits", "password.changed": "droits",
+};
+
+function depuisEvenement(e: EvenementSecurite): ActionCritique {
+  const quand = new Date(e.created_at);
+  return {
+    id: e.id,
+    quand: quand.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
+    minutes: Math.round((Date.now() - +quand) / 6e4),
+    categorie: (CATEGORIES[e.kind] ?? "autre") as ActionCritique["categorie"],
+    libelle: e.kind,
+    cible: e.user_name ?? "—",
+    volume: "—",
+    auteur: e.actor_name ?? e.user_name ?? "le système",
+    role: "—",
+    ip: e.ip ?? "—",
+    lieu: "—",
+    appareil: "—",
+    regle: "—",
+    niveau: e.kind.includes("failed") || e.kind.includes("locked") ? "alerte" : "à surveiller",
+    justification: "",
+    etat: "vue",
+  };
+}
 
 const ICONES: Record<CategorieGeste, NomIcone> = {
   "suppression": "corbeille", "export": "telecharger", "habilitation": "bouclier",
@@ -21,7 +59,12 @@ const TON = { "alerte": "critique", "inhabituel": "vigilance", "à surveiller": 
    surveiller, c'est décider à l'avance ce qu'on ira regarder. */
 export function ActionsCritiques() {
   const ui = useUI();
-  const [gestes, poserGestes] = useState<ActionCritique[]>(gestesInitiaux);
+  const { source } = useSource();
+  const direct = source === "application";
+  const distant = useDistant(evenements);
+  const [inventes, poserInventes] = useState<ActionCritique[]>(gestesInitiaux);
+  const gestes: ActionCritique[] = direct ? (distant.donnees ?? []).map(depuisEvenement) : inventes;
+  const poserGestes = direct ? (() => { /* le serveur fait foi */ }) as typeof poserInventes : poserInventes;
   const [onglet, poserOnglet] = useState("surveillance");
   const [q, poserQ] = useState("");
   const [categorie, poserCategorie] = useState("");
@@ -155,6 +198,25 @@ export function ActionsCritiques() {
           </>
         }
       />
+
+      {direct && (
+        <>
+          <div className="mb-4">
+            <Empechement etat={distant.etat} echec={distant.echec} relancer={distant.relancer} />
+          </div>
+          {distant.etat === "ok" && (
+            <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-surface-2 border border-bordure">
+              <Icone nom="info" className="text-encre-3 mt-[2px]" />
+              <p className="flex-1 min-w-[min(100%,260px)] text-[13px] text-encre-2">
+                <b>Lu sur ANAT Pilotage.</b> L'application enregistre l'acte, l'auteur, l'adresse et la date —
+                mais ni le lieu, ni l'appareil, ni la règle qui aurait déclenché. Ces colonnes restent vides
+                plutôt que devinées. Et ces événements <b>sont effacés au bout d'un an</b> : le journal scellé
+                du centre de commande est ce qui gardera les plus anciens.
+              </p>
+            </div>
+          )}
+        </>
+      )}
 
       <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(175px, 1fr))" }}>
         <Carte className="pas-carte" enfants={<LigneStat etiquette="Gestes surveillés" valeur={<NombreAnime valeur={gestes.length} />} />} />

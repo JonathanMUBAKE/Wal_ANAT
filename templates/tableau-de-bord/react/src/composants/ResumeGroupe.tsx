@@ -1,15 +1,11 @@
-import { Bouton, LigneStat, Pastille, Progression } from "./Primitives";
+import { Bouton, LigneStat } from "./Primitives";
 import { Etincelle } from "./Graphique";
 import { Icone } from "./Icone";
 import { fmt } from "../lib/format";
 import { charge, comptes } from "../lib/donnees";
-import {
-  disponibilite, filesInitiales, integrationsInitiales, jetonsInitiaux,
-  sauvegardes, servicesSIGRH, sessionsInitiales, tachesInitiales,
-} from "../lib/sigrh";
-import { connexions, journalMateriel, systeme, temperatures, ventilateurs, verrous, replication } from "../lib/infrastructure";
-import { agentsIA, approbationsMCP, clesModeles, connecteursMCP, executionsAgents } from "../lib/intelligence";
-import { sms, smtp, whatsapp, envois } from "../lib/communication";
+import { disponibilite, jetonsInitiaux, sessionsInitiales } from "../lib/sigrh";
+import { agentsIA, executionsAgents } from "../lib/intelligence";
+import { envois, smtp, sms, whatsapp } from "../lib/communication";
 import { approbations, conforme, gardeFous, gestes } from "../lib/controles";
 import { comptesDormants, gravite, SEUILS } from "../lib/dormance";
 
@@ -32,6 +28,32 @@ export function ResumeGroupe({ groupe, aller }: { groupe: string; aller: (cle: s
         <div className="mt-3 space-y-2">
           <Bouton taille="s" icone="alerte" className="w-full" onClick={() => aller("alertes")} enfants="Centre d'alertes" />
           <Bouton taille="s" icone="rapport" className="w-full" onClick={() => aller("rapports")} enfants="Rapports de direction" />
+        </div>
+      </Bloc>
+    );
+  }
+
+  if (groupe === "Sécurité") {
+    const dormants = comptesDormants.filter((c) => c.etat === "proposé").length;
+    return (
+      <Bloc titre="Posture">
+        <LigneStat etiquette="Sessions ouvertes" valeur={fmt(sessionsInitiales.length)} />
+        <LigneStat etiquette="Comptes dormants" valeur={fmt(dormants)} ton={dormants ? "vigilance" : "bon"} />
+        <Alerte texte="Les actes de sécurité de l'application sont effacés au bout d'un an." ton="vigilance" />
+        <div className="mt-3">
+          <Bouton taille="s" icone="audit" className="w-full" onClick={() => aller("audit")} enfants="Journal d'audit" />
+        </div>
+      </Bloc>
+    );
+  }
+
+  if (groupe === "Système") {
+    return (
+      <Bloc titre="Système">
+        <LigneStat etiquette="Jetons actifs" valeur={String(jetonsInitiaux.filter((j) => j.actif).length)} />
+        <LigneStat etiquette="Disponibilité (90 j)" valeur={`${(disponibilite.reduce((a, s) => a + s.taux90, 0) / disponibilite.length).toFixed(2)} %`} />
+        <div className="mt-3">
+          <Bouton taille="s" icone="reglages" className="w-full" onClick={() => aller("parametres")} enfants="Paramètres" />
         </div>
       </Bloc>
     );
@@ -60,90 +82,20 @@ export function ResumeGroupe({ groupe, aller }: { groupe: string; aller: (cle: s
 
 
 
-  if (groupe === "Exploitation") {
-    const alerte = servicesSIGRH.filter((s) => s.etat === "critique").length;
-    const attente = filesInitiales.reduce((a, f) => a + f.enAttente, 0);
-    const echecsTaches = tachesInitiales.filter((t) => t.etat === "échouée").length;
-    return (
-      <Bloc titre="Exploitation">
-        <LigneStat etiquette="Services en service" valeur={`${servicesSIGRH.length - alerte} / ${servicesSIGRH.length}`} ton={alerte ? "critique" : "bon"} />
-        <LigneStat etiquette="Messages en file" valeur={fmt(attente)} />
-        <LigneStat etiquette="Tâches en échec" valeur={String(echecsTaches)} ton={echecsTaches ? "vigilance" : "bon"} />
-        <LigneStat etiquette="Déploiement" valeur="1 en cours" ton="accent" />
-        <div className="mt-3">
-          <div className="flex items-center gap-2 text-[11px] text-encre-3 mb-[5px]">
-            <Pastille ton="bon" pulse /> sigrh-presences v3.4.0
-          </div>
-          <Progression valeur={62} />
-        </div>
-      </Bloc>
-    );
-  }
 
-  if (groupe === "Infrastructure") {
-    const panne = ventilateurs.filter((v) => v.etat === "critique").length;
-    const retardMax = Math.max(...replication.secondaires.map((s) => s.retard));
-    return (
-      <Bloc titre={systeme.hote}>
-        <LigneStat etiquette="Modèle" valeur={systeme.modele} />
-        <LigneStat etiquette="En service depuis" valeur={systeme.demarre} />
-        <LigneStat etiquette="Charge" valeur={systeme.charge.join(" · ")} />
-        <LigneStat etiquette="Mémoire" valeur={`${systeme.memoireUtilisee} / ${systeme.memoireTotale} Gio`} />
-        <LigneStat etiquette="Entrée d'air" valeur={`${temperatures[0].valeur} °C`} ton="bon" />
-        <LigneStat etiquette="Ventilateurs" valeur={`${ventilateurs.length - panne} / ${ventilateurs.length}`} ton={panne ? "critique" : "bon"} />
-        <div className="h-px bg-bordure my-3" />
-        <LigneStat etiquette="Connexions base" valeur={`${connexions.actives + connexions.inactives} / 400`} />
-        <LigneStat etiquette="Verrous bloquants" valeur={String(verrous.length)} ton={verrous.length ? "critique" : "bon"} />
-        <LigneStat etiquette="Retard de réplication" valeur={`${retardMax} s`} ton={retardMax > 30 ? "vigilance" : "bon"} />
-        {panne > 0 && <Alerte texte={journalMateriel[0].message} ton="critique" />}
-        <div className="mt-3 space-y-2">
-          <Bouton taille="s" icone="thermometre" className="w-full" onClick={() => aller("sante")} enfants="Capteurs et journal" />
-        </div>
-      </Bloc>
-    );
-  }
 
-  if (groupe === "Observabilité") {
-    const sous = disponibilite.filter((s) => s.taux90 < s.engagement).length;
-    return (
-      <Bloc titre="Santé observée">
-        <LigneStat etiquette="Alertes P1" valeur="2" ton="critique" />
-        <LigneStat etiquette="Alertes P2 / P3" valeur="1 / 2" ton="vigilance" />
-        <LigneStat etiquette="Latence p95" valeur="182 ms" />
-        <LigneStat etiquette="Taux d'erreur" valeur="0,28 %" ton="bon" />
-        <LigneStat etiquette="Sous engagement" valeur={String(sous)} ton={sous ? "critique" : "bon"} />
-        <div className="mt-3">
-          <Bouton taille="s" icone="etoiles" className="w-full" onClick={() => aller("journaux")} enfants="Lecture assistée des journaux" />
-        </div>
-      </Bloc>
-    );
-  }
 
   if (groupe === "Intelligence") {
     const actifs = agentsIA.filter((a) => a.etat === "actif").length;
-    const enAttente = executionsAgents.filter((e) => e.etat === "en attente").length;
-    const coutJour = agentsIA.reduce((a, x) => a + x.consommeJour, 0);
-    const budgetJour = agentsIA.reduce((a, x) => a + x.budgetJour, 0);
-    const nouveaux = connecteursMCP.flatMap((c) => c.outils.filter((o) => o.nouveau)).length;
+    const enCours = executionsAgents.filter((e) => e.etat === "en attente").length;
     return (
-      <Bloc titre="Intelligence embarquée">
-        <LigneStat etiquette="Agents actifs" valeur={`${actifs} / ${agentsIA.length}`} ton="bon" />
-        <LigneStat etiquette="Lectures à valider" valeur={String(enAttente)} ton={enAttente ? "vigilance" : "bon"} />
-        <LigneStat etiquette="Appels MCP en attente" valeur={String(approbationsMCP.length)} ton={approbationsMCP.length ? "vigilance" : "bon"} />
-        <LigneStat etiquette="Connecteurs" valeur={`${connecteursMCP.filter((c) => c.etat === "connecté").length} / ${connecteursMCP.length}`} />
+      <Bloc titre="Coéquipiers IA">
+        <LigneStat etiquette="Agents déclarés" valeur={String(agentsIA.length)} />
+        <LigneStat etiquette="Actifs" valeur={String(actifs)} ton="bon" />
+        <LigneStat etiquette="En attente de validation" valeur={String(enCours)} ton={enCours ? "vigilance" : "bon"} />
+        <Alerte texte="L'IA propose, un humain décide : aucune action n'est exécutée sans accord." ton="vigilance" />
         <div className="mt-3">
-          <div className="flex items-baseline gap-2 text-[11px] mb-[5px]">
-            <span className="text-encre-3">Dépense du jour</span>
-            <span className="ml-auto tab-num text-encre">{coutJour.toFixed(2)} / {budgetJour} €</span>
-          </div>
-          <Progression valeur={(coutJour / budgetJour) * 100} ton={coutJour / budgetJour > 0.8 ? "critique" : "bon"} />
-          <div className="text-[10.5px] text-encre-4 mt-[4px]">
-            Plafond mensuel des clés : {clesModeles.reduce((a, c) => a + c.plafondMensuel, 0)} €
-          </div>
-        </div>
-        {nouveaux > 0 && <Alerte texte={`${nouveaux} outils MCP jamais approuvés sont bloqués.`} ton="vigilance" />}
-        <div className="mt-3">
-          <Bouton taille="s" icone="branche" className="w-full" onClick={() => aller("mcp")} enfants="Approbations en attente" />
+          <Bouton taille="s" icone="robot" className="w-full" onClick={() => aller("agents")} enfants="Les agents" />
         </div>
       </Bloc>
     );
@@ -190,20 +142,6 @@ export function ResumeGroupe({ groupe, aller }: { groupe: string; aller: (cle: s
     );
   }
 
-  if (groupe === "Système") {
-    const enErreur = integrationsInitiales.filter((i) => i.etat === "en erreur").length;
-    const derniere = sauvegardes.find((s) => s.etat === "réussie");
-    return (
-      <Bloc titre="Système">
-        <LigneStat etiquette="Dernière sauvegarde" valeur={derniere?.quand.split(" ")[1] ?? "—"} ton="bon" />
-        <LigneStat etiquette="Intégrations en erreur" valeur={String(enErreur)} ton={enErreur ? "critique" : "bon"} />
-        <LigneStat etiquette="Mode maintenance" valeur="désactivé" />
-        <LigneStat etiquette="Conservation des journaux" valeur="365 j" />
-        <LigneStat etiquette="Mises à jour en attente" valeur={String(systeme.misesAJour.total)} ton="vigilance" />
-        {enErreur > 0 && <Alerte texte="La liaison vers la paie est coupée depuis 2 jours." ton="critique" />}
-      </Bloc>
-    );
-  }
 
   return null;
 }

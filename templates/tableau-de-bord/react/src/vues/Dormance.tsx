@@ -12,6 +12,53 @@ import {
   type CompteDormant, type EtatDormance,
 } from "../lib/dormance";
 import type { ChartConfiguration } from "chart.js";
+import { Empechement, useDistant } from "../composants/Distant";
+import { comptes as lireComptes, type CompteDistant } from "../lib/api/anat";
+import { useSource } from "../lib/api/source";
+
+/* Du référentiel d'ANAT Pilotage vers la politique de dormance.
+
+   Ce que les vraies données ont tranché : `last_login_at` à `null` veut dire
+   « jamais connecté », et non « connecté il y a très longtemps ». Un compte
+   qui n'a jamais servi n'entre dans aucune vague — il appelle une relance
+   d'invitation. Les deux se ressemblent dans un tableau et ne se traitent pas
+   du tout de la même façon.
+
+   Ce que l'application ne dit pas et que l'écran n'invente pas : les droits
+   conservés (il faudrait déplier le profil d'accès), les dossiers ouverts au
+   nom de l'agent, et l'absence déclarée. Ces colonnes restent vides et le
+   disent, au lieu d'afficher zéro. */
+const JAMAIS = -1;
+
+function depuis(c: CompteDistant): CompteDormant & { jamais: boolean } {
+  const jours = c.last_login_at
+    ? Math.floor((Date.now() - +new Date(c.last_login_at)) / 864e5)
+    : JAMAIS;
+  const etat: EtatDormance =
+    c.status === "suspended" ? "désactivé"
+      : jours === JAMAIS ? "éveillé"
+        : jours >= SEUILS.proposition ? "proposé"
+          : jours >= SEUILS.avertissement ? "averti" : "éveillé";
+  return {
+    id: c.id,
+    agent: c.name,
+    matricule: "—",
+    direction: c.orgs[0]?.org_name ?? "—",
+    fonction: c.title ?? "—",
+    role: c.platform_role === "super_admin" ? "Administrateur système" : (c.orgs[0]?.role ?? "—"),
+    jours: jours === JAMAIS ? 0 : jours,
+    derniereActivite: c.last_login_at
+      ? new Date(c.last_login_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+      : "jamais",
+    dernierGeste: c.last_login_at ? "Connexion à la plateforme" : "Compte créé, jamais utilisé",
+    etat,
+    deuxFacteurs: c.totp_enabled,
+    sessionsOuvertes: c.active_sessions,
+    droitsSensibles: [],
+    dossiersOuverts: 0,
+    jamais: jours === JAMAIS,
+  };
+}
 
 const TON_ETAT: Record<EtatDormance, "neutre" | "accent" | "vigilance" | "serieux" | "critique" | "bon"> = {
   "éveillé": "bon", averti: "vigilance", "proposé": "critique",
@@ -30,7 +77,15 @@ const TON_GRAVITE = { faible: "neutre", moyen: "vigilance", "élevé": "critique
    et elle dépose la vague du mois dans la file d'approbation. */
 export function Dormance({ aller }: { aller: (cle: string) => void }) {
   const ui = useUI();
-  const [comptes, poserComptes] = useState<CompteDormant[]>(comptesInitiaux);
+  const { source } = useSource();
+  const direct = source === "application";
+  const distant = useDistant(lireComptes);
+  const [inventes, poserInventes] = useState<CompteDormant[]>(comptesInitiaux);
+
+  const lus = direct ? (distant.donnees ?? []).filter((c) => !c.is_ai).map(depuis) : [];
+  const comptes: CompteDormant[] = direct ? lus : inventes;
+  const poserComptes = direct ? (() => { /* le serveur fait foi */ }) as typeof poserInventes : poserInventes;
+  const jamaisConnectes = lus.filter((c) => c.jamais).length;
   const [q, poserQ] = useState("");
   const [etat, poserEtat] = useState("");
   const [direction, poserDirection] = useState("");
@@ -244,7 +299,7 @@ export function Dormance({ aller }: { aller: (cle: string) => void }) {
     });
   }
 
-  const colonnes: Colonne<CompteDormant>[] = [
+  const toutesColonnes: Colonne<CompteDormant>[] = [
     { cle: "agent", nom: "Agent", triable: true, fixe: true, rendu: (c) => (
       <div className="flex items-start gap-[9px] min-w-0">
         <span className={cx("w-[6px] h-[6px] rounded-full shrink-0 mt-[7px]",
@@ -293,6 +348,11 @@ export function Dormance({ aller }: { aller: (cle: string) => void }) {
     )},
   ];
 
+  /* Ce que l'application ne sait pas ne s'affiche pas en colonne de tirets. */
+  const colonnes = direct
+    ? toutesColonnes.filter((c) => !["droitsSensibles", "dossiersOuverts"].includes(c.cle))
+    : toutesColonnes;
+
   return (
     <>
       <Entete
@@ -303,12 +363,47 @@ export function Dormance({ aller }: { aller: (cle: string) => void }) {
             <Bouton icone="telecharger"
               onClick={() => { exporterCSV("comptes-dormants", comptes); ui.message("Liste exportée.", "bon"); }}
               enfants="Exporter" />
-            <Bouton ton="principal" icone="tampon" disabled={vagueDeposee || proposes.length === 0}
+            <Bouton ton="principal" icone="tampon"
+              disabled={vagueDeposee || proposes.length === 0 || direct}
+              title={direct ? "Impossible tant que l'application ne déclare pas les absences" : undefined}
               onClick={deposerVague}
-              enfants={vagueDeposee ? "Vague déposée" : `Déposer la vague (${proposes.length})`} />
+              enfants={direct ? "Vague indisponible" : vagueDeposee ? "Vague déposée" : `Déposer la vague (${proposes.length})`} />
           </>
         }
       />
+
+      {direct && (
+        <div className="mb-4">
+          <Empechement etat={distant.etat} echec={distant.echec} relancer={distant.relancer} />
+        </div>
+      )}
+
+      {direct && jamaisConnectes > 0 && (
+        <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-accent-voile border border-accent/40 anim-apparait">
+          <Icone nom="enveloppe" className="text-accent mt-[2px]" />
+          <div className="flex-1 min-w-[min(100%,260px)] text-[13px]">
+            <b>{jamaisConnectes} compte{jamaisConnectes > 1 ? "s n'ont" : " n'a"} jamais été utilisé{jamaisConnectes > 1 ? "s" : ""}.</b>{" "}
+            <span className="text-encre-2">
+              Ils n'entrent dans aucune vague : un compte qui n'a jamais servi ne dort pas, il attend.
+              Le geste juste est de relancer l'invitation, pas de proposer la désactivation — proposer
+              l'une à la place de l'autre, c'est se tromper d'acte et froisser quelqu'un au passage.
+            </span>
+          </div>
+          <Bouton taille="s" onClick={() => aller("utilisateurs")} enfants="Voir les comptes" />
+        </div>
+      )}
+
+      {direct && distant.etat === "ok" && (
+        <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-surface-2 border border-bordure">
+          <Icone nom="info" className="text-encre-3 mt-[2px]" />
+          <p className="flex-1 min-w-[min(100%,260px)] text-[13px] text-encre-2">
+            <b>Trois colonnes sont vides, et c'est voulu.</b> L'application ne dit pas encore les droits
+            qu'un compte conserve, les dossiers ouverts à son nom, ni les absences déclarées — congé long,
+            détachement, mission. Tant qu'elle ne les dit pas, l'écran ne les devine pas : une vague
+            déposée sans connaître les absences déclarées couperait quelqu'un en congé de maternité.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
         <Carte className="pas-carte" enfants={<LigneStat etiquette="Proposés ce mois" valeur={fmt(proposes.length)} ton={proposes.length ? "critique" : "bon"} />} />

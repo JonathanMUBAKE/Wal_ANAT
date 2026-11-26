@@ -5,6 +5,9 @@ import { Etincelle } from "../composants/Graphique";
 import { useUI } from "../composants/Superpositions";
 import { cx, fmt } from "../lib/format";
 import { sms, smtp, whatsapp, type EtatCanal } from "../lib/communication";
+import { Empechement, useDistant } from "../composants/Distant";
+import { messagerie } from "../lib/api/anat";
+import { useSource } from "../lib/api/source";
 
 const TON: Record<EtatCanal, "bon" | "vigilance" | "critique" | "neutre"> = {
   "actif": "bon", "dégradé": "vigilance", "en erreur": "critique", "non configuré": "neutre",
@@ -17,6 +20,9 @@ const TON: Record<EtatCanal, "bon" | "vigilance" | "critique" | "neutre"> = {
    réclamations des agents trois jours plus tard. */
 export function Canaux() {
   const ui = useUI();
+  const { source } = useSource();
+  const direct = source === "application";
+  const mail = useDistant(messagerie);
   const [onglet, poserOnglet] = useState("messagerie");
   const [adresseTest, poserAdresseTest] = useState("");
 
@@ -35,6 +41,42 @@ export function Canaux() {
         sous="Par où le SIGRH joint les agents : messagerie, SMS, WhatsApp."
         actions={<Bouton icone="rafraichir" onClick={() => ui.message("État des canaux actualisé.", "bon", { duree: 1400 })} enfants="Actualiser" />}
       />
+
+      {direct && (
+        <>
+          <div className="mb-4">
+            <Empechement etat={mail.etat} echec={mail.echec} relancer={mail.relancer} />
+          </div>
+          {mail.etat === "ok" && (
+            <div className={cx("flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 border anim-apparait",
+              mail.donnees ? "bg-bon-voile border-bon/40" : "bg-vigilance-voile border-vigilance/40")}>
+              <Icone nom={mail.donnees ? "enveloppe" : "halte"}
+                className={cx("mt-[2px]", mail.donnees ? "text-bon" : "text-vigilance")} />
+              <div className="flex-1 min-w-[min(100%,260px)] text-[13px]">
+                {mail.donnees ? (
+                  <>
+                    <b>Messagerie configurée sur ANAT Pilotage.</b>{" "}
+                    <span className="text-encre-2">
+                      Domaine {mail.donnees.domain ?? "non déclaré"}
+                      {mail.donnees.smtp?.host && <> · serveur {mail.donnees.smtp.host}:{mail.donnees.smtp.port}</>}.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <b>Aucune messagerie n'est configurée.</b>{" "}
+                    <span className="text-encre-2">
+                      Les notifications de l'application ne partent donc pas par courriel — les agents ne sont
+                      prévenus de rien. Ce n'est pas une absence de réponse du serveur : c'est sa réponse, et
+                      c'est le réglage le plus visiblement manquant de cette installation. Les canaux SMS et
+                      WhatsApp ci-dessous sont du gabarit : l'application n'en a pas.
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
         <PaveCanal icone="enveloppe" nom="Messagerie" etat={smtp.etat}

@@ -1,13 +1,20 @@
 import { useMemo, useState } from "react";
-import { Bouton, Carte, Entete, Interrupteur, Jeton, LigneReglage, Onglets, TeteCarte } from "../composants/Primitives";
+import { Bouton, Carte, Entete, Interrupteur, Jeton, LigneReglage, LigneStat, Onglets, TeteCarte } from "../composants/Primitives";
 import { useUI } from "../composants/Superpositions";
 import { parametresInitiaux, type Parametres as TypeParametres } from "../lib/sigrh";
+import { Empechement, useDistant } from "../composants/Distant";
+import { organisations, parametres } from "../lib/api/anat";
+import { useSource } from "../lib/api/source";
 
 /* Paramètres : les règles que le système applique à tout le monde. Rien n'est
    enregistré tant qu'on n'a pas confirmé — et les réglages qui touchent la
    sécurité ou la paie le disent avant d'être changés. */
 export function Parametres() {
   const ui = useUI();
+  const { source } = useSource();
+  const direct = source === "application";
+  const reglages = useDistant(parametres);
+  const orgs = useDistant(organisations);
   const [reference, poserReference] = useState<TypeParametres>(parametresInitiaux);
   const [brouillon, poserBrouillon] = useState<TypeParametres>(parametresInitiaux);
   const [onglet, poserOnglet] = useState("general");
@@ -80,6 +87,39 @@ export function Parametres() {
           </>
         }
       />
+
+      {direct && (
+        <>
+          <div className="mb-4">
+            <Empechement etat={reglages.etat} echec={reglages.echec} relancer={reglages.relancer} />
+          </div>
+
+          {reglages.etat === "ok" && (
+            <Carte className="mb-4" enfants={
+              <>
+                <TeteCarte
+                  titre="Les paramètres réels de la plateforme"
+                  sous="Tout ce qu'ANAT Pilotage expose aujourd'hui — et c'est peu" />
+                <div className="pas-carte pt-3">
+                  {Object.entries(reglages.donnees ?? {}).map(([cle, v]) => (
+                    <LigneStat key={cle} etiquette={cle.replace(/_/g, " ")} valeur={String(v)} />
+                  ))}
+                  {(orgs.donnees ?? []).map((o) => (
+                    <LigneStat key={o.id} etiquette={`Organisation · ${o.name}`}
+                      valeur={`${o.profiles.length} profils`} />
+                  ))}
+                </div>
+                <p className="px-[var(--pas-carte)] pb-[var(--pas-carte)] text-[12px] text-encre-3 leading-[17px]">
+                  Les onglets ci-dessous montrent une trentaine de réglages inventés. Sur une installation
+                  réelle, il n'y en a qu'un seul aujourd'hui — et un réglage honnête vaut mieux que trente
+                  mensonges. Ils apparaîtront ici à mesure que l'application les exposera : l'écran lit les
+                  clés, il ne les connaît pas d'avance.
+                </p>
+              </>
+            } />
+          )}
+        </>
+      )}
 
       <Carte enfants={
         <>

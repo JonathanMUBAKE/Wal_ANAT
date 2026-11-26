@@ -8,12 +8,18 @@ import { Icone } from "../composants/Icone";
 import { cx, exporterCSV, fmt, jeton, normaliser, voiler } from "../lib/format";
 import { HEURES } from "../lib/donnees";
 import { activite, activiteParDirection, activiteParModule, type EvenementActivite } from "../lib/sigrh";
+import { Empechement, useDistant } from "../composants/Distant";
+import { activites } from "../lib/api/anat";
+import { useSource } from "../lib/api/source";
 
 /* Activité : ce que les agents font du système, heure par heure et direction
    par direction. C'est la page qu'on ouvre pour répondre à « qui a fait quoi,
    et quand ». Elle ne juge pas : elle montre. */
 export function Activite() {
   const ui = useUI();
+  const { source } = useSource();
+  const direct = source === "application";
+  const distant = useDistant(activites);
   const [periode, poserPeriode] = useState("24 h");
   const [onglet, poserOnglet] = useState("flux");
   const [q, poserQ] = useState("");
@@ -84,6 +90,25 @@ export function Activite() {
           </>
         }
       />
+
+      {direct && (
+        <>
+          <div className="mb-4">
+            <Empechement etat={distant.etat} echec={distant.echec} relancer={distant.relancer} />
+          </div>
+          {distant.etat === "ok" && (
+            <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-vigilance-voile border border-vigilance/40">
+              <Icone nom="halte" className="text-vigilance mt-[2px]" />
+              <p className="flex-1 min-w-[min(100%,260px)] text-[13px] text-encre-2">
+                <b>{distant.donnees?.length ?? 0} activité{(distant.donnees?.length ?? 0) > 1 ? "s" : ""} lue{(distant.donnees?.length ?? 0) > 1 ? "s" : ""} sur l'application.</b>{" "}
+                Cette route est cloisonnée par organisation : elle ne renvoie que ce que votre session voit
+                dans l'organisation choisie. Le flux complet de la plateforme passe par le journal d'audit,
+                qui lui n'est pas cloisonné. Les courbes et les répartitions ci-dessous sont du gabarit.
+              </p>
+            </div>
+          )}
+        </>
+      )}
 
       <div className="grid grid-cols-12 gap-4 mb-4">
         <CarteGraphique

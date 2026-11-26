@@ -155,3 +155,60 @@ export const parametres = () => lire<Record<string, unknown>>("/api/admin/settin
 /* --- Identité de la personne connectée --------------------------------- */
 export interface Moi { id: string; name: string; email?: string; title?: string | null }
 export const moi = () => lire<Moi>("/api/me");
+
+/* --- Organisations ----------------------------------------------------- */
+export interface ProfilCourt { id: string; name: string; base_role: string }
+export interface OrganisationDistante { id: string; name: string; profiles: ProfilCourt[] }
+export const organisations = () => lire<OrganisationDistante[]>("/api/admin/orgs");
+
+/* --- Coéquipiers IA ----------------------------------------------------- */
+export interface AgentIADistant {
+  id: string;
+  name: string;
+  title: string | null;
+  is_ai: boolean;
+  /** Le rôle que l'organisation lui a donné, en français. */
+  ai_role: string | null;
+  /** Ses instructions. Ce qui les borne vit ailleurs, et c'est voulu. */
+  ai_instructions: string | null;
+  status: string;
+  org_role: string | null;
+  created_at: string;
+}
+export const agentsIA = () => lire<AgentIADistant[]>("/api/ai/agents");
+
+export interface ExecutionIA {
+  id: string; kind: string; status: string; summary: string | null;
+  error: string | null; provider: string; created_at: string;
+  agent_id?: string; requested_by?: string | null;
+}
+export const executionsIA = () => lire<ExecutionIA[]>("/api/ai/runs");
+
+export interface ApprobationIA {
+  id: string; run_id?: string; kind?: string; status?: string;
+  summary?: string | null; created_at?: string;
+}
+export const approbationsIA = () => lire<ApprobationIA[]>("/api/ai/approvals");
+
+/* --- Messagerie --------------------------------------------------------- */
+export interface Messagerie {
+  domain?: string | null;
+  smtp?: { host?: string; port?: number; security?: string } | null;
+}
+/** Renvoie `null` quand aucune messagerie n'est configurée — ce qui est en
+    soi une information, et non une absence de réponse. */
+export const messagerie = () => lire<Messagerie | null>("/api/org/mail");
+
+export interface EnvoiMessagerie {
+  id?: string; to?: string; subject?: string; status?: string;
+  error?: string | null; created_at?: string;
+}
+export const journalMessagerie = () => lire<EnvoiMessagerie[]>("/api/org/mail/log");
+
+/* --- Activité ----------------------------------------------------------- */
+export interface ActiviteDistante {
+  id: string; kind: string; actor_id: string; created_at: string;
+  org_id?: string | null; project_id?: string | null; task_id?: string | null;
+  data?: Record<string, unknown>;
+}
+export const activites = () => lire<ActiviteDistante[]>("/api/activities");

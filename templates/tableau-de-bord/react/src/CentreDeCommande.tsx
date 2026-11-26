@@ -14,42 +14,20 @@ import { exporterCSV } from "./lib/format";
 
 import { Apercu } from "./vues/Apercu";
 import { Activite } from "./vues/Activite";
-import { Rapports } from "./vues/Rapports";
+import { BandeauGabarit } from "./composants/Distant";
 import { Controles } from "./vues/Controles";
 import { Dormance } from "./vues/Dormance";
 import { Approbations } from "./vues/Approbations";
 import { GardeFous } from "./vues/GardeFous";
-import { Services } from "./vues/Services";
-import { Taches } from "./vues/Taches";
-import { Files } from "./vues/Files";
-import { Deploiements } from "./vues/Deploiements";
-import { Journaux } from "./vues/Journaux";
-import { Traces } from "./vues/Traces";
-import { Alertes } from "./vues/Alertes";
-import { Disponibilite } from "./vues/Disponibilite";
 import { Utilisateurs } from "./vues/Utilisateurs";
 import { Droits } from "./vues/Droits";
 import { Sessions } from "./vues/Sessions";
-import { Jetons } from "./vues/Jetons";
 import { Parametres } from "./vues/Parametres";
-import { Integrations } from "./vues/Integrations";
-import { Sauvegardes } from "./vues/Sauvegardes";
 import { Audit } from "./vues/Audit";
-import { SanteServeur } from "./vues/SanteServeur";
-import { BaseDeDonnees } from "./vues/BaseDeDonnees";
 import { AgentsIA } from "./vues/AgentsIA";
-import { ModelesIA } from "./vues/ModelesIA";
-import { MCP } from "./vues/MCP";
 import { Canaux } from "./vues/Canaux";
-import { ModelesMessages } from "./vues/ModelesMessages";
 import { Envois } from "./vues/Envois";
 import { Securite } from "./vues/Securite";
-import { Anomalies } from "./vues/Anomalies";
-import { Collecte } from "./vues/Collecte";
-import { Incidents } from "./vues/Incidents";
-import { Console } from "./vues/Console";
-import { Capacite } from "./vues/Capacite";
-import { Surveillance } from "./vues/Surveillance";
 import { ActionsCritiques } from "./vues/ActionsCritiques";
 
 const RACCOURCIS: Array<[string, string]> = [
@@ -227,7 +205,7 @@ function Coquille() {
           <main className="flex-1 overflow-y-auto p-4 [overscroll-behavior:contain]">
             <TransitionVue cle={vue}>
               <div className="max-w-[1600px]">
-                <Vue cle={vue} aller={aller} />
+                <><BandeauGabarit cle={vue} /><Vue cle={vue} aller={aller} /></>
               </div>
             </TransitionVue>
           </main>
@@ -248,42 +226,19 @@ function Vue({ cle, aller }: { cle: string; aller: (c: string) => void }) {
   switch (cle) {
     case "apercu": return <Apercu aller={aller} />;
     case "activite": return <Activite />;
-    case "rapports": return <Rapports />;
     case "dormance": return <Dormance aller={aller} />;
     case "controles": return <Controles />;
     case "approbations": return <Approbations />;
     case "gardefous": return <GardeFous />;
-    case "services": return <Services />;
-    case "taches": return <Taches />;
-    case "files": return <Files />;
-    case "deploiements": return <Deploiements />;
-    case "journaux": return <Journaux />;
-    case "traces": return <Traces />;
-    case "alertes": return <Alertes />;
-    case "disponibilite": return <Disponibilite />;
     case "utilisateurs": return <Utilisateurs />;
     case "droits": return <Droits />;
     case "sessions": return <Sessions />;
-    case "jetons": return <Jetons />;
     case "parametres": return <Parametres />;
-    case "integrations": return <Integrations />;
-    case "sauvegardes": return <Sauvegardes />;
     case "audit": return <Audit />;
-    case "sante": return <SanteServeur />;
-    case "basededonnees": return <BaseDeDonnees />;
     case "agents": return <AgentsIA />;
-    case "modeles": return <ModelesIA />;
-    case "mcp": return <MCP />;
     case "canaux": return <Canaux />;
-    case "modelesmessages": return <ModelesMessages />;
     case "envois": return <Envois />;
-    case "securite": return <Securite />;
-    case "anomalies": return <Anomalies />;
-    case "collecte": return <Collecte />;
-    case "incidents": return <Incidents />;
-    case "console": return <Console />;
-    case "capacite": return <Capacite />;
-    case "surveillance": return <Surveillance />;
+    case "securite": return <Securite aller={aller} />;
     case "gestes": return <ActionsCritiques />;
     default: return null;
   }

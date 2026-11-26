@@ -1,325 +1,230 @@
-import { useState } from "react";
-import { Bouton, Carte, Entete, Jeton, LigneStat, Onglets, Pastille, Progression } from "../composants/Primitives";
-import { Apparition, ListeEchelonnee, NombreAnime } from "../composants/Mouvement";
-import { Etincelle } from "../composants/Graphique";
-import { AssistantIA } from "../composants/AssistantIA";
+import { Bouton, Carte, Entete, Jeton, LigneStat, TeteCarte } from "../composants/Primitives";
 import { Icone } from "../composants/Icone";
-import { useUI } from "../composants/Superpositions";
+import { Empechement, useDistant } from "../composants/Distant";
+import { ListeEchelonnee } from "../composants/Mouvement";
+import { comptes as lireComptes, sante as lireSante } from "../lib/api/anat";
+import { useSource } from "../lib/api/source";
 import { cx, fmt } from "../lib/format";
-import {
-  anomalies, conformite, reglesPareFeu, scoreSecurite, secrets,
-  tentatives, vulnerabilites, type Gravite4,
-} from "../lib/exploitation";
 
-const TON: Record<Gravite4, "critique" | "serieux" | "vigilance" | "neutre"> = {
-  critique: "critique", "élevée": "serieux", moyenne: "vigilance", faible: "neutre",
-};
+/* =========================================================================
+   Posture de sécurité — ce qui est faible aujourd'hui, et pourquoi.
 
-/* Sécurité : ce qui est exposé, ce qui a été tenté, et ce qui n'est pas
-   conforme. Le score du haut n'est pas une note : c'est un résumé qui
-   renvoie vers l'axe le plus faible. Un score de 72 ne veut rien dire ;
-   « correctifs à 48 » veut dire quelque chose. */
-export function Securite() {
-  const ui = useUI();
-  const [onglet, poserOnglet] = useState("vulnerabilites");
+   Tout ce qui est affiché ici est lu sur ANAT Pilotage. Aucun score inventé,
+   aucune note sur cent : un chiffre global rassure sans rien dire, et il se
+   dégrade toujours en « 87 % » que personne ne sait comment améliorer.
 
-  const exposees = vulnerabilites.filter((v) => v.exposee);
-  const rafale = tentatives.filter((t) => t.tentatives > 20);
-  const nonConformes = conformite.filter((c) => c.etat === "non conforme" || c.etat === "partiel");
-  const secretsEnRetard = secrets.filter((s) => s.etat === "critique" || s.etat === "vigilance");
-  const bloquees = tentatives.filter((t) => t.bloquee).length;
-  const axeFaible = [...scoreSecurite.axes].sort((a, b) => a.note - b.note)[0];
+   À la place : des constats, chacun avec le nombre exact de comptes qu'il
+   concerne et le geste qui le résout. Quand il n'y a rien à signaler, l'écran
+   le dit — plutôt que de meubler.
+   ========================================================================= */
 
-  async function bloquerPlage(origine: string) {
-    const ok = await ui.confirmer({
-      titre: `Bloquer la plage de ${origine} ?`,
-      texte: "Une règle de pare-feu refusera toute connexion depuis cette plage. Si un agent légitime s'y trouve — en déplacement, par exemple — il perdra l'accès sans message explicite.",
-      bouton: "Bloquer la plage", ton: "danger",
-    });
-    if (ok) ui.message("Plage bloquée. La règle apparaît dans l'onglet Pare-feu.", "bon");
-  }
+interface Constat {
+  cle: string;
+  titre: string;
+  combien: number;
+  explication: string;
+  geste: string;
+  vers?: string;
+  ton: "critique" | "vigilance" | "bon";
+}
 
-  async function tournerSecret(nom: string) {
-    const ok = await ui.confirmer({
-      titre: `Renouveler « ${nom} » ?`,
-      texte: "Un nouveau secret est généré et déployé sur les services qui s'en servent. L'ancien reste valable une heure, le temps du déploiement. Les services non redéployés dans ce délai cesseront de répondre.",
-      bouton: "Renouveler", ton: "danger", mot: "RENOUVELER",
-    });
-    if (ok) ui.message(`« ${nom} » renouvelé. Déploiement en cours sur les services concernés.`, "bon");
-  }
+export function Securite({ aller }: { aller: (cle: string) => void }) {
+  const { source } = useSource();
+  const direct = source === "application";
+  const sante = useDistant(lireSante);
+  const comptes = useDistant(lireComptes);
+
+  if (!direct)
+    return (
+      <>
+        <Entete titre="Posture de sécurité" sous="Ce qui est faible aujourd'hui, et le geste qui le résout." />
+        <Carte enfants={
+          <div className="pas-carte text-[13px] text-encre-2 leading-[20px]">
+            Cet écran ne lit que l'application : il n'a pas de version de démonstration, parce qu'une
+            posture de sécurité inventée n'apprend rien à personne. Basculez la source sur
+            <b> ANAT Pilotage</b> dans la barre du haut.
+          </div>
+        } />
+      </>
+    );
+
+  const h = sante.donnees;
+  const humains = (comptes.donnees ?? []).filter((c) => !c.is_ai);
+  const verrouilles = humains.filter((c) => c.locked_until && +new Date(c.locked_until) > Date.now()).length;
+  const sansDeuxFacteurs = humains.filter((c) => !c.totp_enabled && c.status === "active").length;
+  const suspendus = humains.filter((c) => c.status === "suspended").length;
+  const multiOrgs = humains.filter((c) => c.orgs.length > 1).length;
+
+  const constats: Constat[] = h ? [
+    {
+      cle: "mfa-admins", titre: "Comptes à droits élevés sans deuxième facteur",
+      combien: h.accounts.without_mfa_admins,
+      explication: "Pour ces comptes, un mot de passe suffit à tout faire. C'est le constat le plus grave que cet écran puisse porter, parce qu'il réunit le pouvoir et la facilité d'y accéder.",
+      geste: "Exiger le deuxième facteur sur les profils d'administration.",
+      vers: "utilisateurs",
+      ton: h.accounts.without_mfa_admins > 0 ? "critique" : "bon",
+    },
+    {
+      cle: "mfa-tous", titre: "Comptes actifs sans deuxième facteur",
+      combien: sansDeuxFacteurs,
+      explication: "Moins grave que le précédent — ces comptes peuvent moins de choses — mais c'est la surface par laquelle on entre avant de monter.",
+      geste: "Rendre le deuxième facteur obligatoire, en commençant par les profils qui écrivent.",
+      vers: "utilisateurs",
+      ton: sansDeuxFacteurs > 0 ? "vigilance" : "bon",
+    },
+    {
+      cle: "jamais", titre: "Comptes jamais utilisés",
+      combien: h.accounts.never_logged,
+      explication: "Un compte créé et jamais ouvert garde ses droits sans que personne le surveille. Il n'est pas dormant — il attend — mais il se vole aussi bien.",
+      geste: "Relancer l'invitation, ou fermer ce qui n'a jamais servi.",
+      vers: "dormance",
+      ton: h.accounts.never_logged > 0 ? "vigilance" : "bon",
+    },
+    {
+      cle: "echecs", titre: "Échecs de connexion (24 h)",
+      combien: h.security.failed_logins_24h,
+      explication: "Quelques échecs sont normaux. Une série sur un même compte ou depuis une même adresse ne l'est pas, et l'application verrouille d'elle-même au-delà d'un seuil.",
+      geste: "Lire le détail dans les actions critiques.",
+      vers: "gestes",
+      ton: h.security.failed_logins_24h > 10 ? "vigilance" : "bon",
+    },
+    {
+      cle: "verrous", titre: "Comptes verrouillés en ce moment",
+      combien: verrouilles || h.security.locked_24h,
+      explication: "Un verrouillage protège, mais il empêche aussi quelqu'un de travailler. Chacun mérite qu'on sache pourquoi.",
+      geste: "Vérifier qu'il s'agit d'un oubli de mot de passe et non d'une tentative.",
+      vers: "gestes",
+      ton: (verrouilles || h.security.locked_24h) > 0 ? "vigilance" : "bon",
+    },
+    {
+      cle: "messagerie", titre: "Messagerie non configurée",
+      combien: h.mail.configured ? 0 : 1,
+      explication: "Sans messagerie, aucune alerte ne sort de l'outil : ni avertissement de dormance, ni notification de verrouillage, ni relance. La sécurité qui n'avertit personne ne sert à rien.",
+      geste: "Configurer la messagerie de l'organisation.",
+      vers: "canaux",
+      ton: h.mail.configured ? "bon" : "critique",
+    },
+    {
+      cle: "suspendus", titre: "Comptes suspendus",
+      combien: suspendus,
+      explication: "Un compte suspendu ne peut plus entrer, mais il existe encore et garde ses rattachements. C'est voulu, et cela mérite d'être revu de temps en temps.",
+      geste: "Revoir si la suspension doit devenir une fermeture.",
+      vers: "utilisateurs",
+      ton: "bon",
+    },
+  ] : [];
+
+  const aRegarder = constats.filter((c) => c.ton !== "bon" && c.combien > 0);
+  const propres = constats.filter((c) => c.ton === "bon" || c.combien === 0);
 
   return (
     <>
       <Entete
-        titre="Sécurité"
-        sous="Ce qui est exposé, ce qui a été tenté, et ce qui n'est pas conforme."
-        actions={
-          <>
-            <Bouton icone="rafraichir" onClick={() => ui.message("Nouvelle passe d'analyse lancée : dépendances, configuration, habilitations.", "bon")} enfants="Analyser maintenant" />
-            <Bouton icone="telecharger" onClick={() => ui.message("Rapport de sécurité en préparation.", "bon")} enfants="Rapport" />
-          </>
-        }
+        titre="Posture de sécurité"
+        sous="Ce qui est faible aujourd'hui, et le geste qui le résout. Tout est lu sur l'application."
+        actions={<Bouton icone="rafraichir" onClick={() => { sante.relancer(); comptes.relancer(); }} enfants="Relire" />}
       />
 
-      {/* Le score, et surtout l'axe qui le tire vers le bas */}
-      <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "minmax(0, 340px) minmax(0, 1fr)" }}>
-        <Carte enfants={
-          <div className="pas-carte">
-            <div className="flex items-start gap-4">
-              <div className="relative shrink-0 w-[92px] h-[92px]">
-                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                  <circle cx="50" cy="50" r="42" fill="none" stroke="var(--surface-3)" strokeWidth="9" />
-                  <circle cx="50" cy="50" r="42" fill="none" strokeWidth="9" strokeLinecap="round"
-                    stroke={scoreSecurite.global >= 85 ? "var(--bon)" : scoreSecurite.global >= 65 ? "var(--vigilance)" : "var(--critique)"}
-                    strokeDasharray={`${(scoreSecurite.global / 100) * 264} 264`}
-                    className="transition-[stroke-dasharray] duration-700 ease-[cubic-bezier(0,0,.2,1)]" />
-                </svg>
-                <div className="absolute inset-0 grid place-items-center">
-                  <div className="text-center">
-                    <div className="text-[23px] font-semibold tab-num leading-none">
-                      <NombreAnime valeur={scoreSecurite.global} />
-                    </div>
-                    <div className="text-[10px] text-encre-3 mt-[2px]">sur 100</div>
-                  </div>
-                </div>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-semibold mb-1">Posture de sécurité</div>
-                <p className="text-[12px] text-encre-2 leading-[17px]">
-                  Le chiffre ne dit rien à lui seul. Ce qui compte est l'axe le plus faible :
-                  <b className="text-encre"> {axeFaible.nom.toLowerCase()}, à {axeFaible.note}</b>.
-                </p>
-                <Etincelle valeurs={scoreSecurite.historique} couleur="--serie-1" hauteur={26} />
-              </div>
-            </div>
-          </div>
-        } />
-
-        <Carte enfants={
-          <div className="pas-carte grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
-            {scoreSecurite.axes.map((a) => (
-              <div key={a.nom}>
-                <div className="flex items-baseline gap-2 mb-[4px]">
-                  <span className="text-[12px] text-encre-3">{a.nom}</span>
-                  <span className={cx("ml-auto text-[13px] font-semibold tab-num",
-                    a.note >= 85 ? "text-bon" : a.note >= 65 ? "text-vigilance" : "text-critique")}>{a.note}</span>
-                </div>
-                <Progression valeur={a.note} ton={a.note >= 85 ? "bon" : a.note >= 65 ? "accent" : "critique"} />
-                <div className="text-[10px] text-encre-4 mt-[3px]">poids {a.poids}</div>
-              </div>
-            ))}
-          </div>
-        } />
+      <div className="mb-4">
+        <Empechement etat={sante.etat} echec={sante.echec} relancer={sante.relancer} />
       </div>
 
-      <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
-        <Carte className="pas-carte" enfants={<LigneStat etiquette="Failles exposées" valeur={<NombreAnime valeur={exposees.length} />} ton={exposees.length ? "critique" : "bon"} />} />
-        <Carte className="pas-carte" enfants={<LigneStat etiquette="Failles connues" valeur={<NombreAnime valeur={vulnerabilites.length} />} />} />
-        <Carte className="pas-carte" enfants={<LigneStat etiquette="Tentatives bloquées" valeur={<NombreAnime valeur={bloquees} />} ton={bloquees ? "vigilance" : "bon"} />} />
-        <Carte className="pas-carte" enfants={<LigneStat etiquette="Contrôles non tenus" valeur={<NombreAnime valeur={nonConformes.length} />} ton={nonConformes.length ? "vigilance" : "bon"} />} />
-        <Carte className="pas-carte" enfants={<LigneStat etiquette="Secrets à renouveler" valeur={<NombreAnime valeur={secretsEnRetard.length} />} ton={secretsEnRetard.length ? "critique" : "bon"} />} />
-      </div>
-
-      {rafale.length > 0 && (
-        <Apparition className="mb-4">
-          <AssistantIA
-            titre="Lecture des tentatives de connexion"
-            invite={`Sur les ${tentatives.length} tentatives refusées des trois dernières heures.`}
-            cout={0.016}
-            surAction={() => bloquerPlage(rafale[0].origine)}
-            constat={{
-              resume: `Une rafale de ${fmt(rafale.reduce((a, t) => a + t.tentatives, 0))} tentatives vise le compte « admin » depuis quatre adresses d'une même plage, hors zone habituelle.`,
-              cause: "Essai automatisé de mots de passe sur un nom de compte générique. Le compte « admin » n'existe pas dans le référentiel — toutes les tentatives échouent en « compte inconnu », ce qui exclut une fuite d'identifiants. Le rythme et la régularité des intervalles désignent un outil, pas une personne.",
-              certitude: "élevée",
-              preuves: rafale.slice(0, 3).map((t) => ({
-                source: `${t.origine} · ${t.quand}`,
-                extrait: `${t.tentatives} tentatives sur « ${t.compte} » — ${t.motif}`,
-              })),
-              pistes: [
-                "Vérifier qu'aucun compte réel ne porte un nom générique : « admin », « root », « test ».",
-                "Confirmer que la plage n'est pas celle d'un agent en déplacement avant de la bloquer.",
-                "Si la rafale persiste après blocage, la source change d'adresse : passer à une limitation par débit plutôt que par plage.",
-              ],
-              action: {
-                libelle: "Bloquer la plage au pare-feu",
-                consequence: "Une règle refusera toute connexion depuis cette plage, y compris d'un agent légitime qui s'y trouverait.",
-              },
-            }}
-          />
-        </Apparition>
-      )}
-
-      <Carte enfants={
+      {h && (
         <>
-          <Onglets
-            actif={onglet} surChoix={poserOnglet}
-            onglets={[
-              { cle: "vulnerabilites", nom: "Failles", compte: vulnerabilites.length },
-              { cle: "tentatives", nom: "Tentatives", compte: tentatives.length },
-              { cle: "conformite", nom: "Conformité", compte: nonConformes.length },
-              { cle: "pare-feu", nom: "Pare-feu", compte: reglesPareFeu.length },
-              { cle: "secrets", nom: "Secrets", compte: secretsEnRetard.length },
-            ]}
-          />
+          {/* Les alertes du serveur, mot pour mot. Il les a écrites pour un
+              humain ; les reformuler finirait par en dire autre chose. */}
+          {h.alerts.length > 0 && (
+            <div className="grid gap-2 mb-4">
+              {h.alerts.map((a) => (
+                <div key={a.text}
+                  className={cx("flex items-start gap-3 px-4 py-3 rounded-[4px] border anim-apparait",
+                    a.level === "warning" ? "bg-vigilance-voile border-vigilance/40" : "bg-critique-voile border-critique/40")}>
+                  <Icone nom="alerte" className={cx("mt-[2px]", a.level === "warning" ? "text-vigilance" : "text-critique")} />
+                  <p className="flex-1 min-w-[min(100%,240px)] text-[13px] text-encre-2">{a.text}</p>
+                  <span className="text-[11px] text-encre-4 shrink-0">dit par l'application</span>
+                </div>
+              ))}
+            </div>
+          )}
 
-          <div className="pas-carte">
-            {onglet === "vulnerabilites" && (
-              <ListeEchelonnee className="space-y-2">
-                {vulnerabilites.map((v) => {
-                  const anomalie = anomalies.find((a) => a.titre.includes(v.titre.slice(0, 24)));
-                  return (
-                    <div key={v.code} className={cx("p-4 rounded-[4px] border",
-                      v.exposee ? "border-critique/45 bg-critique-voile" : "border-bordure bg-surface-2")}>
-                      <div className="flex items-start gap-3 flex-wrap mb-2">
-                        <Pastille ton={TON[v.gravite] === "neutre" ? "neutre" : TON[v.gravite]} pulse={v.exposee} />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[13.5px] font-semibold">{v.titre}</span>
-                            <Jeton ton={TON[v.gravite]} enfants={`${v.gravite} · ${v.score}`} />
-                            {v.exposee && <Jeton ton="critique" enfants="exposée" />}
-                          </div>
-                          <div className="text-[11px] text-encre-3 mt-[2px]">
-                            <span className="font-mono">{v.code}</span> · {v.composant} {v.version} · publiée {v.publiee}
-                          </div>
-                        </div>
-                      </div>
-                      <p className="text-[12.5px] text-encre-2 mb-2">{v.effet}</p>
-                      <div className="flex items-center gap-2 flex-wrap text-[11px] text-encre-3 mb-3">
-                        Services touchés :
-                        {v.servicesTouches.map((s) => (
-                          <span key={s} className="font-mono px-[6px] py-[1px] rounded-[3px] bg-surface-3">{s}</span>
-                        ))}
-                      </div>
-                      <div className="flex items-start gap-2 p-[10px] rounded-[4px] bg-surface border border-bordure">
-                        <Icone nom="check" taille="s" className="text-bon mt-[2px] shrink-0" />
-                        <p className="text-[12.5px] text-encre-2 flex-1">{v.correction}</p>
-                        {anomalie?.correctif && (
-                          <Bouton taille="s" ton="principal" icone="etoiles" className="shrink-0"
-                            onClick={() => ui.message(`Le correctif est prêt dans Anomalies · ${anomalie.code}.`, "info")}
-                            enfants="Correctif prêt" />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </ListeEchelonnee>
-            )}
+          <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
+            <Carte className="pas-carte" enfants={<LigneStat etiquette="Constats à regarder" valeur={fmt(aRegarder.length)} ton={aRegarder.length ? "critique" : "bon"} />} />
+            <Carte className="pas-carte" enfants={<LigneStat etiquette="Comptes humains" valeur={fmt(humains.length)} />} />
+            <Carte className="pas-carte" enfants={<LigneStat etiquette="Connectés maintenant" valeur={fmt(h.sessions.users)} ton="accent" />} />
+            <Carte className="pas-carte" enfants={<LigneStat etiquette="Sur plusieurs organisations" valeur={fmt(multiOrgs)} />} />
+          </div>
 
-            {onglet === "tentatives" && (
-              <div className="overflow-auto">
-                <table className="w-full border-separate border-spacing-0 text-[13px]">
-                  <thead>
-                    <tr>
-                      {["Quand", "Compte visé", "Origine", "Motif", "Tentatives", "Appareil", "Suite"].map((t, i) => (
-                        <th key={t} className={cx(
-                          "sticky top-0 bg-surface-2 px-3 py-[9px] border-b border-bordure whitespace-nowrap",
-                          "text-[11px] font-semibold uppercase tracking-[.06em] text-encre-3",
-                          i === 4 ? "text-right" : "text-left")}>{t}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tentatives.map((t) => (
-                      <tr key={t.id} className={cx("hover:bg-surface-2 transi", t.tentatives > 20 && "bg-critique-voile")}>
-                        <td className="px-3 pas-ligne border-b border-bordure text-encre-3 whitespace-nowrap">{t.quand}</td>
-                        <td className="px-3 pas-ligne border-b border-bordure font-mono">{t.compte}</td>
-                        <td className="px-3 pas-ligne border-b border-bordure">
-                          <span className="font-mono text-[12px]">{t.origine}</span>
-                          <span className={cx("block text-[11px]", t.pays.startsWith("Hors") ? "text-critique" : "text-encre-3")}>{t.pays}</span>
-                        </td>
-                        <td className="px-3 pas-ligne border-b border-bordure text-encre-2">{t.motif}</td>
-                        <td className={cx("px-3 pas-ligne border-b border-bordure text-right tab-num", t.tentatives > 20 && "text-critique font-semibold")}>{t.tentatives}</td>
-                        <td className="px-3 pas-ligne border-b border-bordure text-encre-3">{t.appareil}</td>
-                        <td className="px-3 pas-ligne border-b border-bordure">
-                          {t.bloquee ? <Jeton ton="critique" enfants="bloquée" /> : <span className="text-encre-4">—</span>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {onglet === "conformite" && (
-              <ListeEchelonnee>
-                {conformite.map((c) => (
-                  <div key={c.cle} className="flex items-start gap-3 py-[12px] border-b border-bordure last:border-0">
-                    <span className={cx("w-[24px] h-[24px] rounded-[4px] grid place-items-center shrink-0 mt-[2px]",
-                      c.etat === "conforme" ? "bg-bon-voile text-bon"
-                        : c.etat === "partiel" ? "bg-vigilance-voile text-vigilance"
-                        : c.etat === "non conforme" ? "bg-critique-voile text-critique" : "bg-surface-3 text-encre-4")}>
-                      <Icone nom={c.etat === "conforme" ? "check" : c.etat === "non conforme" ? "croix" : "alerte"} taille="s" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[13px] font-semibold">{c.intitule}</span>
-                        <Jeton ton={c.etat === "conforme" ? "bon" : c.etat === "partiel" ? "vigilance" : c.etat === "non conforme" ? "critique" : "neutre"}
-                          enfants={c.etat} />
-                      </div>
-                      <p className="text-[12px] text-encre-3 mt-[2px]">{c.exigence}</p>
-                      <p className="text-[12.5px] text-encre-2 mt-[4px]">{c.constat}</p>
-                      <div className="text-[11px] text-encre-4 mt-[4px]">
-                        Preuve : {c.preuve} · vérifié {c.verifie}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </ListeEchelonnee>
-            )}
-
-            {onglet === "pare-feu" && (
-              <ListeEchelonnee>
-                {reglesPareFeu.map((r) => (
-                  <div key={r.nom} className="flex items-start gap-3 py-[11px] border-b border-bordure last:border-0">
-                    <Jeton ton={r.action === "autoriser" ? "bon" : "critique"} point={false} enfants={r.action} />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[13px] font-semibold">{r.nom}</div>
-                      <div className="font-mono text-[11.5px] text-encre-2 mt-[2px]">
-                        {r.sens === "Entrant" ? "↓" : "↑"} {r.source} → {r.destination}
-                      </div>
-                      {r.commentaire && <p className="text-[12px] text-encre-3 mt-[3px]">{r.commentaire}</p>}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-[12px] tab-num">{fmt(r.paquets30j, "compact")}</div>
-                      <div className="text-[11px] text-encre-4">{r.derniere}</div>
-                    </div>
-                  </div>
-                ))}
-              </ListeEchelonnee>
-            )}
-
-            {onglet === "secrets" && (
-              <>
-                <p className="text-[12px] text-encre-3 mb-3">
-                  Un secret qui ne tourne jamais finit par circuler : il se retrouve dans un ancien
-                  fichier de configuration, dans un message, dans la tête de quelqu'un qui est parti.
+          <Carte className="mb-4" enfants={
+            <>
+              <TeteCarte
+                titre={aRegarder.length ? "Ce qui mérite un geste" : "Rien ne mérite un geste aujourd'hui"}
+                sous={aRegarder.length ? "Du plus grave au moins grave" : "Les constats ci-dessous sont tous au vert"}
+              />
+              {aRegarder.length === 0 ? (
+                <p className="pas-carte pt-3 text-[13px] text-encre-2">
+                  Aucun constat en défaut. C'est une bonne nouvelle, et elle ne dit rien de ce que cet écran
+                  ne sait pas regarder : il n'y a ici ni détection d'intrusion, ni analyse de trafic, ni
+                  géolocalisation — l'application ne les porte pas.
                 </p>
-                <ListeEchelonnee>
-                  {secrets.map((s) => (
-                    <div key={s.nom} className="flex items-center gap-3 py-[11px] border-b border-bordure last:border-0">
-                      <Pastille ton={s.etat} pulse={s.etat === "bon"} />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[13px] font-semibold">{s.nom}</div>
-                        <div className="text-[11px] text-encre-3 mt-[2px]">
-                          {s.type} · rotation {s.rotation} · dernière {s.derniereRotation}
+              ) : (
+                <ListeEchelonnee className="divide-y divide-bordure">
+                  {aRegarder.map((c) => (
+                    <div key={c.cle} className="flex items-start gap-3 flex-wrap pas-carte">
+                      <span className={cx("w-[7px] h-[7px] rounded-full shrink-0 mt-[7px]",
+                        c.ton === "critique" ? "bg-critique" : "bg-vigilance")} />
+                      <div className="min-w-[min(100%,240px)] flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[13px] font-semibold">{c.titre}</span>
+                          <Jeton ton={c.ton} enfants={fmt(c.combien)} />
                         </div>
+                        <p className="text-[12.5px] text-encre-2 mt-[4px] leading-[18px]">{c.explication}</p>
+                        <p className="text-[12px] text-encre-3 mt-[5px]"><b>À faire :</b> {c.geste}</p>
                       </div>
-                      <span className={cx("text-[12px] tab-num shrink-0",
-                        s.etat === "critique" ? "text-critique font-semibold" : s.etat === "vigilance" ? "text-vigilance" : "text-encre-2")}>
-                        {s.prochaine}
-                      </span>
-                      {s.etat !== "bon" && (
-                        <Bouton taille="s" ton={s.etat === "critique" ? "danger" : "neutre"}
-                          onClick={() => tournerSecret(s.nom)} enfants="Renouveler" />
+                      {c.vers && (
+                        <Bouton taille="s" onClick={() => aller(c.vers!)} enfants="Y aller" />
                       )}
                     </div>
                   ))}
                 </ListeEchelonnee>
+              )}
+            </>
+          } />
+
+          <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%,330px), 1fr))" }}>
+            <Carte enfants={
+              <>
+                <TeteCarte titre="Au vert" sous="Vérifié, et sans rien à signaler" />
+                <div className="pas-carte pt-3 divide-y divide-bordure">
+                  {propres.map((c) => (
+                    <div key={c.cle} className="flex items-center gap-3 py-[8px] first:pt-0 last:pb-0">
+                      <Icone nom="check" taille="s" className="text-bon shrink-0" />
+                      <span className="text-[12.5px] flex-1 min-w-0">{c.titre}</span>
+                      <span className="text-[12px] tab-num text-encre-3">{fmt(c.combien)}</span>
+                    </div>
+                  ))}
+                </div>
               </>
-            )}
+            } />
+
+            <Carte enfants={
+              <>
+                <TeteCarte titre="Ce que cet écran ne sait pas voir" sous="Dit ici plutôt que deviné ailleurs" />
+                <div className="pas-carte pt-3 text-[12.5px] text-encre-2 leading-[19px] grid gap-2">
+                  <p><b>D'où viennent les connexions.</b> L'application enregistre l'adresse pour les
+                  connexions, mais pas le pays ni la ville, et rien du tout pour les actes métier. Une
+                  connexion depuis deux pays en une heure ne peut donc pas être détectée aujourd'hui.</p>
+                  <p><b>Ce qui est plus vieux qu'un an.</b> Les actes de sécurité sont effacés au bout de
+                  365 jours. Passé ce délai, cet écran ne peut rien dire — et c'est précisément ce que le
+                  journal scellé du centre de commande viendra réparer.</p>
+                  <p><b>Les actes qui n'ont pas été journalisés.</b> L'enregistrement se fait juste après
+                  l'acte, hors transaction : si le serveur s'arrête entre les deux, l'acte a eu lieu sans
+                  laisser de trace. La fenêtre est étroite et elle existait avant ce tableau de bord.</p>
+                </div>
+              </>
+            } />
           </div>
         </>
-      } />
+      )}
     </>
   );
 }

@@ -9,68 +9,58 @@ export interface EntreeNav {
 }
 export interface GroupeNav { groupe: string; icone: NomIcone; entrees: EntreeNav[] }
 
-/* Source unique : le rail d'icônes, le panneau de section, le fil d'Ariane et
-   la palette de commandes lisent tous cette liste. Ajouter une page = une
-   ligne ici, plus un `case` dans Vue() de CentreDeCommande.tsx. */
+/* =========================================================================
+   Source unique : le rail d'icônes, le panneau de section, le fil d'Ariane et
+   la palette de commandes lisent tous cette liste.
+
+   **Règle de cette liste, depuis le 26 novembre 2026 :** un écran n'y figure
+   que s'il correspond à quelque chose de réel.
+
+   Il y en avait trente-neuf. Vingt-trois montraient ce qu'une console sait
+   faire pour *un autre genre de système* — un serveur loué, un cluster, un
+   courtier de messages : services, files d'attente, déploiements, capacité,
+   traces, sauvegardes, connecteurs MCP. Pour administrer ANAT Pilotage, ils ne
+   voulaient rien dire, et un écran qui ne veut rien dire en apprend un faux.
+
+   Il en reste seize, en sept domaines. Treize lisent l'application ; trois
+   portent l'état propre à la console — le registre des contrôles, la file
+   d'approbation, les garde-fous — et ceux-là n'ont pas d'équivalent serveur
+   parce qu'ils n'en ont pas besoin : ils décrivent ce que la console s'autorise.
+
+   Les écrans retirés ne sont pas perdus : ils vivent sur la branche
+   `centre-de-commande-standard`, qui reste le gabarit réutilisable ailleurs.
+   Ici, c'est une console pour ANAT Pilotage, et rien d'autre.
+   ========================================================================= */
 export const NAVIGATION: GroupeNav[] = [
   { groupe: "Pilotage", icone: "grille", entrees: [
     { cle: "apercu", nom: "Vue d'ensemble", icone: "grille" },
     { cle: "activite", nom: "Activité", icone: "pouls" },
-    { cle: "rapports", nom: "Rapports", icone: "rapport" },
-  ]},
-  { groupe: "Contrôles", icone: "verrou", entrees: [
-    { cle: "controles", nom: "Registre des contrôles", icone: "verrou", compte: 1, ton: "critique" },
-    { cle: "approbations", nom: "Approbations", icone: "tampon", compte: 8, ton: "vigilance" },
-    { cle: "gardefous", nom: "Garde-fous", icone: "bouclier", compte: 1, ton: "critique" },
-  ]},
-  { groupe: "Exploitation", icone: "serveur", entrees: [
-    { cle: "services", nom: "Services", icone: "serveur", compte: 12 },
-    { cle: "taches", nom: "Tâches", icone: "tache", compte: 10 },
-    { cle: "files", nom: "Files d'attente", icone: "file" },
-    { cle: "deploiements", nom: "Déploiements", icone: "fusee", compte: 1 },
-    { cle: "console", nom: "Console d'exploitation", icone: "terminal" },
-    { cle: "incidents", nom: "Incidents et astreinte", icone: "alerte", compte: 2, ton: "critique" },
-  ]},
-  { groupe: "Infrastructure", icone: "puce", entrees: [
-    { cle: "sante", nom: "Santé du serveur", icone: "thermometre", compte: 2, ton: "vigilance" },
-    { cle: "basededonnees", nom: "Base de données", icone: "base", compte: 1, ton: "critique" },
-    { cle: "capacite", nom: "Capacité et coûts", icone: "monnaie", compte: 1, ton: "critique" },
-  ]},
-  { groupe: "Sécurité", icone: "bouclier", entrees: [
-    { cle: "securite", nom: "Posture de sécurité", icone: "bouclier", compte: 1, ton: "critique" },
-    { cle: "anomalies", nom: "Anomalies et correctifs", icone: "alerte", compte: 6, ton: "critique" },
-    { cle: "surveillance", nom: "Surveillance réseau", icone: "boussole", compte: 2, ton: "critique" },
-  ]},
-  { groupe: "Observabilité", icone: "trace", entrees: [
-    { cle: "journaux", nom: "Journaux", icone: "terminal" },
-    { cle: "collecte", nom: "Collecte des journaux", icone: "file", compte: 1, ton: "vigilance" },
-    { cle: "gestes", nom: "Actions critiques", icone: "corbeille", compte: 3, ton: "critique" },
-    { cle: "traces", nom: "Traces", icone: "trace" },
-    { cle: "alertes", nom: "Alertes", icone: "alerte", compte: 5, ton: "critique" },
-    { cle: "disponibilite", nom: "Disponibilité", icone: "horloge" },
-  ]},
-  { groupe: "Intelligence", icone: "etoiles", entrees: [
-    { cle: "agents", nom: "Agents IA", icone: "robot", compte: 6 },
-    { cle: "modeles", nom: "Modèles et clés", icone: "puce" },
-    { cle: "mcp", nom: "Connecteurs MCP", icone: "branche", compte: 3, ton: "vigilance" },
-  ]},
-  { groupe: "Communication", icone: "discussion", entrees: [
-    { cle: "canaux", nom: "Canaux d'envoi", icone: "prise" },
-    { cle: "modelesmessages", nom: "Modèles de messages", icone: "rapport" },
-    { cle: "envois", nom: "Envois", icone: "enveloppe" },
   ]},
   { groupe: "Accès", icone: "utilisateurs", entrees: [
     { cle: "utilisateurs", nom: "Utilisateurs", icone: "utilisateurs" },
     { cle: "droits", nom: "Rôles et droits", icone: "bouclier" },
     { cle: "sessions", nom: "Sessions", icone: "moniteur" },
-    { cle: "dormance", nom: "Comptes dormants", icone: "horloge", compte: 5, ton: "critique" },
-    { cle: "jetons", nom: "Jetons d'API", icone: "cle" },
+    { cle: "dormance", nom: "Comptes dormants", icone: "horloge" },
+  ]},
+  { groupe: "Sécurité", icone: "bouclier", entrees: [
+    { cle: "securite", nom: "Posture de sécurité", icone: "bouclier" },
+    { cle: "gestes", nom: "Actions critiques", icone: "corbeille" },
+    { cle: "audit", nom: "Journal d'audit", icone: "audit" },
+  ]},
+  { groupe: "Contrôles", icone: "verrou", entrees: [
+    { cle: "controles", nom: "Registre des contrôles", icone: "verrou" },
+    { cle: "approbations", nom: "Approbations", icone: "tampon" },
+    { cle: "gardefous", nom: "Garde-fous", icone: "bouclier" },
+  ]},
+  { groupe: "Intelligence", icone: "etoiles", entrees: [
+    { cle: "agents", nom: "Agents IA", icone: "robot" },
+  ]},
+  { groupe: "Communication", icone: "discussion", entrees: [
+    { cle: "canaux", nom: "Canaux d'envoi", icone: "prise" },
+    { cle: "envois", nom: "Envois", icone: "enveloppe" },
   ]},
   { groupe: "Système", icone: "reglages", entrees: [
     { cle: "parametres", nom: "Paramètres", icone: "reglages" },
-    { cle: "integrations", nom: "Intégrations", icone: "prise", compte: 1, ton: "critique" },
-    { cle: "sauvegardes", nom: "Sauvegardes", icone: "base" },
-    { cle: "audit", nom: "Journal d'audit", icone: "audit" },
   ]},
 ];
 

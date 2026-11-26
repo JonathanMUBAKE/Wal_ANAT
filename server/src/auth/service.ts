@@ -48,14 +48,34 @@ interface AccountRow {
 export class Auth {
   constructor(private svc: Services) {}
 
+  /**
+   * Écrit un événement de sécurité **et sa ligne de sortie vers le centre de commande**, dans la même
+   * transaction. Le journal probant ne connaît pas deux régimes : une connexion refusée part comme
+   * une décision de la direction générale, et part même devant, puisqu'elle est critique.
+   */
   async record(
     kind: string,
     o: { userId?: string | null; actorId?: string | null; ip?: string | null; data?: Record<string, unknown> } = {},
   ) {
-    await this.svc.db.query(
-      "INSERT INTO security_events (id, kind, user_id, actor_id, ip, data) VALUES ($1,$2,$3,$4,$5,$6)",
-      [uid("sev"), kind, o.userId ?? null, o.actorId ?? null, o.ip ?? null, JSON.stringify(o.data ?? {})],
-    );
+    await this.svc.db.tx(async (q) => {
+      const [ev] = await q.query<{ id: string; created_at: string }>(
+        `INSERT INTO security_events (id, kind, user_id, actor_id, ip, data)
+         VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, created_at`,
+        [uid("sev"), kind, o.userId ?? null, o.actorId ?? null, o.ip ?? null, JSON.stringify(o.data ?? {})],
+      );
+      await this.svc.sortie.deposer(q, {
+        origin: "security",
+        originId: ev.id,
+        kind,
+        occurredAt: ev.created_at,
+        payload: {
+          actor_id: o.actorId ?? null,
+          target_id: o.userId ?? null,
+          ip: o.ip ?? null,
+          data: o.data ?? {},
+        },
+      });
+    });
   }
 
   private account(where: "email" | "id", value: string) {

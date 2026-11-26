@@ -1,4 +1,5 @@
 import { now, uid, type Db, type Queryable, type Row } from "./db.js";
+import { TableDeSortie } from "./sortie.js";
 import { NOTIFICATION_CATEGORIES, categoryOfKind, type NotificationCategory } from "./notification-categories.js";
 import type { Bus } from "./bus.js";
 import {
@@ -371,10 +372,14 @@ export type TaskPatch = Partial<Omit<TaskInput, "project_id" | "parent_id">> & {
 // ---------------------------------------------------------------------------
 export class Services {
   requireAdminMfa = false;
+  /** Ce que l'application doit au centre de commande, dont le journal fait foi (docs/PLAN-PROJET.md § 11). */
+  readonly sortie: TableDeSortie;
   constructor(
     public db: Db,
     public bus: Bus,
-  ) {}
+  ) {
+    this.sortie = new TableDeSortie(db);
+  }
 
   // ================================================================ utilisateurs
   async user(id: string): Promise<User> {
@@ -2696,16 +2701,44 @@ export class Services {
   }
 
   // ================================================================ activité, indicateurs, recherche
+  /**
+   * Écrit une entrée au fil d'activité **et sa ligne de sortie vers le centre de commande**, dans la
+   * même transaction : les deux, ou aucune. Depuis que le journal du centre fait foi, une entrée qui
+   * ne part pas est une entrée que l'institution n'aura jamais eue.
+   *
+   * `q` permet à un appelant déjà dans une transaction d'y joindre son journal — c'est ainsi que se
+   * referme le trou qui reste entre l'acte métier et sa trace (voir le bas de `sortie.ts`).
+   */
   async log(
     actorId: string,
     kind: string,
     o: { orgId?: string | null; projectId?: string | null; taskId?: string | null; data?: Record<string, unknown> },
+    q?: Queryable,
   ) {
     const orgId = o.orgId ?? (o.projectId ? await this.orgOfProject(o.projectId) : null);
-    await this.db.query(
-      "INSERT INTO activity (id, org_id, project_id, task_id, actor_id, kind, data) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-      [uid("act"), orgId || null, o.projectId ?? null, o.taskId ?? null, actorId, kind, JSON.stringify(o.data ?? {})],
-    );
+    const ecrire = async (t: Queryable) => {
+      const [acte] = await t.query<{ id: string; created_at: string }>(
+        `INSERT INTO activity (id, org_id, project_id, task_id, actor_id, kind, data)
+         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, created_at`,
+        [uid("act"), orgId || null, o.projectId ?? null, o.taskId ?? null, actorId, kind, JSON.stringify(o.data ?? {})],
+      );
+      await this.sortie.deposer(t, {
+        origin: "activity",
+        originId: acte.id,
+        kind,
+        // La date de l'acte, prise sur l'entrée elle-même : l'attestation portera la sienne.
+        occurredAt: acte.created_at,
+        payload: {
+          actor_id: actorId,
+          org_id: orgId || null,
+          project_id: o.projectId ?? null,
+          task_id: o.taskId ?? null,
+          data: o.data ?? {},
+        },
+      });
+    };
+    if (q) return ecrire(q);
+    await this.db.tx(ecrire);
   }
   async projectActivity(actorId: string, projectId: string, limit = 40) {
     await this.require(actorId, projectId);

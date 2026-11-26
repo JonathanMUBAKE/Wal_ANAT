@@ -2,6 +2,9 @@ import { describeError } from "./ai/engine.js";
 import { isExternal, type AiProvider } from "./ai/provider.js";
 import type { Auth } from "./auth/service.js";
 import { localDate, type Services } from "./services.js";
+import { SEVERITIES, severityOf, type Severity } from "./journal-severite.js";
+
+export { SEVERITIES, severityOf, type Severity };
 
 /*
  * Journal d'audit de l'administration système. Il réunit, sans rien recopier, les deux traces que l'outil tient déjà :
@@ -47,8 +50,6 @@ export interface AuditFilter {
   limit?: number;
 }
 
-export type Severity = "critique" | "importante" | "normale";
-export const SEVERITIES: Severity[] = ["critique", "importante", "normale"];
 
 /** Libellé lisible de chaque action tracée ; une action inconnue garde son code technique. */
 const LABELS: Record<string, string> = {
@@ -293,89 +294,6 @@ const prefix = (kind: string) => kind.split(".")[0];
  * Gravité d'une action. Critique : ce qui retire, efface, ouvre des droits ou trahit une tentative d'intrusion.
  * Importante : ce qui engage l'institution (validation, signature, décision, attribution, imputation). Normale : le reste.
  */
-const CRITICAL = new Set([
-  "login.failed",
-  "account.locked",
-  "account.suspended",
-  "platform.granted",
-  "platform.revoked",
-  "mfa.disabled",
-  "mfa.failed",
-  "mfa.recovery_used",
-  "password.reset",
-  "member.permissions",
-  "profile.deleted",
-  "sessions.revoked",
-  "settings.registration",
-  "partner.merged",
-  "agreement.terminated",
-  "signature.reject",
-  "org.mail.config",
-  "org.domains",
-  "session.revoked",
-  "correspondence.filed",
-]);
-const IMPORTANT = new Set([
-  "account.invited",
-  "account.activated",
-  "account.reactivated",
-  "access.approved",
-  "access.rejected",
-  "member.profile",
-  "profile.created",
-  "profile.updated",
-  "invitation.cancelled",
-  "password.changed",
-  "mfa.enabled",
-  "decision.recorded",
-  "decision.execution",
-  "gap.decided",
-  "agreement.in_force",
-  "agreement.sign",
-  "agreement.amendment",
-  "partner.state",
-  "meeting.convened",
-  "meeting.validated",
-  "meeting.returned",
-  "meeting.reopened",
-  "correspondence.assigned",
-  "correspondence.closed",
-  "signature.started",
-  "signature.approve",
-  "delegation.created",
-  "delegation.revoked",
-  "plan.approved",
-  "plan.returned",
-  "plan.submitted",
-  "attribution.approved",
-  "deliverable.valide",
-  "deliverable.paid",
-  "project.status",
-  "project.governance",
-  "task.assignee_id",
-  "task.due_on",
-  "org.member",
-  "audit.analysed",
-  "audit.exported",
-  "hr.agent.created",
-  "hr.agent.updated",
-  "hr.agent.viewed",
-  "project.oversight_read",
-  "unit.manager",
-  "unit.moved",
-  "unit.member",
-  "team.member.added",
-  "admin.journal.reviewed",
-  "platform.banner",
-  "accounts.exported",
-  "correspondence.started",
-]);
-export const severityOf = (kind: string): Severity =>
-  CRITICAL.has(kind) || kind.endsWith(".deleted") || kind.endsWith(".removed")
-    ? "critique"
-    : IMPORTANT.has(kind)
-      ? "importante"
-      : "normale";
 const TARGET_KEYS = ["user", "user_id", "member", "for"];
 export const categoryOf = (source: "activity" | "security", kind: string) =>
   source === "security" ? "Sécurité" : (CATEGORY_OF[prefix(kind)] ?? "Autre");

@@ -59,7 +59,7 @@ C'est pourquoi je réponds maintenant, et complètement, plutôt que « commenç
   // --- d'où ------------------------------------------------------------
   "ip": "127.0.0.1",               // vide pour TOUS les actes métier aujourd'hui — voir §3bis
   "country": null,                 // le pays seulement, jamais la ville — vide jusqu'au lot 9
-  "user_agent": null,              // stocké nulle part aujourd'hui — voir §3bis
+  "user_agent": "Firefox 134 / Windows",   // repris de la session, CAPTURÉ À L'ÉMISSION — §3bis
 
   // --- le coffre, quand l'acte fait disparaître quelque chose ----------
   "vault": null,                   // { "ref", "bytes", "rows", "truncated" } — vide jusqu'au lot 12
@@ -98,7 +98,23 @@ catégorie — donc présent sur beaucoup plus d'entrées qu'un libellé isolé.
 ### §3bis — « d'où » n'existe que pour les connexions
 
 `audit.ts:787` renvoie `NULL::text AS ip` pour toute la branche `activity` : seules
-`security_events` portent une adresse. Et `user_agent` n'est stocké **nulle part**.
+`security_events` portent une adresse.
+
+**`user_agent`, lui, est disponible** — l'agent serveur s'est corrigé lui-même : il est sur
+`sessions.user_agent`, renseigné à chaque connexion, donc joignable pour tout acte posé pendant
+une session ouverte, c'est-à-dire presque tous. Il peut être rempli dès maintenant.
+
+> **Mais il doit être capturé à l'émission, jamais joint à l'expédition.** `auth/service.ts:317`
+> supprime les sessions trente jours après leur expiration. Une jointure faite au moment de
+> l'envoi rendrait donc `null` pour tout acte plus ancien — et comme la table de sortie peut
+> prendre du retard de plusieurs jours, **le même acte serait scellé différemment selon le moment
+> où il part.** Un champ dont la valeur dépend de quand on l'a regardé n'a rien à faire dans une
+> chaîne scellée.
+>
+> **La règle générale** : tout ce que porte l'enveloppe est copié **au moment de l'acte**, dans la
+> même transaction que lui. Jamais reconstruit plus tard. C'est déjà ce qu'il fait pour
+> `actor_name` ; cela vaut pour `user_agent`, pour `ip` le jour où elle existera sur les actes
+> métier, et pour tout ce qui viendra.
 
 Donc le « d'où » du document de vision — adresse, fournisseur, pays, ville, terminal — **n'existe
 aujourd'hui que pour les connexions.** Pour une décision de la direction générale, il est vide.

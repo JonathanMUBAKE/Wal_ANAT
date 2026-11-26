@@ -132,6 +132,8 @@ export async function buildApp(opts: AppOptions = {}) {
   await app.register(cookie, { secret: cookieSecret() });
   const purge = setInterval(() => {
     void authService.purge().catch((err) => app.log.error(err));
+    // Le tampon de sortie n'est pas un journal : ses lignes acquittées s'effacent, les autres jamais.
+    void svc.sortie.purger().catch((err) => app.log.error(err));
   }, 24 * HOUR);
   purge.unref();
   app.addHook("onClose", async () => {

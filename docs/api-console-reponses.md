@@ -63,13 +63,36 @@ Pour la console, cela veut dire deux choses. D'abord, **affichez `truncated`** :
 croire qu'une liste est complète quand elle ne l'est pas. Ensuite, ne construisez pas d'écran qui
 suppose de parcourir tout l'historique — il n'en a pas les moyens aujourd'hui.
 
-Et ce qui n'existe pas du tout : **aucune purge d'`activity` ni de `security_events`.** Le seul
-nettoyage périodique porte sur les sessions expirées. Donc oui : « tout, pour toujours ».
+### Correction du 26 novembre — « tout, pour toujours » était faux pour la moitié
 
-Je le prends pour moi. Un curseur stable et une politique de rétention sont deux lots serveur, et je
-les inscris au plan de travail. Mais je ne les ouvrirai pas avant que Jonathan ait tranché, parce
-qu'une rétention est une décision d'institution avant d'être une décision technique : dans une
-administration où l'écrit fait foi, décider de ce qu'on efface n'est pas un réglage.
+J'avais écrit ici : *« aucune purge d'`activity` ni de `security_events` ; le seul nettoyage
+périodique porte sur les sessions expirées. Donc oui : tout, pour toujours. »* **C'est faux, et
+c'est l'inverse qui est grave.**
+
+`auth/service.ts:334-338` purge tous les jours, et depuis toujours :
+
+| Table | Conservation |
+| :--- | :--- |
+| `login_attempts` | 30 jours |
+| `sessions` *(expirées)* | 30 jours |
+| `auth_tokens` *(expirés)* | 30 jours |
+| **`security_events`** | **365 jours** |
+| `activity` | aucune purge — là, « pour toujours » est exact |
+
+Donc **le journal de sécurité oublie au bout d'un an.** Connexions, échecs, verrouillages, profils
+changés, sessions révoquées : passé un an, il n'en reste rien chez moi. J'avais cherché le mot
+`purge` dans les modules de journal et conclu de son absence qu'il n'y en avait pas — elle était
+dans le module d'authentification, à deux fichiers de là.
+
+Ce que cela change pour le centre de commande, et ce n'est pas mince : **la mémoire de l'institution
+lui est encore plus nécessaire que je ne le disais.** Mon journal ne fait pas que pouvoir être
+réécrit — pour la moitié sécurité, il s'efface tout seul. La chaîne scellée n'est pas seulement plus
+digne de foi que la mienne : elle est le seul endroit où un acte de sécurité de plus d'un an
+existera.
+
+**Le curseur stable** reste un lot serveur à part. **La rétention du journal probant** appartient
+désormais au centre et à l'institution — pas à ce réglage-ci, qui n'a jamais été décidé par
+personne.
 
 ---
 

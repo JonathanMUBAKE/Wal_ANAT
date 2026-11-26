@@ -153,15 +153,49 @@ export class TableDeSortie {
     );
   }
 
-  /** Le retard, chiffré : combien attendent, et depuis quand. À afficher en permanence, comme `truncated`. */
-  async retard() {
-    const r = await this.db.one<{ pending: string; oldest: string | null; critiques: string }>(
+  /**
+   * Le retard, chiffré : combien attendent, depuis quand, et combien s'entêtent.
+   *
+   * `bloquees` compte les lignes qui ont dépassé le seuil d'essais. Nous avons écarté un troisième
+   * état où un événement refusé irait se garer en silence : **un refus doit être bruyant, pas rangé.**
+   * Une ligne qui repart indéfiniment est un défaut de forme chez l'un de nous deux, et c'est à voir,
+   * pas à classer. À afficher en permanence, comme `truncated`.
+   */
+  async retard(seuil = 5) {
+    const r = await this.db.one<{ pending: string; oldest: string | null; critiques: string; bloquees: string }>(
       `SELECT COUNT(*) AS pending, MIN(occurred_at) AS oldest,
-              COUNT(*) FILTER (WHERE severity = 'critique') AS critiques
+              COUNT(*) FILTER (WHERE severity = 'critique') AS critiques,
+              COUNT(*) FILTER (WHERE attempts >= $2) AS bloquees
          FROM outbox WHERE state = 'en_attente' AND source = $1`,
-      [this.source],
+      [this.source, Math.max(1, seuil)],
     );
-    return { pending: Number(r?.pending ?? 0), oldest: r?.oldest ?? null, critiques: Number(r?.critiques ?? 0) };
+    return {
+      pending: Number(r?.pending ?? 0),
+      oldest: r?.oldest ?? null,
+      critiques: Number(r?.critiques ?? 0),
+      bloquees: Number(r?.bloquees ?? 0),
+    };
+  }
+
+  /**
+   * Efface les lignes **acquittées** de plus de `jours`. Jamais les autres, quel que soit leur âge.
+   *
+   * Ce n'est pas la rétention du journal probant, qui appartient au centre et à l'institution : une
+   * ligne acquittée a fini son travail — l'acte est scellé là-bas, et c'est le centre qui répond
+   * désormais « attesté, et quand ». La garder indéfiniment ferait de cette base un second journal
+   * qui grossirait en parallèle du vrai sans que personne l'ait décidé. Quatre-vingt-dix jours
+   * laissent de quoi enquêter sur un incident de transport.
+   *
+   * Une ligne non acquittée ne se purge pas : c'est précisément celle qui n'a pas de double.
+   */
+  async purger(jours = 90): Promise<number> {
+    const faites = await this.db.query<{ id: string }>(
+      `DELETE FROM outbox
+        WHERE state = 'atteste' AND attested_at < now() - ($1 || ' days')::interval
+        RETURNING id`,
+      [String(Math.max(1, Math.floor(jours)))],
+    );
+    return faites.length;
   }
 }
 

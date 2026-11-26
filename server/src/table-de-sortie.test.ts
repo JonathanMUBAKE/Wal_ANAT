@@ -193,3 +193,37 @@ describe("le critique double l'arriéré, et pas seulement ses voisins", () => {
     expect(num(lot[0].sequence)).toBeGreaterThan(num(lot[9].sequence));
   });
 });
+
+describe("le tampon se vide, le journal probant ne se vide pas", () => {
+  it("une ligne acquittée ancienne s'efface ; une ligne en attente du même âge reste", async () => {
+    await g.ctx.svc.log("u_alice", "partner.note", { orgId: g.org, data: { attestee: true } });
+    await g.ctx.svc.log("u_alice", "partner.note", { orgId: g.org, data: { en_attente: true } });
+    const [a, b] = await g.ctx.db.query<Ligne>("SELECT * FROM outbox ORDER BY sequence DESC LIMIT 2");
+    await g.ctx.svc.sortie.attester([a.id, b.id]);
+
+    // Les deux vieillissent de cent jours ; l'une est renvoyée en attente.
+    await g.ctx.db.query(
+      "UPDATE outbox SET attested_at = now() - interval '100 days', created_at = now() - interval '100 days' WHERE id = ANY($1)",
+      [[a.id, b.id]],
+    );
+    await g.ctx.db.query("UPDATE outbox SET state = 'en_attente', attested_at = NULL WHERE id = $1", [b.id]);
+
+    expect(await g.ctx.svc.sortie.purger()).toBe(1);
+    expect(await g.ctx.db.one("SELECT id FROM outbox WHERE id = $1", [a.id])).toBeUndefined();
+    // Celle qui n'a pas de double chez le centre reste, quel que soit son âge.
+    expect(await g.ctx.db.one("SELECT id FROM outbox WHERE id = $1", [b.id])).toBeTruthy();
+  });
+
+  it("une ligne qui s'entête est comptée, pas rangée : un refus doit être bruyant", async () => {
+    await g.ctx.svc.sortie.attester((await g.ctx.svc.sortie.aExpedier(5000)).map((l) => l.id));
+    await g.ctx.svc.log("u_alice", "partner.note", { orgId: g.org, data: {} });
+    const l = (await g.ctx.db.query<Ligne>("SELECT * FROM outbox WHERE state = 'en_attente'"))[0];
+
+    for (let i = 0; i < 5; i++) await g.ctx.svc.sortie.echec([l.id], "forme refusée par le centre");
+    const r = await g.ctx.svc.sortie.retard();
+    expect(r.pending).toBe(1);
+    expect(r.bloquees).toBe(1);
+    // Elle repart quand même : on ne la gare pas dans un état où personne ne la regarderait plus.
+    expect((await g.ctx.svc.sortie.aExpedier(10)).map((x) => x.id)).toContain(l.id);
+  });
+});

@@ -32,7 +32,7 @@
 | `agreement.created` | Accord créé | Partenariats | normale |
 | `agreement.deleted` | Accord supprimé | Partenariats | critique |
 | `agreement.in_force` | Accord entré en vigueur | Partenariats | importante |
-| `agreement.sign` | Accord envoyé au parapheur | Partenariats | importante |
+| `agreement.sign` | Accord transmis au signataire | Partenariats | importante |
 | `agreement.terminated` | Accord résilié | Partenariats | critique |
 | `agreement.updated` | Accord modifié | Partenariats | normale |
 | `attachment.added` | Pièce jointe ajoutée | Tâches | normale |
@@ -53,8 +53,8 @@
 | `correspondence.started` | Courrier pris en charge | Courrier | importante |
 | `decision.execution` | Exécution d'une décision suivie | Décisions | importante |
 | `decision.recorded` | Décision enregistrée | Décisions | importante |
-| `delegation.created` | Délégation de signature accordée | Parapheur | importante |
-| `delegation.revoked` | Délégation de signature révoquée | Parapheur | importante |
+| `delegation.created` | Délégation de signature accordée | Signataire | importante |
+| `delegation.revoked` | Délégation de signature révoquée | Signataire | importante |
 | `deliverable.a_corriger` | Livrable à corriger | Projets | normale |
 | `deliverable.created` | Livrable ajouté | Projets | normale |
 | `deliverable.deleted` | Livrable supprimé | Projets | critique |
@@ -154,11 +154,11 @@
 | `session.revoked` | Session fermée par l'administrateur | Autre | critique |
 | `sessions.revoked` | Sessions fermées | Autre | critique |
 | `settings.registration` | Mode d'inscription changé | Autre | critique |
-| `signature.approve` | Visa ou signature apposé | Parapheur | importante |
-| `signature.created` | Document déposé au parapheur | Parapheur | normale |
-| `signature.deleted` | Document retiré du parapheur | Parapheur | critique |
-| `signature.reject` | Document rejeté au parapheur | Parapheur | critique |
-| `signature.started` | Circuit de signature lancé | Parapheur | importante |
+| `signature.approve` | Visa ou signature apposé | Signataire | importante |
+| `signature.created` | Document transmis au signataire | Signataire | normale |
+| `signature.deleted` | Document retiré du signataire | Signataire | critique |
+| `signature.reject` | Document refusé par le signataire | Signataire | critique |
+| `signature.started` | Circuit de signature lancé | Signataire | importante |
 | `task.assignee_id` | Tâche attribuée | Tâches | importante |
 | `task.completed` | Tâche terminée ou rouverte | Tâches | normale |
 | `task.created` | Tâche créée | Tâches | normale |

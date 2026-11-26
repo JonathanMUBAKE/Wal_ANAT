@@ -114,6 +114,31 @@ Le plus ambitieux, et le plus facile à mal faire. Il ne s'ouvre que si la quest
 
 ---
 
+## Lots 8 à 13 — la vision de gouvernance totale
+
+*Ajoutés le 26 novembre après le document `VISION.md`. Analyse complète dans
+`06-vision-et-consequences.md`. Ces lots ne s'ouvrent qu'après les sept premiers, et **aucun ne
+commence avant que Jonathan ait tranché la question de l'isolement** (§7 du même document).*
+
+| Lot | Quoi | Chez qui | Pourquoi à cette place |
+|---|---|---|---|
+| **8** | **Journal scellé et archivé** — ajout en chaîne, vérification, sortie des entrées anciennes vers un stock froid | serveur | le moins cher des six, et il protège tous les autres. « Ne jamais effacer » n'est pas « tout garder dans la même table » |
+| **9** | **Défense active** — bannissement d'adresse, géolocalisation **au pays**, base embarquée | serveur, console affiche | borné, visible tout de suite. L'Agence travaille hors connexion : pas de service distant, pas de ville |
+| **10** | **Gouvernance de l'IA depuis la console** — modèle, quota, plafond de coût, audit des décisions | les deux | la matière existe déjà ; c'est surtout de l'exposition |
+| **11** | **Flux temps réel** — un canal continu, et la captation des exceptions | serveur, console consomme | demande un bus d'événements qui n'existe pas. Lourd, mais c'est le pilier qui se voit le plus |
+| **12** | **Coffre-fort forensique** — suppression douce, instantané avant/après, archive indépendante, restauration | **les deux, et c'est un projet** | *« ce n'est pas une fonctionnalité de console : c'est une modification de chaque module qui supprime quelque chose »*. Tant qu'un seul module efface pour de bon, le coffre ne garantit rien |
+| **13** | **Ouvrir la session d'un utilisateur** | serveur, console déclenche | **en dernier** : il suppose sept garde-fous, qui supposent le journal scellé du lot 8. L'écrire avant, c'est l'écrire sans eux |
+
+**Deux décisions déjà acquises par la vision :**
+
+- **aucune purge.** Le pilier VI tranche la question de la rétention que nous laissions à Jonathan.
+  Rien ne s'efface, et l'agent serveur ne construira aucune purge.
+- **le contenu des données n'est jamais affiché** par défaut dans la console. Le coffre le stocke,
+  parce que c'est la condition de la restauration ; l'ouvrir est un geste contrôlé, motivé,
+  journalisé. Restaurer ne demande pas de lire.
+
+---
+
 ## Ce qui reste hors plan, volontairement
 
 - **Les séries temporelles.** Mes courbes resteront inventées tant qu'on n'aura pas décidé où

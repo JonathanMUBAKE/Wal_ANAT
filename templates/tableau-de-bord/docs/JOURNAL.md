@@ -17,15 +17,22 @@
 | 26 nov. 2026 | console | **Registre des contrôles : réserve du serveur acceptée, correction structurelle.** Mes identifiants `G-001`… étaient exactement la deuxième liste qu'il redoutait. La clé d'un geste devient une **clé de droit du catalogue**, et le registre se réduit à deux attributs ajoutés à chaque droit : niveau d'exigence et réversibilité. Le catalogue reste la seule liste. |
 | 26 nov. 2026 | serveur | A vérifié `roles-matrix` et rapporté trois choses. `groups[].items[]` vaut bien `{key, label}`. **`permissions` est dérivé** pour un profil `owner` — la totalité du catalogue, pas ce qui est stocké : une dérivation, pas une décision. Et `rolesMatrix` appelle `requireSuperAdmin` en joignant sans filtre : **le cloisonnement est levé sur cette route**, gardé par le rang de plateforme et non par un droit. Une route vérifiée, pas une généralité. |
 | 26 nov. 2026 | console | Contrat mis à jour. L'écran *Rôles et droits* devient réservé au super-administrateur, son `403` est un cas normal et non une panne, et les profils `owner` s'afficheront « tous les droits, par construction » plutôt que cinquante-huit cases cochées. Noté aussi que la visibilité dépend du rang **et** du catalogue, pas du catalogue seul. |
+| 26 nov. 2026 | Jonathan | Partage le document de vision **Super-Control Plane** aux deux agents : gouvernance totale, observabilité forensique, six piliers. « Tout doit être piloté, vu et audité. Pas besoin de voir les données des utilisateurs, mais des traces de tout. » Demande aussi de pouvoir **ouvrir la session d'un utilisateur**, comme cPanel/WHM, et une console sur un **sous-domaine distinct**. |
+| 26 nov. 2026 | console | Écrit `06-vision-et-consequences.md` : les six piliers face à l'existant, quatre tensions, les sept garde-fous de l'emprunt de session, et cinq lots supplémentaires. La tension principale : « tracer tout sans voir les données » et « conserver le contenu avant/après » ne peuvent pas être vraies ensemble. Résolution proposée — le coffre stocke, la console n'affiche jamais sans un geste contrôlé, et restaurer ne demande pas de lire. |
+| 26 nov. 2026 | serveur | Relevé de l'intérieur, pilier par pilier. Corrige mon tableau sur trois points : la **révocation est bien immédiate** ; le temps réel, c'est **rien** ; le journal immuable, **rien au sens strict** — table ordinaire, réécrivable. Et la phrase qui tranche le lot 12 : *le coffre-fort n'est pas une fonctionnalité de console, c'est une modification de chaque module qui supprime quelque chose*. |
+| 26 nov. 2026 | serveur | **Contrainte hors connexion sur la géolocalisation** : six pools, deux fuseaux, antennes mal reliées. Un service distant ne marchera pas là où on en a le plus besoin. Retenu : base embarquée, **pays seulement**, pas de ville. Suffisant pour détecter une connexion géographiquement impossible. |
+| 26 nov. 2026 | les deux | **Même conclusion atteinte séparément dans la même heure** : le lot 0 décrit une console statique sans stockage, la vision décrit un second service avec sa propre base, et les deux ne se rejoignent pas en chemin. **Question posée à Jonathan**, elle commande tout le reste. En attendant : Sessions, qui n'en dépend pas, et rien qui suppose la console durablement sans stockage. |
 | 26 nov. 2026 | les deux | **Incident d'arbre partagé.** Son commit `0d38996` est tombé sur `centre-de-commande` parce que j'avais basculé de branche pendant qu'il écrivait. Rien n'est déplacé — ses deux fichiers partent avec ma branche, il les reprendra sur `main`. Une seule copie du dépôt, une seule branche sortie : regarder où l'on est avant chaque commit. |
 
 ---
 
 ## En attente
 
-- **Jonathan** : la rétention d'`activity` et de `security_events`. Rien n'est purgé aujourd'hui,
-  et le serveur ne veut pas trancher seul — « dans une administration où l'écrit fait foi, décider
-  de ce qu'on efface n'est pas un réglage technique ». Il a raison.
+- **Jonathan** : **l'isolement de la console.** Paquet statique servi par l'application, ou second
+  service avec sa propre base ? C'est la seule décision qui bloque, et elle commande tout le reste.
+- ~~La rétention des journaux~~ — **tranchée par la vision** : aucune purge, journal inaltérable.
+  Reste à distinguer « ne jamais effacer » de « tout garder dans la même table » : l'archivage vers
+  un stock froid est le lot 8.
 - **Le serveur** : la forme exacte de `groups[].items` dans `roles-matrix` (tronquée en `"{…}"`
   dans les exemples) ; et quels contrôles gardent réellement les routes de plateforme — en
   attendant, je suppose le cloisonnement.

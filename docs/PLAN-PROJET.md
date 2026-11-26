@@ -215,3 +215,41 @@ une fausse écriture a une gravité de 5.
 
 **La règle qui prime sur toutes les autres**, et qui vient de Jonathan : *on fait de grandes retouches,
 mais en suivant une bonne logique — pas coder des histoires à moitié.*
+
+---
+
+## 10. Décision du 26 novembre 2026 — le centre de commande est un service séparé
+
+Jonathan a tranché : **le plan de contrôle vit à part, avec sa propre base.** C'est ce que demandait son
+document de vision — un journal que l'application peut réécrire n'est pas immuable, et un coffre-fort
+qui tombe avec elle n'en est pas un.
+
+### Ce que cela ajoute au périmètre serveur
+
+- [ ] **La table de sortie.** Chaque acte s'écrit dans la même transaction que l'acte lui-même : soit les
+      deux, soit aucun. Un expéditeur la vide vers le plan de contrôle quand il peut, qui acquitte. Si le
+      plan de contrôle est injoignable — six pools, deux fuseaux, des antennes mal reliées — l'application
+      ne ralentit pas, ne perd rien et ne refuse aucune écriture. **C'est le seul mécanisme qui tienne à la
+      fois le « zéro perte » et le fonctionnement hors connexion.** Elle précède le flux temps réel, qui
+      n'en est que la lecture.
+- [ ] **Le journal scellé passe de l'autre côté.** Celui de l'application reste la mémoire de travail ;
+      celui du plan de contrôle devient la mémoire de l'institution. **Deux journaux, deux rôles — il faut
+      dire lequel fait foi**, et le dire avant d'écrire la table de sortie.
+- [ ] **L'authentification entre les deux services.** Un secret partagé suffit pour le transport : c'est
+      un flux à sens unique où l'identité de l'acteur est une **donnée**, pas une revendication. Cela ne
+      rouvre pas la porte que nous avions fermée.
+
+### La question que cette décision rouvre
+
+La console parlera à deux choses : au plan de contrôle pour le forensique, à l'application pour tout ce
+qui est vivant. **Si le plan de contrôle relaie les actions, l'application devrait le croire sur parole
+quant à l'identité de l'acteur** — exactement le trou écarté au lot 0. Deux issues, à trancher avec la
+session qui construit la console :
+
+- **(a)** la console appelle l'application **directement** pour agir, avec le cookie de la personne, et le
+  plan de contrôle **uniquement** pour le forensique. Deux chemins d'appel, aucune confiance accordée.
+- **(b)** l'application frappe elle-même un **jeton court, restreint et signé** portant l'identité de la
+  personne ; le plan de contrôle le relaie sans jamais le fabriquer. L'application vérifie sa propre
+  signature au lieu de croire sur parole.
+
+Recommandation : **(a) pour commencer**, parce qu'elle ne demande rien de neuf et ne peut pas mal tourner.

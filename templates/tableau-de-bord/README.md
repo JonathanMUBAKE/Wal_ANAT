@@ -45,10 +45,10 @@ composants ni routeur.
 | **Observabilité** | Journaux · **Collecte des journaux** · **Actions critiques** · Traces · Alertes · Disponibilité |
 | **Intelligence** | Agents IA · Modèles et clés · Connecteurs MCP |
 | **Communication** | Canaux d'envoi (SMTP · SMS · WhatsApp) · Modèles de messages · Envois |
-| **Accès** | Utilisateurs · Rôles et droits · Sessions · Jetons d'API |
+| **Accès** | Utilisateurs · Rôles et droits · Sessions · **Comptes dormants** · Jetons d'API |
 | **Système** | Paramètres · Intégrations · Sauvegardes · Journal d'audit |
 
-**Quarante-cinq pages, douze domaines.** Le cœur est le centre de commande d'administration
+**Quarante-six pages, douze domaines.** Le cœur est le centre de commande d'administration
 système : exploitation, infrastructure, sécurité, observabilité. Les domaines *Dossiers* et
 *Secrétariat* portent les patrons institutionnels (portefeuille, courrier, séances, décisions,
 signature, accords) ; ils se retirent en supprimant deux entrées de `navigation.ts` et six
@@ -87,6 +87,33 @@ l'entrée (une requête d'écriture sans clause de restriction, un jeton sans é
 réclame une main ; un garde-fou, lui, dit non — et c'est ce qui évite les deux cents approbations
 qu'on finirait par signer sans lire. Une règle éteinte reste affichée en tête de page, avec un
 rappel hebdomadaire, jusqu'à ce qu'elle soit remise.
+
+### La politique de dormance
+
+Un compte qu'on n'utilise plus ne gêne personne : c'est précisément le problème. Il garde ses
+droits, il ne lève aucune alerte, et personne ne s'étonne qu'il ne fasse rien. C'est le compte
+qu'on vole. Ce qui est dangereux n'est donc pas la dormance, c'est **la dormance avec des
+droits** — et l'écran trie dans cet ordre, pas dans celui des jours : un ordonnateur absent
+depuis trois mois passe devant un lecteur absent depuis sept.
+
+Trois seuils, et **aucune coupure automatique**. À 60 jours l'agent et son responsable sont
+prévenus, et rien ne change sur le compte. À 90 jours le compte entre dans la vague du mois,
+déposée dans la file d'approbation avec sa fiche complète : ce qu'il a fait en dernier, les
+droits qu'il conserve, les dossiers qu'il laisserait sans propriétaire. Un humain tranche compte
+par compte, et toute désactivation se défait d'un clic pendant 30 jours. À 180 jours la clôture
+est proposée, le repreneur des dossiers étant nommé avant la coupure, jamais après.
+
+L'écran dit aussi, mot pour mot, **ce qui compte comme activité** : une connexion, une action
+journalisée, un appel d'API portant le jeton du compte — et ce qui n'en est pas, à commencer par
+l'ouverture d'un courriel envoyé par la plateforme. L'avertissement de 60 jours reprend les deux
+listes, parce qu'un agent coupé sans avoir compris pourquoi est un agent qu'on recréera dans
+l'urgence, avec les mêmes droits et moins de contrôle.
+
+Les exemptions — congé long, détachement, mission, compte de service — se signent comme un écart
+au registre : un motif, un signataire, **une date de revue**. Sans date de revue l'écran les
+refuse (`GF-15`), et une exemption dont la revue est passée remonte en tête de page. Un compte
+dont l'absence est déclarée n'entre jamais dans une vague (`GF-16`), et un compte qui porte des
+dossiers ouverts ne se clôture pas sans repreneur (`GF-17`).
 
 ## Ce que le centre de commande couvre
 

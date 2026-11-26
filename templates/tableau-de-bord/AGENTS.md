@@ -11,7 +11,7 @@ des choix déjà tranchés.
 
 ## 1. Ce que vous avez entre les mains
 
-Quarante-cinq écrans, douze domaines, une bibliothèque de composants, et des règles de conduite.
+Quarante-six écrans, douze domaines, une bibliothèque de composants, et des règles de conduite.
 Rien n'est à moitié fait : chaque page a ses indicateurs, ses filtres, ses actions réelles et son
 état vide.
 
@@ -214,6 +214,7 @@ Avant d'écrire un composant, cherchez-le ici.
 | `Graphique` · `CarteGraphique` · `AnneauTotal` · `Etincelle` · `Legende` | Chart.js habillé par les jetons, légende cliquable, repli tabulaire. |
 | `Apparition` · `ListeEchelonnee` · `NombreAnime` · `Squelette` · `AuDefilement` | Le mouvement. |
 | `lib/controles.ts` | Le registre des gestes, la file d'approbation, les garde-fous. `conforme()`, `manque()`, `ecartAssume()` disent si un geste tient debout. |
+| `lib/dormance.ts` | La politique du trimestre sans activité : seuils, exemptions signées, vagues. `gravite()` pèse un compte sur ses droits, pas sur ses jours. |
 | `Bouton` · `Carte` · `Jeton` · `Delta` · `Menu` · `Jauge` · `Progression` · `EtatVide` | Le socle. |
 
 ---

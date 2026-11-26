@@ -12,6 +12,7 @@ import { agentsIA, approbationsMCP, clesModeles, connecteursMCP, executionsAgent
 import { sms, smtp, whatsapp, envois } from "../lib/communication";
 import { accords, arbitrages, courriers, decisions, dossiers, circuits, seances } from "../lib/institution";
 import { approbations, conforme, gardeFous, gestes } from "../lib/controles";
+import { comptesDormants, gravite, SEUILS } from "../lib/dormance";
 
 /* Le bas du panneau de section porte l'essentiel du domaine, comme la carte
    « console » du tableau de bord UniFi : un en-tête d'identité, une liste de
@@ -209,6 +210,9 @@ export function ResumeGroupe({ groupe, aller }: { groupe: string; aller: (cle: s
   if (groupe === "Accès") {
     const sans2F = sessionsInitiales.filter((s) => !s.deuxFacteurs).length;
     const expirants = jetonsInitiaux.filter((j) => j.expireBientot && j.actif).length;
+    const dormants = comptesDormants.filter((c) => c.etat === "proposé").length;
+    const lourds = comptesDormants.filter((c) =>
+      c.etat !== "désactivé" && c.etat !== "clôturé" && gravite(c) === "élevé").length;
     return (
       <Bloc titre="Accès et habilitations">
         <LigneStat etiquette="Comptes" valeur={fmt(comptes.length)} />
@@ -216,7 +220,12 @@ export function ResumeGroupe({ groupe, aller }: { groupe: string; aller: (cle: s
         <LigneStat etiquette="Sessions ouvertes" valeur={fmt(sessionsInitiales.length)} />
         <LigneStat etiquette="Sans deuxième facteur" valeur={fmt(sans2F)} ton={sans2F ? "vigilance" : "bon"} />
         <LigneStat etiquette="Jetons actifs" valeur={String(jetonsInitiaux.filter((j) => j.actif).length)} />
+        <LigneStat etiquette={`Dormants (+${SEUILS.proposition} j)`} valeur={fmt(dormants)} ton={dormants ? "critique" : "bon"} />
         {expirants > 0 && <Alerte texte="Un jeton de l'interface paie expire bientôt." ton="vigilance" />}
+        {lourds > 0 && <Alerte texte={`${lourds} comptes dorment en gardant des droits sensibles.`} ton="critique" />}
+        <div className="mt-3">
+          <Bouton taille="s" icone="horloge" className="w-full" onClick={() => aller("dormance")} enfants="Comptes dormants" />
+        </div>
       </Bloc>
     );
   }

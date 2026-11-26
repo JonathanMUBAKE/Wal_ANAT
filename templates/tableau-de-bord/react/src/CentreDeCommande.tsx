@@ -16,6 +16,7 @@ import { Apercu } from "./vues/Apercu";
 import { Activite } from "./vues/Activite";
 import { Rapports } from "./vues/Rapports";
 import { Controles } from "./vues/Controles";
+import { Dormance } from "./vues/Dormance";
 import { Approbations } from "./vues/Approbations";
 import { GardeFous } from "./vues/GardeFous";
 import { Services } from "./vues/Services";
@@ -254,6 +255,7 @@ function Vue({ cle, aller }: { cle: string; aller: (c: string) => void }) {
     case "apercu": return <Apercu aller={aller} />;
     case "activite": return <Activite />;
     case "rapports": return <Rapports />;
+    case "dormance": return <Dormance aller={aller} />;
     case "controles": return <Controles />;
     case "approbations": return <Approbations />;
     case "gardefous": return <GardeFous />;

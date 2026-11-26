@@ -30,7 +30,7 @@ export const NAVIGATION: GroupeNav[] = [
   ]},
   { groupe: "Contrôles", icone: "verrou", entrees: [
     { cle: "controles", nom: "Registre des contrôles", icone: "verrou", compte: 1, ton: "critique" },
-    { cle: "approbations", nom: "Approbations", icone: "tampon", compte: 7, ton: "vigilance" },
+    { cle: "approbations", nom: "Approbations", icone: "tampon", compte: 8, ton: "vigilance" },
     { cle: "gardefous", nom: "Garde-fous", icone: "bouclier", compte: 1, ton: "critique" },
   ]},
   { groupe: "Exploitation", icone: "serveur", entrees: [
@@ -73,6 +73,7 @@ export const NAVIGATION: GroupeNav[] = [
     { cle: "utilisateurs", nom: "Utilisateurs", icone: "utilisateurs" },
     { cle: "droits", nom: "Rôles et droits", icone: "bouclier" },
     { cle: "sessions", nom: "Sessions", icone: "moniteur" },
+    { cle: "dormance", nom: "Comptes dormants", icone: "horloge", compte: 5, ton: "critique" },
     { cle: "jetons", nom: "Jetons d'API", icone: "cle" },
   ]},
   { groupe: "Système", icone: "reglages", entrees: [

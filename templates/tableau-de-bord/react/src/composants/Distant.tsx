@@ -116,13 +116,34 @@ export function Tronquee({ combien }: { combien: number }) {
    par défaut est donc celle qui ne ment pas.
    ========================================================================= */
 export const ECRANS_BRANCHES = new Set([
-  "apercu", "sessions", "utilisateurs", "droits", "audit",
+  "apercu", "sessions", "utilisateurs", "droits", "audit", "securite",
   "dormance", "gestes", "parametres", "agents", "canaux", "envois", "activite",
 ]);
+
+/* L'état propre à la console : ce qu'elle s'autorise à faire, et non ce que
+   l'application contient. Ces écrans n'ont pas d'équivalent serveur — pas
+   encore — et ils ne sont pas du gabarit pour autant. Les confondre serait
+   dire au lecteur que le registre des contrôles décrit un autre système,
+   alors qu'il décrit celui-ci. */
+export const ETAT_DE_LA_CONSOLE = new Set(["controles", "approbations", "gardefous"]);
 
 export function BandeauGabarit({ cle }: { cle: string }) {
   const { source } = useSource();
   if (source !== "application" || ECRANS_BRANCHES.has(cle)) return null;
+
+  if (ETAT_DE_LA_CONSOLE.has(cle))
+    return (
+      <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-accent-voile border border-accent/30">
+        <Icone nom="verrou" className="text-accent mt-[2px]" />
+        <p className="flex-1 min-w-[min(100%,260px)] text-[13px] text-encre-2">
+          <b>Cet écran décrit la console elle-même, pas l'application.</b> Le registre des contrôles,
+          la file d'approbation et les garde-fous disent ce que le centre de commande s'autorise à
+          faire d'ANAT Pilotage. Ils sont encore tenus à la main : l'application ne déclare pas
+          encore ses propres niveaux d'exigence, et c'est l'objet d'un lot à venir.
+        </p>
+      </div>
+    );
+
   return (
     <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-surface-2 border border-bordure border-dashed">
       <Icone nom="boite" className="text-encre-3 mt-[2px]" />

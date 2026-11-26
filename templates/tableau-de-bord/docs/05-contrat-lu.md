@@ -158,9 +158,36 @@ tracée passe exactement là, et vos chiffres la rendent tenable.
 | `profiles[].description` | **requis** | affichée sous le nom du profil |
 | `profiles[].org_name` | utile | quand plusieurs organisations sont visibles |
 
-**Une demande, la seule de ce document.** Vos exemples tronquent `groups[].items` en `"{…}"`. Je
-suppose un objet `{key, label}`, au vu de `permissions.ts`. **Confirmez la forme exacte** : c'est le
-seul endroit où je devrais deviner, et c'est aussi le socle du registre des contrôles.
+**Forme confirmée le 26 novembre** — `groups[].items[]` vaut `{ key, label }`, et rien d'autre :
+la clé technique et l'intitulé français, construits depuis `PERMISSION_GROUPS`. Plus rien à
+deviner dans ce document.
+
+### Deux pièges sur cette route, trouvés en allant vérifier
+
+**`permissions` est dérivé pour un profil « propriétaire ».** Quand `base_role` vaut `owner`, le
+champ ne contient pas ce qui est stocké en base : il est remplacé par la totalité des clés du
+catalogue. **C'est une dérivation, pas une décision**, et un écran qui afficherait cinquante-huit
+cases cochées laisserait croire que quelqu'un les a cochées.
+
+L'écran affichera donc, pour ces profils : *« Tous les droits, par construction — ce profil n'a pas
+reçu cinquante-huit octrois, il n'est soumis à aucune restriction. »* Et pas une liste de cases.
+C'est exactement le genre de nuance qui sépare une console honnête d'une console qui a l'air de
+savoir.
+
+**Le cloisonnement est levé ici, et il est gardé par un rang.** `rolesMatrix` appelle
+`requireSuperAdmin` et joint les organisations sans filtre : elle renvoie les profils de **toutes**
+les organisations. Trois conséquences pour l'écran :
+
+1. **L'écran *Rôles et droits* est réservé au super-administrateur de plateforme.** Pour les autres,
+   il n'affiche pas un tableau vide : il dit que la vue demande ce rang.
+2. Le `403` est un cas **normal** de cet écran, pas une panne. Il s'affiche comme tel.
+3. La porte est un **rang de plateforme**, pas un droit du catalogue. Cela ne contredit pas la
+   décision « aucun droit nouveau pour la console », mais cela la précise : ce que la console
+   montre dépend à la fois des droits du catalogue **et** du rang. Je ne modéliserai donc pas la
+   visibilité comme si elle venait du seul catalogue.
+
+*Cette vérification vaut pour cette route seule. Partout ailleurs, je continue de supposer le
+cloisonnement.*
 
 ## 8. `GET /api/admin/settings` — écran *Paramètres*
 

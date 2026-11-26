@@ -30,14 +30,20 @@
 | 26 nov. 2026 | serveur | A **éprouvé** la lecture du graphe sur PGlite plutôt que de l'approuver : les quatre vues d'`information_schema` répondent et `delete_rule` dit `CASCADE`. L'approche tient en local comme en production. Ajoute deux précisions : le graphe se lit **une fois au démarrage**, et la photographie suit le sous-arbre **en profondeur**, avec une borne. Retire sa présentation d'`archived` comme une avance sur le coffre. |
 | 26 nov. 2026 | console | **Tranché la borne** : au-delà, la suppression se **refuse**, elle ne se tronque pas. Photographier ce qu'on peut et supprimer quand même serait la faute qu'on vient d'éviter — une capture partielle et silencieuse. Le cas réel : supprimer une organisation emporte presque tout le dépôt par cascade. |
 | 26 nov. 2026 | les deux | **Lot 12a arrêté.** Point de passage unique, graphe lu au démarrage, sous-arbre photographié en profondeur et borné, suppression refusée au-delà, deux tests complémentaires — l'un sur ce que le code dit, l'autre sur ce qu'il tait. Deux à trois semaines, non engagées tant que le point de passage n'est pas écrit. |
+| 26 nov. 2026 | **Jonathan** | **Tranche l'isolement : service séparé, avec sa propre base.** Demande aussi « quelque chose qui contrôle tout, qui sauvegarde les données, la base et autres ». |
+| 26 nov. 2026 | console | Écrit `07-isolement-couts-et-sauvegardes.md`. **L'isolement qui compte d'abord n'est pas celui de la machine, c'est celui des droits** : le pilier VI n'est tenu que si les identifiants du journal scellé n'existent nulle part dans l'application. Infrastructure 15 à 30 € par mois, 8 à 13 semaines de travail, 5 à 7 de calendrier à deux. Le vrai coût n'est pas l'argent : **un service séparé double la surface d'attention.** |
+| 26 nov. 2026 | serveur | Propose **la table de sortie** : l'acte écrit dans la même transaction que l'acte, expédié quand la liaison le permet, acquitté puis effacé. Seul mécanisme qui tienne le « zéro perte » **et** le fonctionnement hors connexion. Et soulève que la console parlera désormais à deux choses, ce qui rouvrirait le trou de l'identité si son service relayait les actions. |
+| 26 nov. 2026 | console | **Répondu (a) : deux chemins séparés.** La console appelle l'application directement pour le vivant, son service uniquement pour le forensique. Une seule chose capable d'affirmer une identité, rayon de compromission borné, et coût nul puisque CORS et anti-CSRF sont déjà au plan. (b) ne servirait que si la console agissait sans navigateur — ce que nous avons déjà exclu. |
+| 26 nov. 2026 | console | **Condition ajoutée au journal scellé : les actes sont signés à la source.** Si la console est seule à sceller, elle est la seule qui pourrait réécrire, et le journal n'est inaltérable que de son point de vue. Signé par le serveur, conservé avec sa signature, intégré à la chaîne : vérifiable contre les deux. C'est littéralement le pilier VI. |
+| 26 nov. 2026 | les deux | **Deux journaux, deux rôles.** Le scellé fait foi pour ce qu'il contient ; celui de l'application est la source et la mémoire de travail. Entre les deux, un délai — donc le retard de scellement s'affiche en permanence. Et les actes de la console y entrent aussi : elle ne peut pas être le seul acteur qu'elle n'enregistre pas. |
 | 26 nov. 2026 | les deux | **Incident d'arbre partagé.** Son commit `0d38996` est tombé sur `centre-de-commande` parce que j'avais basculé de branche pendant qu'il écrivait. Rien n'est déplacé — ses deux fichiers partent avec ma branche, il les reprendra sur `main`. Une seule copie du dépôt, une seule branche sortie : regarder où l'on est avant chaque commit. |
 
 ---
 
 ## En attente
 
-- **Jonathan** : **l'isolement de la console.** Paquet statique servi par l'application, ou second
-  service avec sa propre base ? C'est la seule décision qui bloque, et elle commande tout le reste.
+- ~~L'isolement de la console~~ — **tranché le 26 novembre : service séparé, avec sa propre base.**
+  Plus aucune décision en attente de Jonathan.
 - ~~La rétention des journaux~~ — **tranchée par la vision** : aucune purge, journal inaltérable.
   Reste à distinguer « ne jamais effacer » de « tout garder dans la même table » : l'archivage vers
   un stock froid est le lot 8.

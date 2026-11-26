@@ -114,6 +114,45 @@ Le plus ambitieux, et le plus facile à mal faire. Il ne s'ouvre que si la quest
 
 ---
 
+## Lots A à C — les fondations du service séparé
+
+*Jonathan a tranché le 26 novembre : **la console devient un service séparé, avec sa propre base.**
+Ces trois lots passent devant tous les autres, parce que tout le reste s'appuie dessus. Chiffrage
+et conception dans `07-isolement-couts-et-sauvegardes.md`.*
+
+| Lot | Quoi | Chez qui | Estimation |
+|---|---|---|---|
+| **A** | **La table de sortie** — l'acte écrit dans la même transaction que l'acte lui-même, expédié quand la liaison le permet, acquitté puis effacé. **Signé à la source.** | serveur | 1 à 2 semaines |
+| **B** | **Le service console** — base, migrations, réception des événements, API des écrans, et le retard de scellement affiché en permanence | console | 2 à 3 semaines |
+| **C** | **Le journal scellé** — chaîne de scellement intégrant la signature du serveur, vérification, stock froid | console *(elle le tient désormais)* | 1 à 2 semaines |
+
+**Trois décisions arrêtées avec ces lots :**
+
+- **Deux chemins séparés** *(option a)*. La console appelle l'application **directement** pour tout
+  ce qui est vivant, avec le cookie de la personne ; et son propre service **uniquement** pour le
+  forensique. Le serveur ne croit jamais la console sur une identité.
+- **Les actes sont signés à la source.** Sans cela le journal ne serait inaltérable que du point de
+  vue de celui qui le tient. Avec, il est vérifiable contre les deux.
+- **Le journal scellé fait foi pour ce qu'il contient**, et dit en permanence ce qu'il n'a pas
+  encore reçu. Les actes de la console elle-même y entrent aussi.
+
+---
+
+## Lot D — les sauvegardes
+
+*Demandé par Jonathan le 26 novembre : « quelque chose qui contrôle tout, qui sauvegarde les
+données, la base et autres ».*
+
+| | |
+|---|---|
+| **Serveur** | la copie se prend près de la base, chiffrée, déposée hors de la machine |
+| **Console** | le catalogue, la vérification mensuelle par restauration à blanc, le déclenchement — et la restauration au quorum |
+| **La règle** | une sauvegarde qu'on n'a jamais tenté de restaurer n'est pas une sauvegarde. Non vérifiée depuis trente jours, elle remonte en tête de page |
+| **À ne pas oublier** | **le coffre se sauvegarde aussi**, et ailleurs que l'application — sinon un seul incident emporte l'original et sa copie |
+| **Estimation** | 1 à 2 semaines, les deux |
+
+---
+
 ## Lots 8 à 13 — la vision de gouvernance totale
 
 *Ajoutés le 26 novembre après le document `VISION.md`. Analyse complète dans
@@ -122,7 +161,7 @@ commence avant que Jonathan ait tranché la question de l'isolement** (§7 du m�
 
 | Lot | Quoi | Chez qui | Pourquoi à cette place |
 |---|---|---|---|
-| **8** | **Journal scellé et archivé** — ajout en chaîne, vérification, sortie des entrées anciennes vers un stock froid | serveur | le moins cher des six, et il protège tous les autres. « Ne jamais effacer » n'est pas « tout garder dans la même table » |
+| ~~8~~ | *devenu le **lot C** ci-dessus : c'est la console qui tient désormais le journal scellé, puisqu'elle a sa propre base* | — | — |
 | **9** | **Défense active** — bannissement d'adresse, géolocalisation **au pays**, base embarquée | serveur, console affiche | borné, visible tout de suite. L'Agence travaille hors connexion : pas de service distant, pas de ville |
 | **10** | **Gouvernance de l'IA depuis la console** — modèle, quota, plafond de coût, audit des décisions | les deux | la matière existe déjà ; c'est surtout de l'exposition |
 | **11** | **Flux temps réel** — un canal continu, et la captation des exceptions | serveur, console consomme | demande un bus d'événements qui n'existe pas. Lourd, mais c'est le pilier qui se voit le plus |

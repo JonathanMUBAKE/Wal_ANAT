@@ -1,4 +1,5 @@
 import { Icone } from "./Icone";
+import { useSource } from "../lib/api/source";
 import { Bouton, ItemMenu, Kbd, Menu, Pastille, TitreMenu, TraitMenu } from "./Primitives";
 import type { Notification } from "../lib/donnees";
 import { cx } from "../lib/format";
@@ -21,6 +22,8 @@ export function BarreSuperieure({
   exporter: () => void; maintenance: () => void; raccourcis: () => void;
 }) {
   const nonLues = notifications.filter((n) => !n.lu).length;
+  const { source, poserSource, identite, empechement } = useSource();
+  const direct = source === "application";
   const tons = { critique: "bg-critique", vigilance: "bg-vigilance", bon: "bg-bon", neutre: "bg-encre-4" };
 
   return (
@@ -45,6 +48,43 @@ export function BarreSuperieure({
             <ItemMenu onClick={fermer} enfants="Bac à sable" />
             <TraitMenu />
             <ItemMenu icone="plus" onClick={fermer} enfants="Déclarer une installation" />
+          </>
+        )}
+      />
+
+      {/* D'où viennent les chiffres affichés. Toujours visible : un écran de
+          démonstration qui se ferait passer pour du réel serait la pire faute
+          possible dans un outil d'administration. */}
+      <Menu
+        align="gauche" largeur={300}
+        declencheur={({ basculer }) => (
+          <button type="button" onClick={basculer}
+            title={direct ? "Les écrans lisent ANAT Pilotage" : "Les écrans montrent des données inventées"}
+            className={cx("flex items-center gap-[7px] h-[32px] px-[10px] rounded-[4px] transi text-[12.5px] shrink-0",
+              direct
+                ? (empechement ? "bg-critique-voile text-critique" : "bg-bon-voile text-bon")
+                : "bg-surface-2 text-encre-3 border border-bordure hover:border-bordure-2")}>
+            <Icone nom={direct ? "prise" : "boite"} taille="s" />
+            <span className="font-semibold max-sm:hidden">{direct ? "ANAT Pilotage" : "Démonstration"}</span>
+            <Icone nom="selecteur" taille="s" className="opacity-60" />
+          </button>
+        )}
+        enfants={(fermer) => (
+          <>
+            <TitreMenu enfants="D'où viennent les chiffres" />
+            <ItemMenu onClick={() => { poserSource("demonstration"); fermer(); }}
+              enfants={<>Démonstration {!direct && <Icone nom="check" taille="s" className="ml-auto text-accent" />}</>} />
+            <ItemMenu onClick={() => { poserSource("application"); fermer(); }}
+              enfants={<>ANAT Pilotage {direct && <Icone nom="check" taille="s" className="ml-auto text-accent" />}</>} />
+            <TraitMenu />
+            <div className="px-[10px] py-[7px] text-[11.5px] leading-[16px] text-encre-3">
+              {direct
+                ? (empechement
+                    ? <span className="text-critique">{empechement}</span>
+                    : <>Lu au nom de <b className="text-encre-2">{identite?.name ?? "…"}</b>, avec ses droits.
+                       Les écrans non branchés restent en démonstration et le disent.</>)
+                : <>Données inventées. Rien de ce qui est affiché ne vient d'un vrai système.</>}
+            </div>
           </>
         )}
       />

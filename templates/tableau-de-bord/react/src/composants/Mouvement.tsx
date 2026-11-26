@@ -100,11 +100,11 @@ export function Squelette({ lignes = 3, hauteur = 12, className }: {
 }
 
 /** Carte entière en attente : titre, lignes, pied. */
-export function SqueletteCarte({ className }: { className?: string }) {
+export function SqueletteCarte({ className, lignes = 4 }: { className?: string; lignes?: number }) {
   return (
     <div className={cx("bg-surface border border-bordure rounded-[4px] p-4", className)}>
       <Squelette lignes={1} hauteur={14} className="mb-3 max-w-[180px]" />
-      <Squelette lignes={4} />
+      <Squelette lignes={lignes} />
     </div>
   );
 }

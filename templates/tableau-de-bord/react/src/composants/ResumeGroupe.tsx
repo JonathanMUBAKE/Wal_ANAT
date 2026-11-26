@@ -10,7 +10,6 @@ import {
 import { connexions, journalMateriel, systeme, temperatures, ventilateurs, verrous, replication } from "../lib/infrastructure";
 import { agentsIA, approbationsMCP, clesModeles, connecteursMCP, executionsAgents } from "../lib/intelligence";
 import { sms, smtp, whatsapp, envois } from "../lib/communication";
-import { accords, arbitrages, courriers, decisions, dossiers, circuits, seances } from "../lib/institution";
 import { approbations, conforme, gardeFous, gestes } from "../lib/controles";
 import { comptesDormants, gravite, SEUILS } from "../lib/dormance";
 
@@ -59,46 +58,7 @@ export function ResumeGroupe({ groupe, aller }: { groupe: string; aller: (cle: s
     );
   }
 
-  if (groupe === "Dossiers") {
-    const ecarts = dossiers.filter((d) => d.santeDeclaree !== d.santeCalculee).length;
-    const attente = arbitrages.filter((a) => a.etat === "en attente").length;
-    const echeances = accords.filter((a) => a.etat === "en vigueur" && a.joursAvantEcheance <= 60).length;
-    return (
-      <Bloc titre="Dossiers pilotés">
-        <LigneStat etiquette="Projets et activités" valeur={String(dossiers.length)} />
-        <LigneStat etiquette="En écart de santé" valeur={String(ecarts)} ton={ecarts ? "critique" : "bon"} />
-        <LigneStat etiquette="Arbitrages en attente" valeur={String(attente)} ton={attente ? "vigilance" : "bon"} />
-        <LigneStat etiquette="Accords en vigueur" valeur={String(accords.filter((a) => a.etat === "en vigueur").length)} />
-        <LigneStat etiquette="Échéances sous 60 j" valeur={String(echeances)} ton={echeances ? "vigilance" : "bon"} />
-        {ecarts > 0 && <Alerte texte="Un projet se déclare sain alors que son budget est engagé à 91 %." ton="critique" />}
-        <div className="mt-3">
-          <Bouton taille="s" icone="balance" className="w-full" onClick={() => aller("portefeuille")} enfants="Revue de portefeuille" />
-        </div>
-      </Bloc>
-    );
-  }
 
-  if (groupe === "Secrétariat") {
-    const aImputer = courriers.filter((c) => c.etat === "enregistré").length;
-    const retards = courriers.filter((c) => c.joursRestants < 0 && c.etat !== "traité" && c.etat !== "classé sans suite").length;
-    const aValider = seances.filter((s) => s.compteRendu === "soumis").length;
-    const decRetard = decisions.filter((d) => (d.etat === "à exécuter" || d.etat === "en cours") && d.joursRestants < 0).length;
-    const aSigner = circuits.filter((c) => c.etat === "en circuit").length;
-    return (
-      <Bloc titre="Secrétariat">
-        <LigneStat etiquette="Courrier à imputer" valeur={String(aImputer)} ton={aImputer ? "vigilance" : "bon"} />
-        <LigneStat etiquette="Courrier en retard" valeur={String(retards)} ton={retards ? "critique" : "bon"} />
-        <LigneStat etiquette="Comptes rendus à valider" valeur={String(aValider)} ton={aValider ? "accent" : "bon"} />
-        <LigneStat etiquette="Décisions en retard" valeur={String(decRetard)} ton={decRetard ? "critique" : "bon"} />
-        <LigneStat etiquette="En circuit de signature" valeur={String(aSigner)} />
-        {decRetard > 0 && <Alerte texte="Des décisions de séance ont dépassé leur échéance d'exécution." ton="critique" />}
-        <div className="mt-3 space-y-2">
-          <Bouton taille="s" icone="enveloppe" className="w-full" onClick={() => aller("courrier")} enfants="Mon courrier" />
-          <Bouton taille="s" icone="cle" className="w-full" onClick={() => aller("signataire")} enfants="À viser ou signer" />
-        </div>
-      </Bloc>
-    );
-  }
 
   if (groupe === "Exploitation") {
     const alerte = servicesSIGRH.filter((s) => s.etat === "critique").length;

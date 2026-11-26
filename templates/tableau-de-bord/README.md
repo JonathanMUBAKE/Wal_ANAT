@@ -37,8 +37,6 @@ composants ni routeur.
 |---|---|
 | **Pilotage** | Vue d'ensemble · Activité · Rapports |
 | **Contrôles** | **Registre des contrôles** · **Approbations** · **Garde-fous** |
-| **Dossiers** | Portefeuille · Accords et partenaires |
-| **Secrétariat** | Courrier · Séances · Registre des décisions · Signataire |
 | **Exploitation** | Services · Tâches · Files d'attente · Déploiements · **Console d'exploitation** · **Incidents et astreinte** |
 | **Infrastructure** | Santé du serveur · Base de données · **Capacité et coûts** |
 | **Sécurité** | **Posture de sécurité** · **Anomalies et correctifs** · **Surveillance réseau** |
@@ -48,11 +46,36 @@ composants ni routeur.
 | **Accès** | Utilisateurs · Rôles et droits · Sessions · **Comptes dormants** · Jetons d'API |
 | **Système** | Paramètres · Intégrations · Sauvegardes · Journal d'audit |
 
-**Quarante-six pages, douze domaines.** Le cœur est le centre de commande d'administration
-système : exploitation, infrastructure, sécurité, observabilité. Les domaines *Dossiers* et
-*Secrétariat* portent les patrons institutionnels (portefeuille, courrier, séances, décisions,
-signature, accords) ; ils se retirent en supprimant deux entrées de `navigation.ts` et six
-fichiers de `vues/`, sans toucher au reste.
+**Trente-neuf écrans, dix domaines.** Le centre de commande sert **l'administration système** :
+exploitation, infrastructure, sécurité, observabilité, intelligence artificielle, communication,
+accès, système — et les contrôles qui encadrent tout cela.
+
+> **Ce que ce tableau de bord n'est pas.** Une première version portait des écrans métier —
+> portefeuille de projets, courrier, séances, registre des décisions, signataire. C'était une
+> erreur de frontière : *un administrateur système ne gère pas les dossiers.* Il regarde des
+> statistiques, gère des comptes, voit l'activité, surveille la santé du système et tranche ce qui
+> attend une main humaine. Ces six écrans ont été retirés le 26 novembre 2026 ; ils restent
+> accessibles dans l'historique au commit `e27c053`.
+
+## Le brancher sur un vrai système
+
+La console tourne aujourd'hui sur des données inventées. Le travail de raccordement à une
+application réelle — ANAT Pilotage en premier — se mène avec l'agent qui développe cette
+application, par échange de documents dans **`docs/`** :
+
+| Fichier | Ce qu'il contient |
+|---|---|
+| `docs/00-bonjour.md` | la proposition de travail en commun |
+| `docs/01-architecture-proposee.md` | les deux patrons possibles, et pourquoi la console est séparée |
+| `docs/02-ce-que-les-ecrans-demandent.md` | écran par écran : ce qui se lit, ce qui se déclenche |
+| `docs/03-questions.md` | les questions des deux côtés, et les réponses |
+| `docs/04-plan-commun.md` | le plan en sept lots |
+| `docs/JOURNAL.md` | une ligne datée par pas |
+
+Deux décisions sont déjà prises et valent pour toute application branchée : **la console n'a pas
+d'identité propre** — elle porte la session de la personne et se heurte aux mêmes refus que
+n'importe qui — et **l'application reste seule juge** de ses règles. La console est un miroir,
+jamais un gardien.
 
 ## Rien ne se fait sans contrôle
 

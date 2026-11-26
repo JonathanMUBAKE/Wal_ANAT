@@ -232,9 +232,10 @@ qui tombe avec elle n'en est pas un.
       ne ralentit pas, ne perd rien et ne refuse aucune écriture. **C'est le seul mécanisme qui tienne à la
       fois le « zéro perte » et le fonctionnement hors connexion.** Elle précède le flux temps réel, qui
       n'en est que la lecture.
-- [ ] **Le journal scellé passe de l'autre côté.** Celui de l'application reste la mémoire de travail ;
+- [x] **Le journal scellé passe de l'autre côté.** Celui de l'application reste la mémoire de travail ;
       celui du plan de contrôle devient la mémoire de l'institution. **Deux journaux, deux rôles — il faut
       dire lequel fait foi**, et le dire avant d'écrire la table de sortie.
+      *Tranché au § 11 : celui du plan de contrôle.*
 - [ ] **L'authentification entre les deux services.** Un secret partagé suffit pour le transport : c'est
       un flux à sens unique où l'identité de l'acteur est une **donnée**, pas une revendication. Cela ne
       rouvre pas la porte que nous avions fermée.
@@ -253,3 +254,75 @@ session qui construit la console :
   signature au lieu de croire sur parole.
 
 Recommandation : **(a) pour commencer**, parce qu'elle ne demande rien de neuf et ne peut pas mal tourner.
+
+---
+
+## 11. Décision du 26 novembre 2026 — c'est le journal du centre qui fait foi
+
+La question laissée ouverte au § 10 est tranchée : **des deux journaux, c'est celui du plan de contrôle
+qui fait foi.** Celui de l'application redevient ce qu'il n'aurait jamais dû cesser d'être — une mémoire
+de travail, utile, consultable, et sans valeur probante.
+
+C'est la bonne réponse, et la seule tenable : un journal que l'application peut réécrire ne peut pas
+attester de ce que l'application a fait. Mais elle nous charge, et cinq choses en découlent qu'il faut
+écrire avant de poser la première ligne de la table de sortie.
+
+### 11.1 Entre l'acte et son attestation, il y a un délai, et il porte un nom
+
+Avec une table de sortie et des antennes mal reliées, un acte peut exister chez nous sans être encore
+chez eux. Dans une administration où l'écrit fait foi, **ce n'est pas un détail d'exploitation** :
+pendant quelques minutes ou quelques jours, un acte a eu lieu sans être attesté.
+
+Nous traitons cela comme le fait le courrier recommandé : **l'acte porte sa propre date, l'attestation en
+porte une autre.** Un acte n'est pas invalide parce que la preuve n'est pas encore arrivée ; il est *en
+attente d'attestation*. Chaque ligne de la table de sortie porte donc cet état, et le serveur doit
+pouvoir répondre, pour n'importe quel acte : attesté, ou pas encore.
+
+- [ ] Cet état figure dans la table de sortie, et une route permet de l'interroger.
+- [ ] La console le montre là où il compte — une signature, une décision, un compte rendu adopté. Un
+      écran qui n'affiche que « fait » alors que la preuve n'est pas arrivée serait exactement la faute
+      que nous venons de nommer à la règle de travail 9.
+
+### 11.2 Des doublons, jamais de pertes
+
+La table de sortie n'efface qu'après acquittement. Donc **aucune perte possible, et des doublons
+certains** : si l'acquittement se perd, l'expéditeur renvoie. Chaque acte porte un identifiant unique
+frappé **chez nous** ; c'est au centre de les dédoublonner. C'est le sens exact de la garantie :
+l'application livre au moins une fois, le centre enregistre exactement une fois.
+
+### 11.3 L'ordre d'arrivée n'est pas l'ordre des faits
+
+Les actes viendront de six pools, par des liaisons inégales. Ils **n'arriveront pas dans l'ordre où ils
+ont eu lieu**. Une chaîne qui scelle dans l'ordre de réception attesterait d'un ordre qui n'est pas celui
+des faits.
+
+Chaque acte porte donc **un numéro de séquence par source**, frappé par l'application. C'est aussi le
+seul signal fiable d'un acte manquant : un trou dans la série.
+
+### 11.4 Le scellement protège de l'altération, pas du mensonge
+
+À dire une fois clairement, parce que c'est la limite de l'édifice : la chaîne garantit que **rien n'a été
+modifié après réception**. Elle ne garantit pas que ce qui a été envoyé était vrai. Si l'application est
+compromise, elle enverra des faussetés que le centre scellera fidèlement.
+
+Ce n'est pas une raison de ne pas sceller. C'est une raison de ne promettre, sur un écran comme dans un
+document, **que ce que le mécanisme tient** : « intègre depuis sa réception » est vrai, « preuve
+irréfutable » ne l'est pas.
+
+### 11.5 Ce que le centre hérite
+
+Si son journal fait foi, alors **la sauvegarde, la rétention et la disponibilité de sa base deviennent une
+affaire d'institution**, pas un réglage d'exploitation. La question de rétention posée en `docs/api-console-reponses.md`
+§ B — « tout, pour toujours », faute de politique — **change de destinataire** : elle se décide désormais
+avec le centre, et reste une décision de Jonathan avant d'être une décision technique.
+
+### Ce qui est décidé, et ce qui ne l'est pas
+
+| | État |
+| :--- | :--- |
+| Service séparé, base séparée | **Décidé** (§ 10) |
+| Quel journal fait foi | **Décidé** : celui du centre |
+| Table de sortie : identifiant unique, séquence par source, état d'attestation, même transaction que l'acte | **À écrire** — ne dépend de personne |
+| Format des événements | **En attente** : ce que le coffre du centre attend, au champ près |
+| Identité de l'acteur, (a) ou (b) | **En attente** de la session qui construit la console |
+| Rétention et sauvegarde du journal probant | **En attente** de Jonathan, avec le centre |

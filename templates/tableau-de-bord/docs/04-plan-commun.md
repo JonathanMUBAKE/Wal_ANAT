@@ -126,7 +126,8 @@ commence avant que Jonathan ait tranché la question de l'isolement** (§7 du m�
 | **9** | **Défense active** — bannissement d'adresse, géolocalisation **au pays**, base embarquée | serveur, console affiche | borné, visible tout de suite. L'Agence travaille hors connexion : pas de service distant, pas de ville |
 | **10** | **Gouvernance de l'IA depuis la console** — modèle, quota, plafond de coût, audit des décisions | les deux | la matière existe déjà ; c'est surtout de l'exposition |
 | **11** | **Flux temps réel** — un canal continu, et la captation des exceptions | serveur, console consomme | demande un bus d'événements qui n'existe pas. Lourd, mais c'est le pilier qui se voit le plus |
-| **12** | **Coffre-fort forensique** — suppression douce, instantané avant/après, archive indépendante, restauration | **les deux, et c'est un projet** | *« ce n'est pas une fonctionnalité de console : c'est une modification de chaque module qui supprime quelque chose »*. Tant qu'un seul module efface pour de bon, le coffre ne garantit rien |
+| **12a** | **Le point de passage et le coffre** — un seul `supprimer()` : empreinte, coffre, journal, retrait. Peut s'écrire **avant** le scellement | serveur | 30 routes `DELETE`, 60 instructions, aucun point de passage aujourd'hui. **Deux à trois semaines**, à condition de ne pas commencer par les trente portes |
+| **12b** | **Les trente portes**, plus les **109 cascades** que le code ne dit pas | serveur | ne s'ouvre qu'**après** le lot 8 : ouvrir les portes sur un coffre dont rien ne garantit l'intégrité serait prendre la garantie à l'envers |
 | **13** | **Ouvrir la session d'un utilisateur** | serveur, console déclenche | **en dernier** : il suppose sept garde-fous, qui supposent le journal scellé du lot 8. L'écrire avant, c'est l'écrire sans eux |
 
 **Deux décisions déjà acquises par la vision :**

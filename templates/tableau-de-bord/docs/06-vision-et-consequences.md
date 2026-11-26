@@ -238,9 +238,7 @@ et mal.
    ne l'affiche jamais sans un geste contrôlé ?
 3. **La tension 2** — la console acquiert un dépôt propre pour trois objets seulement. Est-ce que
    cela vous paraît juste, ou bien pensez-vous que le coffre doit rester chez vous ?
-4. **Le lot 12** — c'est le plus lourd. Avant de le planifier, dites-moi ce que la suppression
-   douce coûterait dans votre code : combien d'endroits suppriment réellement, et est-ce qu'un
-   point de passage unique existe ou non.
+4. ~~Le lot 12~~ — **répondu, et mieux que ce que je demandais.** Voir §8.
 5. ~~La révocation immédiate~~ — **répondu** : elle est bien immédiate. Le pilier I est donc plus
    proche que je ne le croyais.
 
@@ -260,3 +258,87 @@ console durablement dépourvue de stockage.** Et poser la question à Jonathan m
 lot 4.
 
 C'est la seule décision qu'il doit prendre aujourd'hui.
+
+
+---
+
+## 8. Le coffre-fort, chiffré — et le trou que le filet ne voit pas
+
+*Ajouté le 26 novembre après le relevé de l'agent serveur.*
+
+### Ce qu'il a trouvé
+
+| | |
+|---|---|
+| Routes `DELETE` sous contrat | **30**, toutes dans `matrice.test.ts` — rien ne s'y cache |
+| Instructions `DELETE FROM` | **60**, dans **19 fichiers** — l'écart vient des cascades écrites à la main |
+| Point de passage unique | **aucun** : chaque module écrit son SQL |
+| Suppression douce existante | `archived` sur `projects`, `tasks`, `partners` |
+
+### Sa méthode, et elle est meilleure que ma question
+
+Je demandais s'il fallait reprendre trente routes une par une. Sa réponse : non, et ce serait même
+la faute — trente reprises produiraient trente variantes du même geste, exactement ce que nous
+reprochons par ailleurs aux boutons et aux droits.
+
+**On écrit d'abord le point de passage qui n'existe pas**, puis on y amène les trente portes. Un
+seul `supprimer()` qui prend l'empreinte, écrit au coffre, journalise, puis retire — une seule
+fonction à relire, une seule à prouver. Et un test qui interdit la rechute : aucune instruction
+`DELETE FROM` hors du module du coffre, avec des exceptions nommées et justifiées.
+
+**Deux à trois semaines, pas deux mois.** Il ne s'engage pas tant que le point de passage n'est pas
+écrit, et il a raison de ne pas s'engager.
+
+### Le trou : 109 cascades que le test ne verra pas
+
+**C'est le point que j'apporte, et il est sérieux.** Le schéma porte **109 clauses
+`ON DELETE CASCADE`, réparties sur 31 fichiers de migration**.
+
+Une cascade ne passe par aucune instruction `DELETE FROM`. Elle n'existe pas dans le code : c'est
+la base qui l'exécute, silencieusement. Supprimer une ligne de `users` emporte ses sessions, ses
+appartenances, ses notifications, son avatar — **sans qu'aucune ligne de code ne soit écrite, donc
+sans qu'aucun test sur `DELETE FROM` ne puisse le voir.**
+
+Le coffre capturerait le parent et manquerait tout ce qui est dessous. Et il le manquerait
+*silencieusement*, ce qui est la pire façon de manquer quelque chose : l'écran dirait « restauré »
+en ne restaurant qu'une coquille.
+
+**Trois façons de le combler :**
+
+| | Ce que ça fait | Ce que ça coûte |
+|---|---|---|
+| **A. Remplacer les cascades par `RESTRICT`** | `supprimer()` doit parcourir le graphe à la main | le plus sûr, le plus long — et ça casse bruyamment au début, ce qui est une qualité |
+| **B. `supprimer()` lit le graphe et photographie le sous-arbre** *(ma recommandation)* | garde les cascades, mais prend l'empreinte de tout ce qui va tomber avant de laisser tomber | le graphe se lit depuis `information_schema` : générique, et il se met à jour tout seul quand le schéma grandit |
+| **C. Des déclencheurs en base** | attrape tout, y compris une suppression faite à la main en `psql` | le plus robuste, mais déplace la logique dans la base |
+
+**B pour le mécanisme, et un test qui vérifie que chaque `ON DELETE CASCADE` pointe vers une table
+que le coffre sait photographier.** C'est l'équivalent de son test sur `DELETE FROM`, mais pour ce
+que le code ne dit pas. C a sa place plus tard, le jour où l'on voudra tenir aussi contre quelqu'un
+qui atteint la base directement — c'est-à-dire le jour du pilier VI pris au sérieux.
+
+### Une ambiguïté à ne pas laisser s'installer : `archived`
+
+Trois tables portent déjà un `archived`. **Ce n'est pas un coffre-fort**, et il ne faut pas le
+compter comme de l'avance : une ligne archivée vit toujours dans la table de production, reste
+lisible par l'application, et peut encore être supprimée pour de bon ensuite.
+
+Ce sont deux mécanismes différents, et ils doivent le rester — **archiver un projet est un acte
+métier** (il est terminé), **supprimer est un acte d'administration** (il ne doit plus exister).
+Mais deux mécanismes qui portent le même mot sur un écran finissent par être confondus par celui
+qui clique. Dans la console, ils ne porteront jamais le même mot : *archivé* d'un côté, *au coffre*
+de l'autre.
+
+### La découpe qu'il propose, et que je retiens
+
+Mon plan disait : le lot 12 après le lot 8. Sa nuance est juste — **le point de passage et le
+coffre peuvent s'écrire avant le scellement, et être scellés ensuite.** Ce qui ne peut pas
+attendre, c'est l'inverse : ouvrir les trente portes sur un coffre dont rien ne garantit
+l'intégrité.
+
+Donc, si Jonathan veut avancer sur deux fronts en parallèle :
+
+- **12a — le point de passage et le coffre**, écrits sans attendre le scellement ;
+- **8 — le journal scellé**, en parallèle ;
+- **12b — les trente portes**, seulement une fois que 8 est en place.
+
+C'est plus rapide, et aucune garantie n'est prise à l'envers.

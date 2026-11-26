@@ -5,13 +5,51 @@ import { TableauDonnees, type Colonne } from "../composants/TableauDonnees";
 import { Definitions, useUI } from "../composants/Superpositions";
 import { comptes as comptesInitiaux, ESPACES, ROLES, permissions, rolesDroits, droitsInitiaux, type Compte } from "../lib/donnees";
 import { exporterCSV, initiales, normaliser } from "../lib/format";
+import { Empechement, useDistant } from "../composants/Distant";
+import { comptes as lireComptes, type CompteDistant } from "../lib/api/anat";
+import { useSource } from "../lib/api/source";
+
+/* Du référentiel d'ANAT Pilotage vers les lignes de l'écran.
+
+   Un point que seules les vraies données ont révélé : `last_login_at` vaut
+   `null` pour un compte qui ne s'est **jamais** connecté. Ce n'est pas une
+   dernière activité très ancienne, c'est l'absence de première — et les deux
+   appellent des gestes différents. L'écran les distingue partout. */
+const ETATS = { active: "actif", invited: "invite", suspended: "suspendu", pending: "invite" } as const;
+
+const depuis = (c: CompteDistant) => ({
+  id: c.id,
+  nom: c.name,
+  courriel: c.email,
+  role: c.platform_role === "super_admin" ? "Administrateur système" : (c.title ?? "—"),
+  espace: c.orgs[0]?.org_name ?? "—",
+  statut: ETATS[c.status] as "actif" | "invite" | "suspendu",
+  deuxFacteurs: c.totp_enabled,
+  sessions: c.active_sessions,
+  /* Heures écoulées depuis la dernière connexion. `-1` = jamais connecté. */
+  derniere: c.last_login_at ? Math.round((Date.now() - +new Date(c.last_login_at)) / 36e5) : -1,
+  cree: c.created_at.slice(0, 10),
+  verrouille: Boolean(c.locked_until && +new Date(c.locked_until) > Date.now()),
+  organisations: c.orgs.length,
+});
 
 const ETIQUETTE_STATUT = { actif: "Actif", invite: "Invité", suspendu: "Suspendu" } as const;
 const TON_STATUT = { actif: "bon", invite: "vigilance", suspendu: "critique" } as const;
 
 export function Utilisateurs() {
   const ui = useUI();
-  const [comptes, poserComptes] = useState<Compte[]>(comptesInitiaux);
+  const { source } = useSource();
+  const direct = source === "application";
+  const distant = useDistant(lireComptes);
+  const [inventes, poserInventes] = useState<Compte[]>(comptesInitiaux);
+
+  /* Les comptes IA sont exclus : ce sont des coéquipiers, pas des agents, et
+     les compter parmi les comptes humains fausserait tous les chiffres. */
+  const comptes: Compte[] = direct
+    ? (distant.donnees ?? []).filter((c) => !c.is_ai).map(depuis)
+    : inventes;
+  const poserComptes = direct ? (() => { /* le serveur fait foi */ }) as typeof poserInventes : poserInventes;
+  const jamais = direct ? comptes.filter((u) => u.derniere === -1).length : 0;
   const [q, poserQ] = useState("");
   const [role, poserRole] = useState("");
   const [statut, poserStatut] = useState("");
@@ -25,6 +63,7 @@ export function Utilisateurs() {
   }, [comptes, q, role, statut, espace]);
 
   const reinitialiser = () => { poserQ(""); poserRole(""); poserStatut(""); poserEspace(""); };
+  void poserComptes;
 
   const majStatut = (ids: string[], valeur: Compte["statut"]) =>
     poserComptes((l) => l.map((u) => ids.includes(u.id) ? { ...u, statut: valeur } : u));
@@ -131,12 +170,36 @@ export function Utilisateurs() {
     { cle: "deuxFacteurs", nom: "2 facteurs", triable: true, rendu: (u) =>
       u.deuxFacteurs ? <Jeton ton="bon" enfants="activé" /> : <Jeton ton="neutre" point={false} enfants="non activé" /> },
     { cle: "sessions", nom: "Sessions", num: true, triable: true, rendu: (u) => u.sessions || "—" },
-    { cle: "derniere", nom: "Dernière activité", triable: true, rendu: (u) =>
+    { cle: "derniere", nom: "Dernière connexion", triable: true, rendu: (u) =>
+      u.derniere === -1
+        ? <Jeton ton="accent" point={false} enfants="jamais connecté" />
+        :
       u.derniere === 0 ? "à l'instant" : u.derniere < 24 ? `il y a ${u.derniere} h` : `il y a ${Math.round(u.derniere / 24)} j` },
     { cle: "cree", nom: "Créé le", triable: true, rendu: (u) => new Date(u.cree).toLocaleDateString("fr-FR") },
   ];
 
   return (
+    <>
+      {direct && (
+        <div className="mb-4">
+          <Empechement etat={distant.etat} echec={distant.echec} relancer={distant.relancer} />
+        </div>
+      )}
+
+      {direct && jamais > 0 && (
+        <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-surface-2 border border-bordure anim-apparait">
+          <Icone nom="enveloppe" className="text-accent mt-[2px]" />
+          <div className="flex-1 min-w-[min(100%,260px)] text-[13px]">
+            <b>{jamais} compte{jamais > 1 ? "s n'ont" : " n'a"} jamais servi.</b>{" "}
+            <span className="text-encre-2">
+              Un compte jamais connecté n'est pas un compte dormant : il appelle une relance de
+              l'invitation, pas une proposition de désactivation. Les deux se ressemblent dans un
+              tableau et ne se traitent pas du tout de la même façon.
+            </span>
+          </div>
+        </div>
+      )}
+
     <Carte enfants={
       <TableauDonnees
         lignes={filtres} colonnes={colonnes} cle={(u) => u.id}
@@ -226,6 +289,7 @@ export function Utilisateurs() {
         )}
       />
     } />
+    </>
   );
 }
 

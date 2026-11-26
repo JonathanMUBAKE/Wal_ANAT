@@ -6,6 +6,38 @@ import { Definitions, useUI } from "../composants/Superpositions";
 import { exporterCSV, fmt, initiales, normaliser } from "../lib/format";
 import { alea, audit as auditCourt, choix, entre, type EntreeAudit } from "../lib/donnees";
 import { AGENTS_NOMS, DIRECTIONS } from "../lib/sigrh";
+import { Empechement, Tronquee, useDistant } from "../composants/Distant";
+import { journal as lireJournal, type EntreeJournal, type Gravite } from "../lib/api/anat";
+import { useSource } from "../lib/api/source";
+
+const TON_GRAVITE: Record<Gravite, "critique" | "vigilance" | "neutre"> = {
+  critique: "critique", importante: "vigilance", normale: "neutre",
+};
+
+/* Du journal d'ANAT Pilotage vers les lignes de l'écran.
+
+   Ce que l'application ne dit pas, l'écran ne l'invente pas : il n'y a ni
+   « résultat » (accepté / refusé), ni valeur avant et après. Ces colonnes
+   disparaissent en direct. En revanche la gravité, elle, est réelle et vaut
+   mieux que tout ce que j'avais imaginé : 42 genres d'actes sont classés
+   critiques par le serveur, dont tout ce qui supprime. */
+const depuis = (e: EntreeJournal): LigneAudit & { kind: string; gravite: Gravite; resume: string } => ({
+  id: e.id,
+  horo: new Date(e.created_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
+  auteur: e.actor_name ?? "le système",
+  direction: e.org_name ?? "—",
+  module: e.category,
+  /* `label` est ce que l'application disait à ce moment-là. On ne le
+     reconstruit jamais à partir de `kind`, et on ne filtre jamais dessus. */
+  action: e.label,
+  cible: e.target_id ?? e.object_id ?? "—",
+  origine: e.ip ?? "—",
+  resultat: "accepté",
+  avant: "—", apres: "—",
+  kind: e.kind,
+  gravite: e.severity,
+  resume: e.summary,
+});
 
 /* Journal d'audit : qui a fait quoi, quand, depuis où, et avec quel résultat.
    C'est la page qu'on ouvre quand quelque chose a changé sans qu'on sache
@@ -55,22 +87,34 @@ const entrees: LigneAudit[] = Array.from({ length: 180 }, (_, i) => {
 
 export function Audit() {
   const ui = useUI();
+  const { source } = useSource();
+  const direct = source === "application";
+  const distant = useDistant(() => lireJournal(300));
   const [q, poserQ] = useState("");
   const [module, poserModule] = useState("");
   const [resultat, poserResultat] = useState("");
   const [auteur, poserAuteur] = useState("");
+  const [gravite, poserGravite] = useState("");
 
-  const auteurs = useMemo(() => [...new Set(entrees.map((e) => e.auteur))].sort(), []);
+  const lues = direct ? (distant.donnees?.entries ?? []).map(depuis) : entrees;
+  const categories = direct
+    ? (distant.donnees?.categories ?? [])
+    : MODULES;
+
+  const auteurs = useMemo(() => [...new Set(lues.map((e) => e.auteur))].sort(), [lues]);
   const filtres = useMemo(() => {
     const n = normaliser(q.trim());
-    return entrees.filter((e) =>
+    return lues.filter((e) =>
       (!n || normaliser(`${e.auteur} ${e.action} ${e.cible} ${e.origine} ${e.id}`).includes(n)) &&
-      (!module || e.module === module) && (!resultat || e.resultat === resultat) &&
+      (!module || e.module === module) &&
+      (!gravite || ("gravite" in e && (e as { gravite: string }).gravite === gravite)) &&
+      (!direct && resultat ? e.resultat === resultat : true) &&
       (!auteur || e.auteur === auteur));
-  }, [q, module, resultat, auteur]);
+  }, [lues, q, module, resultat, auteur, gravite, direct]);
 
-  const refus = entrees.filter((e) => e.resultat === "refusé").length;
-  const sensibles = entrees.filter((e) => ["Habilitations", "Sécurité", "Données"].includes(e.module)).length;
+  const refus = lues.filter((e) => e.resultat === "refusé").length;
+  const sensibles = lues.filter((e) => ["Habilitations", "Sécurité", "Données"].includes(e.module)).length;
+  const parGravite = (g: Gravite) => lues.filter((e) => "gravite" in e && (e as { gravite: string }).gravite === g).length;
 
   function detail(e: LigneAudit) {
     ui.ouvrirTiroir({
@@ -118,7 +162,16 @@ export function Audit() {
     });
   }
 
-  const colonnes: Colonne<LigneAudit>[] = [
+  const colonneGravite: Colonne<LigneAudit> = {
+    cle: "gravite", nom: "Gravité", triable: true,
+    valeur: (e) => ({ critique: 0, importante: 1, normale: 2 }[("gravite" in e ? (e as { gravite: Gravite }).gravite : "normale")]),
+    rendu: (e) => {
+      const g = "gravite" in e ? (e as { gravite: Gravite }).gravite : "normale";
+      return <Jeton ton={TON_GRAVITE[g]} enfants={g} />;
+    },
+  };
+
+  const toutesColonnes: Colonne<LigneAudit>[] = [
     { cle: "horo", nom: "Horodatage", triable: true, fixe: true,
       rendu: (e) => <span className="font-mono text-[12px] text-encre-3 whitespace-nowrap">{e.horo}</span> },
     { cle: "auteur", nom: "Auteur", triable: true, rendu: (e) => (
@@ -146,6 +199,14 @@ export function Audit() {
     )},
   ];
 
+  /* En direct, deux colonnes disparaissent parce que l'application ne les
+     connaît pas : le résultat d'un geste (elle ne journalise que ce qui a
+     eu lieu) et la valeur avant/après. Une colonne « accepté » partout serait
+     une affirmation sans source. La gravité la remplace, et elle est vraie. */
+  const colonnes = direct
+    ? [toutesColonnes[0], colonneGravite, ...toutesColonnes.slice(1).filter((c) => !["resultat", "changement"].includes(c.cle))]
+    : toutesColonnes;
+
   return (
     <>
       <Entete
@@ -159,21 +220,54 @@ export function Audit() {
       />
 
       <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
-        <Carte className="pas-carte" enfants={<LigneStat etiquette="Gestes tracés (30 j)" valeur={fmt(entrees.length * 24)} />} />
-        <Carte className="pas-carte" enfants={<LigneStat etiquette="Refusés" valeur={fmt(refus)} ton={refus ? "vigilance" : "bon"} />} />
-        <Carte className="pas-carte" enfants={<LigneStat etiquette="Gestes sensibles" valeur={fmt(sensibles)} />} />
-        <Carte className="pas-carte" enfants={<LigneStat etiquette="Conservation" valeur="365 jours" />} />
+        {direct ? (
+          <>
+            <Carte className="pas-carte" enfants={<LigneStat etiquette="Entrées affichées" valeur={distant.etat === "ok" ? fmt(lues.length) : "—"} />} />
+            <Carte className="pas-carte" enfants={<LigneStat etiquette="Critiques" valeur={distant.etat === "ok" ? fmt(parGravite("critique")) : "—"} ton={parGravite("critique") ? "critique" : "bon"} />} />
+            <Carte className="pas-carte" enfants={<LigneStat etiquette="Importantes" valeur={distant.etat === "ok" ? fmt(parGravite("importante")) : "—"} ton={parGravite("importante") ? "vigilance" : undefined} />} />
+            <Carte className="pas-carte" enfants={<LigneStat etiquette="Genres distincts" valeur={distant.etat === "ok" ? fmt(new Set(lues.map((e) => ("kind" in e ? (e as { kind: string }).kind : ""))).size) : "—"} />} />
+          </>
+        ) : (
+          <>
+            <Carte className="pas-carte" enfants={<LigneStat etiquette="Gestes tracés (30 j)" valeur={fmt(entrees.length * 24)} />} />
+            <Carte className="pas-carte" enfants={<LigneStat etiquette="Refusés" valeur={fmt(refus)} ton={refus ? "vigilance" : "bon"} />} />
+            <Carte className="pas-carte" enfants={<LigneStat etiquette="Gestes sensibles" valeur={fmt(sensibles)} />} />
+            <Carte className="pas-carte" enfants={<LigneStat etiquette="Conservation" valeur="365 jours" />} />
+          </>
+        )}
       </div>
+
+      {direct && (
+        <div className="mb-4">
+          <Empechement etat={distant.etat} echec={distant.echec} relancer={distant.relancer} />
+        </div>
+      )}
+
+      {direct && distant.donnees?.truncated && <Tronquee combien={lues.length} />}
 
       <Carte className="mb-4" enfants={
         <>
-          <TeteCarte titre="Pourquoi ce journal ne s'efface pas"
+          <TeteCarte titre={direct ? "Ce que ce journal garde, et ce qu'il perd" : "Pourquoi ce journal ne s'efface pas"}
             sous="Une trace qu'on peut supprimer ne prouve rien" />
           <div className="pas-carte pt-3 text-[13px] text-encre-2 leading-[20px]">
-            Aucun écran ne permet de modifier ni de vider ce journal, pas même pour un administrateur système.
-            Les lignes disparaissent uniquement par l'effet de la durée de conservation, elle-même tracée quand
-            on la change. Si l'on pouvait y toucher, il n'aurait plus aucune valeur le jour où il faudrait
-            établir ce qui s'est réellement passé.
+            {direct ? (
+              <>
+                Aucun écran ne permet de modifier ni de vider ce journal. Mais deux limites doivent être
+                dites plutôt que tues. <b>Les actes de sécurité sont effacés au bout d'un an</b> —
+                connexions, échecs, verrouillages, droits changés : passé ce délai, l'application n'en garde
+                rien. Et l'enregistrement d'un acte au journal se fait juste après l'acte, hors transaction :
+                si le serveur s'arrête entre les deux, l'acte a eu lieu sans laisser de trace. La fenêtre est
+                étroite, elle existait avant ce tableau de bord, et le journal scellé du centre de commande
+                est précisément ce qui refermera les deux.
+              </>
+            ) : (
+              <>
+                Aucun écran ne permet de modifier ni de vider ce journal, pas même pour un administrateur système.
+                Les lignes disparaissent uniquement par l'effet de la durée de conservation, elle-même tracée quand
+                on la change. Si l'on pouvait y toucher, il n'aurait plus aucune valeur le jour où il faudrait
+                établir ce qui s'est réellement passé.
+              </>
+            )}
           </div>
         </>
       } />
@@ -181,7 +275,7 @@ export function Audit() {
       <Carte enfants={
         <TableauDonnees
           lignes={filtres} colonnes={colonnes} cle={(e) => e.id}
-          totalBrut={entrees.length} nomEntite={["geste", "gestes"]}
+          totalBrut={lues.length} nomEntite={["geste", "gestes"]}
           triInitial={{ cle: "horo", sens: "desc" }}
           surLigne={detail}
           vide={{
@@ -196,6 +290,13 @@ export function Audit() {
                   placeholder="Auteur, geste, objet, adresse…" aria-label="Rechercher dans le journal"
                   className="w-full bg-transparent outline-none text-[13px] text-encre placeholder:text-encre-4" />
               </div>
+              {direct && (
+                <select value={gravite} onChange={(e) => poserGravite(e.target.value)} aria-label="Filtrer par gravité"
+                  className="h-8 px-[10px] rounded-[4px] bg-surface-2 border border-bordure text-encre text-[13px]">
+                  <option value="">Toutes gravités</option>
+                  {(["critique", "importante", "normale"] as const).map((g) => <option key={g}>{g}</option>)}
+                </select>
+              )}
               <select value={auteur} onChange={(e) => poserAuteur(e.target.value)} aria-label="Filtrer par auteur"
                 className="h-8 px-[10px] rounded-[4px] bg-surface-2 border border-bordure text-encre text-[13px]">
                 <option value="">Tous les auteurs</option>
@@ -204,14 +305,15 @@ export function Audit() {
               <select value={module} onChange={(e) => poserModule(e.target.value)} aria-label="Filtrer par module"
                 className="h-8 px-[10px] rounded-[4px] bg-surface-2 border border-bordure text-encre text-[13px]">
                 <option value="">Tous les modules</option>
-                {MODULES.map((m) => <option key={m}>{m}</option>)}
+                {categories.map((m) => <option key={m}>{m}</option>)}
               </select>
+              {!direct && (
               <select value={resultat} onChange={(e) => poserResultat(e.target.value)} aria-label="Filtrer par résultat"
                 className="h-8 px-[10px] rounded-[4px] bg-surface-2 border border-bordure text-encre text-[13px]">
                 <option value="">Tous les résultats</option>
                 <option value="accepté">Accepté</option>
                 <option value="refusé">Refusé</option>
-              </select>
+              </select>)}
             </>
           }
           actionsLigne={(e) => (

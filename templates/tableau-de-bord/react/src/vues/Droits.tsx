@@ -3,6 +3,126 @@ import { Bouton, Carte, Jeton, TeteCarte } from "../composants/Primitives";
 import { useUI } from "../composants/Superpositions";
 import { droitsInitiaux, permissions, rolesDroits, type Case, type EtatDroit } from "../lib/donnees";
 import { cx } from "../lib/format";
+import { Empechement, useDistant } from "../composants/Distant";
+import { droitsDerives, matriceDroits, type ProfilAcces } from "../lib/api/anat";
+import { useSource } from "../lib/api/source";
+import { Icone } from "../composants/Icone";
+import { LigneStat } from "../composants/Primitives";
+
+/* La matrice réelle d'ANAT Pilotage : 58 droits, 13 groupes, et les profils
+   de chaque organisation.
+
+   Deux choses s'y disent, et aucune des deux ne va de soi.
+
+   1. Cette vue est réservée au super-administrateur de plateforme : la route
+      appelle `requireSuperAdmin`. Un refus est donc un cas NORMAL de cet
+      écran, pas une panne, et il s'affiche comme tel.
+
+   2. Pour un profil « propriétaire », le champ des droits ne contient pas ce
+      qui est stocké : il est remplacé par la totalité du catalogue. C'est une
+      dérivation, pas une décision. Afficher 58 cases cochées laisserait croire
+      que quelqu'un les a cochées. */
+function MatriceReelle() {
+  const d = useDistant(matriceDroits);
+  const m = d.donnees;
+
+  if (d.etat !== "ok" || !m)
+    return (
+      <div className="grid gap-4">
+        <Empechement etat={d.etat} echec={d.echec} relancer={d.relancer} />
+        {d.etat === "refus" && (
+          <Carte enfants={
+            <div className="pas-carte text-[13px] text-encre-2 leading-[20px]">
+              La matrice des droits est réservée au super-administrateur de la plateforme, parce qu'elle
+              montre les profils de <b>toutes</b> les organisations. Ce refus est le fonctionnement normal :
+              la console n'ouvre aucune porte que l'application vous fermerait.
+            </div>
+          } />
+        )}
+      </div>
+    );
+
+  const total = m.groups.reduce((n, g) => n + g.items.length, 0);
+  const derives = m.profiles.filter(droitsDerives).length;
+  const orgs = new Set(m.profiles.map((p) => p.org_name)).size;
+
+  const resume = (p: ProfilAcces) =>
+    droitsDerives(p)
+      ? "Tous les droits, par construction"
+      : `${p.permissions.length} droit${p.permissions.length > 1 ? "s" : ""} sur ${total}`;
+
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
+        <Carte className="pas-carte" enfants={<LigneStat etiquette="Droits au catalogue" valeur={String(total)} />} />
+        <Carte className="pas-carte" enfants={<LigneStat etiquette="Groupes" valeur={String(m.groups.length)} />} />
+        <Carte className="pas-carte" enfants={<LigneStat etiquette="Profils" valeur={String(m.profiles.length)} />} />
+        <Carte className="pas-carte" enfants={<LigneStat etiquette="Organisations" valeur={String(orgs)} ton="accent" />} />
+      </div>
+
+      {derives > 0 && (
+        <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] bg-surface-2 border border-bordure anim-apparait">
+          <Icone nom="info" className="text-encre-3 mt-[2px]" />
+          <p className="flex-1 min-w-[min(100%,260px)] text-[13px] text-encre-2">
+            <b>{derives} profil{derives > 1 ? "s" : ""} « propriétaire » {derives > 1 ? "portent" : "porte"} tous les droits par construction.</b>{" "}
+            Ce n'est pas un octroi : l'application renvoie la totalité du catalogue pour ces profils,
+            parce qu'ils ne sont soumis à aucune restriction. Personne n'a coché {total} cases.
+          </p>
+        </div>
+      )}
+
+      <Carte enfants={
+        <>
+          <TeteCarte titre="Les profils" sous="Ce que chacun peut faire, lu sur l'application" />
+          <div className="divide-y divide-bordure">
+            {m.profiles.map((p) => (
+              <div key={p.id} className="flex items-start gap-3 flex-wrap pas-carte">
+                <div className="min-w-[min(100%,220px)] flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[13px] font-semibold">{p.name}</span>
+                    <Jeton ton="neutre" point={false} enfants={p.base_role} />
+                    {p.is_system && <Jeton ton="accent" point={false} enfants="système" />}
+                    <span className="text-[11.5px] text-encre-4">{p.org_name}</span>
+                  </div>
+                  <p className="text-[12px] text-encre-3 mt-[3px]">{p.description}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className={cx("text-[13px]", droitsDerives(p) ? "text-accent font-medium" : "text-encre-2")}>
+                    {resume(p)}
+                  </div>
+                  <div className="text-[11.5px] text-encre-4 mt-[2px]">
+                    {p.members} membre{p.members > 1 ? "s" : ""}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      } />
+
+      <Carte enfants={
+        <>
+          <TeteCarte titre="Le catalogue des droits" sous={`${total} droits, en ${m.groups.length} groupes`} />
+          <div className="pas-carte pt-3 grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+            {m.groups.map((g) => (
+              <div key={g.group} className="p-3 rounded-[4px] border border-bordure bg-surface-2">
+                <div className="text-[12.5px] font-semibold mb-2">{g.group}</div>
+                <div className="grid gap-[5px]">
+                  {g.items.map((it) => (
+                    <div key={it.key} className="text-[12px] text-encre-2 leading-[16px]">
+                      {it.label}
+                      <span className="block font-mono text-[10.5px] text-encre-4">{it.key}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      } />
+    </div>
+  );
+}
 
 const SUIVANT: Record<EtatDroit, EtatDroit> = { aucun: "lecture", lecture: "complet", complet: "aucun" };
 
@@ -10,6 +130,7 @@ const SUIVANT: Record<EtatDroit, EtatDroit> = { aucun: "lecture", lecture: "comp
    confirmation : on ne modifie jamais les droits en vigueur par inadvertance. */
 export function Droits() {
   const ui = useUI();
+  const { source } = useSource();
   const [reference, poserReference] = useState<Record<string, Case[]>>(droitsInitiaux);
   const [brouillon, poserBrouillon] = useState<Record<string, Case[]>>(() =>
     structuredClone(droitsInitiaux));
@@ -36,6 +157,8 @@ export function Droits() {
   }
 
   let groupe: string | null = null;
+
+  if (source === "application") return <MatriceReelle />;
 
   return (
     <Carte enfants={

@@ -11,6 +11,9 @@ import { useUI } from "../composants/Superpositions";
 import { cx, fmt, jeton, NF, voiler } from "../lib/format";
 import { NombreAnime, useMouvementReduit } from "../composants/Mouvement";
 import { approbations, conforme, gardeFous, gestes } from "../lib/controles";
+import { Empechement, useDistant } from "../composants/Distant";
+import { sante as lireSante } from "../lib/api/anat";
+import { useSource } from "../lib/api/source";
 import { HEURES, charge, latence, parCode, parService, serie } from "../lib/donnees";
 import { activite, activiteParModule, servicesSIGRH, type EvenementActivite } from "../lib/sigrh";
 import { agentsIA } from "../lib/intelligence";
@@ -33,6 +36,12 @@ const SERIES_HERO = [
 ];
 
 export function Apercu({ aller }: { aller: (cle: string) => void }) {
+  const { source } = useSource();
+  /* Attention : `direct` existe déjà dans cette vue et désigne le flux temps
+     réel. Celui-ci dit d'où viennent les données — deux notions distinctes. */
+  const surApplication = source === "application";
+  const etat = useDistant(lireSante);
+  const h = etat.donnees;
   const ui = useUI();
   const [periode, poserPeriode] = useState("1 j");
   const [portee, poserPortee] = useState("plateforme");
@@ -189,7 +198,88 @@ export function Apercu({ aller }: { aller: (cle: string) => void }) {
 
   return (
     <>
-      {incident && (
+      {surApplication && (
+        <>
+          <div className="mb-4">
+            <Empechement etat={etat.etat} echec={etat.echec} relancer={etat.relancer} />
+          </div>
+
+          {h && (
+            <>
+              {/* Les alertes du serveur, affichées mot pour mot. Une console qui
+                  les reformulerait finirait par en dire autre chose que lui. */}
+              {h.alerts.length > 0 && (
+                <div className="grid gap-2 mb-4">
+                  {h.alerts.map((a) => (
+                    <div key={a.text}
+                      className={cx("flex items-start gap-3 px-4 py-3 rounded-[4px] border anim-apparait",
+                        a.level === "warning"
+                          ? "bg-vigilance-voile border-vigilance/40" : "bg-critique-voile border-critique/40")}>
+                      <Icone nom="alerte" className={a.level === "warning" ? "text-vigilance mt-[2px]" : "text-critique mt-[2px]"} />
+                      <p className="flex-1 min-w-[min(100%,240px)] text-[13px] text-encre-2">{a.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(185px, 1fr))" }}>
+                <Carte className="pas-carte" enfants={<LigneStat etiquette="Comptes" valeur={fmt(h.accounts.total)} />} />
+                <Carte className="pas-carte" enfants={<LigneStat etiquette="Connectés maintenant" valeur={fmt(h.sessions.users)} ton="accent" />} />
+                <Carte className="pas-carte" enfants={<LigneStat etiquette="Administrateurs sans 2e facteur" valeur={fmt(h.accounts.without_mfa_admins)} ton={h.accounts.without_mfa_admins ? "critique" : "bon"} />} />
+                <Carte className="pas-carte" enfants={<LigneStat etiquette="Jamais connectés" valeur={fmt(h.accounts.never_logged)} ton={h.accounts.never_logged ? "vigilance" : "bon"} />} />
+                <Carte className="pas-carte" enfants={<LigneStat etiquette="Échecs de connexion (24 h)" valeur={fmt(h.security.failed_logins_24h)} ton={h.security.failed_logins_24h ? "vigilance" : "bon"} />} />
+                <Carte className="pas-carte" enfants={<LigneStat etiquette="Verrouillages (24 h)" valeur={fmt(h.security.locked_24h)} ton={h.security.locked_24h ? "critique" : "bon"} />} />
+              </div>
+
+              <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%,330px), 1fr))" }}>
+                <Carte enfants={
+                  <>
+                    <TeteCarte titre="Volumes de la plateforme"
+                      sous={`Relevé par l'application le ${new Date(h.generated_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}`} />
+                    <div className="pas-carte pt-3">
+                      {Object.entries(h.volumes).map(([nom, v]) => (
+                        <LigneStat key={nom} etiquette={nom.replace(/_/g, " ")} valeur={fmt(v)}
+                          ton={nom.endsWith("_late") && v > 0 ? "vigilance" : undefined} />
+                      ))}
+                    </div>
+                  </>
+                } />
+
+                <Carte enfants={
+                  <>
+                    <TeteCarte titre="Ce que l'administrateur regarde"
+                      sous="Des volumes, pas des dossiers — la frontière passe exactement ici" />
+                    <div className="pas-carte pt-3">
+                      <LigneStat etiquette="Version" valeur={h.version || "non renseignée"} />
+                      <LigneStat etiquette="Messagerie" valeur={h.mail.configured ? "configurée" : "non configurée"} ton={h.mail.configured ? "bon" : "vigilance"} />
+                      <LigneStat etiquette="Messages envoyés (7 j)" valeur={fmt(h.mail.sent_7d)} />
+                      <LigneStat etiquette="Échecs d'envoi (7 j)" valeur={fmt(h.mail.failed_7d)} ton={h.mail.failed_7d ? "critique" : "bon"} />
+                      <LigneStat etiquette="Fichiers déposés" valeur={fmt(h.storage.files)} />
+                      <LigneStat etiquette="Occupation" valeur={`${(h.storage.bytes / 1024).toFixed(1)} Kio`} />
+                      <div className="mt-3 pt-3 border-t border-bordure flex flex-wrap gap-2">
+                        <Bouton taille="s" icone="utilisateurs" onClick={() => aller("utilisateurs")} enfants="Les comptes" />
+                        <Bouton taille="s" icone="audit" onClick={() => aller("audit")} enfants="Le journal" />
+                        <Bouton taille="s" icone="moniteur" onClick={() => aller("sessions")} enfants="Les sessions" />
+                      </div>
+                    </div>
+                  </>
+                } />
+              </div>
+
+              <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-surface-2 border border-bordure">
+                <Icone nom="boite" className="text-encre-3 mt-[2px]" />
+                <p className="flex-1 min-w-[min(100%,260px)] text-[13px] text-encre-2">
+                  <b>Ce qui suit est de la démonstration.</b> Courbes, services, modules et agents IA ci-dessous
+                  viennent de données inventées : ANAT Pilotage ne les expose pas encore. Les chiffres réels de
+                  cette page sont ceux du bloc ci-dessus.
+                </p>
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {!surApplication && incident && (
         <div className="flex items-start gap-3 flex-wrap px-4 py-3 rounded-[4px] mb-4 bg-critique-voile border border-critique/40 anim-apparait">
           <Icone nom="alerte" className="text-critique mt-[2px]" />
           <div className="flex-1 min-w-[min(100%,240px)]">

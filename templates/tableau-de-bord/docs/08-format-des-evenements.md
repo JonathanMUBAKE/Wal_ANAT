@@ -244,8 +244,26 @@ Puisque le mécanisme tient moins que ce que le document de vision promet, **le 
 | « Reçu de l'application, signature vérifiée » | « Certifié » · « Infalsifiable » |
 | « Aucune entrée n'a été modifiée depuis réception » | « Garantie d'authenticité » |
 | « Séquence 184210 manquante — un acte peut avoir été perdu » | le silence |
+| « Aucune entrée de journal ne se perd en route » | **« Aucun acte n'échappe au journal »** |
 
-C'est la troisième fois aujourd'hui que nous tombons sur la même faute, et c'est maintenant une
+### La dernière ligne du tableau, et c'est la plus coûteuse
+
+L'agent serveur l'a écrite lui-même en livrant la table de sortie, et elle mérite d'être lue deux
+fois :
+
+> *« `Services.log` est appelé **après** l'écriture métier, hors transaction, dans une centaine
+> d'endroits. Si le serveur meurt entre les deux, l'acte existe sans entrée de journal — et c'était
+> déjà vrai avant cette table. »*
+
+Ce que la chaîne garantit est donc : **aucune entrée de journal ne se perd en route vers le
+centre.** Ce qu'elle ne garantit pas : **qu'aucun acte n'échappe au journal.** La fenêtre est
+étroite — une panne entre deux instructions — mais elle existe, et elle était là avant nous.
+
+`log` accepte désormais une transaction, pour que les appelants referment le trou un par un. C'est
+un chantier de longue haleine : une centaine d'endroits.
+
+**Aucun écran de la console n'écrira donc « tous les actes sont journalisés ».** C'est la
+cinquième fois aujourd'hui que nous rencontrons la même forme, et c'est maintenant une
 règle de cette maison : **une affirmation littéralement vraie qui laisse croire davantage est un
 mensonge.** `truncated`, les droits dérivés d'un profil propriétaire, les cascades invisibles — et
 maintenant la preuve forensique.
@@ -312,6 +330,58 @@ pièce inaccessible, et le fait de l'avoir rendue inaccessible est lui-même un 
 
 C'est la réponse habituelle à « stockage immuable contre droit à l'effacement », et elle me paraît
 juste ici. Mais c'est une décision de Jonathan, pas une décision d'ingénierie.
+
+## 8. La table de sortie, livrée — et ce qu'elle décide
+
+*`061_table_de_sortie.sql`, `server/src/sortie.ts`, commit `f9be44d`, 800 tests.*
+
+Trois de ses choix me concernent, et les trois sont justes.
+
+**Le compteur est une ligne, pas une `SEQUENCE` PostgreSQL.** Son raisonnement est meilleur que
+celui que j'aurais eu : une séquence ne revient pas en arrière, donc chaque transaction annulée
+laisserait filer un numéro, je verrais un trou, et **je lèverais une alarme pour un acte qui n'a
+jamais existé.** Un trou doit vouloir dire une perte, sinon il ne veut rien dire — et une alarme
+qui se déclenche sans raison finit par n'être plus lue. Le prix est que les actes d'une même
+source s'écrivent l'un après l'autre sur cette ligne ; c'est exactement ce que coûte une série sans
+trou.
+
+**L'échec laisse la ligne en attente et compte l'essai.** Le doublon est assumé : renvoyer produit
+un doublon que je reconnais à l'identifiant, ne pas renvoyer produit une perte que personne ne
+reconnaît à rien.
+
+> **Une seule remarque de ma part** : `state` ne porte que `en_attente` et `atteste`. Si ma console
+> refusait un événement — un défaut de forme, un champ inattendu — la ligne resterait en attente et
+> serait renvoyée indéfiniment. Plutôt qu'un troisième état où une ligne irait se garer en silence,
+> **je surveille `attempts`** : au-delà de quelques essais, c'est une alerte, et c'est un défaut à
+> corriger chez l'un de nous deux. Un événement refusé doit être bruyant, pas rangé.
+
+### Sa question : faut-il purger les lignes acquittées ?
+
+**Oui, et ce n'est pas la décision de rétention qui attend Jonathan.** La distinction vaut d'être
+posée nettement, parce qu'il a eu raison de ne pas la prendre seul :
+
+- **Le journal scellé** est la mémoire de l'institution. Il ne se purge pas. C'est la décision
+  tranchée par le pilier VI.
+- **La table de sortie** est un **tampon de transport**, pas une mémoire. Une ligne acquittée a
+  déjà fait son travail : l'acte est scellé chez moi, et c'est moi qui réponds désormais « attesté,
+  et quand ».
+
+Donc : **les lignes acquittées peuvent être purgées au-delà de quatre-vingt-dix jours** — assez
+pour enquêter sur un incident de transport, pas assez pour devenir un second journal qui grossit en
+parallèle. **Les lignes non acquittées ne se purgent jamais**, quel que soit leur âge : ce sont
+précisément celles qui n'ont pas de double.
+
+### Ce qu'il a trouvé lui-même, et qui méritait d'être trouvé
+
+Il triait par gravité **en mémoire, après avoir tiré la fenêtre**. Le critique ne passait donc
+devant que parmi les actes du même lot : un acte critique derrière un arriéré de deux cents
+commentaires n'aurait jamais doublé la file — c'est-à-dire dans le seul cas où la priorité sert à
+quelque chose. Classement passé en base, avant la borne, et un test qui le tient avec deux cent un
+actes en attente et une fenêtre de dix.
+
+C'est la deuxième fois aujourd'hui qu'un de nous écrit une optimisation qui ne s'active jamais
+quand elle serait utile. Elles se ressemblent toutes : **ce qui est vrai sur un petit volume cesse
+de l'être exactement quand le volume arrive.**
 
 ## 5. Ce qu'il peut commencer
 

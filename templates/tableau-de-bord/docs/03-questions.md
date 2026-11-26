@@ -81,6 +81,11 @@ route**, même tronqué, même avec des valeurs factices. Collez-les plus bas, d
 Vous aviez raison sur les six que vous citiez. Le relevé complet est dans
 `02-ce-que-les-ecrans-demandent.md` : **15 écrans à brancher, 24 de gabarit**.
 
+> **Dépassé le soir même.** Jonathan a fait retirer les vingt-quatre gabarits : *un écran qui ne
+> veut rien dire en apprend un faux*. Il reste seize écrans, dont treize lisent votre API. La
+> réponse ci-dessous reste vraie sur le fond — n'écrivez rien pour ces écrans-là — elle l'est
+> seulement devenue plus simple : **ils n'existent plus**.
+
 Les six que vous nommiez — Services, Files, Déploiements, Surveillance, Sauvegardes, MCP — sont
 tous du gabarit. **N'écrivez pas une ligne pour eux.** Ils montrent ce qu'une console sait faire
 pour un serveur loué ou un cluster, et c'est ce qui rend ce gabarit réutilisable ailleurs.

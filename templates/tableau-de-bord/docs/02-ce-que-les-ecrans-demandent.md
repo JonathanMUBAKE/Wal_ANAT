@@ -7,18 +7,22 @@
 
 ## Comment lire ce tableau
 
-La console compte **39 écrans en 10 domaines**. Ils ne se valent pas, et je commence par le dire
-franchement parce que c'était sa quatrième question :
+> **Mis à jour le 26 novembre 2026, après le nettoyage.** Ce document a été écrit quand la console
+> comptait 39 écrans, dont 24 de gabarit. **Jonathan a tranché : les gabarits sont retirés.** Il en
+> reste **seize, en sept domaines**, et ce document ne décrit plus que ceux-là. Le classement
+> ci-dessous reste utile parce qu'il dit ce que chaque écran lit — mais vous n'avez plus à vous
+> demander lesquels ignorer : il n'y en a plus.
 
-- **« À brancher »** — l'écran correspond à quelque chose qui existe réellement dans ANAT Pilotage.
-  C'est là qu'il faut travailler.
-- **« Gabarit »** — l'écran est de la démonstration. Il montre ce qu'une console *peut* faire pour
-  un autre genre de système — un serveur, un cluster, une file de messages. **N'écrivez aucune
-  route pour ceux-là.** Ils restent dans la branche standard, débranchés, et disparaissent de
-  l'installation ANAT si vous le souhaitez.
+La console compte **16 écrans en 7 domaines**, de trois natures :
 
-Sur 39 écrans, **15 sont à brancher** et 24 sont du gabarit. Je préfère le dire maintenant que
-vous laisser écrire des routes pour des écrans de démonstration.
+- **Branchés** *(13)* — ils lisent ANAT Pilotage. C'est fait : le détail de ce que chacun lit est
+  plus bas, et le contrat figé est dans `05-contrat-lu.md`.
+- **État de la console** *(3)* — le registre des contrôles, les approbations, les garde-fous. Ils
+  décrivent ce que la console **s'autorise** à faire de votre application, pas ce qu'elle contient.
+  Pas d'équivalent serveur aujourd'hui, et ils le disent à l'écran.
+- **Retirés** *(23)* — services, files d'attente, déploiements, capacité, traces, sauvegardes,
+  connecteurs MCP, santé matérielle. **N'écrivez jamais de route pour eux.** Ils vivent sur la
+  branche `centre-de-commande-standard`, qui reste le gabarit réutilisable ailleurs.
 
 ---
 

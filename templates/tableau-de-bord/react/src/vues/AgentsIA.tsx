@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BarreMini, Bouton, Carte, Entete, Interrupteur, Jeton, LigneStat, Onglets, Pastille, Progression, TeteCarte } from "../composants/Primitives";
 import { Icone } from "../composants/Icone";
 import { useUI } from "../composants/Superpositions";
@@ -17,20 +17,23 @@ import { useSource } from "../lib/api/source";
    qui compte est déjà tenue côté serveur : l'IA propose, un humain décide. */
 function depuisAgent(a: AgentIADistant): AgentIA {
   return {
-    id: a.id,
+    cle: a.id,
     nom: a.name,
     role: a.ai_role ?? a.title ?? "Coéquipier IA",
     etat: a.status === "active" ? "actif" : "suspendu",
     modele: "non déclaré",
     instructions: a.ai_instructions ?? "",
-    documents: [],
+    /* Vides parce que l'application ne les expose pas, et non parce qu'ils
+       seraient vides : l'écran le dit dans son bandeau au lieu de laisser
+       croire qu'un agent n'a ni outil ni garde-fou. */
     outils: [],
-    executions30j: 0,
-    cout30j: 0,
-    tauxValidation: 0,
-    derniere: new Date(a.created_at).toLocaleDateString("fr-FR"),
-    garde: "L'agent propose, un humain décide. Les garde-fous vivent hors des instructions.",
-  } as unknown as AgentIA;
+    documents: [],
+    gardeFous: [],
+    budgetSession: 0, budgetJour: 0, consommeJour: 0,
+    executions7j: 0, tauxValidation: 0,
+    derniereExecution: new Date(a.created_at).toLocaleDateString("fr-FR"),
+    responsable: "non déclaré",
+  };
 }
 
 const TON = { "actif": "bon", "en essai": "vigilance", "suspendu": "neutre" } as const;
@@ -50,6 +53,14 @@ export function AgentsIA() {
     : inventes;
   const poserAgents = direct ? (() => { /* le serveur fait foi */ }) as typeof poserInventes : poserInventes;
   const [choisi, poserChoisi] = useState<AgentIA>(agentsInitiaux[0]);
+
+  /* L'agent sélectionné est gardé en état, donc il survit au changement de
+     source — et le panneau de détail continuait d'afficher un agent inventé
+     pendant que la liste à côté montrait les vrais. Un écran qui montre deux
+     sources à la fois sans le dire est pire que l'un ou l'autre. */
+  useEffect(() => {
+    if (agents.length && !agents.some((a) => a.cle === choisi.cle)) poserChoisi(agents[0]);
+  }, [agents, choisi.cle]);
   const [onglet, poserOnglet] = useState("instructions");
   const [q, poserQ] = useState("");
   const [essai, poserEssai] = useState("");

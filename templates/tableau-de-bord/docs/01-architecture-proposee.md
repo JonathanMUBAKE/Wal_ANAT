@@ -168,7 +168,7 @@ Autrement dit : la console est le **miroir** du contrôle, jamais son gardien.
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  CENTRE DE COMMANDE  (React, aucune base)               │
-│  39 écrans · 10 domaines · un adaptateur par produit    │
+│  16 écrans · 7 domaines · un adaptateur par produit     │
 └───────────────┬──────────────────┬──────────────────────┘
                 │                  │
      contrat admin v1       contrat admin v1

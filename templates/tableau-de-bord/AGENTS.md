@@ -11,7 +11,7 @@ des choix déjà tranchés.
 
 ## 1. Ce que vous avez entre les mains
 
-Trente-neuf écrans, dix domaines, une bibliothèque de composants, et des règles de conduite.
+Seize écrans, sept domaines, une bibliothèque de composants, et des règles de conduite.
 Rien n'est à moitié fait : chaque page a ses indicateurs, ses filtres, ses actions réelles et son
 état vide.
 

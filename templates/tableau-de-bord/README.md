@@ -35,27 +35,31 @@ composants ni routeur.
 
 | Domaine | Pages |
 |---|---|
-| **Pilotage** | Vue d'ensemble · Activité · Rapports |
-| **Contrôles** | **Registre des contrôles** · **Approbations** · **Garde-fous** |
-| **Exploitation** | Services · Tâches · Files d'attente · Déploiements · **Console d'exploitation** · **Incidents et astreinte** |
-| **Infrastructure** | Santé du serveur · Base de données · **Capacité et coûts** |
-| **Sécurité** | **Posture de sécurité** · **Anomalies et correctifs** · **Surveillance réseau** |
-| **Observabilité** | Journaux · **Collecte des journaux** · **Actions critiques** · Traces · Alertes · Disponibilité |
-| **Intelligence** | Agents IA · Modèles et clés · Connecteurs MCP |
-| **Communication** | Canaux d'envoi (SMTP · SMS · WhatsApp) · Modèles de messages · Envois |
-| **Accès** | Utilisateurs · Rôles et droits · Sessions · **Comptes dormants** · Jetons d'API |
-| **Système** | Paramètres · Intégrations · Sauvegardes · Journal d'audit |
+| **Pilotage** | Vue d'ensemble · Activité |
+| **Accès** | Utilisateurs · Rôles et droits · Sessions · Comptes dormants |
+| **Sécurité** | Posture de sécurité · Actions critiques · Journal d'audit |
+| **Contrôles** | Registre des contrôles · Approbations · Garde-fous |
+| **Intelligence** | Agents IA |
+| **Communication** | Canaux d'envoi · Envois |
+| **Système** | Paramètres |
 
-**Trente-neuf écrans, dix domaines.** Le centre de commande sert **l'administration système** :
-exploitation, infrastructure, sécurité, observabilité, intelligence artificielle, communication,
-accès, système — et les contrôles qui encadrent tout cela.
+**Seize écrans, sept domaines.** Treize lisent l'application pilotée ; trois — le registre, les
+approbations, les garde-fous — décrivent ce que la console **s'autorise** à faire d'elle, et n'ont
+pas d'équivalent serveur parce qu'ils n'en ont pas besoin.
 
-> **Ce que ce tableau de bord n'est pas.** Une première version portait des écrans métier —
-> portefeuille de projets, courrier, séances, registre des décisions, signataire. C'était une
-> erreur de frontière : *un administrateur système ne gère pas les dossiers.* Il regarde des
-> statistiques, gère des comptes, voit l'activité, surveille la santé du système et tranche ce qui
-> attend une main humaine. Ces six écrans ont été retirés le 26 novembre 2026 ; ils restent
-> accessibles dans l'historique au commit `e27c053`.
+> **Ce que ce tableau de bord n'est pas, en deux corrections.**
+>
+> Une première version portait des écrans **métier** — portefeuille de projets, courrier, séances,
+> registre des décisions, signataire. Erreur de frontière : *un administrateur système ne gère pas
+> les dossiers.* Il regarde des statistiques, gère des comptes, voit l'activité, surveille la santé
+> et tranche ce qui attend une main humaine. Retirés le 26 novembre 2026 (commit `e27c053`).
+>
+> Une deuxième version en portait vingt-trois autres qui montraient ce qu'une console sait faire
+> pour **un autre genre de système** : services, files d'attente, déploiements, capacité, traces,
+> sauvegardes, connecteurs MCP, santé matérielle d'un serveur loué. Pour administrer l'application
+> visée, ils ne voulaient rien dire — et *un écran qui ne veut rien dire en apprend un faux*.
+> Retirés le même jour. Ils vivent sur la branche `centre-de-commande-standard`, qui reste le
+> gabarit réutilisable ailleurs.
 
 ## Le brancher sur un vrai système
 

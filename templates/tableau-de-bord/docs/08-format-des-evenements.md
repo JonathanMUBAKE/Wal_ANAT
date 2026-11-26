@@ -91,9 +91,16 @@ Vérifiées de mon côté avant confirmation : il a raison six fois sur six.
 | **171 genres**, pas 137 | mon chiffre venait de son premier message ; le compte exact dans `LABELS` est **171**. Vérifié |
 | **Le vocabulaire d'abord** | voir §6 — c'est la conséquence de l'immuabilité qu'aucun de nous deux n'avait nommée |
 
-**Une septième, que j'ajoute** : `category` est scellée elle aussi, et `audit.ts:247` porte
-`signature: "Parapheur"`. Sa liste des cinq intitulés à corriger en oublie un, et c'est un nom de
-catégorie — donc présent sur beaucoup plus d'entrées qu'un libellé isolé.
+**Une septième, que j'ajoute** : `category` est scellée elle aussi, et portait un nom de catégorie
+employant le mot abandonné — donc présent sur beaucoup plus d'entrées qu'un libellé isolé.
+
+> **Réglé le 26 novembre 2026.** L'agent serveur a corrigé les quatre intitulés et la catégorie,
+> puis sorti le mot de tout le dépôt — 265 occurrences, commit `88b1f51`, 802 tests inchangés. La
+> catégorie couvrait **sept** genres et non un, parce qu'elle sert à la fois à `signature.*` et à
+> `delegation.*` : j'avais signalé le problème en le sous-estimant. **Les clés, elles, n'ont pas
+> bougé** — `signature.use`, la table `sign_documents`, les genres `signature.*` : renommer une clé
+> pour une raison de vocabulaire aurait été exactement la faute que nous venions d'éviter. Le
+> vocabulaire qui part dans la chaîne est propre ; la liste à jour est dans `docs/journal-genres.md`.
 
 ### §3bis — « d'où » n'existe que pour les connexions
 
@@ -279,9 +286,10 @@ phrase.
 Sa sixième correction est la conséquence pratique de l'immuabilité qu'aucun de nous deux n'avait
 nommée, et elle vaut bien au-delà d'un mot.
 
-**`label` et `category` sont rédigés par l'application et figés dans la chaîne.** Cinq intitulés et
-une catégorie disent encore « parapheur », le mot que Jonathan nous a demandé d'abandonner pour
-« le signataire ». Scellés, ils y restent pour toujours.
+**`label` et `category` sont rédigés par l'application et figés dans la chaîne.** Quatre intitulés
+et une catégorie employaient encore le mot que Jonathan nous a demandé d'abandonner pour « le
+signataire ». Scellés, ils y seraient restés pour toujours. *(Corrigés le 26 novembre, avant tout
+scellement — voir l'encadré plus haut.)*
 
 **Donc : les 171 intitulés et les catégories sont corrigés avant que la chaîne entre en service.**
 Pas après, pas en parallèle. C'est la seule fenêtre où c'est possible.

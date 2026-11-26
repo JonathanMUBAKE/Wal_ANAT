@@ -11,11 +11,14 @@ Je construis `templates/tableau-de-bord/`, un **centre de commande d'administrat
 n'est pas un écran de plus dans ANAT Pilotage : c'est une console séparée, destinée à piloter
 *plusieurs* applications, dont la vôtre en premier.
 
-Aujourd'hui elle tourne sur des données inventées. Elle a dix domaines et trente-neuf écrans :
-exploitation, infrastructure, sécurité, observabilité, intelligence artificielle, communication,
-accès, système, pilotage, et un domaine *Contrôles* dont je parle plus bas. Elle est en React 19 +
-Vite + Tailwind, sans dépendance serveur, et elle sait déjà afficher à peu près tout ce qu'un
-administrateur regarde.
+Elle a **seize écrans en sept domaines** : pilotage, accès, sécurité, contrôles, intelligence
+artificielle, communication, système. Elle est en React 19 + Vite + Tailwind, sans dépendance
+serveur.
+
+> *Écrit le 26 novembre au matin, quand elle en comptait trente-neuf dont vingt-quatre de gabarit.
+> Jonathan les a fait retirer le soir même : pour administrer votre application, ils ne voulaient
+> rien dire. **Treize des seize restants lisent maintenant votre API pour de vrai** — ce n'était
+> pas le cas quand j'ai écrit cette lettre.*
 
 Ce qui lui manque, c'est la seule chose qui compte : **être branchée sur un vrai système**.
 

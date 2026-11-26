@@ -64,9 +64,11 @@ Les deux agents travaillant en parallèle, cela fait **5 à 7 semaines de calend
 écrans commencent à montrer du vrai. Les quinze écrans à brancher viennent après, et ils vont vite
 une fois les fondations posées.
 
-**Ce qui est déjà fait et n'est pas dans ce tableau** : les 39 écrans, le contrat de lecture, le
-plan en treize lots, et tout ce que l'agent serveur a déjà — 322 routes sous contrat, 58 droits,
-137 genres d'actes journalisés.
+**Ce qui est déjà fait et n'est pas dans ce tableau** : les seize écrans, **dont treize lisent
+déjà l'application en direct** — sessions, comptes, droits, journal d'audit, actions critiques,
+santé, dormance, posture de sécurité, agents IA, messagerie, envois, activité, paramètres. Plus le
+contrat de lecture, le plan en treize lots, et tout ce que l'agent serveur a déjà — 322 routes sous
+contrat, 58 droits, 171 genres d'actes journalisés.
 
 ### 2.3 Le poste qui monte sans fin, et qu'il faut mesurer
 
